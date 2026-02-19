@@ -1,0 +1,438 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Bot, X, Send, Sparkles, Mic, MicOff, Zap, FileText, TrendingUp, Users, RotateCcw, Copy, Check, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { aiService } from '../../services/aiService';
+import ReactMarkdown from 'react-markdown';
+
+interface Message {
+  id: string;
+  sender: 'user' | 'bot';
+  text: string;
+  data?: any;
+  timestamp: Date;
+  status?: 'sending' | 'sent' | 'error';
+}
+
+const quickActions = [
+  { label: 'Revenue today', icon: TrendingUp, query: 'What is my total revenue?' },
+  { label: 'Draft invoice', icon: FileText, query: 'Help me create a new invoice' },
+  { label: 'Top customers', icon: Users, query: 'Who are my top customers?' },
+  { label: 'Business health', icon: Zap, query: 'Give me a business health summary' },
+];
+
+const formatTime = (date: Date) => {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+export function AIAssistant() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      sender: 'bot',
+      text: "Hey! 👋 I'm **Malika**, your financial copilot. I can help you check revenue, find invoices, analyze trends, or create new ones. What would you like to do?",
+      timestamp: new Date(),
+    }
+  ]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      const el = scrollRef.current;
+      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+      if (isNearBottom) {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      }
+    }
+  }, [messages]);
+
+  // Focus input when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 200);
+      setUnreadCount(0);
+    }
+  }, [isOpen]);
+
+  // Track scroll position for scroll-to-bottom button
+  const handleScroll = useCallback(() => {
+    if (scrollRef.current) {
+      const el = scrollRef.current;
+      setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 150);
+    }
+  }, []);
+
+  const scrollToBottom = () => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  };
+
+  const copyToClipboard = (text: string, msgId: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(msgId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleSend = async (textOverride?: string) => {
+    const textToSend = textOverride || query;
+    if (!textToSend.trim()) return;
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      sender: 'user',
+      text: textToSend,
+      timestamp: new Date(),
+      status: 'sent'
+    };
+    setMessages(prev => [...prev, userMsg]);
+    setQuery('');
+    setIsTyping(true);
+
+    try {
+      // Send ALL queries to backend AI — it handles intent detection + data lookup
+      let response = await aiService.processQuery(userMsg.text);
+
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: 'bot',
+        text: response.text,
+        data: response.data,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, botMsg]);
+
+      if (!isOpen) setUnreadCount(prev => prev + 1);
+
+      // Handle actions returned by backend
+      const action = response.action;
+      if (action) {
+        if (action.type === 'open_invoice_modal' || action.type === 'EXECUTE_ACTION') {
+          const initialData = action.data && action.type === 'EXECUTE_ACTION' ? {
+            buyer: { name: action.data.customer, phone: '' },
+            items: [{ description: action.data.description || 'Service', quantity: 1, price: action.data.amount, unit: 'Qty', discount: 0 }]
+          } : (action.initialData || action.data);
+
+          window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail: initialData }));
+        } else if (action.type === 'navigate' && action.data?.to) {
+          // Navigate to page after a brief delay so user sees the response first
+          setTimeout(() => {
+            window.location.href = action.data.to;
+          }, 1200);
+        }
+      }
+
+    } catch (error) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        sender: 'bot',
+        text: "⚠️ Sorry, I encountered an error. Please try again.",
+        timestamp: new Date(),
+        status: 'error'
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const clearChat = () => {
+    setMessages([{
+      id: Date.now().toString(),
+      sender: 'bot',
+      text: "Chat cleared! 🧹 How can I help you?",
+      timestamp: new Date(),
+    }]);
+  };
+
+  const startListening = () => {
+    const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice input is not supported in this browser.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error', event.error);
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setQuery(transcript);
+      handleSend(transcript);
+    };
+
+    recognition.start();
+  };
+
+  return (
+    <>
+      {/* Floating Action Button */}
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
+        className="fixed bottom-6 right-6 z-50"
+      >
+        <div className="relative">
+          <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl shadow-xl shadow-emerald-500/30 flex items-center justify-center transition-all">
+            <AnimatePresence mode="wait">
+              {isOpen ? (
+                <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                  <X size={22} />
+                </motion.div>
+              ) : (
+                <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                  <Sparkles size={22} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          {/* Unread badge */}
+          {unreadCount > 0 && !isOpen && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg"
+            >
+              {unreadCount}
+            </motion.div>
+          )}
+          {/* Pulse ring */}
+          {!isOpen && (
+            <div className="absolute inset-0 rounded-2xl bg-emerald-500/20 animate-ping [animation-duration:3s]" />
+          )}
+        </div>
+      </motion.button>
+
+      {/* Chat Panel */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+            className="fixed bottom-24 right-6 w-[380px] sm:w-[420px] z-50 flex flex-col overflow-hidden max-h-[600px] h-[540px] rounded-3xl shadow-2xl shadow-black/10 border border-gray-200/60 bg-white"
+          >
+            {/* Header */}
+            <div className="relative px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-emerald-50/80 to-teal-50/50 backdrop-blur-xl">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_60%)]" />
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                      <Bot size={18} className="text-white" strokeWidth={2.2} />
+                    </div>
+                    {/* Online dot */}
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm">
+                      <div className="w-full h-full rounded-full bg-emerald-400 animate-ping [animation-duration:2s]" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-gray-900 tracking-tight">Malika AI</h3>
+                    <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
+                      Online · Copilot Mode
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={clearChat}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white/60 rounded-xl transition"
+                    title="Clear chat"
+                  >
+                    <RotateCcw size={14} />
+                  </button>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white/60 rounded-xl transition"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div
+              className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-gray-50/50 to-white scrollbar-thin scrollbar-thumb-gray-200"
+              ref={scrollRef}
+              onScroll={handleScroll}
+            >
+              {messages.map((msg, idx) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: idx === messages.length - 1 ? 0.05 : 0 }}
+                  className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className="group max-w-[85%]">
+                    <div
+                      className={`relative p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ${msg.sender === 'user'
+                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-tr-md'
+                        : 'bg-white text-gray-800 border border-gray-100/80 rounded-tl-md'
+                        }`}
+                    >
+                      <div className={`prose prose-sm max-w-none ${msg.sender === 'user' ? 'prose-invert' : 'text-gray-800'} [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mt-1 [&_li]:text-[13px]`}>
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      </div>
+                      {msg.data && msg.data.type === 'stat' && (
+                        <div className="mt-2 text-lg font-extrabold bg-white/10 p-2.5 rounded-xl inline-block">
+                          ₹{msg.data.value.toLocaleString()}
+                        </div>
+                      )}
+                      {/* Copy for bot messages */}
+                      {msg.sender === 'bot' && msg.text.length > 30 && (
+                        <button
+                          onClick={() => copyToClipboard(msg.text, msg.id)}
+                          className="absolute -bottom-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white border border-gray-200 rounded-lg shadow-sm text-gray-400 hover:text-gray-600"
+                          title="Copy response"
+                        >
+                          {copiedId === msg.id ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}
+                        </button>
+                      )}
+                    </div>
+                    {/* Timestamp */}
+                    <p className={`text-[9px] font-medium mt-1 px-1 ${msg.sender === 'user' ? 'text-right text-gray-400' : 'text-gray-400'}`}>
+                      {formatTime(msg.timestamp)}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* Typing indicator */}
+              <AnimatePresence>
+                {isTyping && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="flex justify-start"
+                  >
+                    <div className="bg-white p-3.5 rounded-2xl rounded-tl-md shadow-sm border border-gray-100/80 flex gap-1.5 items-center">
+                      <div className="flex gap-1">
+                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" />
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-medium ml-1">Thinking...</span>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Voice listening indicator */}
+              <AnimatePresence>
+                {isListening && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="flex justify-center my-2"
+                  >
+                    <span className="flex items-center gap-2 text-[11px] text-red-600 font-bold bg-red-50 px-4 py-2 rounded-full border border-red-100">
+                      <div className="relative">
+                        <Mic size={12} />
+                        <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-30" />
+                      </div>
+                      Listening...
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Scroll to bottom */}
+            <AnimatePresence>
+              {showScrollBtn && (
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  onClick={scrollToBottom}
+                  className="absolute bottom-[140px] left-1/2 -translate-x-1/2 p-1.5 bg-white border border-gray-200 rounded-full shadow-lg text-gray-500 hover:text-gray-700 transition z-10"
+                >
+                  <ChevronDown size={14} />
+                </motion.button>
+              )}
+            </AnimatePresence>
+
+            {/* Quick Actions */}
+            {messages.length <= 2 && (
+              <div className="px-4 py-2 border-t border-gray-50 bg-white">
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-2">Quick Actions</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {quickActions.map((action) => (
+                    <button
+                      key={action.label}
+                      onClick={() => handleSend(action.query)}
+                      className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-emerald-50 border border-gray-100 hover:border-emerald-200 rounded-xl text-[11px] font-semibold text-gray-600 hover:text-emerald-700 transition-all group"
+                    >
+                      <action.icon size={12} className="text-gray-400 group-hover:text-emerald-500 transition-colors" />
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="px-4 py-3 bg-white border-t border-gray-100">
+              <div className="flex gap-2 items-center">
+                <button
+                  onClick={startListening}
+                  className={`p-2.5 rounded-xl transition-all flex-shrink-0 ${isListening
+                    ? 'bg-red-50 text-red-500 ring-2 ring-red-100 animate-pulse'
+                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                  title="Voice Command"
+                >
+                  {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                </button>
+
+                <div className="relative flex-1">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    placeholder="Ask Malika anything..."
+                    className="w-full pl-4 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-[13px] focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300 focus:bg-white transition-all placeholder-gray-400 text-gray-900"
+                  />
+                </div>
+
+                <motion.button
+                  onClick={() => handleSend()}
+                  disabled={!query.trim() || isTyping}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl shadow-lg shadow-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all flex-shrink-0"
+                >
+                  <Send size={16} />
+                </motion.button>
+              </div>
+              <p className="text-center mt-2 text-[9px] text-gray-400 font-medium">
+                Malika can make mistakes · Check important info
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}

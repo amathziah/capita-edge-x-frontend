@@ -1,0 +1,394 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Invoice, Payment } from '../../types';
+import { dataService } from '../../services/dataService';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+    AlertTriangle,
+    TrendingUp,
+    Clock,
+    CheckCircle2,
+    ArrowRight,
+    Activity,
+    Users,
+    FileText,
+    CreditCard,
+    LayoutGrid,
+    Network
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { InvoiceLifecycleMap } from '../Visualizations/InvoiceLifecycleMap';
+
+export function OperationsRoom() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [payments, setPayments] = useState<Payment[]>([]);
+    const [stats, setStats] = useState<any>({ total_customers: 0 });
+    const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [fetchedInvoices, fetchedStats, fetchedPayments] = await Promise.all([
+                dataService.getInvoices(),
+                dataService.getDashboardStats(),
+                dataService.getPayments()
+            ]);
+            setInvoices(fetchedInvoices);
+            setStats(fetchedStats);
+            setPayments(fetchedPayments);
+        } catch (error) {
+            console.error("Error loading data:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user) loadData();
+    }, [user]);
+
+    // Metrics Calculation
+    const pendingInvoices = Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent' || i.status === 'viewed') : [];
+    const overdueInvoices = Array.isArray(invoices) ? invoices.filter(i => i.status === 'overdue' || i.status === 'escalated') : [];
+    const paidInvoices = Array.isArray(invoices) ? invoices.filter(i => i.status === 'paid') : [];
+
+    const totalPending = pendingInvoices.reduce((sum, i) => sum + i.total, 0);
+    const totalOverdue = overdueInvoices.reduce((sum, i) => sum + i.total, 0);
+    const totalCollected = paidInvoices.reduce((sum, i) => sum + i.total, 0);
+
+    // Activity Feed Logic
+    const recentPayments = payments.slice(0, 3);
+    const recentInvoices = invoices.filter(i => i.status !== 'overdue').slice(0, 3);
+
+    if (loading) {
+        return (
+            <div className="flex h-full flex-col items-center justify-center bg-gray-50/50">
+                <div className="relative mb-8">
+                    {/* Outer rotating dotted ring */}
+                    <div className="w-20 h-20 border-4 border-emerald-400 border-dotted rounded-full animate-spin [animation-duration:3s]"></div>
+
+                    {/* Inner pulsing glow */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-emerald-500 rounded-full opacity-10 animate-ping [animation-duration:1.5s]"></div>
+                    </div>
+
+                    {/* Solid center dot */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-3 h-3 bg-emerald-600 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+                    </div>
+                </div>
+
+                <div className="space-y-2 text-center">
+                    <h3 className="text-sm font-semibold tracking-widest text-emerald-800 uppercase">Initializing Control Room</h3>
+                    <div className="flex justify-center gap-1">
+                        <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce"></span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative h-full w-full overflow-y-auto">
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_#e8f5e9_0%,_#f1f8f6_45%,_#f6fbf7_100%)]"></div>
+            <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl -z-10"></div>
+            <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-emerald-200/30 blur-[110px] -z-10"></div>
+
+            <div className="p-6 lg:p-10">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between"
+                >
+                    <div>
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
+                            Mission Control
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        </div>
+                        <h1 className="mt-2 text-3xl font-semibold text-gray-900 font-display tracking-tight">Control Room</h1>
+                        <p className="text-gray-600 mt-2 max-w-xl">
+                            A live operational view of revenue health, collections, and agent activity.
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="bg-white p-1 rounded-xl border border-gray-200 flex items-center shadow-sm mr-2">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                title="Grid View"
+                            >
+                                <LayoutGrid size={18} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('map')}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'map' ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                title="Workflow Map"
+                            >
+                                <Network size={18} />
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => navigate('/invoices')}
+                            className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-gray-300 hover:text-gray-900 transition"
+                        >
+                            Review Overdue
+                        </button>
+                        <button
+                            onClick={() => navigate('/customers')}
+                            className="px-4 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition"
+                        >
+                            Add Client
+                        </button>
+                    </div>
+                </motion.div>
+
+                {viewMode === 'map' ? (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.97 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+                        className="bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm overflow-hidden relative"
+                    >
+                        {/* Map Header */}
+                        <div className="px-6 py-4 border-b border-emerald-100/60 flex items-center justify-between bg-gradient-to-r from-emerald-50/50 to-teal-50/30">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-300/30">
+                                    <Network size={18} className="text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-gray-900">
+                                        Agentic Workflow Map
+                                    </h3>
+                                    <p className="text-[11px] text-gray-500 mt-0.5">Invoice lifecycle • AI agents • Revenue intelligence</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Live</span>
+                            </div>
+                        </div>
+                        <div className="h-[660px]">
+                            <InvoiceLifecycleMap invoices={invoices} />
+                        </div>
+                    </motion.div>
+                ) : (
+                    <>
+                        {/* Grid Layout */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.45, delay: 0.05 }}
+                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10"
+                        >
+
+                            {/* Card 1: Pending Revenue */}
+                            <div
+                                onClick={() => navigate('/invoices')}
+                                className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-card cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                            >
+                                <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                <div className="relative">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div className="flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                                            <TrendingUp size={12} className="mr-1" /> +12%
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pending Revenue</p>
+                                        <h3 className="text-2xl font-bold text-gray-900">₹{(totalPending / 1000).toFixed(1)}k</h3>
+                                        <p className="text-sm text-emerald-600 mt-2 font-medium">{pendingInvoices.length} invoices pending</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card 2: Overdue */}
+                            <div
+                                onClick={() => navigate('/invoices')}
+                                className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-card cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                            >
+                                <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                {overdueInvoices.length > 0 && <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse shadow-lg shadow-amber-500/50" />}
+                                <div className="relative">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="p-3 bg-amber-100 text-amber-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                            <AlertTriangle size={20} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Action Required</p>
+                                        <h3 className="text-2xl font-bold text-gray-900">₹{(totalOverdue / 1000).toFixed(1)}k</h3>
+                                        <p className="text-sm text-amber-600 mt-2 font-medium">{overdueInvoices.length} overdue payments</p>
+                                        <div className="mt-3 text-xs font-bold text-emerald-600 flex items-center group-hover:gap-2 transition-all">
+                                            View Details <ArrowRight size={12} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card 3: Cash Flow Health */}
+                            <div
+                                onClick={() => navigate('/payments')}
+                                className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-card cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                            >
+                                <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                <div className="relative">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                            <Activity size={20} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Cash Collected</p>
+                                        <h3 className="text-2xl font-bold text-gray-900">₹{(totalCollected / 1000).toFixed(1)}k</h3>
+                                        <div className="w-full bg-gray-100 h-2 rounded-full mt-4 overflow-hidden">
+                                            <div className="bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-600 h-full rounded-full transition-all duration-700" style={{ width: '65%' }} />
+                                        </div>
+                                        <p className="text-sm text-emerald-600 mt-2 font-medium">65% of monthly goal</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card 4: Active Clients */}
+                            <div
+                                onClick={() => navigate('/customers')}
+                                className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-card cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                            >
+                                <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                <div className="relative">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                            <Users size={20} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Active Clients</p>
+                                        <h3 className="text-2xl font-bold text-gray-900">{stats.total_customers || 0}</h3>
+                                        <p className="text-sm text-emerald-600 mt-2 font-medium flex items-center">
+                                            Manage clients <ArrowRight size={12} className="ml-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Monitoring Section */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                            {/* Agent Activity Feed */}
+                            <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm p-6 lg:p-7 relative overflow-hidden">
+                                {/* Decorative Background Element */}
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/20 rounded-full blur-3xl -z-10 transform translate-x-1/2 -translate-y-1/2"></div>
+
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                        <Activity size={18} className="text-emerald-500" />
+                                        Live Monitoring
+                                    </h2>
+                                    <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg flex items-center border border-emerald-100">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
+                                        Systems Nominal
+                                    </span>
+                                </div>
+
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                                    {/* Recent Payments Feed */}
+                                    {recentPayments.map((pay) => (
+                                        <div key={pay.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-emerald-100 hover:border-emerald-200 transition-colors shadow-sm">
+                                            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg shrink-0">
+                                                <CreditCard size={16} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-bold text-gray-900">Payment Received</h3>
+                                                <p className="text-sm text-gray-500 mt-0.5">Received ₹{pay.amount.toLocaleString()} via {pay.method}.</p>
+                                                <span className="text-xs text-emerald-500 mt-2 block">{new Date(pay.createdAt).toLocaleTimeString()}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Overdue Alerts */}
+                                    {overdueInvoices.slice(0, 2).map((inv) => (
+                                        <div key={inv.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-amber-100 hover:border-amber-200 transition-colors cursor-pointer shadow-sm group" onClick={() => navigate('/invoices')}>
+                                            <div className="p-2 bg-amber-100 text-amber-600 rounded-lg shrink-0 group-hover:scale-110 transition-transform">
+                                                <AlertTriangle size={16} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-bold text-gray-900">Collection Alert</h3>
+                                                <p className="text-sm text-gray-500 mt-0.5">Invoice #{inv.invoiceNumber} for {inv.buyer?.name} is overdue by {Math.floor((Date.now() - new Date(inv.dueDate || Date.now()).getTime()) / (1000 * 60 * 60 * 24))} days.</p>
+                                                <span className="text-xs text-amber-500 mt-2 block font-medium">Recommended: Send Follow-up</span>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Recent Invoice Activity */}
+                                    {recentInvoices.map((inv) => (
+                                        <div key={inv.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-emerald-100 hover:border-emerald-200 transition-colors shadow-sm">
+                                            <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg shrink-0">
+                                                <CheckCircle2 size={16} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-bold text-gray-900">Invoice {inv.status === 'draft' ? 'Draft Created' : 'Generated'}</h3>
+                                                <p className="text-sm text-gray-500 mt-0.5">Invoice #{inv.invoiceNumber} for {inv.buyer?.name} - ₹{inv.total.toLocaleString()}.</p>
+                                                <span className="text-xs text-gray-400 mt-2 block">{new Date(inv.createdAt).toLocaleTimeString()}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Fallback */}
+                                    {recentPayments.length === 0 && overdueInvoices.length === 0 && recentInvoices.length === 0 && (
+                                        <div className="text-center py-6 text-gray-400 text-sm">
+                                            No recent activity to display.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Priority Queue (List) */}
+                            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm p-6">
+                                <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                    <Clock size={18} className="text-emerald-500" />
+                                    Priority Queue
+                                </h2>
+
+                                <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                                    {overdueInvoices.length > 0 ? (
+                                        overdueInvoices.map((inv) => (
+                                            <div key={inv.id} className="flex items-center justify-between p-3 rounded-2xl border border-gray-100 hover:bg-amber-50/50 hover:border-amber-100 transition cursor-pointer group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 group-hover:scale-125 transition-transform"></div>
+                                                    <div>
+                                                        <div className="text-sm font-semibold text-gray-900">{inv.buyer?.name}</div>
+                                                        <div className="text-xs text-gray-500">{inv.invoiceNumber}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-sm font-bold text-gray-900">₹{inv.total.toLocaleString()}</div>
+                                                    <div className="text-xs text-amber-500 group-hover:font-medium">Overdue</div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-8 text-gray-400 text-sm">
+                                            <CheckCircle2 size={24} className="mx-auto mb-2 opacity-20" />
+                                            No urgent items.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
