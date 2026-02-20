@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Upload, Save, Building, Image as ImageIcon, Loader2, CheckCircle2, CreditCard, ChevronRight, Mail, AlertCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Upload, Save, Building, Image as ImageIcon, Loader2, CheckCircle2, CreditCard, ChevronRight, Mail, AlertCircle, Phone, MapPin, Fingerprint, Receipt } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -48,7 +48,7 @@ export function Settings() {
         setTestingConnection(true);
         setTestStatus({ type: null, message: null });
         try {
-            const res = await dataService.testEmailConnection(user, pass);
+            const res = await dataService.testEmailConnection(user, pass) as any;
             setConnectionChecked(true);
             if (res.success) {
                 setIsVerified(true);
@@ -80,27 +80,24 @@ export function Settings() {
         }
     };
 
-    const saveAll = async () => {
+    const saveSection = async (keys: string[], sectionName: string) => {
         try {
             setSaving(true);
             setSuccessMessage(null);
 
-            // 1. Upload Logo if changed
-            if (logoFile) {
+            // Handle Branding specifically if logoFile is present
+            if (keys.includes('logoFilename') && logoFile) {
                 const { filename } = await dataService.uploadLogo(logoFile);
+                await dataService.saveSetting('logoFilename', filename);
                 setSettings(prev => ({ ...prev, logoFilename: filename }));
+                setLogoFile(null);
             }
 
-            // 2. Save other settings
-            const keysToSave = [
-                'businessName', 'address', 'email', 'phone', 'companyTaxId', // General
-                'paymentTerms', 'invoiceNotes', 'footerText', // Invoicing
-                'paymentInstructions', 'bankDetails', 'upiId', // Payments
-                'smtp_user', 'smtp_pass' // Email
-            ];
+            // Filter out keys that might have been handled or are undefined
+            const actualKeys = keys.filter(k => k !== 'logoFilename');
 
             await Promise.all(
-                keysToSave.map(key => {
+                actualKeys.map(key => {
                     if (settings[key] !== undefined) {
                         return dataService.saveSetting(key, settings[key]);
                     }
@@ -108,15 +105,28 @@ export function Settings() {
                 })
             );
 
-            setSuccessMessage('Settings saved successfully!');
+            setSuccessMessage(`${sectionName} saved successfully!`);
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
-            console.error('Failed to save settings:', error);
-            alert('Failed to save settings. Please try again.');
+            console.error(`Failed to save ${sectionName}:`, error);
+            alert(`Failed to save ${sectionName}. Please try again.`);
         } finally {
             setSaving(false);
         }
     };
+
+    const SaveButton = ({ onClick, label = "Save Changes" }: { onClick: () => void, label?: string }) => (
+        <div className="flex justify-end pt-4 mt-6 border-t border-gray-50">
+            <button
+                onClick={onClick}
+                disabled={saving}
+                className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold transition-all active:scale-95 disabled:opacity-70 flex items-center gap-2 shadow-sm"
+            >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {saving ? 'Saving...' : label}
+            </button>
+        </div>
+    );
 
     const tabs = [
         { id: 'general', label: 'General Info', icon: Building, description: 'Company name, contact, and address' },
@@ -157,6 +167,21 @@ export function Settings() {
 
     return (
         <div className="p-6 lg:p-10 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #e2e8f0;
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #cbd5e1;
+                }
+            `}</style>
 
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -169,14 +194,6 @@ export function Settings() {
                     </h2>
                     <p className="text-text-muted mt-1 ml-11">Manage your business profile and invoice configuration.</p>
                 </div>
-                <button
-                    onClick={saveAll}
-                    disabled={saving}
-                    className="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold shadow-lg shadow-primary/25 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    {saving ? 'Saving...' : 'Save Changes'}
-                </button>
             </div>
 
             {successMessage && (
@@ -224,68 +241,130 @@ export function Settings() {
                             transition={{ duration: 0.2 }}
                         >
                             {activeTab === 'general' && (
-                                <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 space-y-8">
-                                    <div className="border-b border-gray-100 pb-4">
-                                        <h3 className="text-lg font-bold text-text-main">Company Details</h3>
-                                        <p className="text-sm text-text-muted">Basic information about your business.</p>
-                                    </div>
-
-                                    <div className="grid gap-6">
-                                        <div className="grid gap-2">
-                                            <label className="text-sm font-semibold text-text-main">Business Name</label>
-                                            <input
-                                                type="text"
-                                                value={settings.businessName || ''}
-                                                onChange={(e) => handleSettingChange('businessName', e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
-                                                placeholder="e.g. Acme Corp"
-                                            />
+                                <div className="max-h-[calc(100vh-220px)] overflow-y-auto pr-3 custom-scrollbar">
+                                    <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 space-y-8">
+                                        <div className="border-b border-gray-100 pb-4">
+                                            <h3 className="text-lg font-bold text-text-main">Company Details</h3>
+                                            <p className="text-sm text-text-muted">Basic information about your business.</p>
                                         </div>
 
-                                        <div className="grid md:grid-cols-2 gap-6">
-                                            <div className="grid gap-2">
-                                                <label className="text-sm font-semibold text-text-main">Email Address</label>
-                                                <input
-                                                    type="email"
-                                                    value={settings.email || ''}
-                                                    onChange={(e) => handleSettingChange('email', e.target.value)}
-                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
-                                                    placeholder="primary@company.com"
-                                                />
+                                        <div className="space-y-10">
+                                            {/* Company Profile Section */}
+                                            <div className="space-y-6">
+                                                <div className="flex items-center gap-3 border-b border-gray-50 pb-4">
+                                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                                        <Building className="w-5 h-5 text-primary" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-base font-bold text-text-main leading-tight">Company Profile</h4>
+                                                        <p className="text-xs text-text-muted">General identity of your organization</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid md:grid-cols-2 gap-6">
+                                                    <div className="grid gap-2">
+                                                        <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                                                            <Building className="w-3.5 h-3.5 text-text-light" />
+                                                            Business Name
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={settings.businessName || ''}
+                                                            onChange={(e) => handleSettingChange('businessName', e.target.value)}
+                                                            className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
+                                                            placeholder="e.g. Acme Corp"
+                                                        />
+                                                    </div>
+
+                                                    <div className="grid gap-2">
+                                                        <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                                                            <Fingerprint className="w-3.5 h-3.5 text-text-light" />
+                                                            Tax ID / GSTIN
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={settings.companyTaxId || ''}
+                                                            onChange={(e) => handleSettingChange('companyTaxId', e.target.value)}
+                                                            className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
+                                                            placeholder="e.g. 27ABCDE1234F1Z5"
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="grid gap-2">
-                                                <label className="text-sm font-semibold text-text-main">Phone Number</label>
-                                                <input
-                                                    type="text"
-                                                    value={settings.phone || ''}
-                                                    onChange={(e) => handleSettingChange('phone', e.target.value)}
-                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
-                                                    placeholder="+1 (555) 000-0000"
-                                                />
+
+                                            {/* Communication Section */}
+                                            <div className="space-y-6">
+                                                <div className="flex items-center gap-3 border-b border-gray-50 pb-4">
+                                                    <div className="p-2 bg-blue-50 rounded-lg">
+                                                        <Mail className="w-5 h-5 text-blue-500" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-base font-bold text-text-main leading-tight">Contact Information</h4>
+                                                        <p className="text-xs text-text-muted">How customers can reach you</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid md:grid-cols-2 gap-6">
+                                                    <div className="grid gap-2">
+                                                        <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                                                            <Mail className="w-3.5 h-3.5 text-text-light" />
+                                                            Email Address
+                                                        </label>
+                                                        <input
+                                                            type="email"
+                                                            value={settings.email || ''}
+                                                            onChange={(e) => handleSettingChange('email', e.target.value)}
+                                                            className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
+                                                            placeholder="primary@company.com"
+                                                        />
+                                                    </div>
+                                                    <div className="grid gap-2">
+                                                        <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                                                            <Phone className="w-3.5 h-3.5 text-text-light" />
+                                                            Phone Number
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={settings.phone || ''}
+                                                            onChange={(e) => handleSettingChange('phone', e.target.value)}
+                                                            className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
+                                                            placeholder="+1 (555) 000-0000"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Physical Presence Section */}
+                                            <div className="space-y-6">
+                                                <div className="flex items-center gap-3 border-b border-gray-50 pb-4">
+                                                    <div className="p-2 bg-orange-50 rounded-lg">
+                                                        <MapPin className="w-5 h-5 text-orange-500" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-base font-bold text-text-main leading-tight">Registered Address</h4>
+                                                        <p className="text-xs text-text-muted">Your official business location</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid gap-2">
+                                                    <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                                                        <MapPin className="w-3.5 h-3.5 text-text-light" />
+                                                        Business Address
+                                                    </label>
+                                                    <textarea
+                                                        value={settings.address || ''}
+                                                        onChange={(e) => handleSettingChange('address', e.target.value)}
+                                                        rows={3}
+                                                        className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-gray-400"
+                                                        placeholder="Full street address..."
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="grid gap-2">
-                                            <label className="text-sm font-semibold text-text-main">Business Address</label>
-                                            <textarea
-                                                value={settings.address || ''}
-                                                onChange={(e) => handleSettingChange('address', e.target.value)}
-                                                rows={3}
-                                                className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-gray-400"
-                                                placeholder="Full street address..."
-                                            />
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <label className="text-sm font-semibold text-text-main">Tax ID / GSTIN</label>
-                                            <input
-                                                type="text"
-                                                value={settings.companyTaxId || ''}
-                                                onChange={(e) => handleSettingChange('companyTaxId', e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
-                                                placeholder="e.g. 27ABCDE1234F1Z5"
-                                            />
-                                        </div>
+                                        <SaveButton
+                                            onClick={() => saveSection(['businessName', 'email', 'phone', 'address', 'companyTaxId'], 'General details')}
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -330,28 +409,51 @@ export function Settings() {
                                             </div>
                                         </div>
                                     </div>
+
+                                    <SaveButton
+                                        onClick={() => saveSection(['logoFilename'], 'Branding')}
+                                        label="Update Branding"
+                                    />
                                 </div>
                             )}
 
                             {activeTab === 'payments' && (
-                                <div className="space-y-6">
+                                <div className="max-h-[calc(100vh-220px)] overflow-y-auto pr-3 custom-scrollbar space-y-6">
                                     {/* Invoice Defaults */}
                                     <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 space-y-8">
-                                        <div className="border-b border-gray-100 pb-4">
-                                            <h3 className="text-lg font-bold text-text-main">Invoice Configuration</h3>
-                                            <p className="text-sm text-text-muted">Default terms and notes for new invoices.</p>
+                                        <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
+                                            <div className="p-2 bg-primary/10 rounded-lg">
+                                                <Receipt className="w-5 h-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-text-main leading-tight">Invoice Configuration</h3>
+                                                <p className="text-sm text-text-muted">Default terms and notes for new invoices.</p>
+                                            </div>
                                         </div>
 
                                         <div className="grid gap-6">
-                                            <div className="grid gap-2">
-                                                <label className="text-sm font-semibold text-text-main">Default Payment Terms</label>
-                                                <input
-                                                    type="text"
-                                                    value={settings.paymentTerms || ''}
-                                                    onChange={(e) => handleSettingChange('paymentTerms', e.target.value)}
-                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
-                                                    placeholder="e.g. Due on Receipt, Net 30"
-                                                />
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div className="grid gap-2">
+                                                    <label className="text-sm font-semibold text-text-main">Default Payment Terms</label>
+                                                    <input
+                                                        type="text"
+                                                        value={settings.paymentTerms || ''}
+                                                        onChange={(e) => handleSettingChange('paymentTerms', e.target.value)}
+                                                        className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
+                                                        placeholder="e.g. Due on Receipt, Net 30"
+                                                    />
+                                                </div>
+
+                                                <div className="grid gap-2">
+                                                    <label className="text-sm font-semibold text-text-main">Footer Text</label>
+                                                    <input
+                                                        type="text"
+                                                        value={settings.footerText || ''}
+                                                        onChange={(e) => handleSettingChange('footerText', e.target.value)}
+                                                        className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
+                                                        placeholder="e.g. Registered Office: 123 Main St..."
+                                                    />
+                                                </div>
                                             </div>
 
                                             <div className="grid gap-2">
@@ -364,25 +466,23 @@ export function Settings() {
                                                     placeholder="e.g. Thank you for your business!"
                                                 />
                                             </div>
-
-                                            <div className="grid gap-2">
-                                                <label className="text-sm font-semibold text-text-main">Footer Text</label>
-                                                <input
-                                                    type="text"
-                                                    value={settings.footerText || ''}
-                                                    onChange={(e) => handleSettingChange('footerText', e.target.value)}
-                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
-                                                    placeholder="e.g. Registered Office: 123 Main St..."
-                                                />
-                                            </div>
                                         </div>
+
+                                        <SaveButton
+                                            onClick={() => saveSection(['paymentTerms', 'invoiceNotes', 'footerText'], 'Invoice configuration')}
+                                        />
                                     </div>
 
                                     {/* Payment Methods */}
                                     <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 space-y-8">
-                                        <div className="border-b border-gray-100 pb-4">
-                                            <h3 className="text-lg font-bold text-text-main">Payment Instructions</h3>
-                                            <p className="text-sm text-text-muted">How customers should pay you (Bank, UPI, etc.).</p>
+                                        <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
+                                            <div className="p-2 bg-primary/10 rounded-lg">
+                                                <CreditCard className="w-5 h-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-text-main leading-tight">Payment Instructions</h3>
+                                                <p className="text-sm text-text-muted">How customers should pay you (Bank, UPI, etc.).</p>
+                                            </div>
                                         </div>
 
                                         <div className="grid gap-6">
@@ -403,28 +503,34 @@ export function Settings() {
                                                 <p className="text-xs text-text-light pl-1">This will automatically generate a scannable QR code on your PDF invoices.</p>
                                             </div>
 
-                                            <div className="grid gap-2">
-                                                <label className="text-sm font-semibold text-text-main">Bank Account Details</label>
-                                                <textarea
-                                                    value={settings.bankDetails || ''}
-                                                    onChange={(e) => handleSettingChange('bankDetails', e.target.value)}
-                                                    rows={3}
-                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-gray-400 font-mono text-sm"
-                                                    placeholder={`Bank Name: HDFC Bank\nAccount: 1234567890\nIFSC: HDFC0001234`}
-                                                />
-                                            </div>
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div className="grid gap-2">
+                                                    <label className="text-sm font-semibold text-text-main">Bank Account Details</label>
+                                                    <textarea
+                                                        value={settings.bankDetails || ''}
+                                                        onChange={(e) => handleSettingChange('bankDetails', e.target.value)}
+                                                        rows={3}
+                                                        className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-gray-400 font-mono text-sm"
+                                                        placeholder={`Bank Name: HDFC Bank\nAccount: 1234567890\nIFSC: HDFC0001234`}
+                                                    />
+                                                </div>
 
-                                            <div className="grid gap-2">
-                                                <label className="text-sm font-semibold text-text-main">Other Payment Instructions</label>
-                                                <textarea
-                                                    value={settings.paymentInstructions || ''}
-                                                    onChange={(e) => handleSettingChange('paymentInstructions', e.target.value)}
-                                                    rows={2}
-                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-gray-400"
-                                                    placeholder="e.g. Please include invoice number in remarks."
-                                                />
+                                                <div className="grid gap-2">
+                                                    <label className="text-sm font-semibold text-text-main">Other Payment Instructions</label>
+                                                    <textarea
+                                                        value={settings.paymentInstructions || ''}
+                                                        onChange={(e) => handleSettingChange('paymentInstructions', e.target.value)}
+                                                        rows={3}
+                                                        className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-gray-400 text-sm"
+                                                        placeholder="e.g. Please include invoice number in remarks."
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
+
+                                        <SaveButton
+                                            onClick={() => saveSection(['upiId', 'bankDetails', 'paymentInstructions'], 'Payment instructions')}
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -442,12 +548,12 @@ export function Settings() {
                                         <div className="space-y-6">
                                             {/* Status Banner */}
                                             <div className={`rounded-xl p-4 border flex items-start gap-4 ${testingConnection
-                                                    ? 'bg-blue-50 border-blue-100 text-blue-900'
-                                                    : 'bg-emerald-50 border-emerald-100 text-emerald-900'
+                                                ? 'bg-blue-50 border-blue-100 text-blue-900'
+                                                : 'bg-emerald-50 border-emerald-100 text-emerald-900'
                                                 }`}>
                                                 <div className={`p-2 rounded-full ${testingConnection
-                                                        ? 'bg-blue-100 text-blue-600'
-                                                        : 'bg-emerald-100 text-emerald-600'
+                                                    ? 'bg-blue-100 text-blue-600'
+                                                    : 'bg-emerald-100 text-emerald-600'
                                                     }`}>
                                                     {testingConnection ? (
                                                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -491,8 +597,8 @@ export function Settings() {
                                             {/* Test result feedback */}
                                             {testStatus.type && testStatus.message && (
                                                 <div className={`flex items-start gap-2 p-3 rounded-lg text-sm ${testStatus.type === 'success'
-                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                                        : 'bg-red-50 text-red-700 border border-red-100'
+                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                                    : 'bg-red-50 text-red-700 border border-red-100'
                                                     }`}>
                                                     {testStatus.type === 'success' ? (
                                                         <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />

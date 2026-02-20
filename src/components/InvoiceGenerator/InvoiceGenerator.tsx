@@ -9,7 +9,8 @@ import {
     ImageIcon,
     Mail,
     Loader2,
-    Save
+    Save,
+    AlertCircle
 } from "lucide-react";
 import { pdf } from '@react-pdf/renderer';
 import { Toast, ToastType } from '../Toast';
@@ -19,7 +20,7 @@ import { Invoice, InvoiceItem, Product } from '../../types';
 
 // Constants
 const CURRENCIES = [
-    { code: 'INR', symbol: '₹', label: 'Indian Rupee' },
+    { code: 'INR', symbol: 'Rs.', label: 'Indian Rupee' },
     { code: 'USD', symbol: '$', label: 'US Dollar' },
     { code: 'EUR', symbol: '€', label: 'Euro' },
     { code: 'GBP', symbol: '£', label: 'British Pound' },
@@ -144,6 +145,16 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         dataService.getSettings().then(settings => {
             if (settings.logoFilename) {
                 setLogo(dataService.getLogoUrl(settings.logoFilename));
+            }
+            // Sync business info if not editing
+            if (!editingInvoice) {
+                setSeller({
+                    name: settings.businessName || "",
+                    phone: settings.phone || "",
+                    email: settings.email || "",
+                    address: settings.address || "",
+                    taxId: settings.companyTaxId || ""
+                });
             }
         }).catch(e => console.error("Failed to load settings", e));
 
@@ -328,6 +339,12 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
             ).toBlob();
 
             // 3. Send Email with Attachment
+            if (!latestSettings.smtp_user || !latestSettings.smtp_pass) {
+                showToast("Email service not configured. Please go to Settings to connect your Gmail.", 'error');
+                setLoading(false);
+                return;
+            }
+
             await dataService.sendInvoiceEmail(id, emailTo, blob);
 
             showToast("Invoice sent successfully!", 'success');
@@ -406,6 +423,15 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                 </div>
                                 <h3 className="text-xl font-bold text-text-main">Send Invoice</h3>
                             </div>
+
+                            {(!seller.email || !seller.name) && (
+                                <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-start gap-3 text-left">
+                                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                                    <p className="text-xs text-amber-800">
+                                        <strong>Seller info missing:</strong> Please ensure your business name and email are set in settings for professional emails.
+                                    </p>
+                                </div>
+                            )}
                             <InputField
                                 label="Recipient Email"
                                 value={emailTo}
@@ -597,16 +623,17 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                                                 onClick={() => {
                                                                     if (isOutOfStock) return;
 
-                                                                    updateItem(idx, "description", product.name);
-                                                                    updateItem(idx, "price", product.price);
-                                                                    updateItem(idx, "unit", product.unit);
                                                                     const newItems = [...items];
-                                                                    newItems[idx].productId = product.id;
-                                                                    newItems[idx].sku = product.sku;
-                                                                    // Default to 1 if not set
-                                                                    if (!newItems[idx].quantity) newItems[idx].quantity = 1;
+                                                                    newItems[idx] = {
+                                                                        ...newItems[idx],
+                                                                        description: product.name,
+                                                                        price: product.price,
+                                                                        unit: product.unit,
+                                                                        productId: product.id,
+                                                                        sku: product.sku,
+                                                                        quantity: newItems[idx].quantity || 1
+                                                                    };
                                                                     setItems(newItems);
-
                                                                     if (availableStock < 5) showToast(`Note: Only ${availableStock} left of ${product.name}`, 'info');
                                                                 }}
                                                             >

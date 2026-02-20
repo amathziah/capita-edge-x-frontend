@@ -256,7 +256,7 @@ interface InvoicePDFProps {
 }
 
 const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, settings, logoUrl }) => {
-    const currency = settings.currencySymbol || '₹';
+    const currency = settings.currencySymbol || 'Rs.';
 
     return (
         <Document>
@@ -267,8 +267,8 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, settings, logoUrl }) =
                 {/* Header */}
                 <View style={styles.headerContainer}>
                     <View style={styles.logoContainer}>
-                        {logoUrl ? (
-                            <Image src={logoUrl} style={styles.logo} />
+                        {Boolean(logoUrl) ? (
+                            <Image src={logoUrl!} style={styles.logo} />
                         ) : (
                             // Placeholder if no logo
                             <View style={{ ...styles.logo, backgroundColor: '#E5E7EB' }} />
