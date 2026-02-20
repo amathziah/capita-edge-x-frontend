@@ -81,6 +81,7 @@ export interface Payment {
   status: 'pending' | 'completed' | 'failed';
   transactionId?: string;
   createdAt: Date;
+  date?: string; // Standardized ISO date for payment recording
   notes?: string;
 }
 
@@ -97,15 +98,19 @@ export interface Expense {
 
 export interface Reminder {
   id: string;
-  task: string;
-  dueDate: string; // ISO string (maps to due_date in DB)
+  title: string; // Used to be 'task'
+  dueDate: string; // ISO string 
   priority: 'High' | 'Medium' | 'Low';
-  completed: boolean;
-  snoozedUntil?: string | null; // ISO string (maps to snoozed_until in DB)
+  status: 'Pending' | 'Snoozed' | 'Completed' | 'Overdue';
+  referenceType?: 'Invoice' | 'Client' | 'Expense' | 'General' | null;
+  referenceId?: string | null;
+  actionText?: string | null;
+  completed?: boolean; // Kept for backward compatibility
+  snoozedUntil?: string | null;
   organization_id?: string;
   user_id?: string;
-  createdAt: string; // ISO string (maps to created_at in DB)
-  updatedAt?: string; // ISO string (maps to updated_at in DB)
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AIRule {

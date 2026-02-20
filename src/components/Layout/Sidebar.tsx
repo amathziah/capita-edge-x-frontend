@@ -5,7 +5,6 @@ import {
   FileText,
   Users,
   CreditCard,
-  BellRing,
   Receipt,
   Package,
   BarChart3,
@@ -19,7 +18,6 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../LanguageProvider";
 import { useAuth } from "../../contexts/AuthContext";
-import { dataService } from "../../services/dataService";
 
 // ── Types ────────────────────────────────────────────────────────────────
 type NavItem = {
@@ -51,7 +49,6 @@ const groups: NavGroup[] = [
     items: [
       { name: "invoices", label: "Invoices", href: "/invoices", icon: FileText },
       { name: "payments", label: "Payments", href: "/payments", icon: CreditCard },
-      { name: "reminders", label: "Reminders", href: "/reminders", icon: BellRing },
       { name: "customers", label: "Customers", href: "/customers", icon: Users },
     ],
   },
@@ -77,7 +74,6 @@ export function Sidebar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const [activeReminderCount, setActiveReminderCount] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -93,26 +89,6 @@ export function Sidebar() {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [userMenuOpen]);
-
-  // Fetch active reminder count dynamically
-  useEffect(() => {
-    let cancelled = false;
-    const fetchCount = async () => {
-      try {
-        const reminders = await dataService.getReminders();
-        if (!cancelled) {
-          const active = reminders.filter((r: any) => !r.completed).length;
-          setActiveReminderCount(active);
-        }
-      } catch {
-        // Silently ignore — badge just won't show
-      }
-    };
-    fetchCount();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchCount, 60_000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, []);
 
   const getUserInitials = () => {
     if (!user?.email) return "U";
@@ -137,15 +113,7 @@ export function Sidebar() {
   };
 
   // Inject dynamic badges into navigation groups
-  const navGroups = groups.map(group => ({
-    ...group,
-    items: group.items.map(item => {
-      if (item.name === "reminders" && activeReminderCount > 0) {
-        return { ...item, badge: String(activeReminderCount) };
-      }
-      return item;
-    }),
-  }));
+  const navGroups = groups;
 
   return (
     <aside
@@ -335,8 +303,8 @@ export function Sidebar() {
         <button
           onClick={() => setUserMenuOpen(prev => !prev)}
           className={`w-full flex items-center rounded-xl bg-white/[0.03] border transition-all duration-200 cursor-pointer ${userMenuOpen
-              ? "border-teal-500/20 bg-white/[0.06]"
-              : "border-white/[0.04] hover:bg-white/[0.06] hover:border-white/[0.08]"
+            ? "border-teal-500/20 bg-white/[0.06]"
+            : "border-white/[0.04] hover:bg-white/[0.06] hover:border-white/[0.08]"
             } ${collapsed ? "justify-center p-2" : "gap-3 p-3"}`}
           title={collapsed ? "User menu" : undefined}
         >

@@ -7,7 +7,6 @@ import { InvoiceNew } from './pages/InvoiceNew';
 import InvoiceGenerator from './components/InvoiceGenerator/InvoiceGenerator';
 import { Customers } from './pages/Customers';
 import { Payments } from './pages/Payments';
-import { Reminders } from './pages/Reminders';
 import { Expenses } from './pages/Expenses';
 import { Inventory } from './pages/Inventory';
 import { Reports } from './pages/Reports';
@@ -39,7 +38,6 @@ function App() {
                   <Route path="invoices/new" element={<InvoiceNew />} />
                   <Route path="customers" element={<Customers />} />
                   <Route path="payments" element={<Payments />} />
-                  <Route path="reminders" element={<Reminders />} />
                   <Route path="expenses" element={<Expenses />} />
                   <Route path="inventory" element={<Inventory />} />
                   <Route path="reports" element={<Reports />} />

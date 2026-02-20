@@ -97,6 +97,43 @@ class ApiClient {
     delete<T>(endpoint: string, options?: RequestInit) {
         return this.request<T>(endpoint, { ...options, method: 'DELETE' });
     }
+
+    patch<T>(endpoint: string, body?: any, options?: RequestInit) {
+        return this.request<T>(endpoint, {
+            ...options,
+            method: 'PATCH',
+            body: body instanceof FormData ? body : JSON.stringify(body)
+        });
+    }
+
+    async getBlob(endpoint: string, options?: RequestInit): Promise<Blob> {
+        const token = localStorage.getItem('sb-access-token');
+        const organizationId = localStorage.getItem('sb-org-id');
+
+        const headers: HeadersInit = {
+            ...options?.headers,
+        };
+
+        if (token) {
+            (headers as any)['Authorization'] = `Bearer ${token}`;
+        }
+
+        if (organizationId) {
+            (headers as any)['X-Organization-ID'] = organizationId;
+        }
+
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            ...options,
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            throw new Error(`Download failed: ${response.statusText}`);
+        }
+
+        return await response.blob();
+    }
 }
 
 export const api = new ApiClient();

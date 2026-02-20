@@ -1,10 +1,9 @@
 import { invoiceService } from './invoiceService';
 import { customerService } from './customerService';
 import { productService } from './productService';
-import { expenseService, paymentService, reminderService, settingService, complianceService, notificationService } from './domainServices';
+import { expenseService, paymentService, settingService, complianceService, notificationService } from './domainServices';
 import { aiService } from './aiService';
 import { analyticsService } from './analyticsService';
-import { api } from '../api/client';
 
 // Re-export services for direct usage
 export {
@@ -13,7 +12,6 @@ export {
   productService,
   expenseService,
   paymentService,
-  reminderService,
   settingService,
   complianceService,
   notificationService,
@@ -30,11 +28,6 @@ class DataService {
   deleteCustomer = customerService.deleteCustomer;
   getCustomerInsights = customerService.getCustomerInsights;
   getCustomerInvoices = customerService.getCustomerInvoices;
-
-  // Reminders
-  getReminders = reminderService.getReminders;
-  saveReminder = reminderService.saveReminder;
-  deleteReminder = reminderService.deleteReminder;
 
   // Products
   getProducts = productService.getProducts;
@@ -55,6 +48,8 @@ class DataService {
   // Payments
   getPayments = paymentService.getPayments;
   savePayment = paymentService.savePayment;
+  downloadReceipt = paymentService.downloadReceipt;
+  reconcilePayment = paymentService.reconcilePayment;
 
   // Expenses
   getExpenses = expenseService.getExpenses;

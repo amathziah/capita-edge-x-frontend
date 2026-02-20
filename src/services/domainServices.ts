@@ -1,5 +1,5 @@
 import { api } from '../api/client';
-import { Expense, Payment, Reminder } from '../types';
+import { Expense, Payment } from '../types';
 
 export const expenseService = {
     getExpenses: () => api.get<Expense[]>('/expenses'),
@@ -9,13 +9,9 @@ export const expenseService = {
 
 export const paymentService = {
     getPayments: () => api.get<Payment[]>('/payments'),
-    savePayment: (payment: Payment) => api.post<{ id: string }>('/payments', payment)
-};
-
-export const reminderService = {
-    getReminders: () => api.get<Reminder[]>('/reminders'), // Assuming /api/notifications logic? NO, reminders table CRUD.
-    saveReminder: (reminder: Partial<Reminder>) => api.post<{ id: string }>('/reminders', reminder),
-    deleteReminder: (id: string) => api.delete<void>(`/reminders/${id}`)
+    savePayment: (payment: Payment) => api.post<{ id: string }>('/payments', payment),
+    downloadReceipt: (paymentId: string) => api.getBlob(`/payments/download-receipt/${paymentId}`),
+    reconcilePayment: (paymentId: string) => api.patch(`/payments/${paymentId}/reconcile`, {})
 };
 
 export const settingService = {
