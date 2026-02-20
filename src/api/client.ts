@@ -1,4 +1,15 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const getBaseUrl = () => {
+    let url = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    // Ensure it doesn't end with a trailing slash for consistency
+    url = url.replace(/\/$/, '');
+    // Ensure it ends with /api if it doesn't already
+    if (!url.endsWith('/api')) {
+        url += '/api';
+    }
+    return url;
+};
+
+const API_URL = getBaseUrl();
 
 class ApiClient {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
