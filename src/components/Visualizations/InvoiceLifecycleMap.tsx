@@ -100,41 +100,41 @@ const NODE_STYLES: Record<string, NodeStyleConfig> = {
         textColor: 'text-emerald-700',
     },
     // Agentic nodes
-    agent_reminder: {
+    agent_alpha: {
         bg: 'bg-gradient-to-br from-violet-50 to-purple-50',
         border: 'border-violet-300',
         iconBg: 'bg-gradient-to-br from-violet-500 to-purple-600',
         iconColor: 'text-white',
         glow: 'shadow-violet-200/60',
         textColor: 'text-violet-700',
-        badge: 'AI',
+        badge: 'SYS',
     },
-    agent_settlement: {
+    agent_bravo: {
         bg: 'bg-gradient-to-br from-amber-50 to-yellow-50',
         border: 'border-amber-300',
         iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
         iconColor: 'text-white',
         glow: 'shadow-amber-200/60',
         textColor: 'text-amber-700',
-        badge: 'AI',
+        badge: 'SYS',
     },
-    agent_analytics: {
+    agent_charlie: {
         bg: 'bg-gradient-to-br from-teal-50 to-emerald-50',
         border: 'border-teal-300',
         iconBg: 'bg-gradient-to-br from-teal-500 to-emerald-600',
         iconColor: 'text-white',
         glow: 'shadow-teal-200/60',
         textColor: 'text-teal-700',
-        badge: 'AI',
+        badge: 'SYS',
     },
-    agent_compliance: {
+    agent_delta: {
         bg: 'bg-gradient-to-br from-sky-50 to-blue-50',
         border: 'border-sky-300',
         iconBg: 'bg-gradient-to-br from-sky-500 to-blue-600',
         iconColor: 'text-white',
         glow: 'shadow-sky-200/60',
         textColor: 'text-sky-700',
-        badge: 'AI',
+        badge: 'SYS',
     },
 };
 
@@ -149,10 +149,10 @@ const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> 
     overdue: AlertTriangle,
     escalated: Zap,
     paid: CheckCircle2,
-    agent_reminder: BellRing,
-    agent_settlement: Scale,
-    agent_analytics: PieChart,
-    agent_compliance: Shield,
+    agent_alpha: BellRing,
+    agent_bravo: Scale,
+    agent_charlie: PieChart,
+    agent_delta: Shield,
 };
 
 // ---------------------------------------------------------------------------
@@ -232,7 +232,7 @@ const AgentNode = ({ data }: {
 
             {/* AI Badge */}
             <div className="absolute -top-2.5 -right-2.5 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md bg-gradient-to-r from-violet-500 to-purple-600 text-white flex items-center gap-0.5">
-                <Bot size={9} /> AGENT
+                <Bot size={9} /> NODE
             </div>
 
             {/* Icon */}
@@ -375,43 +375,43 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
 
         // ── Agentic workflow nodes ────────────────────────────────────────────
         {
-            id: 'agent_reminder', type: 'agentNode',
+            id: 'agent_alpha', type: 'agentNode',
             position: { x: 1040, y: 155 },
             data: {
-                label: 'Auto-Reminders',
-                description: 'AI sends follow-ups based on payment patterns & urgency',
-                styleKey: 'agent_reminder',
-                metric: `${overdueCount} queued`,
+                label: 'ALPHA (DPU)',
+                description: 'Data Processing Unit. Query execution and data normalization.',
+                styleKey: 'agent_alpha',
+                metric: `Active`,
             },
         },
         {
-            id: 'agent_settlement', type: 'agentNode',
+            id: 'agent_bravo', type: 'agentNode',
             position: { x: 1040, y: 320 },
             data: {
-                label: 'Settlement Agent',
-                description: 'Generates smart offers & negotiates payment plans',
-                styleKey: 'agent_settlement',
-                metric: `₹${(stats.overdue.value / 1000).toFixed(0)}k recoverable`,
+                label: 'BRAVO (BOC)',
+                description: 'Backend Operations Commander. API routing and synthesis.',
+                styleKey: 'agent_bravo',
+                metric: `Online`,
             },
         },
         {
-            id: 'agent_analytics', type: 'agentNode',
+            id: 'agent_charlie', type: 'agentNode',
             position: { x: 520, y: 330 },
             data: {
-                label: 'Cash Flow Intel',
-                description: 'Safe-to-spend analysis, forecasting & health scoring',
-                styleKey: 'agent_analytics',
-                metric: `${invoices.length} analyzed`,
+                label: 'CHARLIE (FLO)',
+                description: 'Frontend Logistics Operator. UI synchronization.',
+                styleKey: 'agent_charlie',
+                metric: `Nominal`,
             },
         },
         {
-            id: 'agent_compliance', type: 'agentNode',
+            id: 'agent_delta', type: 'agentNode',
             position: { x: 280, y: 380 },
             data: {
-                label: 'Compliance Guard',
-                description: 'Auto-monitors GST, TDS filings & regulatory deadlines',
-                styleKey: 'agent_compliance',
-                metric: 'Active',
+                label: 'DELTA (SVN)',
+                description: 'Security & Verification Node. Testing and audits.',
+                styleKey: 'agent_delta',
+                metric: 'Secure',
             },
         },
     ], [stats, totalPipeline, overdueCount, invoices.length]);
@@ -437,19 +437,19 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
         { id: 'overdue-paid', source: 'overdue', target: 'paid', style: { stroke: '#10b981', strokeWidth: 1.5, strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' }, label: 'Recovery', labelStyle: { fontSize: 10, fill: '#10b981', fontWeight: 700 } },
 
         // Agentic connections (dashed, purple-tinted)
-        { id: 'overdue-agent-reminder', source: 'overdue', target: 'agent_reminder', animated: true, style: { stroke: '#8b5cf6', strokeWidth: 2, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#8b5cf6' }, label: '⚡ AI', labelStyle: { fontSize: 9, fill: '#8b5cf6', fontWeight: 800 } },
-        { id: 'escalated-agent-settlement', source: 'escalated', target: 'agent_settlement', animated: true, style: { stroke: '#f59e0b', strokeWidth: 2, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' }, label: '⚡ AI', labelStyle: { fontSize: 9, fill: '#f59e0b', fontWeight: 800 } },
+        { id: 'overdue-agent-alpha', source: 'overdue', target: 'agent_alpha', animated: true, style: { stroke: '#8b5cf6', strokeWidth: 2, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#8b5cf6' }, label: 'DATA', labelStyle: { fontSize: 9, fill: '#8b5cf6', fontWeight: 800 } },
+        { id: 'escalated-agent-bravo', source: 'escalated', target: 'agent_bravo', animated: true, style: { stroke: '#f59e0b', strokeWidth: 2, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' }, label: 'API', labelStyle: { fontSize: 9, fill: '#f59e0b', fontWeight: 800 } },
 
         // Agent → Recovery
-        { id: 'agent-reminder-paid', source: 'agent_reminder', target: 'paid', style: { stroke: '#10b981', strokeWidth: 1.5, strokeDasharray: '4,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' } },
-        { id: 'agent-settlement-partial', source: 'agent_settlement', target: 'partially_paid', style: { stroke: '#06b6d4', strokeWidth: 1.5, strokeDasharray: '4,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#06b6d4' } },
+        { id: 'agent-alpha-paid', source: 'agent_alpha', target: 'paid', style: { stroke: '#10b981', strokeWidth: 1.5, strokeDasharray: '4,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' } },
+        { id: 'agent-bravo-partial', source: 'agent_bravo', target: 'partially_paid', style: { stroke: '#06b6d4', strokeWidth: 1.5, strokeDasharray: '4,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#06b6d4' } },
 
         // Analytics hub
-        { id: 'hub-analytics', source: 'hub', target: 'agent_analytics', style: { stroke: '#14b8a6', strokeWidth: 1.5, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#14b8a6' } },
+        { id: 'hub-charlie', source: 'hub', target: 'agent_charlie', style: { stroke: '#14b8a6', strokeWidth: 1.5, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#14b8a6' }, label: 'UI', labelStyle: { fontSize: 9, fill: '#14b8a6', fontWeight: 800 } },
 
         // Compliance monitoring
-        { id: 'draft-compliance', source: 'draft', target: 'agent_compliance', style: { stroke: '#0ea5e9', strokeWidth: 1.5, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#0ea5e9' } },
-        { id: 'compliance-analytics', source: 'agent_compliance', target: 'agent_analytics', style: { stroke: '#14b8a6', strokeWidth: 1.5, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#14b8a6' } },
+        { id: 'draft-delta', source: 'draft', target: 'agent_delta', style: { stroke: '#0ea5e9', strokeWidth: 1.5, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#0ea5e9' }, label: 'SEC', labelStyle: { fontSize: 9, fill: '#0ea5e9', fontWeight: 800 } },
+        { id: 'delta-charlie', source: 'agent_delta', target: 'agent_charlie', style: { stroke: '#14b8a6', strokeWidth: 1.5, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#14b8a6' } },
     ], []);
 
     const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {

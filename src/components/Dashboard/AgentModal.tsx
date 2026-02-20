@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Bot, X, Send, Sparkles, AlertCircle, Check, Copy, Mic, MicOff } from 'lucide-react';
+import { X, Send, Check, Copy, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService } from '../../services/aiService';
 import ReactMarkdown from 'react-markdown';
@@ -13,55 +13,78 @@ interface AgentModalProps {
 
 interface Message {
     id: string;
-    sender: 'user' | 'bot';
+    sender: 'user' | 'bot' | 'system';
     text: string;
     data?: any;
+    jsonAction?: any;
     timestamp: Date;
     status?: 'sending' | 'sent' | 'error';
+    isStepStart?: boolean;
 }
 
-const AGENT_CONFIGS: Record<string, { name: string; greeting: string; gradient: string; glow: string; textHighlight: string }> = {
-    agent_reminder: {
-        name: 'Auto-Reminders',
-        greeting: "Hello, I'm your Auto-Reminder Assistant. Let's review the overdue invoices in the queue.",
+const AGENT_CONFIGS: Record<string, { name: string; designation: string; greeting: string; gradient: string; glow: string; textHighlight: string; capabilities: string[] }> = {
+    agent_alpha: {
+        name: 'ALPHA',
+        designation: 'Data Processing Unit',
+        greeting: "> [ALPHA] STATUS: ONLINE. AWAITING DATA PROCESSING DIRECTIVES.",
         gradient: "from-violet-500 to-purple-600",
         glow: "shadow-[0_0_15px_rgba(139,92,246,0.5)]",
-        textHighlight: "text-violet-300"
+        textHighlight: "text-violet-300",
+        capabilities: [
+            "Execute Overdue Reminder Action",
+            "Generate Auto-Reminder Drafts",
+            "Explain Follow-Up Protocols"
+        ]
     },
-    agent_settlement: {
-        name: 'Settlement Agent',
-        greeting: "Hi. I handle recoveries and settlements. Need me to draft a negotiation email or review escalated accounts?",
+    agent_bravo: {
+        name: 'BRAVO',
+        designation: 'Backend Operations Commander',
+        greeting: "> [BRAVO] STATUS: ONLINE. AWAITING BACKEND ROUTING DIRECTIVES.",
         gradient: "from-amber-500 to-orange-600",
         glow: "shadow-[0_0_15px_rgba(245,158,11,0.5)]",
-        textHighlight: "text-amber-300"
+        textHighlight: "text-amber-300",
+        capabilities: [
+            "Generate Payment Settlement Terms",
+            "Analyze Debt Recovery Options",
+            "Configure Payment Link Logic"
+        ]
     },
-    agent_analytics: {
-        name: 'Cash Flow Intel',
-        greeting: "Greetings. I monitor pipeline health and cash flow. What metrics would you like to analyze?",
+    agent_charlie: {
+        name: 'CHARLIE',
+        designation: 'Frontend Logistics Operator',
+        greeting: "> [CHARLIE] STATUS: ONLINE. AWAITING UI LOGISTICS DIRECTIVES.",
         gradient: "from-teal-500 to-emerald-600",
         glow: "shadow-[0_0_15px_rgba(20,184,166,0.5)]",
-        textHighlight: "text-teal-300"
+        textHighlight: "text-teal-300",
+        capabilities: [
+            "Fetch Revenue & Cashflow Metrics",
+            "Analyze Month-over-Month Trends",
+            "Forecast Pending Revenue"
+        ]
     },
-    agent_compliance: {
-        name: 'Compliance Guard',
-        greeting: "System active. I monitor regulatory deadlines and tax obligations. Are there any compliance anomalies you want me to check?",
+    agent_delta: {
+        name: 'DELTA',
+        designation: 'Security & Verification Node',
+        greeting: "> [DELTA] STATUS: ONLINE. AWAITING SECURITY AUDIT DIRECTIVES.",
         gradient: "from-sky-500 to-blue-600",
         glow: "shadow-[0_0_15px_rgba(14,165,233,0.5)]",
-        textHighlight: "text-sky-300"
+        textHighlight: "text-sky-300",
+        capabilities: [
+            "Initiate New Invoice Workflow",
+            "Verify GST & Compliance Rules",
+            "Audit Recent Transactions"
+        ]
     }
 };
 
 const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
-    const [query, setQuery] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
     const [isTyping, setIsTyping] = useState(false);
-    const [isListening, setIsListening] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const scrollRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
 
     const config = agentId ? AGENT_CONFIGS[agentId] : null;
 
@@ -73,10 +96,8 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
                 text: config.greeting,
                 timestamp: new Date()
             }]);
-            setTimeout(() => inputRef.current?.focus(), 200);
         } else {
             setMessages([]);
-            setQuery('');
         }
     }, [isOpen, agentId, config]);
 
@@ -92,35 +113,60 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    const handleSend = async (textOverride?: string) => {
-        const textToSend = textOverride || query;
-        if (!textToSend.trim() || !config) return;
+    const simulateExecution = async (capability: string) => {
+        if (!config || isTyping) return;
+
+        setIsTyping(true);
+
+        const textToSend = capability;
 
         const userMsg: Message = {
             id: Date.now().toString(),
             sender: 'user',
-            text: textToSend,
-            timestamp: new Date(),
-            status: 'sent'
+            text: `EXECUTE --directive "${textToSend}"`,
+            timestamp: new Date()
         };
-
         setMessages(prev => [...prev, userMsg]);
-        setQuery('');
-        setIsTyping(true);
 
         try {
-            const response: any = await aiService.processQuery(textToSend, agentId || undefined);
+            // Re-route the new agent names back to the legacy names the aiService expects
+            let backendAgentId = undefined;
+            if (agentId === 'agent_alpha') backendAgentId = 'agent_reminder';
+            else if (agentId === 'agent_bravo') backendAgentId = 'agent_settlement';
+            else if (agentId === 'agent_charlie') backendAgentId = 'agent_analytics';
+            else if (agentId === 'agent_delta') backendAgentId = 'agent_compliance';
+
+            const response: any = await aiService.processQuery(textToSend, backendAgentId);
+
+            let parsedJsonAction = null;
+            let displayMessage = response.text || "";
+
+            try {
+                if (displayMessage && displayMessage.trim().startsWith('{')) {
+                    const parsedData = JSON.parse(displayMessage);
+                    if (parsedData.action_type) {
+                        parsedJsonAction = parsedData;
+                        displayMessage = parsedData.message || "Directive processed.";
+                    }
+                }
+            } catch (err) {
+                console.warn('AI sent invalid JSON or standard text, rendering as raw text:', err);
+            }
+
+            const prefix = `> [${config.name}] STATUS DECODE:\n`;
 
             const botMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 sender: 'bot',
-                text: response.text,
+                text: `${prefix}${displayMessage}`,
                 data: response.data,
-                timestamp: new Date()
+                jsonAction: parsedJsonAction,
+                timestamp: new Date(),
+                isStepStart: true
             };
             setMessages(prev => [...prev, botMsg]);
 
-            // Handle actions returned by backend
+            // Handle functional actions returned by backend
             const action = response.action;
             if (action) {
                 if (action.type === 'open_invoice_modal' || action.type === 'EXECUTE_ACTION') {
@@ -137,41 +183,18 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
                     }, 1200);
                 }
             }
+
         } catch (error) {
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 sender: 'bot',
-                text: "⚠️ System error occurred. Unable to process command.",
+                text: `> [${config.name}] CRITICAL ERR: Backend linkage failed.`,
                 timestamp: new Date(),
                 status: 'error'
             }]);
         } finally {
             setIsTyping(false);
         }
-    };
-
-    const startListening = () => {
-        const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert('Voice input is not supported in this browser.');
-            return;
-        }
-
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        recognition.onstart = () => setIsListening(true);
-        recognition.onend = () => setIsListening(false);
-        recognition.onerror = (e: any) => { console.error(e); setIsListening(false); };
-
-        recognition.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            setQuery(transcript);
-            handleSend(transcript);
-        };
-        recognition.start();
     };
 
     if (!isOpen || !config) return null;
@@ -200,17 +223,17 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
                         {/* Header */}
                         <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-teal-500/10 bg-gradient-to-r from-[#04080d]/80 via-[#0b131e]/50 to-transparent backdrop-blur-xl relative z-20">
                             <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center ${config.glow}`}>
-                                    <Bot size={20} className="text-white" />
+                                <div className={`w-10 h-10 rounded shadow-md bg-gradient-to-br ${config.gradient} flex items-center justify-center ${config.glow}`}>
+                                    <Terminal size={20} className="text-white" />
                                 </div>
                                 <div>
-                                    <h2 className={`text-[17px] font-extrabold tracking-wide drop-shadow-sm ${config.textHighlight}`}>{config.name}</h2>
-                                    <div className={`flex items-center gap-1.5 text-[11px] font-bold mt-0.5 ${config.textHighlight}`}>
-                                        <div className="relative flex h-2 w-2 items-center justify-center">
+                                    <h2 className={`text-[17px] font-extrabold tracking-wide drop-shadow-sm font-mono ${config.textHighlight}`}>{config.name}</h2>
+                                    <div className={`flex items-center gap-1.5 text-[10px] uppercase font-mono mt-0.5 ${config.textHighlight}`}>
+                                        <div className="relative flex h-1.5 w-1.5 items-center justify-center">
                                             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-40`}></span>
-                                            <span className={`relative inline-flex rounded-full h-1.5 w-1.5 bg-current ${config.glow}`}></span>
+                                            <span className={`relative inline-flex rounded-full h-1 w-1 bg-current ${config.glow}`}></span>
                                         </div>
-                                        <span className="tracking-wider uppercase opacity-80">Online</span>
+                                        <span className="tracking-wider opacity-80">{config.designation}</span>
                                     </div>
                                 </div>
                             </div>
@@ -220,76 +243,73 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
                         </div>
 
                         {/* Chat Area */}
-                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal-950/20 via-[#04080d] to-[#020408] scrollbar-thin scrollbar-thumb-teal-800/40 scrollbar-track-transparent relative z-10">
+                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-1 bg-[#020408] font-mono scrollbar-thin scrollbar-thumb-teal-800/40 scrollbar-track-transparent relative z-10 w-full">
                             {messages.map(msg => (
                                 <motion.div
                                     key={msg.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="w-full flex"
                                 >
-                                    <div className="group max-w-[88%] lg:max-w-[80%]">
-                                        <div className={`relative p-4 md:p-5 rounded-2xl text-[14px] leading-relaxed shadow-sm transition-all duration-300 hover:shadow-md ${msg.sender === 'user' ? `bg-gradient-to-br ${config.gradient} shadow-[0_8px_24px_-8px_rgba(20,184,166,0.5)] text-white rounded-br-sm border border-white/10 ring-1 ring-black/5` : 'bg-[#111a28]/80 border border-teal-500/10 text-[#f0fdfa] rounded-bl-sm backdrop-blur-md hover:border-teal-500/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]'}`}>
-                                            <div className={`prose prose-sm max-w-none ${msg.sender === 'user' ? 'text-white prose-invert' : `text-[#ccfbf1] [&_strong]:${config.textHighlight} [&_a]:${config.textHighlight} [&_code]:${config.textHighlight} [&_code]:bg-teal-950/50 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md`} [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2`}>
-                                                <ReactMarkdown>{msg.text}</ReactMarkdown>
-                                            </div>
-                                            {msg.data && msg.data.type === 'stat' && (
-                                                <div className={`mt-3.5 text-2xl font-black tracking-tighter bg-[#04080d]/50 ${config.textHighlight} border border-teal-500/15 px-4 py-2.5 rounded-xl inline-block shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] ring-1 ring-black/20`}>
-                                                    ₹{msg.data.value.toLocaleString()}
+                                    <div className="w-full">
+                                        <div className={`relative px-2 py-1 text-[13px] leading-relaxed flex items-start group ${msg.sender === 'user' ? 'text-emerald-400' : `${config.textHighlight} opacity-90`}`}>
+                                            <span className="mr-3 opacity-40 shrink-0 select-none">[{formatTime(msg.timestamp)}]</span>
+                                            <span className="mr-2 shrink-0 select-none">{msg.sender === 'user' ? 'root@core:~$' : '>'}</span>
+                                            <div className={`flex-1 break-words leading-tight ${msg.sender === 'bot' && 'max-w-[100%]'}`}>
+                                                <div className={`[&_strong]:text-white [&_a]:text-white [&_code]:bg-white/10 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-sm [&_p]:mb-1 [&_p:last-child]:mb-0 whitespace-pre-wrap ${msg.isStepStart ? 'mt-4' : ''}`}>
+                                                    <ReactMarkdown>{msg.text}</ReactMarkdown>
                                                 </div>
-                                            )}
-                                            {msg.sender === 'bot' && msg.text.length > 50 && (
-                                                <button onClick={() => copyToClipboard(msg.text, msg.id)} className={`absolute -bottom-3 -right-3 opacity-0 group-hover:opacity-100 p-2 bg-[#1e293b] border border-teal-500/20 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.5)] ${config.textHighlight} hover:bg-[#334155] hover:scale-110 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50`}>
-                                                    {copiedId === msg.id ? <Check size={14} className="text-white" /> : <Copy size={14} />}
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className={`flex items-center gap-1.5 mt-2 px-1 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                            <p className={`text-[9px] font-bold tracking-widest uppercase opacity-40 ${msg.sender === 'user' ? config.textHighlight : config.textHighlight}`}>
-                                                {formatTime(msg.timestamp)}
-                                            </p>
+                                                {msg.data && msg.data.type === 'stat' && (
+                                                    <div className={`mt-2 text-xl font-bold tracking-tighter bg-[#04080d]/50 border border-teal-500/15 px-3 py-1.5 rounded-sm inline-block shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] ring-1 ring-black/20`}>
+                                                        ₹{msg.data.value.toLocaleString()}
+                                                    </div>
+                                                )}
+                                                {msg.jsonAction && msg.jsonAction.action_type && (
+                                                    <DynamicActionRenderer action={msg.jsonAction} config={config} />
+                                                )}
+                                                {msg.sender === 'bot' && msg.text.length > 50 && (
+                                                    <button onClick={() => copyToClipboard(msg.text, msg.id)} className={`opacity-0 group-hover:opacity-100 p-1.5 ml-2 bg-[#1e293b] border border-white/20 rounded shadow-md text-white hover:bg-[#334155] transition-all focus:outline-none focus:ring-1 focus:ring-white/50 shrink-0`}>
+                                                        {copiedId === msg.id ? <Check size={12} /> : <Copy size={12} />}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </motion.div>
                             ))}
                             {isTyping && (
-                                <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
-                                    <div className="bg-[#111a28]/60 p-4 rounded-2xl rounded-bl-sm shadow-sm border border-teal-500/10 flex items-center gap-2.5 backdrop-blur-sm">
-                                        <div className="flex gap-1.5">
-                                            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
-                                        </div>
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex w-full">
+                                    <div className="px-2 py-1 text-[13px] text-slate-500 flex items-center">
+                                        <span className="mr-3 opacity-40 shrink-0 select-none">[{formatTime(new Date())}]</span>
+                                        <span className="mr-2 shrink-0 select-none">{'>'}</span>
+                                        <span className="animate-pulse font-black text-emerald-500">_</span>
                                     </div>
                                 </motion.div>
                             )}
                         </div>
 
-                        {/* Input Area */}
+                        {/* Action Layout / Terminal Prompt */}
                         <div className="shrink-0 p-4 md:p-5 bg-gradient-to-t from-[#04080d] to-[#09111e] border-t border-teal-500/10 relative z-20">
-                            <div className="relative group/input">
-                                <div className={`absolute -inset-0.5 bg-gradient-to-r ${config.gradient} rounded-2xl blur opacity-0 group-focus-within/input:opacity-20 transition duration-500`}></div>
-                                <div className="relative flex gap-2.5 items-center bg-[#0b131e]/90 backdrop-blur-md border border-teal-500/20 rounded-2xl p-1.5 pr-2 focus-within:border-teal-400/60 transition-all shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
-                                    <button onClick={startListening} className={`p-3 rounded-xl transition-all duration-200 ${isListening ? 'text-rose-400 bg-rose-500/10 shadow-[inner_0_0_10px_rgba(244,63,94,0.2)]' : 'text-teal-600/80 hover:bg-teal-900/30 hover:text-teal-400 active:scale-95'}`}>
-                                        {isListening ? <MicOff size={20} strokeWidth={2.5} /> : <Mic size={20} strokeWidth={2.5} />}
-                                    </button>
-                                    <input
-                                        ref={inputRef}
-                                        type="text"
-                                        value={query}
-                                        onChange={e => setQuery(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && handleSend()}
-                                        placeholder={`Ask ${config.name} a question...`}
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-[15px] font-medium text-[#f0fdfa] placeholder-teal-700/50 h-11 w-full"
-                                    />
+                            <div className="mb-3 flex items-center gap-2">
+                                <span className={`w-2 h-2 ${config.textHighlight.replace('text-', 'bg-')} animate-pulse`}></span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available Directives</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-2">
+                                {config.capabilities.map((cap, index) => (
                                     <button
-                                        onClick={() => handleSend()}
-                                        disabled={!query.trim() || isTyping}
-                                        className={`p-3 rounded-xl text-white transition-all duration-300 ${query.trim() && !isTyping ? `bg-gradient-to-br ${config.gradient} ${config.glow} hover:scale-[1.03] active:scale-[0.97]` : 'bg-[#1e293b]/50 text-slate-500 cursor-not-allowed'}`}
+                                        key={index}
+                                        onClick={() => simulateExecution(cap)}
+                                        disabled={isTyping}
+                                        className={`w-full text-left p-2.5 rounded bg-[#0b131e]/90 border border-teal-500/10 hover:border-teal-500/50 transition-all font-mono text-[12px] flex items-center justify-between group ${isTyping ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5 active:scale-[0.99]'}`}
                                     >
-                                        <Send size={18} strokeWidth={2.5} className={query.trim() && !isTyping ? "translate-x-[1px] translate-y-[-1px]" : ""} />
+                                        <div className="flex items-center gap-3">
+                                            <span className={`opacity-60 font-bold ${config.textHighlight}`}>{String(index + 1).padStart(2, '0')}</span>
+                                            <span className="text-slate-300 group-hover:text-white transition-colors uppercase">{cap}</span>
+                                        </div>
+                                        <Send size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-teal-400 -translate-x-2 group-hover:translate-x-0" />
                                     </button>
-                                </div>
+                                ))}
                             </div>
                         </div>
                     </motion.div>
@@ -300,4 +320,79 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
 
     // Render into document.body to break out of any overflow: hidden/auto parents
     return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
+}
+
+// ------------------------------------------------------------------
+// DYNAMIC ACTION COMPONENTS
+// ------------------------------------------------------------------
+
+function DynamicActionRenderer({ action, config }: { action: any, config: any }) {
+    switch (action.action_type) {
+        case 'render_email_drafter':
+            return <EmailDrafter prefillData={action.ui_data} config={config} />;
+        case 'render_settlement_options':
+            return <SettlementCards options={action.ui_data} />;
+        case 'text_only':
+        default:
+            return null; // Already rendering the text message above
+    }
+}
+
+function EmailDrafter({ prefillData, config }: { prefillData: any, config: any }) {
+    const [subject, setSubject] = useState(prefillData?.subject_line || '');
+    const [body, setBody] = useState(prefillData?.body || '');
+
+    return (
+        <div className="mt-4 bg-[#0a111a] border border-slate-700/50 rounded-xl overflow-hidden shadow-lg border-t-2" style={{ borderTopColor: config.gradient.includes('violet') ? '#8b5cf6' : '#14b8a6' }}>
+            <div className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider bg-[#0f172a] border-b border-slate-700/50 ${config.textHighlight}`}>
+                Email Drafter module
+            </div>
+            <div className="p-4 space-y-3">
+                <input
+                    type="text"
+                    value={subject}
+                    onChange={e => setSubject(e.target.value)}
+                    className="w-full bg-[#1e293b]/50 border border-slate-600/50 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-teal-500 transition-colors"
+                    placeholder="Subject Line"
+                />
+                <textarea
+                    value={body}
+                    onChange={e => setBody(e.target.value)}
+                    rows={6}
+                    className="w-full bg-[#1e293b]/50 border border-slate-600/50 rounded-lg px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-teal-500 resize-none transition-colors"
+                    placeholder="Email Body"
+                />
+                <button className={`w-full py-2.5 mt-1 rounded-lg text-sm font-bold text-white transition-all bg-gradient-to-r ${config.gradient} shadow-[0_4px_14px_rgba(0,0,0,0.25)] hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2`}>
+                    <Send size={14} />
+                    Send to {prefillData?.to || 'Customer'}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function SettlementCards({ options }: { options: any[] }) {
+    if (!Array.isArray(options)) return null;
+
+    return (
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {options.map((opt, i) => (
+                <button
+                    key={i}
+                    className="flex flex-col text-left p-4 rounded-xl bg-[#0a111a] border border-slate-700/50 hover:border-amber-500/50 hover:bg-[#0f172a] transition-all group relative overflow-hidden"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span className={`text-[11px] uppercase tracking-wider font-bold text-amber-500/80 mb-1 group-hover:text-amber-400 relative z-10`}>
+                        {opt.title}
+                    </span>
+                    <span className="text-xl font-black text-white mb-2 relative z-10">
+                        ₹{opt.amount?.toLocaleString() || 0}
+                    </span>
+                    <span className="text-xs text-slate-400 leading-relaxed relative z-10">
+                        {opt.description}
+                    </span>
+                </button>
+            ))}
+        </div>
+    );
 }
