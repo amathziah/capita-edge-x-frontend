@@ -177,8 +177,8 @@ const StatusNode = ({ data }: {
             {/* AI Badge */}
             {style.badge && (
                 <div className={`absolute -top-2.5 -right-2.5 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md ${style.badge === 'AI'
-                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
-                        : 'bg-red-500 text-white animate-pulse'
+                    ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
+                    : 'bg-red-500 text-white animate-pulse'
                     }`}>
                     {style.badge === 'AI' ? '⚡ AI' : '● ALERT'}
                 </div>
@@ -295,9 +295,10 @@ const nodeTypes = {
 interface InvoiceLifecycleMapProps {
     invoices: Invoice[];
     onStatusSelect?: (status: string) => void;
+    onAgentSelect?: (agentId: string) => void;
 }
 
-export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoices, onStatusSelect }) => {
+export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoices, onStatusSelect, onAgentSelect }) => {
 
     const stats = useMemo(() => {
         const initialStats: Record<string, { count: number; value: number }> = {
@@ -452,10 +453,12 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
     ], []);
 
     const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-        if (onStatusSelect && !node.id.startsWith('agent_') && node.id !== 'hub') {
+        if (node.id.startsWith('agent_')) {
+            if (onAgentSelect) onAgentSelect(node.id);
+        } else if (onStatusSelect && node.id !== 'hub') {
             onStatusSelect(node.id);
         }
-    }, [onStatusSelect]);
+    }, [onStatusSelect, onAgentSelect]);
 
     return (
         <div className="h-full w-full rounded-2xl overflow-hidden relative">

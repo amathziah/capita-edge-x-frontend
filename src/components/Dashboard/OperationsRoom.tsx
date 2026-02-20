@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { InvoiceLifecycleMap } from '../Visualizations/InvoiceLifecycleMap';
+import { AgentModal } from './AgentModal';
 
 export function OperationsRoom() {
     const { user } = useAuth();
@@ -27,6 +28,7 @@ export function OperationsRoom() {
     const [stats, setStats] = useState<any>({ total_customers: 0 });
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+    const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
 
     const loadData = async () => {
         try {
@@ -94,7 +96,12 @@ export function OperationsRoom() {
     }
 
     return (
-        <div className="relative h-full w-full overflow-y-auto">
+        <div className="relative h-full w-full">
+            <AgentModal
+                isOpen={!!selectedAgent}
+                onClose={() => setSelectedAgent(null)}
+                agentId={selectedAgent}
+            />
             <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_#e8f5e9_0%,_#f1f8f6_45%,_#f6fbf7_100%)]"></div>
             <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl -z-10"></div>
             <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-emerald-200/30 blur-[110px] -z-10"></div>
@@ -176,7 +183,7 @@ export function OperationsRoom() {
                             </div>
                         </div>
                         <div className="h-[660px]">
-                            <InvoiceLifecycleMap invoices={invoices} />
+                            <InvoiceLifecycleMap invoices={invoices} onAgentSelect={(agentId) => setSelectedAgent(agentId)} />
                         </div>
                     </motion.div>
                 ) : (

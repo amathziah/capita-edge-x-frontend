@@ -3,6 +3,8 @@ import { api } from '../api/client';
 export const aiService = {
   chat: (query: string) => api.post('/ai/chat', { query }),
 
+  processQuery: (query: string, agentId?: string) => api.post<any>('/ai/chat', { query, agentId }),
+
   magicFill: (text: string) => api.post('/ai/magic-fill', { text }),
 
   getInsights: () => api.get('/ai/insights'),
