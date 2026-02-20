@@ -26,7 +26,7 @@ const AGENT_CONFIGS: Record<string, { name: string; designation: string; greetin
     agent_alpha: {
         name: 'ALPHA',
         designation: 'Data Processing Unit',
-        greeting: "> [ALPHA] STATUS: ONLINE. AWAITING DATA PROCESSING DIRECTIVES.",
+        greeting: "> [ALPHA] STATUS: OFFLINE. AI DIRECTIVES CURRENTLY UNAVAILABLE. FEATURE COMING SOON.",
         gradient: "from-violet-500 to-purple-600",
         glow: "shadow-[0_0_15px_rgba(139,92,246,0.5)]",
         textHighlight: "text-violet-300",
@@ -39,7 +39,7 @@ const AGENT_CONFIGS: Record<string, { name: string; designation: string; greetin
     agent_bravo: {
         name: 'BRAVO',
         designation: 'Backend Operations Commander',
-        greeting: "> [BRAVO] STATUS: ONLINE. AWAITING BACKEND ROUTING DIRECTIVES.",
+        greeting: "> [BRAVO] STATUS: OFFLINE. AI DIRECTIVES CURRENTLY UNAVAILABLE. FEATURE COMING SOON.",
         gradient: "from-amber-500 to-orange-600",
         glow: "shadow-[0_0_15px_rgba(245,158,11,0.5)]",
         textHighlight: "text-amber-300",
@@ -52,7 +52,7 @@ const AGENT_CONFIGS: Record<string, { name: string; designation: string; greetin
     agent_charlie: {
         name: 'CHARLIE',
         designation: 'Frontend Logistics Operator',
-        greeting: "> [CHARLIE] STATUS: ONLINE. AWAITING UI LOGISTICS DIRECTIVES.",
+        greeting: "> [CHARLIE] STATUS: OFFLINE. AI DIRECTIVES CURRENTLY UNAVAILABLE. FEATURE COMING SOON.",
         gradient: "from-teal-500 to-emerald-600",
         glow: "shadow-[0_0_15px_rgba(20,184,166,0.5)]",
         textHighlight: "text-teal-300",
@@ -65,7 +65,7 @@ const AGENT_CONFIGS: Record<string, { name: string; designation: string; greetin
     agent_delta: {
         name: 'DELTA',
         designation: 'Security & Verification Node',
-        greeting: "> [DELTA] STATUS: ONLINE. AWAITING SECURITY AUDIT DIRECTIVES.",
+        greeting: "> [DELTA] STATUS: OFFLINE. AI DIRECTIVES CURRENTLY UNAVAILABLE. FEATURE COMING SOON.",
         gradient: "from-sky-500 to-blue-600",
         glow: "shadow-[0_0_15px_rgba(14,165,233,0.5)]",
         textHighlight: "text-sky-300",
@@ -81,7 +81,6 @@ const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: '2-digit'
 
 export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
     const [messages, setMessages] = useState<Message[]>([]);
-    const [isTyping, setIsTyping] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -105,7 +104,7 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
         if (scrollRef.current) {
             scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
         }
-    }, [messages, isTyping]);
+    }, [messages]);
 
     const copyToClipboard = (text: string, msgId: string) => {
         navigator.clipboard.writeText(text);
@@ -113,89 +112,7 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    const simulateExecution = async (capability: string) => {
-        if (!config || isTyping) return;
 
-        setIsTyping(true);
-
-        const textToSend = capability;
-
-        const userMsg: Message = {
-            id: Date.now().toString(),
-            sender: 'user',
-            text: `EXECUTE --directive "${textToSend}"`,
-            timestamp: new Date()
-        };
-        setMessages(prev => [...prev, userMsg]);
-
-        try {
-            // Re-route the new agent names back to the legacy names the aiService expects
-            let backendAgentId = undefined;
-            if (agentId === 'agent_alpha') backendAgentId = 'agent_reminder';
-            else if (agentId === 'agent_bravo') backendAgentId = 'agent_settlement';
-            else if (agentId === 'agent_charlie') backendAgentId = 'agent_analytics';
-            else if (agentId === 'agent_delta') backendAgentId = 'agent_compliance';
-
-            const response: any = await aiService.processQuery(textToSend, backendAgentId);
-
-            let parsedJsonAction = null;
-            let displayMessage = response.text || "";
-
-            try {
-                if (displayMessage && displayMessage.trim().startsWith('{')) {
-                    const parsedData = JSON.parse(displayMessage);
-                    if (parsedData.action_type) {
-                        parsedJsonAction = parsedData;
-                        displayMessage = parsedData.message || "Directive processed.";
-                    }
-                }
-            } catch (err) {
-                console.warn('AI sent invalid JSON or standard text, rendering as raw text:', err);
-            }
-
-            const prefix = `> [${config.name}] STATUS DECODE:\n`;
-
-            const botMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                sender: 'bot',
-                text: `${prefix}${displayMessage}`,
-                data: response.data,
-                jsonAction: parsedJsonAction,
-                timestamp: new Date(),
-                isStepStart: true
-            };
-            setMessages(prev => [...prev, botMsg]);
-
-            // Handle functional actions returned by backend
-            const action = response.action;
-            if (action) {
-                if (action.type === 'open_invoice_modal' || action.type === 'EXECUTE_ACTION') {
-                    const initialData = action.data && action.type === 'EXECUTE_ACTION' ? {
-                        buyer: { name: action.data.customer, phone: '' },
-                        items: [{ description: action.data.description || 'Service', quantity: 1, price: action.data.amount, unit: 'Qty', discount: 0 }]
-                    } : (action.initialData || action.data);
-
-                    window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail: initialData }));
-                    onClose();
-                } else if (action.type === 'navigate' && action.data?.to) {
-                    setTimeout(() => {
-                        window.location.href = action.data.to;
-                    }, 1200);
-                }
-            }
-
-        } catch (error) {
-            setMessages(prev => [...prev, {
-                id: Date.now().toString(),
-                sender: 'bot',
-                text: `> [${config.name}] CRITICAL ERR: Backend linkage failed.`,
-                timestamp: new Date(),
-                status: 'error'
-            }]);
-        } finally {
-            setIsTyping(false);
-        }
-    };
 
     if (!isOpen || !config) return null;
 
@@ -277,39 +194,21 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
                                     </div>
                                 </motion.div>
                             ))}
-                            {isTyping && (
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex w-full">
-                                    <div className="px-2 py-1 text-[13px] text-slate-500 flex items-center">
-                                        <span className="mr-3 opacity-40 shrink-0 select-none">[{formatTime(new Date())}]</span>
-                                        <span className="mr-2 shrink-0 select-none">{'>'}</span>
-                                        <span className="animate-pulse font-black text-emerald-500">_</span>
-                                    </div>
-                                </motion.div>
-                            )}
+
                         </div>
 
                         {/* Action Layout / Terminal Prompt */}
                         <div className="shrink-0 p-4 md:p-5 bg-gradient-to-t from-[#04080d] to-[#09111e] border-t border-teal-500/10 relative z-20">
                             <div className="mb-3 flex items-center gap-2">
-                                <span className={`w-2 h-2 ${config.textHighlight.replace('text-', 'bg-')} animate-pulse`}></span>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available Directives</span>
+                                <span className={`w-2 h-2 bg-slate-500 animate-pulse`}></span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Agent Status</span>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-2">
-                                {config.capabilities.map((cap, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => simulateExecution(cap)}
-                                        disabled={isTyping}
-                                        className={`w-full text-left p-2.5 rounded bg-[#0b131e]/90 border border-teal-500/10 hover:border-teal-500/50 transition-all font-mono text-[12px] flex items-center justify-between group ${isTyping ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5 active:scale-[0.99]'}`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <span className={`opacity-60 font-bold ${config.textHighlight}`}>{String(index + 1).padStart(2, '0')}</span>
-                                            <span className="text-slate-300 group-hover:text-white transition-colors uppercase">{cap}</span>
-                                        </div>
-                                        <Send size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-teal-400 -translate-x-2 group-hover:translate-x-0" />
-                                    </button>
-                                ))}
+                            <div className="w-full flex flex-col items-center justify-center p-5 rounded-lg bg-[#0b131e]/90 border border-dashed border-teal-500/20">
+                                <span className="text-slate-300 font-bold mb-1 uppercase tracking-wider text-[13px] flex items-center gap-2">
+                                    <Terminal size={14} className="text-teal-500" /> Feature Coming Soon
+                                </span>
+                                <span className="text-slate-500 text-[11px] text-center max-w-sm">This AI agent is currently offline for system upgrades. Autonomous execution directives will be available in a future release.</span>
                             </div>
                         </div>
                     </motion.div>

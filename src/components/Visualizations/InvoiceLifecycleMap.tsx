@@ -381,7 +381,7 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
                 label: 'ALPHA (DPU)',
                 description: 'Data Processing Unit. Query execution and data normalization.',
                 styleKey: 'agent_alpha',
-                metric: `Active`,
+                metric: `Coming Soon`,
             },
         },
         {
@@ -391,7 +391,7 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
                 label: 'BRAVO (BOC)',
                 description: 'Backend Operations Commander. API routing and synthesis.',
                 styleKey: 'agent_bravo',
-                metric: `Online`,
+                metric: `Coming Soon`,
             },
         },
         {
@@ -401,7 +401,7 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
                 label: 'CHARLIE (FLO)',
                 description: 'Frontend Logistics Operator. UI synchronization.',
                 styleKey: 'agent_charlie',
-                metric: `Nominal`,
+                metric: `Coming Soon`,
             },
         },
         {
@@ -411,7 +411,7 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
                 label: 'DELTA (SVN)',
                 description: 'Security & Verification Node. Testing and audits.',
                 styleKey: 'agent_delta',
-                metric: 'Secure',
+                metric: 'Coming Soon',
             },
         },
     ], [stats, totalPipeline, overdueCount, invoices.length]);
