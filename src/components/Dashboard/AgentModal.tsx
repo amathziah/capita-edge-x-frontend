@@ -25,62 +25,71 @@ interface Message {
 const AGENT_CONFIGS: Record<string, { name: string; designation: string; greeting: string; gradient: string; glow: string; textHighlight: string; capabilities: string[] }> = {
     agent_alpha: {
         name: 'ALPHA',
-        designation: 'Data Processing Unit',
-        greeting: "> [ALPHA] STATUS: OFFLINE. AI DIRECTIVES CURRENTLY UNAVAILABLE. FEATURE COMING SOON.",
+        designation: 'Auto-Reminder Agent',
+        greeting: "> [ALPHA] STATUS: ONLINE. DPU INITIALIZED. STANDING BY FOR EXTRACTION DIRECTIVES.",
         gradient: "from-violet-500 to-purple-600",
         glow: "shadow-[0_0_15px_rgba(139,92,246,0.5)]",
         textHighlight: "text-violet-300",
         capabilities: [
-            "Execute Overdue Reminder Action",
-            "Generate Auto-Reminder Drafts",
-            "Explain Follow-Up Protocols"
+            "Draft overdue reminder email",
+            "Identify high-risk accounts",
+            "Summarize collection status"
         ]
     },
     agent_bravo: {
         name: 'BRAVO',
-        designation: 'Backend Operations Commander',
-        greeting: "> [BRAVO] STATUS: OFFLINE. AI DIRECTIVES CURRENTLY UNAVAILABLE. FEATURE COMING SOON.",
+        designation: 'Settlement Strategist',
+        greeting: "> [BRAVO] STATUS: ONLINE. BOC INITIALIZED. STANDING BY FOR RECOVERY DIRECTIVES.",
         gradient: "from-amber-500 to-orange-600",
         glow: "shadow-[0_0_15px_rgba(245,158,11,0.5)]",
         textHighlight: "text-amber-300",
         capabilities: [
-            "Generate Payment Settlement Terms",
-            "Analyze Debt Recovery Options",
-            "Configure Payment Link Logic"
+            "Suggest settlement terms",
+            "Calculate early-pay discounts",
+            "Draft recovery protocols"
         ]
     },
     agent_charlie: {
         name: 'CHARLIE',
-        designation: 'Frontend Logistics Operator',
-        greeting: "> [CHARLIE] STATUS: OFFLINE. AI DIRECTIVES CURRENTLY UNAVAILABLE. FEATURE COMING SOON.",
+        designation: 'Revenue Analytics Unit',
+        greeting: "> [CHARLIE] STATUS: ONLINE. FLO INITIALIZED. STANDING BY FOR METRIC DIRECTIVES.",
         gradient: "from-teal-500 to-emerald-600",
         glow: "shadow-[0_0_15px_rgba(20,184,166,0.5)]",
         textHighlight: "text-teal-300",
         capabilities: [
-            "Fetch Revenue & Cashflow Metrics",
-            "Analyze Month-over-Month Trends",
-            "Forecast Pending Revenue"
+            "Fetch recent revenue totals",
+            "Analyze cash flow trends",
+            "Forecast month-end totals"
         ]
     },
     agent_delta: {
         name: 'DELTA',
-        designation: 'Security & Verification Node',
-        greeting: "> [DELTA] STATUS: OFFLINE. AI DIRECTIVES CURRENTLY UNAVAILABLE. FEATURE COMING SOON.",
+        designation: 'Compliance Guard Node',
+        greeting: "> [DELTA] STATUS: ONLINE. SVN INITIALIZED. STANDING BY FOR AUDIT DIRECTIVES.",
         gradient: "from-sky-500 to-blue-600",
         glow: "shadow-[0_0_15px_rgba(14,165,233,0.5)]",
         textHighlight: "text-sky-300",
         capabilities: [
-            "Initiate New Invoice Workflow",
-            "Verify GST & Compliance Rules",
-            "Audit Recent Transactions"
+            "Verify GST compliance",
+            "Audit recent transactions",
+            "Check limit thresholds"
         ]
     }
+};
+
+const AGENT_MAPPING: Record<string, string> = {
+    agent_alpha: 'agent_reminder',
+    agent_bravo: 'agent_settlement',
+    agent_charlie: 'agent_analytics',
+    agent_delta: 'agent_compliance'
 };
 
 const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
     const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -110,6 +119,59 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
         navigator.clipboard.writeText(text);
         setCopiedId(msgId);
         setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const handleSend = async (text: string = input) => {
+        if (!text.trim() || !agentId || isLoading) return;
+
+        const userMsg: Message = {
+            id: Date.now().toString(),
+            sender: 'user',
+            text,
+            timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, userMsg]);
+        setInput("");
+        setIsLoading(true);
+
+        try {
+            const mappedAgentId = AGENT_MAPPING[agentId] || agentId;
+            const res = await aiService.processQuery(text, mappedAgentId);
+
+            let botText = "";
+            let jsonAction = null;
+
+            try {
+                // Check if response is structured JSON (common for agents)
+                const parsed = JSON.parse(res.text);
+                botText = parsed.message;
+                jsonAction = parsed;
+            } catch (e) {
+                botText = res.text;
+            }
+
+            const botMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                sender: 'bot',
+                text: botText,
+                jsonAction: jsonAction,
+                timestamp: new Date()
+            };
+
+            setMessages(prev => [...prev, botMsg]);
+        } catch (error) {
+            console.error('Agent Error:', error);
+            const errMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                sender: 'system',
+                text: "ERROR: UPLINK FAILED. UNABLE TO REACH AI NODE.",
+                timestamp: new Date()
+            };
+            setMessages(prev => [...prev, errMsg]);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
 
@@ -199,16 +261,38 @@ export function AgentModal({ isOpen, onClose, agentId }: AgentModalProps) {
 
                         {/* Action Layout / Terminal Prompt */}
                         <div className="shrink-0 p-4 md:p-5 bg-gradient-to-t from-[#04080d] to-[#09111e] border-t border-teal-500/10 relative z-20">
-                            <div className="mb-3 flex items-center gap-2">
-                                <span className={`w-2 h-2 bg-slate-500 animate-pulse`}></span>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Agent Status</span>
+                            <div className="mb-4 flex flex-wrap gap-2">
+                                {config.capabilities.map((cap, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleSend(cap)}
+                                        className="px-3 py-1.5 rounded-lg border border-teal-500/20 bg-teal-500/5 text-teal-400 text-[10px] font-mono hover:bg-teal-500/10 hover:border-teal-500/40 transition-all uppercase tracking-tight"
+                                    >
+                                        + {cap}
+                                    </button>
+                                ))}
                             </div>
 
-                            <div className="w-full flex flex-col items-center justify-center p-5 rounded-lg bg-[#0b131e]/90 border border-dashed border-teal-500/20">
-                                <span className="text-slate-300 font-bold mb-1 uppercase tracking-wider text-[13px] flex items-center gap-2">
-                                    <Terminal size={14} className="text-teal-500" /> Feature Coming Soon
-                                </span>
-                                <span className="text-slate-500 text-[11px] text-center max-w-sm">This AI agent is currently offline for system upgrades. Autonomous execution directives will be available in a future release.</span>
+                            <div className="relative group">
+                                <div className={`absolute inset-y-0 left-4 flex items-center ${config.textHighlight} opacity-50`}>
+                                    <Terminal size={14} />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={input}
+                                    onChange={e => setInput(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleSend()}
+                                    placeholder="Execute directive..."
+                                    disabled={isLoading}
+                                    className="w-full bg-[#020408] border border-teal-500/20 rounded-xl pl-10 pr-12 py-3 text-sm text-teal-100 font-mono placeholder:text-slate-700 focus:outline-none focus:border-teal-500/50 transition-all shadow-inner"
+                                />
+                                <button
+                                    onClick={() => handleSend()}
+                                    disabled={isLoading || !input.trim()}
+                                    className={`absolute right-2 top-1.5 bottom-1.5 px-3 rounded-lg bg-gradient-to-br ${config.gradient} text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-30 disabled:grayscale`}
+                                >
+                                    <Send size={14} />
+                                </button>
                             </div>
                         </div>
                     </motion.div>
