@@ -26,6 +26,7 @@ export interface Product {
   costPrice?: number;   // Maps to cost_price
   taxRate?: number;     // Maps to tax_rate
   reorderLevel?: number;// Maps to reorder_level
+  status?: 'Active' | 'Inactive' | 'Archived';
   gstRate?: number;     // Legacy support
   createdAt: Date;
   updatedAt: Date;

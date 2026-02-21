@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Box, TrendingUp, AlertCircle, X, Bot, Edit2, Settings2, Filter, Search, Trash2, AlertTriangle, Package, ShieldCheck, Zap } from "lucide-react";
+import { Box, TrendingUp, AlertCircle, X, Bot, Edit2, Settings2, Filter, Search, Trash2, AlertTriangle, Package, Zap, Tag, Coins, Layers, User as UserIcon, Activity, Scale, Info, Clock, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService } from '../services/dataService';
 import { Product } from '../types';
 import { InventoryInsights, VelocityBadge } from '../components/Inventory/InventoryInsights';
 import { InventorySettings, InventorySettingsData } from '../components/Inventory/InventorySettings';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 interface InventoryItem extends Product {
   sales: number;
@@ -47,7 +48,7 @@ export function Inventory() {
       const [products, performance] = await Promise.all([
         dataService.getProducts(),
         dataService.getProductPerformance().catch(() => [])
-      ]);
+      ]) as [Product[], any[]];
 
       const merged = products.map(p => {
         const perf = performance.find((x: any) => x.id === p.id || x.name === p.name);
@@ -414,7 +415,7 @@ export function Inventory() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredInventory.map((item, idx) => {
+              ) : filteredInventory.map((item) => {
                 const status = getStockStatus(item);
                 const value = item.stock * (item.costPrice || 0);
                 const margin = item.price > 0 && item.costPrice ? Math.round(((item.price - item.costPrice) / item.price) * 100) : null;
@@ -717,7 +718,8 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
     vendor: '',
     costPrice: 0,
     taxRate: 0,
-    reorderLevel: 10
+    reorderLevel: 10,
+    status: 'Active' as 'Active' | 'Inactive' | 'Archived'
   });
 
   useEffect(() => {
@@ -734,7 +736,8 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
         vendor: initialData.vendor || '',
         costPrice: initialData.costPrice || 0,
         taxRate: initialData.taxRate || 0,
-        reorderLevel: initialData.reorderLevel || 10
+        reorderLevel: initialData.reorderLevel || 10,
+        status: initialData.status || 'Active'
       });
     } else {
       // Reset form
@@ -750,7 +753,8 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
         vendor: '',
         costPrice: 0,
         taxRate: 0,
-        reorderLevel: 10
+        reorderLevel: 10,
+        status: 'Active'
       });
     }
   }, [initialData, isOpen]);
@@ -761,170 +765,250 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
     <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 text-left">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="relative z-10 w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-gray-100 p-6 max-h-[90vh] overflow-y-auto"
+        initial={{ y: 20, opacity: 0, scale: 0.98 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        className="relative z-10 w-full max-w-2xl bg-white border border-gray-100 shadow-2xl overflow-hidden p-0 rounded-[2rem]"
       >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">{initialData ? 'Edit Product' : 'Add New Product'}</h3>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400 hover:text-gray-600" /></button>
+        {/* Decorative Background */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10 -mr-32 -mt-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-50 rounded-full blur-3xl -z-10 -ml-24 -mb-24" />
+
+        {/* Premium Header */}
+        <div className="px-8 pt-8 pb-6 border-b border-gray-50 bg-white/50 backdrop-blur-sm">
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-primary/10 rounded-2xl">
+                <Package className="w-6 h-6 text-primary" strokeWidth={2.4} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-gray-900 tracking-tight">
+                  {initialData ? 'Edit Product' : 'Add New Product'}
+                </h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                  Inventory Intelligence System
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all duration-300 hover:rotate-90"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={(e) => {
           e.preventDefault();
           onSave(formData);
-        }} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Product Name</label>
-              <input
-                required
-                type="text"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
-                rows={2}
-                value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
+        }} className="p-8 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar relative">
 
-            {/* Row 1: SKU & Category */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">SKU (Stock Keeping Unit)</label>
-              <input
-                type="text"
-                placeholder="e.g. BLU-TSHIRT-M"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
-                value={formData.sku}
-                onChange={e => setFormData({ ...formData, sku: e.target.value })}
-              />
+          {/* Section: Basic Info */}
+          <div className="space-y-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Info className="w-4 h-4 text-primary" />
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Basic Information</h4>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
-              <input
-                type="text"
-                list="categories"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
+            <div className="grid grid-cols-2 gap-5">
+              <div className="col-span-2">
+                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Product Name</label>
+                <div className="relative mt-1.5">
+                  <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    required
+                    type="text"
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-medium"
+                    placeholder="e.g. Premium Wireless Headphones"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="col-span-2">
+                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Description</label>
+                <textarea
+                  className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-medium min-h-[100px]"
+                  placeholder="Provide a detailed description of the product..."
+                  rows={3}
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Cataloging & Compliance */}
+          <div className="space-y-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Layers className="w-4 h-4 text-primary" />
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Cataloging & Compliance</h4>
+            </div>
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">SKU (Stock Keeping Unit)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. WH-1000XM4-BLK"
+                  className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-mono"
+                  value={formData.sku}
+                  onChange={e => setFormData({ ...formData, sku: e.target.value })}
+                />
+              </div>
+              <CustomSelect
+                label="Category"
                 value={formData.category}
-                onChange={e => setFormData({ ...formData, category: e.target.value })}
-              />
-              <datalist id="categories">
-                <option value="Electronics" />
-                <option value="Clothing" />
-                <option value="Groceries" />
-                <option value="Services" />
-              </datalist>
-            </div>
-
-            {/* Row 2: Pricing */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Selling Price (₹)</label>
-              <input
-                required
-                type="number"
-                min="0"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
-                value={formData.price}
-                onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Cost Price (COGS) (₹)</label>
-              <input
-                type="number"
-                min="0"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
-                value={formData.costPrice}
-                onChange={e => setFormData({ ...formData, costPrice: Number(e.target.value) })}
-              />
-            </div>
-
-            {/* Row 3: Tax & Vendor */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Tax Rate (%)</label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
-                value={formData.taxRate}
-                onChange={e => setFormData({ ...formData, taxRate: Number(e.target.value) })}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Vendor / Supplier</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
-                value={formData.vendor}
-                onChange={e => setFormData({ ...formData, vendor: e.target.value })}
-              />
-            </div>
-
-            {/* Row 4: Stock */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Stock Quantity</label>
-              <input
-                required
-                type="number"
-                min="0"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
-                value={formData.stock}
-                onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Unit</label>
-              <select
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
-                value={formData.unit}
-                onChange={e => setFormData({ ...formData, unit: e.target.value })}
-              >
-                <option value="pcs">Pieces</option>
-                <option value="kg">Kg</option>
-                <option value="ltr">Litre</option>
-                <option value="box">Box</option>
-                <option value="service">Service</option>
-              </select>
-            </div>
-
-            {/* Row 5: Alerts */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Reorder Level (Min Stock)</label>
-              <input
-                required
-                type="number"
-                min="0"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:outline-none"
-                value={formData.minStock} // Keeping minStock for backward compat, backend maps reorderLevel
-                onChange={e => setFormData({ ...formData, minStock: Number(e.target.value), reorderLevel: Number(e.target.value) })}
+                onChange={(val) => setFormData({ ...formData, category: val })}
+                options={[
+                  { value: 'Electronics', label: 'Electronics', icon: Zap },
+                  { value: 'Clothing', label: 'Clothing', icon: Tag },
+                  { value: 'Groceries', label: 'Groceries', icon: Package },
+                  { value: 'Services', label: 'Services', icon: Bot },
+                  { value: 'Office Supplies', label: 'Office Supplies', icon: Edit2 },
+                ]}
+                placeholder="Select Category"
               />
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm bg-primary text-white font-medium rounded-lg hover:bg-primary-dark transition"
-            >
-              {initialData ? 'Update Product' : 'Save Product'}
-            </button>
+          {/* Section: Financials */}
+          <div className="space-y-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Coins className="w-4 h-4 text-primary" />
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Financial Intelligence</h4>
+            </div>
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Selling Price (₹)</label>
+                <div className="relative mt-1.5">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₹</span>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    className="w-full pl-8 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-bold"
+                    value={formData.price}
+                    onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Cost Price (COGS) (₹)</label>
+                <div className="relative mt-1.5">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full pl-8 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-bold text-gray-500"
+                    value={formData.costPrice}
+                    onChange={e => setFormData({ ...formData, costPrice: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Tax Rate (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none"
+                  value={formData.taxRate}
+                  onChange={e => setFormData({ ...formData, taxRate: Number(e.target.value) })}
+                />
+              </div>
+              <div>
+                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Vendor / Supplier</label>
+                <div className="relative mt-1.5">
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-medium"
+                    placeholder="e.g. Acme Corp"
+                    value={formData.vendor}
+                    onChange={e => setFormData({ ...formData, vendor: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Stock Management */}
+          <div className="space-y-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Activity className="w-4 h-4 text-primary" />
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Stock Logistics</h4>
+            </div>
+            <div className="grid grid-cols-2 gap-5 pb-6">
+              <div>
+                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Current Stock Level</label>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-bold"
+                  value={formData.stock}
+                  onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
+                />
+              </div>
+              <CustomSelect
+                label="Unit of Measure"
+                value={formData.unit}
+                onChange={(val) => setFormData({ ...formData, unit: val })}
+                options={[
+                  { value: 'pcs', label: 'Pieces (pcs)', icon: Box },
+                  { value: 'kg', label: 'Kilograms (kg)', icon: Scale },
+                  { value: 'ltr', label: 'Litres (ltr)', icon: Scale },
+                  { value: 'box', label: 'Box (box)', icon: Layers },
+                  { value: 'service', label: 'Service (hr)', icon: Clock },
+                ]}
+                placeholder="Select Unit"
+              />
+              <div>
+                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Reorder Alert Level</label>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none text-orange-600 font-bold"
+                  value={formData.minStock}
+                  onChange={e => setFormData({ ...formData, minStock: Number(e.target.value), reorderLevel: Number(e.target.value) })}
+                />
+              </div>
+              <CustomSelect
+                label="Product Status"
+                value={formData.status}
+                onChange={(val) => setFormData({ ...formData, status: val as 'Active' | 'Inactive' | 'Archived' })}
+                options={[
+                  { value: 'Active', label: 'Active', icon: CheckCircle, description: 'Visible in catalog and available for sales' },
+                  { value: 'Inactive', label: 'Inactive', icon: X, description: 'Temporarily hidden from catalog' },
+                  { value: 'Archived', label: 'Archived', icon: Trash2, description: 'Disconnected from active operations' },
+                ]}
+                placeholder="Select Status"
+              />
+            </div>
           </div>
         </form>
+
+        {/* Premium Footer Actions */}
+        <div className="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 text-sm font-bold text-gray-400 hover:text-gray-900 transition-colors"
+          >
+            Discard Changes
+          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={(e) => {
+                const form = (e.target as HTMLElement).closest('motion.div')?.querySelector('form');
+                if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+              }}
+              className="px-8 py-2.5 bg-gradient-to-r from-primary to-emerald-600 text-white font-black text-sm rounded-xl shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300 active:translate-y-0"
+            >
+              {initialData ? 'Update Intelligence' : 'Deploy Product'}
+            </button>
+          </div>
+        </div>
       </motion.div>
     </div>,
     document.body
