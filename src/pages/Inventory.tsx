@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Box, TrendingUp, AlertCircle, X, Bot, Edit2, Settings2, Filter, Search, Trash2, AlertTriangle, Package, Zap, Tag, Coins, Layers, User as UserIcon, Activity, Scale, Info, Clock, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -133,9 +133,9 @@ export function Inventory() {
       return { label: 'Dead Stock', color: 'bg-gray-900', ring: 'ring-gray-200', text: 'text-gray-900' };
     }
 
-    if (item.stock < (item.minStock || defaultReorder)) return { label: 'Reorder Soon', color: 'bg-yellow-500', ring: 'ring-yellow-200', text: 'text-yellow-700' };
+    if (item.stock < (item.minStock || defaultReorder)) return { label: 'Reorder Soon', color: 'bg-amber-500', ring: 'ring-amber-200', text: 'text-amber-700' };
 
-    if (item.stock > (item.minStock || defaultReorder) * overstockMultiplier) return { label: 'Overstocked', color: 'bg-orange-500', ring: 'ring-orange-200', text: 'text-orange-700' };
+    if (item.stock > (item.minStock || defaultReorder) * overstockMultiplier) return { label: 'Overstocked', color: 'bg-blue-500', ring: 'ring-blue-200', text: 'text-blue-700' };
 
     return { label: 'Healthy', color: 'bg-emerald-500', ring: 'ring-emerald-200', text: 'text-emerald-700' };
   };
@@ -261,39 +261,41 @@ export function Inventory() {
       <InventoryInsights />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         {[
-          { label: 'Total Products', value: inventory.length, icon: Package, gradient: 'from-teal-500 to-cyan-500', glow: 'shadow-teal-500/25', accent: 'text-teal-600', bg: 'from-teal-50/60 via-white to-cyan-50/40', border: 'border-teal-200/60', ring: 'bg-teal-500', delay: 0 },
-          { label: 'Inventory Value', value: `₹${(totalValue / 1000).toFixed(1)}k`, icon: TrendingUp, gradient: 'from-emerald-500 to-teal-500', glow: 'shadow-emerald-500/25', accent: 'text-emerald-600', bg: 'from-emerald-50/60 via-white to-teal-50/40', border: 'border-emerald-200/60', ring: 'bg-emerald-500', delay: 0.04 },
-          { label: 'Reorder Soon', value: lowStockCount, icon: AlertCircle, gradient: 'from-amber-500 to-orange-500', glow: 'shadow-amber-500/25', accent: 'text-amber-600', bg: 'from-amber-50/60 via-white to-orange-50/40', border: 'border-amber-200/60', ring: 'bg-amber-500', delay: 0.08, pulse: lowStockCount > 0 },
-          { label: 'Out of Stock', value: outOfStockCount, icon: AlertTriangle, gradient: 'from-red-500 to-rose-500', glow: 'shadow-red-500/25', accent: 'text-red-600', bg: 'from-red-50/60 via-white to-rose-50/40', border: 'border-red-200/60', ring: 'bg-red-500', delay: 0.12, pulse: outOfStockCount > 0 },
-          { label: 'AI Agents', value: 'Active', icon: Bot, gradient: 'from-violet-500 to-purple-500', glow: 'shadow-violet-500/25', accent: 'text-violet-600', bg: 'from-violet-50/60 via-white to-purple-50/40', border: 'border-violet-200/60', ring: 'bg-violet-500', delay: 0.16, clickable: true },
+          { label: 'Total Products', value: inventory.length, icon: Package, gradient: 'from-emerald-600 to-teal-600', glow: 'shadow-emerald-500/20', accent: 'text-emerald-600', bg: 'bg-white/90', border: 'border-emerald-100/80', ring: 'bg-emerald-500', delay: 0 },
+          { label: 'Inventory Value', value: `₹${(totalValue / 1000).toFixed(1)}k`, icon: TrendingUp, gradient: 'from-blue-600 to-indigo-600', glow: 'shadow-blue-500/20', accent: 'text-blue-600', bg: 'bg-white/90', border: 'border-blue-100/80', ring: 'bg-blue-500', delay: 0.04 },
+          { label: 'Reorder Alerts', value: lowStockCount, icon: AlertCircle, gradient: 'from-amber-500 to-orange-600', glow: 'shadow-amber-500/20', accent: 'text-amber-600', bg: 'bg-white/90', border: 'border-amber-100/80', ring: 'bg-amber-500', delay: 0.08, pulse: lowStockCount > 0 },
+          { label: 'Out of Stock', value: outOfStockCount, icon: AlertTriangle, gradient: 'from-rose-500 to-red-600', glow: 'shadow-rose-500/20', accent: 'text-red-600', bg: 'bg-white/90', border: 'border-rose-100/80', ring: 'bg-red-500', delay: 0.12, pulse: outOfStockCount > 0 },
+          { label: 'AI Strategy', value: 'Active', icon: Bot, gradient: 'from-violet-600 to-fuchsia-600', glow: 'shadow-violet-500/20', accent: 'text-violet-600', bg: 'bg-white/90', border: 'border-violet-100/80', ring: 'bg-violet-500', delay: 0.16, clickable: true },
         ].map((card) => (
           <motion.div
             key={card.label}
-            initial={{ opacity: 0, y: 18, scale: 0.97 }}
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            whileHover={{ y: -5, scale: 1.02, rotate: 0.5 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.45, delay: 0.05 + card.delay, ease: [0.23, 1, 0.32, 1] }}
+            transition={{ duration: 0.4, delay: 0.05 + card.delay, ease: [0.23, 1, 0.32, 1] }}
             onClick={card.clickable ? () => setInsightsOpen(true) : undefined}
-            className={`relative bg-gradient-to-br ${card.bg} backdrop-blur-xl p-4 rounded-2xl border ${card.border} shadow-sm hover:shadow-lg ${card.glow} hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 group overflow-hidden ${card.clickable ? 'cursor-pointer' : 'cursor-default'}`}
+            className={`relative ${card.bg} backdrop-blur-2xl p-5 rounded-3xl border ${card.border} shadow-sm group overflow-hidden ${card.clickable ? 'cursor-pointer' : 'cursor-default'}`}
           >
-            <div className={`absolute -top-10 -right-10 w-24 h-24 bg-gradient-to-br ${card.gradient} opacity-[0.07] rounded-full blur-2xl group-hover:opacity-[0.12] transition-opacity duration-500`} />
-            <div className={`absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r ${card.gradient} opacity-0 group-hover:opacity-40 transition-opacity duration-500`} />
+            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${card.gradient} opacity-[0.03] rounded-full -mr-16 -mt-16 group-hover:opacity-[0.08] transition-opacity duration-700`} />
 
-            <div className="relative flex flex-col items-center text-center">
-              <div className={`p-2 bg-gradient-to-br ${card.gradient} text-white rounded-xl shadow-lg ${card.glow} group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 mb-2`}>
-                <card.icon size={16} strokeWidth={2.2} />
+            <div className="flex items-center gap-4">
+              <div className={`flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br ${card.gradient} text-white shadow-xl ${card.glow} group-hover:scale-110 transition-transform duration-500`}>
+                <card.icon size={20} strokeWidth={2.5} />
               </div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.12em] mb-0.5">{card.label}</p>
-              <h3 className="text-xl font-extrabold text-gray-900 tracking-tight leading-none flex items-center gap-1.5">
-                {card.value}
-                {card.pulse && (
-                  <span className="relative flex h-2 w-2">
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${card.ring} opacity-50`} />
-                    <span className={`relative inline-flex rounded-full h-2 w-2 ${card.ring}`} />
-                  </span>
-                )}
-              </h3>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{card.label}</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-black text-gray-900 tracking-tight truncate">{card.value}</h3>
+                  {card.pulse && (
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${card.ring} opacity-60`} />
+                      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${card.ring}`} />
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </motion.div>
         ))}
@@ -356,26 +358,26 @@ export function Inventory() {
                   setStockFilter('All');
                   setVendorFilter('All');
                 }}
-                className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition mr-2"
+                className="px-4 py-2 text-sm font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-100"
               >
-                Clear Filters
+                Reset
               </button>
             )}
             <button
               onClick={handeCreateClick}
-              className="px-4 py-2 bg-primary text-white rounded-lg shadow hover:bg-primary-dark transition text-sm font-medium"
+              className="group relative px-6 py-2.5 bg-gray-900 text-white rounded-2xl shadow-xl shadow-gray-200 hover:shadow-gray-300 transition-all duration-400 active:scale-95 flex items-center gap-2 overflow-hidden"
             >
-              + Add Product
-            </button>
-            <button className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg shadow hover:bg-gray-200 transition text-sm font-medium">
-              Export
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative flex items-center gap-2 text-sm font-black tracking-wide">
+                <Package className="w-4 h-4" />
+                Add Product
+              </div>
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
-              className="px-3 py-2 bg-white text-gray-600 rounded-lg shadow border border-gray-200 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition group"
-              title="Advanced Settings"
+              className="p-3 bg-white text-gray-400 rounded-2xl shadow-sm border border-gray-100 hover:text-emerald-600 hover:border-emerald-200 hover:shadow-md transition-all duration-300"
             >
-              <Settings2 className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+              <Settings2 className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -390,16 +392,16 @@ export function Inventory() {
       >
         <div className="flex-1 overflow-auto scroll-smooth">
           <table className="min-w-full text-sm text-left relative">
-            <thead className="bg-gradient-to-r from-emerald-50/80 to-teal-50/50 backdrop-blur text-gray-500 uppercase text-[10px] font-bold tracking-widest sticky top-0 z-10 border-b border-emerald-100/60">
+            <thead className="bg-white/50 backdrop-blur sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-3.5 whitespace-nowrap">Product / SKU</th>
-                <th className="px-6 py-3.5 whitespace-nowrap">Category / Vendor</th>
-                {invSettings.inv_show_cost_column === 'true' && <th className="px-6 py-3.5 text-center whitespace-nowrap">Cost (COGS)</th>}
-                <th className="px-6 py-3.5 text-center whitespace-nowrap">Price</th>
-                <th className="px-6 py-3.5 text-center whitespace-nowrap">Stock</th>
-                <th className="px-6 py-3.5 text-center whitespace-nowrap">Value</th>
-                <th className="px-6 py-3.5 text-center whitespace-nowrap">Health</th>
-                <th className="px-6 py-3.5 text-center whitespace-nowrap">Actions</th>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Product Line</th>
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Cataloging</th>
+                {invSettings.inv_show_cost_column === 'true' && <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">COGS</th>}
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Unit Price</th>
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Inventory</th>
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Market Value</th>
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Health Score</th>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/60 text-gray-800">
@@ -421,56 +423,60 @@ export function Inventory() {
                 const margin = item.price > 0 && item.costPrice ? Math.round(((item.price - item.costPrice) / item.price) * 100) : null;
                 const stockPct = item.minStock ? Math.round((item.stock / (item.minStock * overstockMultiplier)) * 100) : null;
                 return (
-                  <tr key={item.id} className="hover:bg-emerald-50/30 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-50 flex items-center justify-center flex-shrink-0">
-                          <Package size={14} className="text-emerald-600" />
+                  <tr key={item.id} className="hover:bg-gray-50/50 transition-all duration-300 group">
+                    <td className="px-8 py-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-gray-100 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all duration-500">
+                          <Package size={18} className="text-gray-400 group-hover:text-emerald-500 transition-colors" strokeWidth={1.5} />
                         </div>
                         <div>
-                          <div className="font-bold text-gray-900 text-sm">{item.name}</div>
-                          <div className="text-[11px] text-gray-400 font-mono">{item.sku || 'N/A'}</div>
+                          <div className="font-extrabold text-gray-900 text-sm tracking-tight">{item.name}</div>
+                          <div className="text-[10px] text-gray-400 font-mono tracking-tighter uppercase">{item.sku || 'No SKU'}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{item.category || 'Uncategorized'}</div>
-                      <div className="text-[11px] text-gray-400">{item.vendor || '—'}</div>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-gray-100/50 text-gray-600 text-[10px] font-black uppercase tracking-widest border border-gray-200/50">
+                        {item.category || 'Standard'}
+                      </span>
+                      <div className="text-[11px] text-gray-400 mt-1 font-medium">{item.vendor || 'In-house'}</div>
                     </td>
                     {invSettings.inv_show_cost_column === 'true' && (
-                      <td className="px-6 py-4 text-center">
-                        <div className="text-sm text-gray-500">₹{item.costPrice || 0}</div>
+                      <td className="px-6 py-5 text-center">
+                        <div className="text-sm font-bold text-gray-500">₹{item.costPrice || 0}</div>
                         {margin !== null && (
-                          <div className={`text-[10px] font-bold mt-0.5 ${margin >= 30 ? 'text-emerald-600' : margin >= 15 ? 'text-amber-600' : 'text-red-600'}`}>
-                            {margin}% margin
+                          <div className={`text-[10px] font-black mt-0.5 px-1.5 py-0.5 rounded-full inline-block ${margin >= 30 ? 'bg-emerald-50 text-emerald-600' : margin >= 15 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
+                            {margin}% GPM
                           </div>
                         )}
                       </td>
                     )}
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-bold text-gray-900">₹{item.price}</span>
+                    <td className="px-6 py-5 text-center">
+                      <span className="text-sm font-black text-gray-900">₹{item.price}</span>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="font-bold text-sm">{item.stock}</div>
-                      <div className="text-[10px] text-gray-400 font-medium">{item.unit}</div>
-                      {stockPct !== null && (
-                        <div className="w-12 mx-auto mt-1.5">
-                          <div className="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-700 ${stockPct > 80 ? 'bg-orange-500' : stockPct > 30 ? 'bg-emerald-500' : stockPct > 10 ? 'bg-amber-500' : 'bg-red-500'
-                                }`}
-                              style={{ width: `${Math.min(stockPct, 100)}%` }}
-                            />
+                    <td className="px-6 py-5 text-center">
+                      <div className="inline-flex flex-col items-center">
+                        <div className="font-black text-sm text-gray-900 leading-none">{item.stock}</div>
+                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">{item.unit}</div>
+                        {stockPct !== null && (
+                          <div className="w-10 mt-2">
+                            <div className="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-1000 ${stockPct > 80 ? 'bg-blue-500' : stockPct > 30 ? 'bg-emerald-500' : stockPct > 10 ? 'bg-amber-500' : 'bg-red-500'
+                                  }`}
+                                style={{ width: `${Math.min(stockPct, 100)}%` }}
+                              />
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-bold text-gray-700">₹{value.toLocaleString()}</span>
+                    <td className="px-6 py-5 text-center">
+                      <span className="text-sm font-black text-gray-700">₹{value.toLocaleString()}</span>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex flex-col gap-1.5 items-center">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${status.color.replace('bg-', 'bg-opacity-10 bg-')} ${status.text} ring-1 ring-inset ${status.ring}`}>
+                    <td className="px-6 py-5 text-center">
+                      <div className="flex flex-col gap-2 items-center">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl text-[10px] font-black uppercase tracking-widest ${status.color.replace('bg-', 'bg-opacity-10 bg-')} ${status.text} border border-current opacity-80 shadow-sm transition-all group-hover:opacity-100`}>
                           <span className="relative flex h-1.5 w-1.5">
                             <span className={`${status.label !== 'Healthy' ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full ${status.color} opacity-50`} />
                             <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${status.color}`} />
@@ -478,27 +484,29 @@ export function Inventory() {
                           {status.label}
                         </span>
                         {invSettings.inv_show_velocity_badges === 'true' && (
-                          <VelocityBadge
-                            velocity={item.sales > 0 ? item.sales / Number(invSettings.inv_velocity_window || 30) : 0}
-                            daysRemaining={item.sales > 0 ? item.stock / (item.sales / Number(invSettings.inv_velocity_window || 30)) : Infinity}
-                            lastSoldDate={null}
-                            hasSalesData={item.sales > 0}
-                          />
+                          <div className="scale-90 origin-top">
+                            <VelocityBadge
+                              velocity={item.sales > 0 ? item.sales / Number(invSettings.inv_velocity_window || 30) : 0}
+                              daysRemaining={item.sales > 0 ? item.stock / (item.sales / Number(invSettings.inv_velocity_window || 30)) : Infinity}
+                              lastSoldDate={null}
+                              hasSalesData={item.sales > 0}
+                            />
+                          </div>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
                         <button
                           onClick={() => handleEditClick(item)}
-                          className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                          className="p-2.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all duration-300 hover:shadow-inner"
                           title="Edit Product"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeleteTarget(item)}
-                          className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          className="p-2.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all duration-300 hover:shadow-inner"
                           title="Delete Product"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -706,6 +714,7 @@ export function Inventory() {
 }
 
 function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: boolean; onClose: () => void; onSave: (data: any) => void; initialData?: Product | null }) {
+  const localFormRef = useRef<HTMLFormElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -798,10 +807,12 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
           </div>
         </div>
 
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          onSave(formData);
-        }} className="p-8 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar relative">
+        <form
+          ref={localFormRef}
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSave(formData);
+          }} className="p-8 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar relative">
 
           {/* Section: Basic Info */}
           <div className="space-y-5">
@@ -999,9 +1010,10 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={(e) => {
-                const form = (e.target as HTMLElement).closest('motion.div')?.querySelector('form');
-                if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+              onClick={() => {
+                if (localFormRef.current) {
+                  localFormRef.current.requestSubmit();
+                }
               }}
               className="px-8 py-2.5 bg-gradient-to-r from-primary to-emerald-600 text-white font-black text-sm rounded-xl shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300 active:translate-y-0"
             >
