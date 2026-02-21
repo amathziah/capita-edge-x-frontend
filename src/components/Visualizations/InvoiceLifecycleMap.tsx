@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, memo } from 'react';
 import ReactFlow, {
     Background,
     Controls,
@@ -16,13 +16,8 @@ import {
     AlertTriangle,
     Zap,
     CheckCircle2,
-    Bot,
-    BellRing,
-    Scale,
     DollarSign,
-    PieChart,
     Wallet,
-    Shield,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -89,43 +84,6 @@ const NODE_STYLES: Record<string, NodeStyleConfig> = {
         glow: 'shadow-emerald-200/60',
         textColor: 'text-emerald-700',
     },
-    // Agentic nodes
-    agent_alpha: {
-        bg: 'bg-gradient-to-br from-violet-50 to-purple-50',
-        border: 'border-violet-300',
-        iconBg: 'bg-gradient-to-br from-violet-500 to-purple-600',
-        iconColor: 'text-white',
-        glow: 'shadow-violet-200/60',
-        textColor: 'text-violet-700',
-        badge: 'SYS',
-    },
-    agent_bravo: {
-        bg: 'bg-gradient-to-br from-amber-50 to-yellow-50',
-        border: 'border-amber-300',
-        iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
-        iconColor: 'text-white',
-        glow: 'shadow-amber-200/60',
-        textColor: 'text-amber-700',
-        badge: 'SYS',
-    },
-    agent_charlie: {
-        bg: 'bg-gradient-to-br from-teal-50 to-emerald-50',
-        border: 'border-teal-300',
-        iconBg: 'bg-gradient-to-br from-teal-500 to-emerald-600',
-        iconColor: 'text-white',
-        glow: 'shadow-teal-200/60',
-        textColor: 'text-teal-700',
-        badge: 'SYS',
-    },
-    agent_delta: {
-        bg: 'bg-gradient-to-br from-sky-50 to-blue-50',
-        border: 'border-sky-300',
-        iconBg: 'bg-gradient-to-br from-sky-500 to-blue-600',
-        iconColor: 'text-white',
-        glow: 'shadow-sky-200/60',
-        textColor: 'text-sky-700',
-        badge: 'SYS',
-    },
 };
 
 // ---------------------------------------------------------------------------
@@ -138,10 +96,6 @@ const ICON_MAP: Record<string, any> = {
     overdue: AlertTriangle,
     escalated: Zap,
     paid: CheckCircle2,
-    agent_alpha: BellRing,
-    agent_bravo: Scale,
-    agent_charlie: PieChart,
-    agent_delta: Shield,
 };
 
 // ---------------------------------------------------------------------------
@@ -163,15 +117,9 @@ const StatusNode = ({ data }: {
         <div className={`relative px-5 py-4 rounded-2xl border-2 min-w-[170px] transition-all duration-300 hover:scale-105 cursor-pointer ${style.bg} ${style.border} ${style.glow ? `shadow-lg ${style.glow}` : 'shadow-sm'}`}>
             <Handle type="target" position={Position.Left} className="!bg-gray-300 !w-2 !h-2 !border-2 !border-white" />
 
-            {/* AI Badge */}
-            {style.badge && (
-                <div className={`absolute -top-2.5 -right-2.5 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md ${style.badge === 'AI'
-                    ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
-                    : 'bg-red-500 text-white animate-pulse'
-                    }`}>
-                    {style.badge === 'AI' ? '⚡ AI' : '● ALERT'}
-                </div>
-            )}
+            <div className="absolute -top-2.5 -right-2.5 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md bg-red-500 text-white animate-pulse">
+                ● ALERT
+            </div>
 
             {/* Icon */}
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2.5 ${style.iconBg}`}>
@@ -202,52 +150,6 @@ const StatusNode = ({ data }: {
 };
 
 // ---------------------------------------------------------------------------
-// Agentic action node (distinct visual)
-// ---------------------------------------------------------------------------
-const AgentNode = ({ data }: {
-    data: {
-        label: string;
-        description: string;
-        styleKey: string;
-        metric?: string;
-    }
-}) => {
-    const style = NODE_STYLES[data.styleKey] || NODE_STYLES.agent_reminder;
-    const Icon = ICON_MAP[data.styleKey] || Bot;
-
-    return (
-        <div className={`relative px-5 py-4 rounded-2xl border-2 border-dashed min-w-[180px] transition-all duration-300 hover:scale-105 cursor-pointer ${style.bg} ${style.border} ${style.glow ? `shadow-lg ${style.glow}` : 'shadow-sm'}`}>
-            <Handle type="target" position={Position.Left} className="!bg-violet-400 !w-2 !h-2 !border-2 !border-white" />
-
-            {/* AI Badge */}
-            <div className="absolute -top-2.5 -right-2.5 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md bg-gradient-to-r from-violet-500 to-purple-600 text-white flex items-center gap-0.5">
-                <Bot size={9} /> NODE
-            </div>
-
-            {/* Icon */}
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${style.iconBg}`}>
-                <Icon size={16} className={style.iconColor} />
-            </div>
-
-            {/* Label */}
-            <div className={`font-bold text-sm ${style.textColor}`}>{data.label}</div>
-
-            {/* Description */}
-            <div className="text-[10px] text-gray-500 mt-1 leading-tight max-w-[160px]">
-                {data.description}
-            </div>
-
-            {/* Metric */}
-            {data.metric && (
-                <div className={`text-[11px] mt-2 font-bold ${style.textColor} bg-white/60 px-2 py-0.5 rounded-md inline-block`}>
-                    {data.metric}
-                </div>
-            )}
-
-            <Handle type="source" position={Position.Right} className="!bg-violet-400 !w-2 !h-2 !border-2 !border-white" />
-        </div>
-    );
-};
 
 // ---------------------------------------------------------------------------
 // Central hub node
@@ -274,7 +176,6 @@ const HubNode = ({ data }: { data: { label: string; total: number } }) => (
 
 const nodeTypes = {
     statusNode: StatusNode,
-    agentNode: AgentNode,
     hubNode: HubNode,
 };
 
@@ -284,10 +185,9 @@ const nodeTypes = {
 interface InvoiceLifecycleMapProps {
     invoices: Invoice[];
     onStatusSelect?: (status: string) => void;
-    onAgentSelect?: (agentId: string) => void;
 }
 
-export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoices, onStatusSelect, onAgentSelect }) => {
+const InvoiceLifecycleMapBase: React.FC<InvoiceLifecycleMapProps> = ({ invoices, onStatusSelect }) => {
 
     const stats = useMemo(() => {
         const initialStats: Record<string, { count: number; value: number }> = {
@@ -354,49 +254,7 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
             position: { x: 770, y: 330 },
             data: { label: 'Escalated', count: stats.escalated.count, value: stats.escalated.value, styleKey: 'escalated', subtitle: 'Critical' },
         },
-
-        // ── Agentic workflow nodes ────────────────────────────────────────────
-        {
-            id: 'agent_alpha', type: 'agentNode',
-            position: { x: 1040, y: 155 },
-            data: {
-                label: 'ALPHA (DPU)',
-                description: 'Data Processing Unit. Query execution and data normalization.',
-                styleKey: 'agent_alpha',
-                metric: `Extraction Ready`,
-            },
-        },
-        {
-            id: 'agent_bravo', type: 'agentNode',
-            position: { x: 1040, y: 320 },
-            data: {
-                label: 'BRAVO (BOC)',
-                description: 'Backend Operations Commander. API routing and synthesis.',
-                styleKey: 'agent_bravo',
-                metric: `Strategy Engine`,
-            },
-        },
-        {
-            id: 'agent_charlie', type: 'agentNode',
-            position: { x: 520, y: 330 },
-            data: {
-                label: 'CHARLIE (FLO)',
-                description: 'Frontend Logistics Operator. UI synchronization.',
-                styleKey: 'agent_charlie',
-                metric: `Analysis Node`,
-            },
-        },
-        {
-            id: 'agent_delta', type: 'agentNode',
-            position: { x: 280, y: 380 },
-            data: {
-                label: 'DELTA (SVN)',
-                description: 'Security & Verification Node. Testing and audits.',
-                styleKey: 'agent_delta',
-                metric: 'Verification Mode',
-            },
-        },
-    ], [stats, totalPipeline, overdueCount, invoices.length]);
+    ], [stats, totalPipeline, overdueCount]);
 
     // ── Edges ─────────────────────────────────────────────────────────────────
     const edges: Edge[] = useMemo(() => [
@@ -416,29 +274,14 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
         { id: 'overdue-escalated', source: 'overdue', target: 'escalated', animated: true, style: { stroke: '#dc2626', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#dc2626' } },
         { id: 'overdue-paid', source: 'overdue', target: 'paid', style: { stroke: '#10b981', strokeWidth: 1.5, strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' }, label: 'Recovery', labelStyle: { fontSize: 10, fill: '#10b981', fontWeight: 700 } },
 
-        // Agentic connections (dashed, purple-tinted)
-        { id: 'overdue-agent-alpha', source: 'overdue', target: 'agent_alpha', animated: true, style: { stroke: '#8b5cf6', strokeWidth: 2, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#8b5cf6' }, label: 'DATA', labelStyle: { fontSize: 9, fill: '#8b5cf6', fontWeight: 800 } },
-        { id: 'escalated-agent-bravo', source: 'escalated', target: 'agent_bravo', animated: true, style: { stroke: '#f59e0b', strokeWidth: 2, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' }, label: 'API', labelStyle: { fontSize: 9, fill: '#f59e0b', fontWeight: 800 } },
-
-        // Agent → Recovery
-        { id: 'agent-alpha-paid', source: 'agent_alpha', target: 'paid', style: { stroke: '#10b981', strokeWidth: 1.5, strokeDasharray: '4,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' } },
-        { id: 'agent-bravo-partial', source: 'agent_bravo', target: 'partially_paid', style: { stroke: '#06b6d4', strokeWidth: 1.5, strokeDasharray: '4,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#06b6d4' } },
-
-        // Analytics hub
-        { id: 'hub-charlie', source: 'hub', target: 'agent_charlie', style: { stroke: '#14b8a6', strokeWidth: 1.5, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#14b8a6' }, label: 'UI', labelStyle: { fontSize: 9, fill: '#14b8a6', fontWeight: 800 } },
-
-        // Compliance monitoring
-        { id: 'draft-delta', source: 'draft', target: 'agent_delta', style: { stroke: '#0ea5e9', strokeWidth: 1.5, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#0ea5e9' }, label: 'SEC', labelStyle: { fontSize: 9, fill: '#0ea5e9', fontWeight: 800 } },
         { id: 'delta-charlie', source: 'agent_delta', target: 'agent_charlie', style: { stroke: '#14b8a6', strokeWidth: 1.5, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#14b8a6' } },
     ], []);
 
     const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-        if (node.id.startsWith('agent_')) {
-            if (onAgentSelect) onAgentSelect(node.id);
-        } else if (onStatusSelect && node.id !== 'hub') {
+        if (onStatusSelect && node.id !== 'hub') {
             onStatusSelect(node.id);
         }
-    }, [onStatusSelect, onAgentSelect]);
+    }, [onStatusSelect]);
 
     return (
         <div className="h-full w-full rounded-2xl overflow-hidden relative">
@@ -452,10 +295,6 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
                 <div className="flex items-center gap-2 text-[11px] text-gray-600">
                     <div className="w-6 h-0.5 bg-red-500 rounded" />
                     <span className="font-medium">Risk Path</span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-gray-600">
-                    <div className="w-6 h-0.5 bg-violet-500 rounded" style={{ borderTop: '2px dashed #8b5cf6' }} />
-                    <span className="font-medium">AI Agent Action</span>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-gray-600">
                     <div className="w-6 h-0.5 rounded" style={{ borderTop: '2px dashed #10b981' }} />
@@ -472,10 +311,6 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
                 <div className="bg-white/90 backdrop-blur-xl rounded-lg border border-red-200 shadow-sm px-3 py-1.5 text-center">
                     <div className="text-[10px] text-red-400 font-bold uppercase">At Risk</div>
                     <div className="text-sm font-black text-red-600">{overdueCount}</div>
-                </div>
-                <div className="bg-white/90 backdrop-blur-xl rounded-lg border border-violet-200 shadow-sm px-3 py-1.5 text-center">
-                    <div className="text-[10px] text-violet-400 font-bold uppercase">AI Agents</div>
-                    <div className="text-sm font-black text-violet-600">4</div>
                 </div>
             </div>
 
@@ -499,3 +334,5 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
         </div>
     );
 };
+
+export const InvoiceLifecycleMap = memo(InvoiceLifecycleMapBase);

@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService } from '../services/dataService';
+import { useData } from "../contexts/DataContext";
+import { Invoice, Payment } from "../types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,8 +51,7 @@ function formatMethod(method: string) {
 // Component
 // ---------------------------------------------------------------------------
 export function Payments() {
-  const [payments, setPayments] = useState<PaymentView[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { payments: apiPayments, invoices: allInvoices, loading, refreshData } = useData();
 
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState<"All" | string>("All");
@@ -58,7 +59,6 @@ export function Payments() {
 
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
   const [showRecordModal, setShowRecordModal] = useState(false);
-  const [allInvoices, setAllInvoices] = useState<any[]>([]);
   const [newPayment, setNewPayment] = useState({
     invoiceId: '',
     amount: 0,
@@ -85,37 +85,23 @@ export function Payments() {
     compactCards: false,
   });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [apiPayments, invoices] = await Promise.all([
-        dataService.getPayments(),
-        dataService.getInvoices()
-      ]);
-      setAllInvoices(invoices);
-      const mapped: PaymentView[] = apiPayments.map(p => {
-        const inv = invoices.find(i => i.id === p.invoiceId);
-        return {
-          id: p.id,
-          invoice: inv ? inv.invoiceNumber : "Unknown",
-          method: p.method,
-          amount: p.amount,
-          date: new Date(p.date || p.createdAt).toISOString().split('T')[0],
-          reconciled: p.status === 'completed'
-        };
-      });
-      setPayments(mapped);
-
-    } catch (error) {
-      console.error("Failed to fetch payments:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const payments: PaymentView[] = useMemo(() => {
+    return apiPayments.map(p => {
+      const inv = allInvoices.find(i => i.id === p.invoiceId);
+      return {
+        id: p.id,
+        invoice: inv ? inv.invoiceNumber : "Unknown",
+        method: p.method,
+        amount: p.amount,
+        date: new Date(p.date || p.createdAt).toISOString().split('T')[0],
+        reconciled: p.status === 'completed'
+      };
+    });
+  }, [apiPayments, allInvoices]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    refreshData();
+  }, [refreshData]);
 
   // ── Derived data ───────────────────────────────────────────────────
   const methods = useMemo(() => ["All", "UPI", "Card", "Netbanking", "Cash", "Cheque"], []);
@@ -187,7 +173,7 @@ export function Payments() {
     try {
       setSaving(true);
       await dataService.reconcilePayment(paymentId);
-      await fetchData();
+      refreshData(true);
     } catch (err: any) {
       alert(`Error reconciling payment: ${err.message}`);
     } finally {
@@ -234,7 +220,7 @@ export function Payments() {
         notes: '',
         date: new Date().toISOString().split('T')[0]
       });
-      await fetchData();
+      refreshData(true);
     } catch (err: any) {
       alert(`Error saving payment: ${err.message}`);
     } finally {

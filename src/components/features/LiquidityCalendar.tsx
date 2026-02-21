@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useData } from '../../contexts/DataContext';
 import { Calendar, dateFnsLocalizer, type Event, type EventProps } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
-import { dataService } from '../../services/dataService';
 import { CollectionsActionModal } from './CollectionsActionModal';
 import {
     Send as SendIcon,
@@ -18,7 +18,6 @@ import {
     X,
     Eye,
     Bell,
-    ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Invoice } from '../../types';
@@ -71,7 +70,7 @@ const VISIBLE_STATUSES = ['paid', 'sent', 'pending', 'overdue', 'draft'];
 // ---------------------------------------------------------------------------
 // Custom Event component
 // ---------------------------------------------------------------------------
-function CalendarEvent({ event }: EventProps<CalendarInvoiceEvent>) {
+const CalendarEvent = memo(({ event }: EventProps<CalendarInvoiceEvent>) => {
     const isOverdue = event.status === 'overdue';
     const sentReminder = event.reminderSent;
 
@@ -89,14 +88,13 @@ function CalendarEvent({ event }: EventProps<CalendarInvoiceEvent>) {
             </span>
         </div>
     );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 export function LiquidityCalendar() {
-    const [invoices, setInvoices] = useState<Invoice[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { invoices, stats: backendStats, loading, refreshData } = useData();
 
     // Modal state
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
@@ -118,17 +116,10 @@ export function LiquidityCalendar() {
         weekStartsMonday: true,
     });
 
-    // ── Fetch invoices ───────────────────────────────────────────────────────
+    // ── Data Refresh ──────────────────────────────────────────────────────────
     useEffect(() => {
-        (async () => {
-            try {
-                const data = await dataService.getInvoices();
-                setInvoices(data);
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, []);
+        refreshData();
+    }, [refreshData]);
 
     // ── Stats ────────────────────────────────────────────────────────────────
     const stats = useMemo(() => {
@@ -136,15 +127,17 @@ export function LiquidityCalendar() {
         const overdue = arr.filter(i => i.status === 'overdue' || i.status === 'escalated');
         const pending = arr.filter(i => i.status === 'pending' || i.status === 'sent' || i.status === 'viewed');
         const paid = arr.filter(i => i.status === 'paid');
+
         return {
             totalEvents: arr.length,
-            overdueCount: overdue.length,
-            overdueAmount: overdue.reduce((s, i) => s + i.total, 0),
-            pendingCount: pending.length,
-            pendingAmount: pending.reduce((s, i) => s + i.total, 0),
-            paidAmount: paid.reduce((s, i) => s + i.total, 0),
+            // Use backend stats for totals if available, otherwise fallback to local calculation
+            overdueCount: backendStats.overdue_invoices || overdue.length,
+            overdueAmount: backendStats.overdue_revenue || overdue.reduce((s, i) => s + i.total, 0),
+            pendingCount: backendStats.pending_invoices || pending.length,
+            pendingAmount: backendStats.pending_payments || pending.reduce((s, i) => s + i.total, 0),
+            paidAmount: backendStats.total_revenue || paid.reduce((s, i) => s + i.total, 0),
         };
-    }, [invoices]);
+    }, [invoices, backendStats]);
 
     // ── Filtered events ──────────────────────────────────────────────────────
     const events: CalendarInvoiceEvent[] = useMemo(() => {
@@ -352,7 +345,7 @@ export function LiquidityCalendar() {
                             badge: 'Collected',
                             delay: 0.15,
                         },
-                    ].map((card, idx) => (
+                    ].map((card) => (
                         <motion.div
                             key={card.label}
                             initial={{ opacity: 0, y: 18, scale: 0.97 }}

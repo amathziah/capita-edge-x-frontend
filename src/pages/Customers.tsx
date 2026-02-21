@@ -4,11 +4,12 @@ import {
   ArrowLeft, User, AlertCircle, Calendar, Activity, CheckCircle, Loader2,
   Search, Filter, Plus, Phone, Mail, MapPin, X, Edit, Trash2,
   Users, Settings2, Eye, LayoutGrid, List, ArrowRight,
-  TrendingUp, CreditCard, FileText, Clock, SortAsc, SortDesc,
+  TrendingUp, CreditCard, FileText, SortAsc, SortDesc,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService } from '../services/dataService';
 import { Customer, Invoice, CustomerInsights } from '../types';
+import { useData } from "../contexts/DataContext";
 
 // ---------------------------------------------------------------------------
 // Sort options
@@ -21,8 +22,7 @@ type ViewMode = 'grid' | 'list';
 // Component
 // ---------------------------------------------------------------------------
 export function Customers() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { customers, loading, refreshData, setData } = useData();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerInsights, setCustomerInsights] = useState<CustomerInsights | null>(null);
   const [customerInvoices, setCustomerInvoices] = useState<Invoice[]>([]);
@@ -47,19 +47,8 @@ export function Customers() {
   });
 
   // ── Fetch customers ────────────────────────────────────────────────────
-  useEffect(() => { fetchCustomers(); }, []);
+  useEffect(() => { refreshData(); }, [refreshData]);
 
-  const fetchCustomers = async () => {
-    try {
-      setLoading(true);
-      const data = await dataService.getCustomers();
-      setCustomers(data);
-    } catch (error) {
-      console.error("Failed to fetch customer data", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // ── Fetch selected customer data ───────────────────────────────────────
   useEffect(() => {
@@ -127,9 +116,8 @@ export function Customers() {
     if (!selectedCustomer) return;
     if (!window.confirm(`Are you sure you want to delete ${selectedCustomer.name}?`)) return;
 
-    const prev = [...customers];
     const toDelete = selectedCustomer;
-    setCustomers(customers.filter(c => c.id !== toDelete.id));
+    setData({ customers: customers.filter(c => c.id !== toDelete.id) });
     setSelectedCustomer(null);
     setCustomerInsights(null);
     setCustomerInvoices([]);
@@ -139,7 +127,7 @@ export function Customers() {
     } catch (error) {
       console.error("Failed to delete customer", error);
       alert("Failed to delete customer");
-      setCustomers(prev);
+      refreshData(true);
       setSelectedCustomer(toDelete);
     }
   };
@@ -155,9 +143,6 @@ export function Customers() {
       ? customerForm.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t)
       : [];
 
-    const prev = [...customers];
-    const prevSelected = selectedCustomer;
-
     try {
       if (isEditing && selectedCustomer) {
         const updated: Customer = {
@@ -170,7 +155,7 @@ export function Customers() {
           tags: tagsArray,
           updatedAt: new Date()
         };
-        setCustomers(customers.map(c => c.id === selectedCustomer.id ? updated : c));
+        setData({ customers: customers.map(c => c.id === selectedCustomer.id ? updated : c) });
         setSelectedCustomer(updated);
         setShowCustomerModal(false);
         setIsEditing(false);
@@ -188,17 +173,17 @@ export function Customers() {
           ...temp, id: '', createdAt: new Date(), updatedAt: new Date()
         } as Customer);
         const newCust: Customer = { ...temp, id, createdAt: new Date(), updatedAt: new Date() };
-        setCustomers([newCust, ...customers]);
+        setData({ customers: [newCust, ...customers] });
         setShowCustomerModal(false);
         setIsEditing(false);
       }
       setCustomerForm({ name: '', email: '', phone: '', address: '', gstin: '', tags: '' });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save customer", error);
-      alert("Failed to save customer. Please try again.");
+      const errorMsg = error.message || "Failed to save customer. Please try again.";
+      alert(errorMsg);
       if (isEditing) {
-        setCustomers(prev);
-        setSelectedCustomer(prevSelected);
+        refreshData(true);
         setShowCustomerModal(true);
       }
     } finally {
@@ -413,9 +398,9 @@ export function Customers() {
                           <td className="px-6 py-3.5 text-gray-900 font-medium">₹{typeof invoice.total === 'number' ? invoice.total.toLocaleString() : invoice.total}</td>
                           <td className="px-6 py-3.5">
                             <span className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize ${invoice.status === 'paid' ? 'bg-teal-50 text-teal-700 border border-teal-200' :
-                                invoice.status === 'overdue' ? 'bg-red-50 text-red-700 border border-red-200' :
-                                  invoice.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                                    'bg-gray-50 text-gray-600 border border-gray-200'
+                              invoice.status === 'overdue' ? 'bg-red-50 text-red-700 border border-red-200' :
+                                invoice.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                  'bg-gray-50 text-gray-600 border border-gray-200'
                               }`}>{invoice.status}</span>
                           </td>
                         </tr>
@@ -606,8 +591,8 @@ export function Customers() {
                           else { setSortField(field); setSortDir('asc'); }
                         }}
                         className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${sortField === field
-                            ? 'bg-teal-50 border-teal-300 text-teal-700'
-                            : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                          ? 'bg-teal-50 border-teal-300 text-teal-700'
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                       >
                         {field === 'createdAt' ? 'Date' : field.charAt(0).toUpperCase() + field.slice(1)}
@@ -756,107 +741,109 @@ export function Customers() {
       </div>
 
       {/* ─── Create/Edit Modal ────────────────────────────────────── */}
-      {showCustomerModal && createPortal(
-        <AnimatePresence>
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-gray-900/30 backdrop-blur-sm"
-              onClick={() => setShowCustomerModal(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-2xl border border-teal-100/60 overflow-hidden"
-            >
-              {/* Header */}
-              <div className="relative bg-gradient-to-r from-white via-teal-50/60 to-white px-6 py-5 border-b border-teal-100/60 overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-teal-100/30 rounded-full blur-2xl" />
-                <div className="relative flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>
-                      {isEditing ? 'Edit Customer' : 'Add Customer'}
-                    </h3>
-                    <p className="text-xs text-gray-400 mt-1 font-medium">{isEditing ? 'Update customer details' : 'Enter customer details below'}</p>
+      {
+        showCustomerModal && createPortal(
+          <AnimatePresence>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-gray-900/30 backdrop-blur-sm"
+                onClick={() => setShowCustomerModal(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-2xl border border-teal-100/60 overflow-hidden"
+              >
+                {/* Header */}
+                <div className="relative bg-gradient-to-r from-white via-teal-50/60 to-white px-6 py-5 border-b border-teal-100/60 overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-teal-100/30 rounded-full blur-2xl" />
+                  <div className="relative flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>
+                        {isEditing ? 'Edit Customer' : 'Add Customer'}
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-1 font-medium">{isEditing ? 'Update customer details' : 'Enter customer details below'}</p>
+                    </div>
+                    <button onClick={() => setShowCustomerModal(false)} className="p-1.5 hover:bg-gray-100 rounded-xl transition text-gray-400 hover:text-gray-600">
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                  <button onClick={() => setShowCustomerModal(false)} className="p-1.5 hover:bg-gray-100 rounded-xl transition text-gray-400 hover:text-gray-600">
-                    <X className="w-5 h-5" />
+                </div>
+
+                {/* Form */}
+                <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Name <span className="text-teal-500">*</span></label>
+                      <input type="text" value={customerForm.name} onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
+                        placeholder="John Doe" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Email <span className="text-teal-500">*</span></label>
+                      <input type="email" value={customerForm.email} onChange={e => setCustomerForm({ ...customerForm, email: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
+                        placeholder="john@acme.com" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Phone</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input type="tel" value={customerForm.phone} onChange={e => setCustomerForm({ ...customerForm, phone: e.target.value })}
+                        className="w-full pl-9 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
+                        placeholder="+91 98765 43210" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Address</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-3 w-3.5 h-3.5 text-gray-400" />
+                      <textarea value={customerForm.address} onChange={e => setCustomerForm({ ...customerForm, address: e.target.value })}
+                        className="w-full pl-9 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium resize-none min-h-[60px] placeholder:text-gray-300"
+                        placeholder="Full street address..." />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Tax ID</label>
+                      <input type="text" value={customerForm.gstin} onChange={e => setCustomerForm({ ...customerForm, gstin: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
+                        placeholder="GSTIN" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Tags</label>
+                      <input type="text" value={customerForm.tags} onChange={e => setCustomerForm({ ...customerForm, tags: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
+                        placeholder="VIP, Retail" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-teal-100/60 flex gap-3 bg-white">
+                  <button onClick={() => setShowCustomerModal(false)}
+                    className="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold text-sm">
+                    Cancel
+                  </button>
+                  <button onClick={handleSaveCustomer} disabled={savingCustomer}
+                    className="flex-[2] px-4 py-2.5 text-white rounded-xl font-semibold text-sm transition shadow-md disabled:opacity-60 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: '#0d9488', boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)' }}
+                  >
+                    {savingCustomer ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...</> : (isEditing ? 'Update Customer' : 'Create Customer')}
                   </button>
                 </div>
-              </div>
-
-              {/* Form */}
-              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Name <span className="text-teal-500">*</span></label>
-                    <input type="text" value={customerForm.name} onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
-                      placeholder="John Doe" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Email <span className="text-teal-500">*</span></label>
-                    <input type="email" value={customerForm.email} onChange={e => setCustomerForm({ ...customerForm, email: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
-                      placeholder="john@acme.com" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Phone</label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                    <input type="tel" value={customerForm.phone} onChange={e => setCustomerForm({ ...customerForm, phone: e.target.value })}
-                      className="w-full pl-9 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
-                      placeholder="+91 98765 43210" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Address</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 w-3.5 h-3.5 text-gray-400" />
-                    <textarea value={customerForm.address} onChange={e => setCustomerForm({ ...customerForm, address: e.target.value })}
-                      className="w-full pl-9 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium resize-none min-h-[60px] placeholder:text-gray-300"
-                      placeholder="Full street address..." />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Tax ID</label>
-                    <input type="text" value={customerForm.gstin} onChange={e => setCustomerForm({ ...customerForm, gstin: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
-                      placeholder="GSTIN" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Tags</label>
-                    <input type="text" value={customerForm.tags} onChange={e => setCustomerForm({ ...customerForm, tags: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
-                      placeholder="VIP, Retail" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-6 py-4 border-t border-teal-100/60 flex gap-3 bg-white">
-                <button onClick={() => setShowCustomerModal(false)}
-                  className="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold text-sm">
-                  Cancel
-                </button>
-                <button onClick={handleSaveCustomer} disabled={savingCustomer}
-                  className="flex-[2] px-4 py-2.5 text-white rounded-xl font-semibold text-sm transition shadow-md disabled:opacity-60 flex items-center justify-center gap-2"
-                  style={{ backgroundColor: '#0d9488', boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)' }}
-                >
-                  {savingCustomer ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...</> : (isEditing ? 'Update Customer' : 'Create Customer')}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        </AnimatePresence>,
-        document.body
-      )}
-    </div>
+              </motion.div>
+            </div>
+          </AnimatePresence>,
+          document.body
+        )
+      }
+    </div >
   );
 }

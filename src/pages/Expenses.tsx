@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Search, Filter, DollarSign, TrendingUp, Tag, Loader2, X, Calendar, Receipt, Trash2, Edit2, Download, Grid, Map as MapIcon, Network, Bot, Shield } from "lucide-react";
+import { Plus, Search, DollarSign, Tag, Loader2, X, Calendar, Receipt, Trash2, Edit2, Download, Grid, Map as MapIcon, Network, Shield } from "lucide-react";
 import { motion } from 'framer-motion';
 import { dataService } from '../services/dataService';
 import { Expense } from '../types';
 import { ExpensesMap } from '../components/Visualizations/ExpensesMap';
+import { useData } from "../contexts/DataContext";
 
 const CATEGORIES = ["Travel", "Meals", "Supplies", "Utilities", "Marketing", "Rent", "Salary", "Other"];
 
 export function Expenses() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { expenses, loading, refreshData } = useData();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("All");
   const [showModal, setShowModal] = useState(false);
@@ -28,20 +28,9 @@ export function Expenses() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    fetchExpenses();
-  }, []);
+    refreshData();
+  }, [refreshData]);
 
-  const fetchExpenses = async () => {
-    try {
-      setLoading(true);
-      const data = await dataService.getExpenses();
-      setExpenses(data);
-    } catch (error) {
-      console.error("Failed to fetch expenses:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreateOrUpdateExpense = async () => {
     if (!expenseForm.description || !expenseForm.amount) {
@@ -74,7 +63,7 @@ export function Expenses() {
       setShowModal(false);
 
       // Refresh expenses list
-      await fetchExpenses();
+      refreshData(true);
     } catch (error) {
       console.error("Failed to save expense", error);
       alert("Failed to save expense. Please try again.");
@@ -108,7 +97,7 @@ export function Expenses() {
     try {
       setIsDeleting(true);
       await dataService.deleteExpense(deleteId);
-      await fetchExpenses();
+      refreshData(true);
       setDeleteId(null);
     } catch (error) {
       console.error("Failed to delete expense", error);
@@ -385,21 +374,17 @@ export function Expenses() {
           className="bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm overflow-hidden relative"
         >
           {/* Map Header */}
-          <div className="px-6 py-4 border-b border-emerald-100/60 flex items-center justify-between bg-gradient-to-r from-violet-50/50 to-purple-50/30">
+          <div className="px-6 py-4 border-b border-emerald-100/60 flex items-center justify-between bg-gradient-to-r from-emerald-50/50 to-teal-50/30">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-300/30">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-300/30">
                 <Network size={18} className="text-white" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-gray-900">
-                  Expense Agentic Workflow
+                  Expense Visualization Map
                 </h3>
-                <p className="text-[11px] text-gray-500 mt-0.5">Category analysis • Budget agents • Compliance tracking</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">Category distribution • Spending insights • Flow analysis</p>
               </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-violet-600 uppercase tracking-wider">Live</span>
             </div>
           </div>
           <div style={{ height: '660px' }}>

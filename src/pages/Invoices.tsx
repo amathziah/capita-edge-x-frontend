@@ -8,6 +8,7 @@ import { Invoice } from '../types';
 import InvoiceGenerator from '../components/InvoiceGenerator/InvoiceGenerator';
 import { Toast, ToastType } from '../components/Toast';
 import RecordPaymentModal from '../components/Invoice/RecordPaymentModal';
+import { useData } from "../contexts/DataContext";
 
 const STATUS_COLORS: Record<string, string> = {
   paid: "bg-status-success-bg text-status-success border-status-success/10",
@@ -22,8 +23,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function Invoices() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { invoices, loading, refreshData, setData } = useData();
 
   // UI state
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,19 +54,8 @@ export function Invoices() {
     setToast({ message, type });
   };
   useEffect(() => {
-    const loadInvoices = async () => {
-      try {
-        setLoading(true);
-        const data = await dataService.getInvoices();
-        setInvoices(data);
-      } catch (error) {
-        console.error("Failed to fetch invoices:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadInvoices();
-  }, []);
+    refreshData();
+  }, [refreshData]);
 
   // Fetch full invoice details when ID changes
   useEffect(() => {
@@ -211,11 +200,13 @@ export function Invoices() {
           }
 
           // Optimistically update status if it was draft
-          setInvoices(prev => prev.map(item =>
-            item.id === inv.id && item.status === 'draft'
-              ? { ...item, status: 'sent' }
-              : item
-          ));
+          setData({
+            invoices: invoices.map(item =>
+              item.id === inv.id && item.status === 'draft'
+                ? { ...item, status: 'sent' }
+                : item
+            )
+          });
         } catch (err: any) {
           console.error(`Failed to send reminder for ${inv.invoiceNumber}`, err);
           showToast(err.message || `Failed to send reminder for ${inv.invoiceNumber}`, 'error');
@@ -251,11 +242,13 @@ export function Invoices() {
       showToast(`Reminder sent for ${inv.invoiceNumber}`, 'success');
 
       // Update local state
-      setInvoices(prev => prev.map(item =>
-        item.id === inv.id && item.status === 'draft'
-          ? { ...item, status: 'sent' }
-          : item
-      ));
+      setData({
+        invoices: invoices.map(item =>
+          item.id === inv.id && item.status === 'draft'
+            ? { ...item, status: 'sent' }
+            : item
+        )
+      });
     } catch (err: any) {
       console.error(err);
       showToast(err.message || "Failed to send reminder", 'error');
@@ -581,7 +574,7 @@ export function Invoices() {
                             if (!window.confirm(`Delete invoice ${inv.invoiceNumber}? This action cannot be undone.`)) return;
                             try {
                               await dataService.deleteInvoice(inv.id);
-                              setInvoices(prev => prev.filter(i => i.id !== inv.id));
+                              setData({ invoices: invoices.filter(i => i.id !== inv.id) });
                               showToast(`Invoice ${inv.invoiceNumber} deleted`, 'success');
                             } catch (e: any) {
                               showToast(e.message || 'Failed to delete invoice', 'error');
@@ -867,11 +860,13 @@ export function Invoices() {
                       showToast("Email sent successfully!", "success");
 
                       // Update local state
-                      setInvoices(prev => prev.map(item =>
-                        item.id === viewInvoice.id && item.status === 'draft'
-                          ? { ...item, status: 'sent' }
-                          : item
-                      ));
+                      setData({
+                        invoices: invoices.map(item =>
+                          item.id === viewInvoice.id && item.status === 'draft'
+                            ? { ...item, status: 'sent' }
+                            : item
+                        )
+                      });
                       if (viewInvoice.status === 'draft') {
                         setViewInvoice(prev => prev ? { ...prev, status: 'sent' } : null);
                       }
@@ -896,20 +891,19 @@ export function Invoices() {
                 {emailSending ? 'Sending...' : (viewInvoice?.status === 'paid' ? 'Email Receipt' : 'Email Customer')}
               </button>
 
-              {/* Settlement Agent Button (Only for Overdue) */}
               {viewInvoice?.status === 'overdue' && (
                 <button
                   onClick={async () => {
                     const offer = await dataService.generateSettlementOffer(viewInvoice.id) as any;
                     if (offer) {
-                      alert(`AI Generated Negotiation Email:\n\nSubject: ${offer.subject}\n\n${offer.body}\n\nDiscount Offered: ${offer.discountOffered ? 'Yes (5%)' : 'No'}`);
+                      alert(`Negotiation Email Draft:\n\nSubject: ${offer.subject}\n\n${offer.body}\n\nDiscount Offered: ${offer.discountOffered ? 'Yes (5%)' : 'No'}`);
                     } else {
                       showToast('Could not generate offer.', 'error');
                     }
                   }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-status-danger text-white rounded-xl text-sm font-medium hover:bg-red-600 shadow-soft hover:shadow-lg transition animate-pulse"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-status-danger text-white rounded-xl text-sm font-medium hover:bg-red-600 shadow-soft hover:shadow-lg transition"
                 >
-                  <span className="text-xs mr-1">🤖</span> Recover Payment
+                  Recover Payment
                 </button>
               )}
 
@@ -943,69 +937,71 @@ export function Invoices() {
           </div>
         </div>,
         document.body
-      )}
+      )
+      }
 
       {/* Create Invoice Modal */}
-      {showCreate && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 text-left">
-          <div className="bg-white w-full max-w-5xl h-[90%] rounded-2xl overflow-hidden shadow-2xl relative">
-            <InvoiceGenerator
-              onClose={() => {
-                setShowCreate(false);
-                // Reload data to show new invoice
-                setLoading(true);
-                dataService.getInvoices().then(data => {
-                  setInvoices(data);
-                  setLoading(false);
-                });
-              }}
-            />
-          </div>
-        </div>,
-        document.body
-      )}
+      {
+        showCreate && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 text-left">
+            <div className="bg-white w-full max-w-5xl h-[90%] rounded-2xl overflow-hidden shadow-2xl relative">
+              <InvoiceGenerator
+                onClose={() => {
+                  setShowCreate(false);
+                  refreshData(true);
+                }}
+              />
+            </div>
+          </div>,
+          document.body
+        )
+      }
 
       {/* Edit Invoice Modal */}
-      {editingInvoice && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 text-left">
-          <div className="bg-white w-full max-w-5xl h-[90%] rounded-2xl overflow-hidden shadow-2xl relative">
-            <InvoiceGenerator
-              editingInvoice={editingInvoice}
-              onClose={async () => {
-                setEditingInvoice(null);
-                // Re-fetch to show changes
-                const updated = await dataService.getInvoices();
-                setInvoices(updated);
-              }}
-            />
-          </div>
-        </div>,
-        document.body
-      )}
+      {
+        editingInvoice && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 text-left">
+            <div className="bg-white w-full max-w-5xl h-[90%] rounded-2xl overflow-hidden shadow-2xl relative">
+              <InvoiceGenerator
+                editingInvoice={editingInvoice}
+                onClose={async () => {
+                  setEditingInvoice(null);
+                  refreshData(true);
+                }}
+              />
+            </div>
+          </div>,
+          document.body
+        )
+      }
 
 
       {/* Record Payment Modal */}
-      {recordingPaymentFor && createPortal(
-        <RecordPaymentModal
-          invoice={recordingPaymentFor}
-          onClose={() => setRecordingPaymentFor(null)}
-          onSuccess={async () => {
-            showToast('Payment recorded successfully', 'success');
-            // Refresh
-            const updated = await dataService.getInvoices();
-            setInvoices(updated);
-          }}
-        />,
-        document.body
-      )}
+      {
+        recordingPaymentFor && createPortal(
+          <RecordPaymentModal
+            invoice={recordingPaymentFor}
+            onClose={() => setRecordingPaymentFor(null)}
+            onSuccess={async () => {
+              showToast('Payment recorded successfully', 'success');
+              refreshData(true);
+            }}
+          />,
+          document.body
+        )
+      }
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-    </div>
+      {
+        toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )
+      }
+    </div >
   );
 }
+
+export default Invoices;

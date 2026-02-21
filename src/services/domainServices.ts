@@ -8,7 +8,11 @@ export const expenseService = {
 };
 
 export const paymentService = {
-    getPayments: () => api.get<Payment[]>('/payments'),
+    getPayments: (params?: { limit?: number }) => {
+        let url = '/payments';
+        if (params?.limit) url += `?limit=${params.limit}`;
+        return api.get<Payment[]>(url);
+    },
     savePayment: (payment: Payment) => api.post<{ id: string }>('/payments', payment),
     downloadReceipt: (paymentId: string) => api.getBlob(`/payments/download-receipt/${paymentId}`),
     reconcilePayment: (paymentId: string) => api.patch(`/payments/${paymentId}/reconcile`, {})

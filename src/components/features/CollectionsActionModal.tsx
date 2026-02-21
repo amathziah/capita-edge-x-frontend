@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Bot, Send, RefreshCw, CheckCircle2, Sparkles, AlertTriangle, Target } from 'lucide-react';
+import { X, RefreshCw, CheckCircle2, Sparkles, AlertTriangle, Target, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateDraft, sendReminder, type CollectionDraft } from '../../api/collectionsApi';
 
@@ -47,10 +47,7 @@ function SkeletonLoader() {
                 <div className="h-44 bg-gray-50 rounded-xl border border-gray-100" />
             </div>
             <div className="flex items-center gap-2 pt-2">
-                <div className="p-1.5 bg-teal-50 rounded-lg">
-                    <Bot className="w-4 h-4 text-teal-500" />
-                </div>
-                <span className="text-xs text-gray-400 font-medium">AI is composing your email</span>
+                <span className="text-xs text-gray-400 font-medium">Assistant is composing your email</span>
                 <span className="flex gap-0.5 ml-1">
                     <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce [animation-delay:0ms]" />
                     <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce [animation-delay:150ms]" />
@@ -140,11 +137,11 @@ export function CollectionsActionModal({ invoiceId, isOpen, onClose, onSent }: P
                             <div>
                                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2.5" style={{ fontFamily: 'Sora, sans-serif' }}>
                                     <div className="p-2 bg-teal-100 rounded-xl border border-teal-200">
-                                        <Bot className="w-5 h-5 text-teal-600" />
+                                        <RefreshCw className="w-5 h-5 text-teal-600" />
                                     </div>
-                                    AI Collections Agent
+                                    Smart Collections Assistant
                                     <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-teal-50 text-teal-600 rounded-full border border-teal-200">
-                                        Beta
+                                        Recover Payment
                                     </span>
                                 </h2>
                                 <p className="text-xs text-gray-400 mt-1.5 font-medium" style={{ fontFamily: 'Manrope, sans-serif' }}>
@@ -221,7 +218,7 @@ export function CollectionsActionModal({ invoiceId, isOpen, onClose, onSent }: P
                                 </div>
                                 <div className="text-center">
                                     <p className="text-lg font-bold text-teal-700" style={{ fontFamily: 'Sora, sans-serif' }}>Reminder Sent ✓</p>
-                                    <p className="text-sm text-gray-400 mt-1">The AI-generated email has been dispatched</p>
+                                    <p className="text-sm text-gray-400 mt-1">The drafted email has been dispatched</p>
                                 </div>
                             </motion.div>
                         )}

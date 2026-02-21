@@ -3,18 +3,20 @@ import { createPortal } from "react-dom";
 import { Box, TrendingUp, AlertCircle, X, Bot, Edit2, Settings2, Filter, Search, Trash2, AlertTriangle, Package, Zap, Tag, Activity, Scale, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService } from '../services/dataService';
-import { Product } from '../types';
+import { Product, ProductPerformance } from '../types';
 import { InventoryInsights, VelocityBadge } from '../components/Inventory/InventoryInsights';
 import { InventorySettings, InventorySettingsData } from '../components/Inventory/InventorySettings';
 import { CustomSelect } from '../components/ui/CustomSelect';
+
+import { useData } from '../contexts/DataContext';
 
 interface InventoryItem extends Product {
   sales: number;
 }
 
 export function Inventory() {
+  const { products, performance, loading, refreshData } = useData();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -41,35 +43,21 @@ export function Inventory() {
   const [stockFilter, setStockFilter] = useState('All');
   const [vendorFilter, setVendorFilter] = useState('All');
 
-  // Data Fetching
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [products, performance] = await Promise.all([
-        dataService.getProducts(),
-        dataService.getProductPerformance().catch(() => [])
-      ]) as [Product[], any[]];
-
-      const merged = products.map(p => {
-        const perf = performance.find((x: any) => x.id === p.id || x.name === p.name);
-        return {
-          ...p,
-          sales: perf ? perf.total_quantity_sold || perf.sales || 0 : 0
-        };
-      });
-
-      setInventory(merged);
-    } catch (error) {
-      console.error("Failed to fetch inventory:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    refreshData();
+    loadInventorySettings();
+  }, [refreshData]);
 
   useEffect(() => {
-    fetchData();
-    loadInventorySettings();
-  }, []);
+    const merged = products.map(p => {
+      const perf = performance.find((x: ProductPerformance) => x.id === p.id || x.name === p.name);
+      return {
+        ...p,
+        sales: perf ? perf.total_quantity_sold || perf.sales || 0 : 0
+      };
+    });
+    setInventory(merged as InventoryItem[]);
+  }, [products, performance]);
 
   const loadInventorySettings = async () => {
     try {
@@ -80,14 +68,14 @@ export function Inventory() {
     }
   };
 
-  const handleSaveProduct = async (productData: any) => {
+  const handleSaveProduct = async (productData: Partial<Product>) => {
     try {
       if (editingProduct) {
         await dataService.updateProduct(editingProduct.id, productData);
       } else {
-        await dataService.saveProduct(productData);
+        await dataService.saveProduct(productData as Product);
       }
-      await fetchData(); // Refresh list
+      await refreshData(true); // Refresh list
       setCreateModalOpen(false);
       setEditingProduct(null);
     } catch (error) {
@@ -111,7 +99,7 @@ export function Inventory() {
     try {
       setDeleting(true);
       await dataService.deleteProduct(deleteTarget.id);
-      await fetchData();
+      await refreshData(true);
     } catch (error) {
       console.error("Failed to delete product:", error);
       alert("Failed to delete product. Please try again.");
@@ -713,7 +701,7 @@ export function Inventory() {
   );
 }
 
-function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: boolean; onClose: () => void; onSave: (data: any) => void; initialData?: Product | null }) {
+function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: boolean; onClose: () => void; onSave: (data: Partial<Product>) => void; initialData?: Product | null }) {
   const localFormRef = useRef<HTMLFormElement>(null);
   const [formData, setFormData] = useState({
     name: '',

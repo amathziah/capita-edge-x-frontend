@@ -134,12 +134,19 @@ export interface AIRule {
 }
 
 export interface DashboardStats {
-  totalRevenue: number;
-  totalInvoices: number;
-  pendingPayments: number;
-  overdueInvoices: number;
-  lowStockItems: number;
-  recentActivity: any[];
+  totalRevenue?: number;
+  totalInvoices?: number;
+  pendingPayments?: number;
+  overdueInvoices?: number;
+  lowStockItems?: number;
+  total_customers?: number;
+  pending_payments?: number;
+  overdue_revenue?: number;
+  total_revenue?: number;
+  pending_invoices?: number;
+  overdue_invoices?: number;
+  recentActivity?: any[];
+  [key: string]: any;
 }
 
 export type Language = 'en' | 'hi' | 'mr';
@@ -172,4 +179,22 @@ export interface CustomerInsights {
   };
   healthScore: number;
   healthLabel: 'VIP' | 'Active' | 'Regular' | 'At Risk' | 'New';
+}
+
+export interface ComplianceTask {
+  id: string;
+  type: string;
+  description: string;
+  due_date: string;
+  status: "completed" | "pending" | "overdue";
+  priority: "low" | "medium" | "high" | "critical";
+  notes?: string;
+}
+
+export interface ProductPerformance {
+  id: string;
+  name: string;
+  total_quantity_sold?: number;
+  sales?: number;
+  revenue?: number;
 }

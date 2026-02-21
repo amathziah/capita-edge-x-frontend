@@ -15,7 +15,6 @@ import {
   User,
   LogOut,
   ChevronUp,
-  Gauge,
 } from "lucide-react";
 import { useLanguage } from "../LanguageProvider";
 import { useAuth } from "../../contexts/AuthContext";
@@ -65,12 +64,6 @@ const groups: NavGroup[] = [
     title: "ANALYTICS",
     items: [
       { name: "reports", label: "Reports", href: "/reports", icon: BarChart3 },
-    ],
-  },
-  {
-    title: "SYSTEM",
-    items: [
-      { name: "stress_test", label: "Stress Test", href: "/stress-test", icon: Gauge, statusDot: "bg-amber-500" },
     ],
   },
 ];

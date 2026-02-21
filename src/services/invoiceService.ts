@@ -2,7 +2,11 @@ import { api } from '../api/client';
 import { Invoice } from '../types';
 
 export const invoiceService = {
-    getInvoices: () => api.get<Invoice[]>('/invoices'),
+    getInvoices: (params?: { limit?: number }) => {
+        let url = '/invoices';
+        if (params?.limit) url += `?limit=${params.limit}`;
+        return api.get<Invoice[]>(url);
+    },
 
     getInvoice: (id: string) => api.get<Invoice>(`/invoices/${id}`),
 

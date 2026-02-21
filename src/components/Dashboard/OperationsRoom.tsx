@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Invoice, Payment } from '../../types';
-import { dataService } from '../../services/dataService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useData } from '../../contexts/DataContext';
 import {
     AlertTriangle,
     TrendingUp,
@@ -18,54 +17,46 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { InvoiceLifecycleMap } from '../Visualizations/InvoiceLifecycleMap';
-import { AgentModal } from './AgentModal';
 
 export function OperationsRoom() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [invoices, setInvoices] = useState<Invoice[]>([]);
-    const [payments, setPayments] = useState<Payment[]>([]);
-    const [stats, setStats] = useState<any>({ total_customers: 0 });
-    const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
-    const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+    const { invoices, payments, stats, loading, refreshData } = useData();
 
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const [fetchedInvoices, fetchedStats, fetchedPayments] = await Promise.all([
-                dataService.getInvoices(),
-                dataService.getDashboardStats(),
-                dataService.getPayments()
-            ]);
-            setInvoices(fetchedInvoices);
-            setStats(fetchedStats);
-            setPayments(fetchedPayments);
-        } catch (error) {
-            console.error("Error loading data:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
 
     useEffect(() => {
-        if (user) loadData();
-    }, [user]);
+        if (user) refreshData();
+    }, [user, refreshData]);
 
-    // Metrics Calculation
-    const pendingInvoices = Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent') : [];
-    const overdueInvoices = Array.isArray(invoices) ? invoices.filter(i => i.status === 'overdue' || i.status === 'escalated') : [];
-    const paidInvoices = Array.isArray(invoices) ? invoices.filter(i => i.status === 'paid') : [];
+    // Metrics Calculation - Shifted to use backend-provided stats for the primary totals
+    const metrics = useMemo(() => {
+        const overdue = Array.isArray(invoices) ? invoices.filter(i => i.status === 'overdue' || i.status === 'escalated') : [];
 
-    const totalPending = pendingInvoices.reduce((sum, i) => sum + i.total, 0);
-    const totalOverdue = overdueInvoices.reduce((sum, i) => sum + i.total, 0);
-    const totalCollected = paidInvoices.reduce((sum, i) => sum + i.total, 0);
+        return {
+            overdueInvoices: overdue,
+            // Use backend stats if they exist, fallback to client-side calculation if list is not truncated
+            totalPending: stats.pending_payments || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent').reduce((sum, i) => sum + i.total, 0) : 0),
+            totalOverdue: stats.overdue_revenue || overdue.reduce((sum, i) => sum + i.total, 0),
+            totalCollected: stats.total_revenue || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.total, 0) : 0),
+            pendingCount: stats.pending_invoices || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent').length : 0),
+            overdueCount: stats.overdue_invoices || overdue.length
+        };
+    }, [invoices, stats]);
+
+    const { overdueInvoices, totalPending, totalOverdue, totalCollected, pendingCount, overdueCount } = metrics;
 
     // Activity Feed Logic
-    const recentPayments = payments.slice(0, 3);
-    const recentInvoices = invoices.filter(i => i.status !== 'overdue').slice(0, 3);
+    const activityFeed = useMemo(() => {
+        return {
+            recentPayments: Array.isArray(payments) ? payments.slice(0, 3) : [],
+            recentInvoices: Array.isArray(invoices) ? invoices.filter(i => i.status !== 'overdue').slice(0, 3) : []
+        };
+    }, [payments, invoices]);
 
-    if (loading) {
+    const { recentPayments, recentInvoices } = activityFeed;
+
+    if (loading && invoices.length === 0) {
         return (
             <div className="flex h-full flex-col items-center justify-center bg-gray-50/50">
                 <div className="relative mb-8">
@@ -94,14 +85,8 @@ export function OperationsRoom() {
             </div>
         );
     }
-
     return (
         <div className="relative h-full w-full">
-            <AgentModal
-                isOpen={!!selectedAgent}
-                onClose={() => setSelectedAgent(null)}
-                agentId={selectedAgent}
-            />
             <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_#e8f5e9_0%,_#f1f8f6_45%,_#f6fbf7_100%)]"></div>
             <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl -z-10"></div>
             <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-emerald-200/30 blur-[110px] -z-10"></div>
@@ -121,7 +106,7 @@ export function OperationsRoom() {
                         </div>
                         <h1 className="mt-2 text-3xl font-semibold text-gray-900 font-display tracking-tight">Control Room</h1>
                         <p className="text-gray-600 mt-2 max-w-xl">
-                            A live operational view of revenue health, collections, and agent activity.
+                            A live operational view of revenue health, collections, and status flow.
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
@@ -172,9 +157,9 @@ export function OperationsRoom() {
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-bold text-gray-900">
-                                        Agentic Workflow Map
+                                        Lifecycle Visualization Map
                                     </h3>
-                                    <p className="text-[11px] text-gray-500 mt-0.5">Invoice lifecycle • AI agents • Revenue intelligence</p>
+                                    <p className="text-[11px] text-gray-500 mt-0.5">Invoice status • Flow analysis • Process intelligence</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1.5">
@@ -183,7 +168,7 @@ export function OperationsRoom() {
                             </div>
                         </div>
                         <div className="h-[660px]">
-                            <InvoiceLifecycleMap invoices={invoices} onAgentSelect={(agentId) => setSelectedAgent(agentId)} />
+                            <InvoiceLifecycleMap invoices={invoices} />
                         </div>
                     </motion.div>
                 ) : (
@@ -214,7 +199,7 @@ export function OperationsRoom() {
                                     <div>
                                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pending Revenue</p>
                                         <h3 className="text-2xl font-bold text-gray-900">₹{(totalPending / 1000).toFixed(1)}k</h3>
-                                        <p className="text-sm text-emerald-600 mt-2 font-medium">{pendingInvoices.length} invoices pending</p>
+                                        <p className="text-sm text-emerald-600 mt-2 font-medium">{pendingCount} invoices pending</p>
                                     </div>
                                 </div>
                             </div>
@@ -225,7 +210,7 @@ export function OperationsRoom() {
                                 className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-card cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                             >
                                 <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
-                                {overdueInvoices.length > 0 && <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse shadow-lg shadow-amber-500/50" />}
+                                {overdueCount > 0 && <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse shadow-lg shadow-amber-500/50" />}
                                 <div className="relative">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="p-3 bg-amber-100 text-amber-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
@@ -235,7 +220,7 @@ export function OperationsRoom() {
                                     <div>
                                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Action Required</p>
                                         <h3 className="text-2xl font-bold text-gray-900">₹{(totalOverdue / 1000).toFixed(1)}k</h3>
-                                        <p className="text-sm text-amber-600 mt-2 font-medium">{overdueInvoices.length} overdue payments</p>
+                                        <p className="text-sm text-amber-600 mt-2 font-medium">{overdueCount} overdue payments</p>
                                         <div className="mt-3 text-xs font-bold text-emerald-600 flex items-center group-hover:gap-2 transition-all">
                                             View Details <ArrowRight size={12} className="ml-1 group-hover:translate-x-1 transition-transform" />
                                         </div>
