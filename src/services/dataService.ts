@@ -4,6 +4,7 @@ import { productService } from './productService';
 import { expenseService, paymentService, settingService, complianceService, notificationService } from './domainServices';
 import { aiService } from './aiService';
 import { analyticsService } from './analyticsService';
+import { systemService } from './systemService';
 
 // Re-export services for direct usage
 export {
@@ -16,7 +17,8 @@ export {
   complianceService,
   notificationService,
   aiService,
-  analyticsService
+  analyticsService,
+  systemService
 };
 
 // Maintain backward compatibility class for existing components
@@ -113,6 +115,10 @@ class DataService {
   generateSettlementOffer = aiService.generateSettlementOffer;
   getAiInsights = aiService.getInsights;
   sendCommand = aiService.sendCommand;
+
+  // System
+  getDbVolume = systemService.getDbVolume;
+  runStressTest = systemService.runStressTest;
 }
 
 export const dataService = new DataService();

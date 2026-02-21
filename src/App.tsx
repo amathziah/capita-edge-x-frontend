@@ -20,6 +20,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { UpdatePassword } from './pages/UpdatePassword';
 import { SetupPage } from './pages/SetupPage';
+import StressTest from './pages/StressTest';
 import PricingPage from './components/Pricing/PricingPage';
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
                   <Route path="profile" element={<Profile />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="pricing" element={<PricingPage />} />
+                  <Route path="stress-test" element={<StressTest />} />
                 </Route>
               </Route>
 
