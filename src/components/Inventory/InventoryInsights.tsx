@@ -49,11 +49,11 @@ export const InventoryInsights = () => {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Widget 1: Dead Stock Value — Now using Teal/Neutral */}
-            <div className="bg-white/60 backdrop-blur-sm border border-emerald-100/60 rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
+            {/* Widget 1: Dead Stock Value — Now using Strict Primary */}
+            <div className="bg-white/60 backdrop-blur-sm border border-primary/10 rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
                 <div>
-                    <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                         Static Inventory Value
                     </h4>
                     <p className="text-2xl font-black text-gray-900 font-display">
@@ -61,16 +61,16 @@ export const InventoryInsights = () => {
                     </p>
                     <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">Liquid Capital Locked ({'>'}60d)</p>
                 </div>
-                <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
+                <div className="p-2.5 bg-primary/5 rounded-xl text-primary">
                     <Activity className="w-5 h-5" strokeWidth={2.5} />
                 </div>
             </div>
 
-            {/* Widget 2: Allocation Risks — Now using Teal/Neutral */}
-            <div className="bg-white/60 backdrop-blur-sm border border-emerald-100/60 rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
+            {/* Widget 2: Allocation Risks — Now using Strict Primary */}
+            <div className="bg-white/60 backdrop-blur-sm border border-primary/10 rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
                 <div>
-                    <h4 className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                    <h4 className="text-[10px] font-black text-primary-dark uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                         Replenishment Risks
                     </h4>
                     <p className="text-2xl font-black text-gray-900 font-display">
@@ -78,22 +78,22 @@ export const InventoryInsights = () => {
                     </p>
                     <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">Forecasted Outages (7d)</p>
                 </div>
-                <div className="p-2.5 bg-teal-50 rounded-xl text-teal-600">
+                <div className="p-2.5 bg-primary-light rounded-xl text-primary">
                     <AlertCircle className="w-5 h-5" strokeWidth={2.5} />
                 </div>
             </div>
 
-            {/* Widget 3: Operational Health — Primary Teal */}
-            <div className="bg-emerald-600 border border-emerald-500 rounded-xl p-4 flex items-center justify-between shadow-lg shadow-emerald-200/50 hover:shadow-emerald-200/80 transition-all group">
+            {/* Widget 3: Operational Health — Primary #14B8B8 */}
+            <div className="bg-primary border border-primary-dark/20 rounded-xl p-4 flex items-center justify-between shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all group">
                 <div>
-                    <h4 className="text-[10px] font-black text-emerald-50 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                    <h4 className="text-[10px] font-black text-white/90 uppercase tracking-widest mb-1 flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                         Operational Grade
                     </h4>
                     <p className="text-2xl font-black text-white font-display">
                         {summary.health_percent}%
                     </p>
-                    <p className="text-[10px] text-emerald-100/80 font-bold mt-1 uppercase tracking-tighter">
+                    <p className="text-[10px] text-white/70 font-bold mt-1 uppercase tracking-tighter">
                         {summary.health_percent >= 80 ? 'Optimal Efficiency' : summary.health_percent >= 50 ? 'Maintenance Required' : 'Critical Refactor'}
                     </p>
                 </div>

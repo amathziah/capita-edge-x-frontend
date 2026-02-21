@@ -130,14 +130,14 @@ export function Inventory() {
     // Dead Stock logic
     const daysSinceCreation = (new Date().getTime() - new Date(item.createdAt).getTime()) / (1000 * 3600 * 24);
     if (item.sales === 0 && daysSinceCreation > Number(invSettings.inv_dead_stock_threshold)) {
-      return { label: 'Static Node', color: 'bg-emerald-100', ring: 'ring-emerald-200', text: 'text-emerald-900' };
+      return { label: 'Static Node', color: 'bg-primary/10', ring: 'ring-primary/20', text: 'text-primary-dark' };
     }
 
-    if (item.stock < (item.minStock || defaultReorder)) return { label: 'Replenish', color: 'bg-emerald-600', ring: 'ring-emerald-200', text: 'text-white' };
+    if (item.stock < (item.minStock || defaultReorder)) return { label: 'Replenish', color: 'bg-primary', ring: 'ring-primary/20', text: 'text-white' };
 
-    if (item.stock > (item.minStock || defaultReorder) * overstockMultiplier) return { label: 'Overstocked', color: 'bg-teal-100', ring: 'ring-teal-200', text: 'text-teal-700' };
+    if (item.stock > (item.minStock || defaultReorder) * overstockMultiplier) return { label: 'Overstocked', color: 'bg-primary/5', ring: 'ring-primary/10', text: 'text-primary' };
 
-    return { label: 'Healthy', color: 'bg-primary', ring: 'ring-primary/20', text: 'text-white' };
+    return { label: 'Healthy', color: 'bg-primary-dark', ring: 'ring-primary/20', text: 'text-white' };
   };
 
   // Derived State for Filters
@@ -224,9 +224,9 @@ export function Inventory() {
   return (
     <div className="relative p-6 space-y-8 min-h-screen">
       {/* Background */}
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_#e8f5e9_0%,_#f1f8f6_45%,_#f6fbf7_100%)]" />
-      <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl -z-10" />
-      <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-teal-200/30 blur-[110px] -z-10" />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_#f0fafa_0%,_#f7fbfd_45%,_#ffffff_100%)]" />
+      <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-primary/10 blur-3xl -z-10" />
+      <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-primary/5 blur-[110px] -z-10" />
 
       {/* Page Header */}
       <motion.div
@@ -236,9 +236,9 @@ export function Inventory() {
         className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
       >
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600 mb-2">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-primary mb-2">
             Intelligence Engine
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
           </div>
           <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
             Inventory Intelligence
@@ -246,12 +246,12 @@ export function Inventory() {
           <p className="text-gray-600 mt-1.5">Financial inventory tracking & proactive stock health monitoring.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="bg-white/80 backdrop-blur rounded-xl border border-emerald-200/60 shadow-sm px-4 py-2 text-center">
-            <div className="text-[10px] text-emerald-500 font-bold uppercase">Products</div>
+          <div className="bg-white/80 backdrop-blur rounded-xl border border-primary/20 shadow-sm px-4 py-2 text-center">
+            <div className="text-[10px] text-primary font-bold uppercase">Products</div>
             <div className="text-lg font-black text-gray-900">{inventory.length}</div>
           </div>
-          <div className="bg-white/80 backdrop-blur rounded-xl border border-emerald-200/60 shadow-sm px-4 py-2 text-center">
-            <div className="text-[10px] text-emerald-500 font-bold uppercase">Value</div>
+          <div className="bg-white/80 backdrop-blur rounded-xl border border-primary/20 shadow-sm px-4 py-2 text-center">
+            <div className="text-[10px] text-primary font-bold uppercase">Value</div>
             <div className="text-lg font-black text-gray-900">₹{(totalValue / 1000).toFixed(0)}k</div>
           </div>
         </div>
@@ -263,11 +263,11 @@ export function Inventory() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         {[
-          { label: 'Total Products', value: inventory.length, icon: Package, gradient: 'from-emerald-600 to-emerald-800', glow: 'shadow-emerald-500/20', accent: 'text-emerald-600', bg: 'bg-white/90', border: 'border-emerald-100/80', ring: 'bg-emerald-500', delay: 0 },
-          { label: 'Inventory Value', value: `₹${(totalValue / 1000).toFixed(1)}k`, icon: TrendingUp, gradient: 'from-teal-600 to-emerald-700', glow: 'shadow-teal-500/20', accent: 'text-teal-600', bg: 'bg-white/90', border: 'border-teal-100/80', ring: 'bg-teal-500', delay: 0.04 },
-          { label: 'Reorder Alerts', value: lowStockCount, icon: AlertCircle, gradient: 'from-emerald-500 to-teal-600', glow: 'shadow-emerald-500/20', accent: 'text-emerald-600', bg: 'bg-white/90', border: 'border-emerald-100/80', ring: 'bg-emerald-500', delay: 0.08, pulse: lowStockCount > 0 },
-          { label: 'Out of Stock', value: outOfStockCount, icon: AlertTriangle, gradient: 'from-gray-700 to-gray-900', glow: 'shadow-gray-500/10', accent: 'text-gray-900', bg: 'bg-white/90', border: 'border-gray-200/80', ring: 'bg-gray-900', delay: 0.12, pulse: outOfStockCount > 0 },
-          { label: 'AI Strategy', value: 'Active', icon: Bot, gradient: 'from-emerald-700 to-teal-800', glow: 'shadow-emerald-500/20', accent: 'text-emerald-600', bg: 'bg-white/90', border: 'border-emerald-100/80', ring: 'bg-emerald-500', delay: 0.16, clickable: true },
+          { label: 'Total Products', value: inventory.length, icon: Package, gradient: 'from-primary to-primary-dark', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0 },
+          { label: 'Inventory Value', value: `₹${(totalValue / 1000).toFixed(1)}k`, icon: TrendingUp, gradient: 'from-primary/90 to-primary-dark', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0.04 },
+          { label: 'Reorder Alerts', value: lowStockCount, icon: AlertCircle, gradient: 'from-primary to-primary-dark', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0.08, pulse: lowStockCount > 0 },
+          { label: 'Out of Stock', value: outOfStockCount, icon: AlertTriangle, gradient: 'from-gray-800 to-gray-900', glow: 'shadow-gray-500/10', accent: 'text-gray-900', bg: 'bg-white/90', border: 'border-gray-200/80', ring: 'bg-gray-900', delay: 0.12, pulse: outOfStockCount > 0 },
+          { label: 'AI Strategy', value: 'Active', icon: Bot, gradient: 'from-primary-dark to-slate-900', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0.16, clickable: true },
         ].map((card) => (
           <motion.div
             key={card.label}
@@ -358,16 +358,16 @@ export function Inventory() {
                   setStockFilter('All');
                   setVendorFilter('All');
                 }}
-                className="px-4 py-2 text-xs font-black text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all border border-transparent hover:border-emerald-100 uppercase tracking-widest"
+                className="px-4 py-2 text-[10px] font-black text-primary hover:bg-primary/5 rounded-xl transition-all border border-transparent hover:border-primary/20 uppercase tracking-widest"
               >
                 Reset Filters
               </button>
             )}
             <button
               onClick={handeCreateClick}
-              className="group relative px-6 py-2.5 bg-gray-900 text-white rounded-2xl shadow-xl shadow-gray-200 hover:shadow-gray-300 transition-all duration-400 active:scale-95 flex items-center gap-2 overflow-hidden"
+              className="group relative px-6 py-2.5 bg-gray-900 text-white rounded-2xl shadow-xl shadow-gray-200 hover:shadow-primary/30 transition-all duration-400 active:scale-95 flex items-center gap-2 overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary-dark opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative flex items-center gap-2 text-sm font-black tracking-wide">
                 <Package className="w-4 h-4" />
                 Add Product
@@ -375,7 +375,7 @@ export function Inventory() {
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
-              className="p-3 bg-white text-gray-400 rounded-2xl shadow-sm border border-gray-100 hover:text-emerald-600 hover:border-emerald-200 hover:shadow-md transition-all duration-300"
+              className="p-3 bg-white text-gray-400 rounded-2xl shadow-sm border border-gray-100 hover:text-primary hover:border-primary/30 hover:shadow-md transition-all duration-300"
             >
               <Settings2 className="w-5 h-5" />
             </button>
@@ -388,7 +388,7 @@ export function Inventory() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.15 }}
-        className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm overflow-hidden border border-emerald-100/60 flex flex-col h-[calc(100vh-340px)] min-h-[320px]"
+        className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm overflow-hidden border border-primary/10 flex flex-col h-[calc(100vh-340px)] min-h-[320px]"
       >
         <div className="flex-1 overflow-auto scroll-smooth">
           <table className="min-w-full text-sm text-left relative">
@@ -427,7 +427,7 @@ export function Inventory() {
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-gray-100 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all duration-500">
-                          <Package size={18} className="text-gray-400 group-hover:text-emerald-500 transition-colors" strokeWidth={1.5} />
+                          <Package size={18} className="text-gray-400 group-hover:text-primary transition-colors" strokeWidth={1.5} />
                         </div>
                         <div>
                           <div className="font-extrabold text-gray-900 text-sm tracking-tight">{item.name}</div>
@@ -445,7 +445,7 @@ export function Inventory() {
                       <td className="px-6 py-5 text-center">
                         <div className="text-sm font-bold text-gray-500">₹{item.costPrice || 0}</div>
                         {margin !== null && (
-                          <div className={`text-[10px] font-black mt-0.5 px-1.5 py-0.5 rounded-full inline-block ${margin >= 15 ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'}`}>
+                          <div className={`text-[10px] font-black mt-0.5 px-1.5 py-0.5 rounded-full inline-block ${margin >= 15 ? 'bg-primary/10 text-primary-dark' : 'bg-gray-50 text-gray-500'}`}>
                             {margin}% GPM
                           </div>
                         )}
