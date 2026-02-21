@@ -7,6 +7,8 @@ interface AuthContextType {
     session: Session | null;
     user: User | null;
     loading: boolean;
+    orgId: string | null;
+    checkingOrg: boolean;
     signOut: () => Promise<void>;
     refreshOrgContext: () => Promise<void>;
 }
@@ -15,6 +17,8 @@ const AuthContext = createContext<AuthContextType>({
     session: null,
     user: null,
     loading: true,
+    orgId: null,
+    checkingOrg: true,
     signOut: async () => { },
     refreshOrgContext: async () => { },
 });
@@ -23,6 +27,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const [orgId, setOrgId] = useState<string | null>(localStorage.getItem('sb-org-id'));
+    const [checkingOrg, setCheckingOrg] = useState(true);
 
     useEffect(() => {
         let mounted = true;
@@ -89,13 +95,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const fetchAndSetOrgContext = async (userId: string) => {
+        setCheckingOrg(true);
         try {
-            // Check if we have a stored org ID first
-            // Optimization removed: Always fetch fresh org context to ensure validity
-            // const storedOrgId = localStorage.getItem('sb-org-id');
-            // if (storedOrgId) return; 
-
-
             // Query via Supabase (Client Side RLS allows reading own org_users)
             const { data } = await supabase
                 .from('organization_users')
@@ -106,12 +107,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (data?.organization_id) {
                 localStorage.setItem('sb-org-id', data.organization_id);
+                setOrgId(data.organization_id);
             } else {
-                // Fallback: This might be a fresh user or migration issue
                 console.warn('No Organization found for user. Backend might assign default.');
+                setOrgId(null);
+                localStorage.removeItem('sb-org-id');
             }
         } catch (err) {
             console.error('Error fetching org context:', err);
+        } finally {
+            setCheckingOrg(false);
         }
     };
 
@@ -122,10 +127,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const signOut = async () => {
         await supabase.auth.signOut();
         localStorage.removeItem('sb-access-token');
+        localStorage.removeItem('sb-org-id');
+        setOrgId(null);
     };
 
     return (
-        <AuthContext.Provider value={{ session, user, loading, signOut, refreshOrgContext }}>
+        <AuthContext.Provider value={{ session, user, loading, orgId, checkingOrg, signOut, refreshOrgContext }}>
             {loading ? (
                 <div className="flex items-center justify-center h-screen bg-gray-50">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>

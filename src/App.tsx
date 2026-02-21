@@ -19,6 +19,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { UpdatePassword } from './pages/UpdatePassword';
+import { SetupPage } from './pages/SetupPage';
 import PricingPage from './components/Pricing/PricingPage';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/update-password" element={<UpdatePassword />} />
+              <Route path="/setup" element={<SetupPage />} />
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>

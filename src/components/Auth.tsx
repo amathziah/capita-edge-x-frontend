@@ -41,34 +41,20 @@ export default function AuthComponent() {
         setError(null);
         setMessage(null);
         try {
-            // 1. Supabase Auth Signup
-            const { data: authData, error: authError } = await supabase.auth.signUp({
+            // 1. Supabase Auth Signup - Store companyName in metadata
+            const { error: authError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
                     emailRedirectTo: window.location.origin,
+                    data: {
+                        company_name: companyName,
+                    }
                 },
             });
             if (authError) throw authError;
 
-            // 2. Provision Organization via Backend
-            if (authData.user) {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/provision`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authData.session?.access_token}`,
-                    },
-                    body: JSON.stringify({ companyName }),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Provisioning failed');
-                }
-            }
-
-            setMessage('Account created! Please check your email for the confirmation link.');
+            setMessage('Account created! Please check your email for the confirmation link. After verifying, you can sign in to set up your business.');
         } catch (error: any) {
             setError(error.message || 'Failed to sign up');
         } finally {
