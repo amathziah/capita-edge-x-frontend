@@ -53,7 +53,7 @@ export function OperationsRoom() {
     }, [user]);
 
     // Metrics Calculation
-    const pendingInvoices = Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent' || i.status === 'viewed') : [];
+    const pendingInvoices = Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent') : [];
     const overdueInvoices = Array.isArray(invoices) ? invoices.filter(i => i.status === 'overdue' || i.status === 'escalated') : [];
     const paidInvoices = Array.isArray(invoices) ? invoices.filter(i => i.status === 'paid') : [];
 

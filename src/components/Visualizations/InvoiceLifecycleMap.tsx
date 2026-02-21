@@ -13,16 +13,13 @@ import { Invoice } from '../../types';
 import {
     FileText,
     Send,
-    Eye,
     AlertTriangle,
     Zap,
     CheckCircle2,
     Bot,
-    CreditCard,
     BellRing,
     Scale,
     DollarSign,
-    RotateCcw,
     PieChart,
     Wallet,
     Shield,
@@ -58,14 +55,7 @@ const NODE_STYLES: Record<string, NodeStyleConfig> = {
         glow: 'shadow-blue-100/50',
         textColor: 'text-blue-700',
     },
-    viewed: {
-        bg: 'bg-gradient-to-br from-indigo-50 to-violet-50',
-        border: 'border-indigo-200',
-        iconBg: 'bg-indigo-100',
-        iconColor: 'text-indigo-600',
-        glow: 'shadow-indigo-100/50',
-        textColor: 'text-indigo-700',
-    },
+    // partially_paid: { ... }
     partially_paid: {
         bg: 'bg-gradient-to-br from-cyan-50 to-teal-50',
         border: 'border-cyan-300',
@@ -141,10 +131,9 @@ const NODE_STYLES: Record<string, NodeStyleConfig> = {
 // ---------------------------------------------------------------------------
 // Icon map
 // ---------------------------------------------------------------------------
-const ICON_MAP: Record<string, React.FC<{ size?: number; className?: string }>> = {
+const ICON_MAP: Record<string, any> = {
     draft: FileText,
     sent: Send,
-    viewed: Eye,
     partially_paid: DollarSign,
     overdue: AlertTriangle,
     escalated: Zap,
@@ -304,7 +293,6 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
         const initialStats: Record<string, { count: number; value: number }> = {
             draft: { count: 0, value: 0 },
             sent: { count: 0, value: 0 },
-            viewed: { count: 0, value: 0 },
             partially_paid: { count: 0, value: 0 },
             overdue: { count: 0, value: 0 },
             escalated: { count: 0, value: 0 },
@@ -323,7 +311,6 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
 
     const totalPipeline = invoices.reduce((s, i) => s + i.total, 0);
     const overdueCount = stats.overdue.count + stats.escalated.count;
-    const pendingCount = stats.sent.count + stats.viewed.count + stats.partially_paid.count;
 
     // ── Nodes ─────────────────────────────────────────────────────────────────
     const nodes: Node[] = useMemo(() => [
@@ -337,11 +324,6 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
             id: 'sent', type: 'statusNode',
             position: { x: 280, y: 40 },
             data: { label: 'Sent', count: stats.sent.count, value: stats.sent.value, styleKey: 'sent', subtitle: 'Delivered' },
-        },
-        {
-            id: 'viewed', type: 'statusNode',
-            position: { x: 280, y: 200 },
-            data: { label: 'Viewed', count: stats.viewed.count, value: stats.viewed.value, styleKey: 'viewed', subtitle: 'Client opened' },
         },
 
         // Hub node (center)
@@ -420,9 +402,7 @@ export const InvoiceLifecycleMap: React.FC<InvoiceLifecycleMapProps> = ({ invoic
     const edges: Edge[] = useMemo(() => [
         // Lifecycle flow
         { id: 'draft-sent', source: 'draft', target: 'sent', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' } },
-        { id: 'draft-viewed', source: 'draft', target: 'viewed', animated: true, style: { stroke: '#8b5cf6', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#8b5cf6' } },
         { id: 'sent-hub', source: 'sent', target: 'hub', animated: true, style: { stroke: '#10b981', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' } },
-        { id: 'viewed-hub', source: 'viewed', target: 'hub', animated: true, style: { stroke: '#10b981', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' } },
 
         // Hub to outcomes
         { id: 'hub-partial', source: 'hub', target: 'partially_paid', animated: true, style: { stroke: '#06b6d4', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#06b6d4' } },
