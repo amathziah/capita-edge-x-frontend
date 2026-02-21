@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { FileText, Download, Mail, Loader2, Eye, Printer, X, Plus, Search, Filter, Edit2, Trash2, DollarSign, CheckCircle } from "lucide-react";
+import { FileText, Download, Mail, Loader2, Eye, Printer, X, Plus, Search, Filter, Edit2, Trash2, DollarSign, CheckCircle, Share2 } from "lucide-react";
 import { pdf } from '@react-pdf/renderer';
 import InvoicePDF from '../components/PDF/InvoicePDF';
 import { dataService } from '../services/dataService';
@@ -562,6 +562,21 @@ export function Invoices() {
                           )}
                         </button>
                         <button
+                          onClick={() => {
+                            if (!inv.share_token) {
+                              showToast("Share link not available for this invoice.", 'error');
+                              return;
+                            }
+                            const url = dataService.getShareUrl(inv.share_token);
+                            navigator.clipboard.writeText(url);
+                            showToast("Share link copied to clipboard!", 'success');
+                          }}
+                          className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary-light transition"
+                          title="Copy Share Link"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={async () => {
                             if (!window.confirm(`Delete invoice ${inv.invoiceNumber}? This action cannot be undone.`)) return;
                             try {
@@ -814,6 +829,20 @@ export function Invoices() {
                 <Download className="w-4 h-4" /> PDF
               </button>
               <button
+                onClick={() => {
+                  if (!viewInvoice?.share_token) {
+                    showToast("Share link not available.", 'error');
+                    return;
+                  }
+                  const url = dataService.getShareUrl(viewInvoice.share_token);
+                  navigator.clipboard.writeText(url);
+                  showToast("Share link copied to clipboard!", 'success');
+                }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition"
+              >
+                <Share2 className="w-4 h-4" /> Copy Share Link
+              </button>
+              <button
                 onClick={async () => {
                   if (!viewInvoice) return;
                   // Simple prompt for now (ideally use a modal)
@@ -871,7 +900,7 @@ export function Invoices() {
               {viewInvoice?.status === 'overdue' && (
                 <button
                   onClick={async () => {
-                    const offer = await dataService.generateSettlementOffer(viewInvoice.id);
+                    const offer = await dataService.generateSettlementOffer(viewInvoice.id) as any;
                     if (offer) {
                       alert(`AI Generated Negotiation Email:\n\nSubject: ${offer.subject}\n\n${offer.body}\n\nDiscount Offered: ${offer.discountOffered ? 'Yes (5%)' : 'No'}`);
                     } else {

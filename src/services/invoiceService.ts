@@ -38,14 +38,10 @@ export const invoiceService = {
         api.post(`/invoices/${id}/send`, { to, pdfAttachment: pdfBase64 }),
 
     sendReminder: (id: string, to: string, pdfBase64?: string | null) =>
-        api.post(`/invoices/${id}/reminder`, { to, pdfAttachment: pdfBase64 })
-    // Reminder route? I didn't see `/email/send-reminder` explicitly in my `invoiceRoutes`.
-    // It was in `server.js` inline. I likely moved it to `invoiceController.sendInvoiceEmail` logic?
-    // Wait, `sendPaymentReminder` was called in `bulkReminders`.
-    // But is there a single reminder endpoint?
-    // In `server.js` legacy: `app.post('/api/email/send-payment-reminder'...)`.
-    // I probably missed porting that specific one to `invoiceRoutes` unless it's the same as send-invoice?
-    // No, `sendPaymentReminder` is different text.
-    // I should add `sendReminder` to `invoiceRoutes`.
-    // For now, I'll comment it out or leave as legacy path if I missed it.
+        api.post(`/invoices/${id}/reminder`, { to, pdfAttachment: pdfBase64 }),
+
+    getShareUrl: (token: string) => {
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+        return `${baseUrl}/invoices/share/${token}`;
+    }
 };

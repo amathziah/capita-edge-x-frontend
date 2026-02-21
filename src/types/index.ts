@@ -69,6 +69,7 @@ export interface Invoice {
 
   status: 'draft' | 'pending' | 'paid' | 'overdue' | 'sent' | 'viewed' | 'cancelled' | 'escalated' | 'partially_paid';
   notes?: string;
+  share_token?: string;
   createdAt: string;
   updatedAt?: string;
 }
