@@ -8,6 +8,7 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     signOut: () => Promise<void>;
+    refreshOrgContext: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
     signOut: async () => { },
+    refreshOrgContext: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -113,13 +115,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const refreshOrgContext = async () => {
+        if (user) await fetchAndSetOrgContext(user.id);
+    };
+
     const signOut = async () => {
         await supabase.auth.signOut();
         localStorage.removeItem('sb-access-token');
     };
 
     return (
-        <AuthContext.Provider value={{ session, user, loading, signOut }}>
+        <AuthContext.Provider value={{ session, user, loading, signOut, refreshOrgContext }}>
             {loading ? (
                 <div className="flex items-center justify-center h-screen bg-gray-50">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>

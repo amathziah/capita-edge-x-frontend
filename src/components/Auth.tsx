@@ -10,6 +10,7 @@ export default function AuthComponent() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [companyName, setCompanyName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
@@ -32,19 +33,42 @@ export default function AuthComponent() {
 
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!companyName) {
+            setError('Company Name is required for signup');
+            return;
+        }
         setLoading(true);
         setError(null);
         setMessage(null);
         try {
-            const { error } = await supabase.auth.signUp({
+            // 1. Supabase Auth Signup
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
                     emailRedirectTo: window.location.origin,
                 },
             });
-            if (error) throw error;
-            setMessage('Check your email for the confirmation link.');
+            if (authError) throw authError;
+
+            // 2. Provision Organization via Backend
+            if (authData.user) {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/provision`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authData.session?.access_token}`,
+                    },
+                    body: JSON.stringify({ companyName }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Provisioning failed');
+                }
+            }
+
+            setMessage('Account created! Please check your email for the confirmation link.');
         } catch (error: any) {
             setError(error.message || 'Failed to sign up');
         } finally {
@@ -157,6 +181,20 @@ export default function AuthComponent() {
                                     className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                                 />
                             </div>
+
+                            {view === 'signup' && (
+                                <div className="relative group">
+                                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                                    <input
+                                        type="text"
+                                        placeholder="Company / Business Name"
+                                        value={companyName}
+                                        onChange={(e) => setCompanyName(e.target.value)}
+                                        required
+                                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+                            )}
 
                             {view !== 'forgot_password' && (
                                 <div className="relative group">
