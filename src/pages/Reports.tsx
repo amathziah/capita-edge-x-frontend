@@ -9,14 +9,16 @@ import { ReportInsights } from "../components/ReportInsights";
 
 export function Reports() {
   const [data, setData] = useState<any[]>([]);
+  const [aiInsights, setAiInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInsights, setShowInsights] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const trends = await dataService.getRevenueTrends('monthly');
+        const trends = await dataService.getRevenueTrends('monthly') as any[];
         const mapped = trends.map((t: any) => ({
           month: t.period,
           revenue: t.revenue,
@@ -29,7 +31,21 @@ export function Reports() {
         setLoading(false);
       }
     };
+
+    const fetchAiInsights = async () => {
+      try {
+        setIsAiLoading(true);
+        const insights = await dataService.getAiInsights();
+        setAiInsights(insights as any[]);
+      } catch (error) {
+        console.error("Failed to fetch AI insights:", error);
+      } finally {
+        setIsAiLoading(false);
+      }
+    };
+
     fetchData();
+    fetchAiInsights();
   }, []);
 
   const totalRevenue = data.reduce((s, d) => s + (d.revenue || 0), 0);
@@ -178,10 +194,11 @@ export function Reports() {
         <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             onClick={() => setShowInsights(true)}
-            className="flex-1 md:flex-none justify-center flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:from-emerald-400 hover:to-teal-500 transition-all select-none"
+            disabled={isAiLoading}
+            className="flex-1 md:flex-none justify-center flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:from-emerald-400 hover:to-teal-500 transition-all select-none disabled:opacity-70"
           >
-            <Lightbulb className="w-4 h-4" />
-            View Insights
+            {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lightbulb className="w-4 h-4" />}
+            {isAiLoading ? 'Analyzing...' : 'View Insights'}
           </button>
           <button
             onClick={handleExport}
@@ -248,6 +265,7 @@ export function Reports() {
 
           <ReportInsights
             data={data}
+            aiInsights={aiInsights}
             isOpen={showInsights}
             onClose={() => setShowInsights(false)}
           />

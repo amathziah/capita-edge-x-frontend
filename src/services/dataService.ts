@@ -110,6 +110,7 @@ class DataService {
   // AI
   getSafeToSpend = analyticsService.getSafeToSpend;
   generateSettlementOffer = aiService.generateSettlementOffer;
+  getAiInsights = aiService.getInsights;
   sendCommand = aiService.sendCommand;
 }
 

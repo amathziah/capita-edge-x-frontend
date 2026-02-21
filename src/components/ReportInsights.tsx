@@ -1,10 +1,11 @@
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Trophy, Target, TrendingUp, TrendingDown, Lightbulb, X } from "lucide-react";
+import { Trophy, Target, TrendingDown, Lightbulb, X } from "lucide-react";
 import { useMemo } from "react";
 
 interface ReportInsightsProps {
     data: any[];
+    aiInsights: any[];
     isOpen: boolean;
     onClose: () => void;
 }
@@ -22,9 +23,60 @@ interface Insight {
     segmentColor: string;
 }
 
-export function ReportInsights({ data, isOpen, onClose }: ReportInsightsProps) {
+const TYPE_THEMES: Record<string, { icon: any, color: string, bg: string, gradient: string, segmentColor: string }> = {
+    success: {
+        icon: Trophy,
+        color: "text-emerald-700",
+        bg: "bg-emerald-50",
+        gradient: "from-emerald-100 to-green-100",
+        segmentColor: "#10B981"
+    },
+    warning: {
+        icon: TrendingDown,
+        color: "text-amber-700",
+        bg: "bg-amber-50",
+        gradient: "from-amber-100 to-orange-100",
+        segmentColor: "#F59E0B"
+    },
+    critical: {
+        icon: Target,
+        color: "text-rose-700",
+        bg: "bg-rose-50",
+        gradient: "from-rose-100 to-red-100",
+        segmentColor: "#E11D48"
+    },
+    info: {
+        icon: Lightbulb,
+        color: "text-cyan-700",
+        bg: "bg-cyan-50",
+        gradient: "from-cyan-100 to-sky-100",
+        segmentColor: "#06B6D4"
+    }
+};
+
+export function ReportInsights({ data, aiInsights, isOpen, onClose }: ReportInsightsProps) {
     // Reusing logic from ReportFlashcards to generate insights
     const insights = useMemo<Insight[]>(() => {
+        // Preference: Real AI Insights
+        if (aiInsights && aiInsights.length > 0) {
+            return aiInsights.map(ai => {
+                const theme = TYPE_THEMES[ai.type] || TYPE_THEMES.info;
+                return {
+                    id: ai.id,
+                    title: ai.title,
+                    value: ai.value,
+                    subtitle: ai.subtitle,
+                    description: ai.description,
+                    icon: theme.icon,
+                    color: theme.color,
+                    bg: theme.bg,
+                    gradient: theme.gradient,
+                    segmentColor: theme.segmentColor
+                };
+            });
+        }
+
+        // Fallback: Calculated Insights if AI is not present
         if (!data || data.length === 0) return [];
 
         const sortedByRevenue = [...data].sort((a, b) => b.revenue - a.revenue);
@@ -72,7 +124,7 @@ export function ReportInsights({ data, isOpen, onClose }: ReportInsightsProps) {
                 title: "Recent Momentum",
                 value: `${Math.abs(performanceVsAvg).toFixed(1)}%`,
                 subtitle: `${performanceVsAvg >= 0 ? "Above" : "Below"} average`,
-                icon: performanceVsAvg >= 0 ? TrendingUp : TrendingDown,
+                icon: performanceVsAvg >= 0 ? TrendingDown : TrendingDown,
                 color: performanceVsAvg >= 0 ? "text-teal-600" : "text-rose-600",
                 bg: performanceVsAvg >= 0 ? "bg-teal-50" : "bg-rose-50",
                 gradient: performanceVsAvg >= 0 ? "from-teal-100 to-cyan-100" : "from-rose-100 to-red-100",
@@ -92,7 +144,8 @@ export function ReportInsights({ data, isOpen, onClose }: ReportInsightsProps) {
                 segmentColor: "#06B6D4" // cyan-500
             }
         ];
-    }, [data]);
+    }, [data, aiInsights]);
+
 
     if (!isOpen || !data || data.length === 0) return null;
 
