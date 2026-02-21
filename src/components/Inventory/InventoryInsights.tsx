@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { InventoryService } from '../../services/inventoryAnalysis';
+import { Activity, AlertCircle, Zap } from 'lucide-react';
 
 interface InsightSummary {
     cash_locked: number;
@@ -48,60 +49,56 @@ export const InventoryInsights = () => {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Widget 1: Dead Stock Value — Uses danger status colors */}
-            <div className="bg-status-danger-bg border border-red-200/60 rounded-xl p-4 flex items-center justify-between shadow-card hover:shadow-soft transition-shadow">
+            {/* Widget 1: Dead Stock Value — Now using Teal/Neutral */}
+            <div className="bg-white/60 backdrop-blur-sm border border-emerald-100/60 rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
                 <div>
-                    <h4 className="text-[11px] font-bold text-status-danger uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-status-danger animate-pulse" />
-                        Dead Stock Value
+                    <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Static Inventory Value
                     </h4>
-                    <p className="text-2xl font-bold text-gray-900 font-display">
+                    <p className="text-2xl font-black text-gray-900 font-display">
                         ₹{summary.cash_locked.toLocaleString()}
                     </p>
-                    <p className="text-[11px] text-text-muted mt-1">Cash tied up in slow movers ({'>'}60d)</p>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">Liquid Capital Locked ({'>'}60d)</p>
                 </div>
-                <div className="p-2.5 bg-red-100 rounded-xl text-status-danger">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
+                    <Activity className="w-5 h-5" strokeWidth={2.5} />
                 </div>
             </div>
 
-            {/* Widget 2: Stockout Risks — Uses warning/success colors */}
-            <div className={`border rounded-xl p-4 flex items-center justify-between shadow-card hover:shadow-soft transition-shadow ${summary.risks > 0
-                    ? 'bg-status-warning-bg border-yellow-200/60'
-                    : 'bg-status-success-bg border-green-200/60'
-                }`}>
+            {/* Widget 2: Allocation Risks — Now using Teal/Neutral */}
+            <div className="bg-white/60 backdrop-blur-sm border border-emerald-100/60 rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
                 <div>
-                    <h4 className={`text-[11px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5 ${summary.risks > 0 ? 'text-status-warning' : 'text-status-success'
-                        }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${summary.risks > 0 ? 'bg-status-warning animate-pulse' : 'bg-status-success'}`} />
-                        Stockout Risks
+                    <h4 className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                        Replenishment Risks
                     </h4>
-                    <p className="text-2xl font-bold text-gray-900 font-display">
-                        {summary.risks} {summary.risks === 1 ? 'Item' : 'Items'}
+                    <p className="text-2xl font-black text-gray-900 font-display">
+                        {summary.risks} {summary.risks === 1 ? 'Node' : 'Nodes'}
                     </p>
-                    <p className="text-[11px] text-text-muted mt-1">Predicted within next 7 days</p>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">Forecasted Outages (7d)</p>
                 </div>
-                <div className={`p-2.5 rounded-xl ${summary.risks > 0 ? 'bg-yellow-100 text-status-warning' : 'bg-green-100 text-status-success'}`}>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <div className="p-2.5 bg-teal-50 rounded-xl text-teal-600">
+                    <AlertCircle className="w-5 h-5" strokeWidth={2.5} />
                 </div>
             </div>
 
-            {/* Widget 3: System Health — Uses primary teal */}
-            <div className="bg-primary-light border border-primary/20 rounded-xl p-4 flex items-center justify-between shadow-card hover:shadow-soft transition-shadow">
+            {/* Widget 3: Operational Health — Primary Teal */}
+            <div className="bg-emerald-600 border border-emerald-500 rounded-xl p-4 flex items-center justify-between shadow-lg shadow-emerald-200/50 hover:shadow-emerald-200/80 transition-all group">
                 <div>
-                    <h4 className="text-[11px] font-bold text-primary-dark uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                        System Health
+                    <h4 className="text-[10px] font-black text-emerald-50 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        Operational Grade
                     </h4>
-                    <p className="text-2xl font-bold text-gray-900 font-display">
+                    <p className="text-2xl font-black text-white font-display">
                         {summary.health_percent}%
                     </p>
-                    <p className="text-[11px] text-text-muted mt-1">
-                        {summary.health_percent >= 80 ? 'Optimal stock levels' : summary.health_percent >= 50 ? 'Needs attention' : 'Critical — review stock'}
+                    <p className="text-[10px] text-emerald-100/80 font-bold mt-1 uppercase tracking-tighter">
+                        {summary.health_percent >= 80 ? 'Optimal Efficiency' : summary.health_percent >= 50 ? 'Maintenance Required' : 'Critical Refactor'}
                     </p>
                 </div>
-                <div className="p-2.5 bg-primary/15 rounded-xl text-primary">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div className="p-2.5 bg-white/20 rounded-xl text-white group-hover:scale-110 transition-transform">
+                    <Zap className="w-5 h-5" strokeWidth={2.5} />
                 </div>
             </div>
         </div>
@@ -128,8 +125,8 @@ export const VelocityBadge = ({ velocity, daysRemaining, lastSoldDate, hasSalesD
 
     if (isDead) {
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-900/5 text-gray-700 border border-gray-200 ring-1 ring-inset ring-gray-900/5" title="No sales in 60+ days">
-                💀 Dead Stock
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-gray-900 text-white border border-gray-800 tracking-tighter uppercase" title="No sales in 60+ days">
+                Static Node
             </span>
         );
     }
@@ -137,8 +134,8 @@ export const VelocityBadge = ({ velocity, daysRemaining, lastSoldDate, hasSalesD
     // Stockout Risk: Less than 7 days of stock remaining
     if (daysRemaining < 7 && daysRemaining > 0 && velocity > 0) {
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-status-warning-bg text-amber-700 border border-amber-200 ring-1 ring-inset ring-amber-500/10" title={`${Math.floor(daysRemaining)} days left`}>
-                ⚠️ Low Stock ({Math.floor(daysRemaining)}d)
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 tracking-tighter uppercase" title={`${Math.floor(daysRemaining)} days left`}>
+                Alert ({Math.floor(daysRemaining)}d)
             </span>
         );
     }
@@ -146,8 +143,8 @@ export const VelocityBadge = ({ velocity, daysRemaining, lastSoldDate, hasSalesD
     // Fast Mover: High velocity
     if (velocity > 2) {
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-primary-light text-primary-dark border border-primary/20 ring-1 ring-inset ring-primary/10" title="High sales velocity">
-                🔥 Fast Mover
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-primary text-white border border-primary/20 tracking-tighter uppercase" title="High sales velocity">
+                High Velocity
             </span>
         );
     }

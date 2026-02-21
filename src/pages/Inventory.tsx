@@ -125,19 +125,19 @@ export function Inventory() {
   const overstockMultiplier = Number(invSettings.inv_overstocked_multiplier) || 3;
 
   const getStockStatus = (item: InventoryItem) => {
-    if (item.stock === 0) return { label: 'Out of Stock', color: 'bg-red-500', ring: 'ring-red-200', text: 'text-red-700' };
+    if (item.stock === 0) return { label: 'Out of Stock', color: 'bg-gray-900', ring: 'ring-gray-200', text: 'text-gray-900' };
 
     // Dead Stock logic
     const daysSinceCreation = (new Date().getTime() - new Date(item.createdAt).getTime()) / (1000 * 3600 * 24);
     if (item.sales === 0 && daysSinceCreation > Number(invSettings.inv_dead_stock_threshold)) {
-      return { label: 'Dead Stock', color: 'bg-gray-900', ring: 'ring-gray-200', text: 'text-gray-900' };
+      return { label: 'Static Node', color: 'bg-emerald-100', ring: 'ring-emerald-200', text: 'text-emerald-900' };
     }
 
-    if (item.stock < (item.minStock || defaultReorder)) return { label: 'Reorder Soon', color: 'bg-amber-500', ring: 'ring-amber-200', text: 'text-amber-700' };
+    if (item.stock < (item.minStock || defaultReorder)) return { label: 'Replenish', color: 'bg-emerald-600', ring: 'ring-emerald-200', text: 'text-white' };
 
-    if (item.stock > (item.minStock || defaultReorder) * overstockMultiplier) return { label: 'Overstocked', color: 'bg-blue-500', ring: 'ring-blue-200', text: 'text-blue-700' };
+    if (item.stock > (item.minStock || defaultReorder) * overstockMultiplier) return { label: 'Overstocked', color: 'bg-teal-100', ring: 'ring-teal-200', text: 'text-teal-700' };
 
-    return { label: 'Healthy', color: 'bg-emerald-500', ring: 'ring-emerald-200', text: 'text-emerald-700' };
+    return { label: 'Healthy', color: 'bg-primary', ring: 'ring-primary/20', text: 'text-white' };
   };
 
   // Derived State for Filters
@@ -263,11 +263,11 @@ export function Inventory() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         {[
-          { label: 'Total Products', value: inventory.length, icon: Package, gradient: 'from-emerald-600 to-teal-600', glow: 'shadow-emerald-500/20', accent: 'text-emerald-600', bg: 'bg-white/90', border: 'border-emerald-100/80', ring: 'bg-emerald-500', delay: 0 },
-          { label: 'Inventory Value', value: `₹${(totalValue / 1000).toFixed(1)}k`, icon: TrendingUp, gradient: 'from-blue-600 to-indigo-600', glow: 'shadow-blue-500/20', accent: 'text-blue-600', bg: 'bg-white/90', border: 'border-blue-100/80', ring: 'bg-blue-500', delay: 0.04 },
-          { label: 'Reorder Alerts', value: lowStockCount, icon: AlertCircle, gradient: 'from-amber-500 to-orange-600', glow: 'shadow-amber-500/20', accent: 'text-amber-600', bg: 'bg-white/90', border: 'border-amber-100/80', ring: 'bg-amber-500', delay: 0.08, pulse: lowStockCount > 0 },
-          { label: 'Out of Stock', value: outOfStockCount, icon: AlertTriangle, gradient: 'from-rose-500 to-red-600', glow: 'shadow-rose-500/20', accent: 'text-red-600', bg: 'bg-white/90', border: 'border-rose-100/80', ring: 'bg-red-500', delay: 0.12, pulse: outOfStockCount > 0 },
-          { label: 'AI Strategy', value: 'Active', icon: Bot, gradient: 'from-violet-600 to-fuchsia-600', glow: 'shadow-violet-500/20', accent: 'text-violet-600', bg: 'bg-white/90', border: 'border-violet-100/80', ring: 'bg-violet-500', delay: 0.16, clickable: true },
+          { label: 'Total Products', value: inventory.length, icon: Package, gradient: 'from-emerald-600 to-emerald-800', glow: 'shadow-emerald-500/20', accent: 'text-emerald-600', bg: 'bg-white/90', border: 'border-emerald-100/80', ring: 'bg-emerald-500', delay: 0 },
+          { label: 'Inventory Value', value: `₹${(totalValue / 1000).toFixed(1)}k`, icon: TrendingUp, gradient: 'from-teal-600 to-emerald-700', glow: 'shadow-teal-500/20', accent: 'text-teal-600', bg: 'bg-white/90', border: 'border-teal-100/80', ring: 'bg-teal-500', delay: 0.04 },
+          { label: 'Reorder Alerts', value: lowStockCount, icon: AlertCircle, gradient: 'from-emerald-500 to-teal-600', glow: 'shadow-emerald-500/20', accent: 'text-emerald-600', bg: 'bg-white/90', border: 'border-emerald-100/80', ring: 'bg-emerald-500', delay: 0.08, pulse: lowStockCount > 0 },
+          { label: 'Out of Stock', value: outOfStockCount, icon: AlertTriangle, gradient: 'from-gray-700 to-gray-900', glow: 'shadow-gray-500/10', accent: 'text-gray-900', bg: 'bg-white/90', border: 'border-gray-200/80', ring: 'bg-gray-900', delay: 0.12, pulse: outOfStockCount > 0 },
+          { label: 'AI Strategy', value: 'Active', icon: Bot, gradient: 'from-emerald-700 to-teal-800', glow: 'shadow-emerald-500/20', accent: 'text-emerald-600', bg: 'bg-white/90', border: 'border-emerald-100/80', ring: 'bg-emerald-500', delay: 0.16, clickable: true },
         ].map((card) => (
           <motion.div
             key={card.label}
@@ -358,9 +358,9 @@ export function Inventory() {
                   setStockFilter('All');
                   setVendorFilter('All');
                 }}
-                className="px-4 py-2 text-sm font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-100"
+                className="px-4 py-2 text-xs font-black text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all border border-transparent hover:border-emerald-100 uppercase tracking-widest"
               >
-                Reset
+                Reset Filters
               </button>
             )}
             <button
@@ -445,7 +445,7 @@ export function Inventory() {
                       <td className="px-6 py-5 text-center">
                         <div className="text-sm font-bold text-gray-500">₹{item.costPrice || 0}</div>
                         {margin !== null && (
-                          <div className={`text-[10px] font-black mt-0.5 px-1.5 py-0.5 rounded-full inline-block ${margin >= 30 ? 'bg-emerald-50 text-emerald-600' : margin >= 15 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
+                          <div className={`text-[10px] font-black mt-0.5 px-1.5 py-0.5 rounded-full inline-block ${margin >= 15 ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'}`}>
                             {margin}% GPM
                           </div>
                         )}
