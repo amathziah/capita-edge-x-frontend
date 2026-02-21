@@ -45,7 +45,7 @@ export class InventoryService {
         // 1. Fetch products — use columns we KNOW exist + optional new ones
         const { data: products, error } = await supabase
             .from('products')
-            .select('id, name, sku, stock, cost_price, min_stock, sales_velocity_30d, last_sold_at, created_at');
+            .select('id, name, sku, stock, cost_price, minStock, sales_velocity_30d, last_sold_at, createdAt');
 
         if (error) {
             console.warn("Inventory analysis query error:", error.message);
@@ -66,13 +66,13 @@ export class InventoryService {
 
         for (const p of products) {
             const stock = p.stock ?? 0;
-            const minStock = p.min_stock ?? 10;
+            const minStock = p.minStock ?? 10;
             const velocity = p.sales_velocity_30d ?? 0;
             const cost = new Decimal(p.cost_price ?? 0);
 
             // Use last_sold_at if available, otherwise approximate from created_at
             const lastSold = p.last_sold_at ? new Date(p.last_sold_at) : null;
-            const createdAt = p.created_at ? new Date(p.created_at) : NOW;
+            const createdAt = p.createdAt ? new Date(p.createdAt) : NOW;
 
             // 1. Predict Stockout
             let daysRemaining = Infinity;
