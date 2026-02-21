@@ -18,6 +18,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
+import { UpdatePassword } from './pages/UpdatePassword';
 import PricingPage from './components/Pricing/PricingPage';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/update-password" element={<UpdatePassword />} />
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
