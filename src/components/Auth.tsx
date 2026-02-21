@@ -94,6 +94,30 @@ export default function AuthComponent() {
         }
     };
 
+    const handleResendEmail = async () => {
+        if (!email) {
+            setError('Please enter your email address first.');
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+            const { error } = await supabase.auth.resend({
+                type: 'signup',
+                email: email,
+                options: {
+                    emailRedirectTo: window.location.origin,
+                }
+            });
+            if (error) throw error;
+            setMessage('A new confirmation link has been sent to your email.');
+        } catch (error: any) {
+            setError(error.message || 'Failed to resend confirmation email');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="flex items-center justify-center min-h-screen bg-[#F0F4F8] relative overflow-hidden font-sans">
             {/* Background Ambience */}
@@ -145,10 +169,21 @@ export default function AuthComponent() {
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
-                                className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-start gap-3 text-emerald-600 text-sm font-medium"
+                                className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex flex-col gap-3 text-emerald-600 text-sm font-medium"
                             >
-                                <CheckCircle className="w-5 h-5 shrink-0" />
-                                <p>{message}</p>
+                                <div className="flex items-start gap-3">
+                                    <CheckCircle className="w-5 h-5 shrink-0" />
+                                    <p>{message}</p>
+                                </div>
+                                {message.includes('check your email') && (
+                                    <button
+                                        onClick={handleResendEmail}
+                                        disabled={loading}
+                                        className="text-xs text-emerald-700 underline hover:text-emerald-800 disabled:opacity-50 text-left pl-8"
+                                    >
+                                        Didn't receive it? Resend confirmation email
+                                    </button>
+                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>
