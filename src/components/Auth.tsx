@@ -13,6 +13,8 @@ export default function AuthComponent() {
     const [companyName, setCompanyName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [showOtpInput, setShowOtpInput] = useState(false);
+    const [otp, setOtp] = useState('');
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,22 +43,56 @@ export default function AuthComponent() {
         setError(null);
         setMessage(null);
         try {
-            // 1. Supabase Auth Signup - Store companyName in metadata
-            const { error: authError } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    emailRedirectTo: window.location.origin,
-                    data: {
-                        company_name: companyName,
-                    }
+            // Call backend API instead of direct Supabase signup
+            // This ensures the confirmation email is sent via our SMTP service
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/signup`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({ email, password, companyName }),
             });
-            if (authError) throw authError;
 
-            setMessage('Account created! Please check your email for the confirmation link. After verifying, you can sign in to set up your business.');
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to create account');
+            }
+
+            setMessage('Account created! Please check your email for the 6-digit verification code.');
+            setShowOtpInput(true);
         } catch (error: any) {
             setError(error.message || 'Failed to sign up');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/verify-otp`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, otp }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Invalid or expired code');
+            }
+
+            setMessage('Email verified successfully! You can now sign in.');
+            setShowOtpInput(false);
+            setView('signin');
+            setPassword('');
+        } catch (error: any) {
+            setError(error.message || 'Verification failed');
         } finally {
             setLoading(false);
         }
@@ -102,16 +138,25 @@ export default function AuthComponent() {
         setLoading(true);
         setError(null);
         try {
-            const { error } = await supabase.auth.resend({
-                type: 'signup',
-                email: email,
-                options: {
-                    emailRedirectTo: window.location.origin,
-                }
+            // Call backend API instead of direct Supabase resend
+            // This allows us to use our own SMTP as a fallback
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/resend-confirmation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
             });
-            if (error) throw error;
-            setMessage('A new confirmation link has been sent to your email.');
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to resend confirmation email');
+            }
+
+            setMessage('A new verification code has been sent to your email.');
         } catch (error: any) {
+            console.error('Resend error:', error);
             setError(error.message || 'Failed to resend confirmation email');
         } finally {
             setLoading(false);
@@ -142,12 +187,13 @@ export default function AuthComponent() {
                             <ShieldCheck className="w-8 h-8" strokeWidth={2} />
                         </motion.div>
                         <h1 className="text-2xl font-bold text-slate-800 mb-2 font-display">
-                            {view === 'signin' ? 'Welcome Back' : view === 'signup' ? 'Create Account' : 'Reset Password'}
+                            {showOtpInput ? 'Verify Email' : view === 'signin' ? 'Welcome Back' : view === 'signup' ? 'Create Account' : 'Reset Password'}
                         </h1>
                         <p className="text-slate-500 text-sm">
-                            {view === 'signin' ? 'Sign in to manage your finances securely' :
-                                view === 'signup' ? 'Start your financial journey today' :
-                                    'Enter your email to receive recovery instructions'}
+                            {showOtpInput ? 'Enter the 6-digit code sent to your email' :
+                                view === 'signin' ? 'Sign in to manage your finances securely' :
+                                    view === 'signup' ? 'Start your financial journey today' :
+                                        'Enter your email to receive recovery instructions'}
                         </p>
                     </div>
 
@@ -189,50 +235,66 @@ export default function AuthComponent() {
                     </AnimatePresence>
 
                     {/* Form */}
-                    <form onSubmit={view === 'signin' ? handleEmailLogin : view === 'signup' ? handleSignUp : handleResetPassword} className="space-y-4">
+                    <form onSubmit={showOtpInput ? handleVerifyOtp : view === 'signin' ? handleEmailLogin : view === 'signup' ? handleSignUp : handleResetPassword} className="space-y-4">
                         <div className="space-y-4">
-                            <div className="relative group">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                                <input
-                                    type="email"
-                                    placeholder="Email address"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
-                                />
-                            </div>
+                            {!showOtpInput ? (
+                                <>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                                        <input
+                                            type="email"
+                                            placeholder="Email address"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                        />
+                                    </div>
 
-                            {view === 'signup' && (
+                                    {view === 'signup' && (
+                                        <div className="relative group">
+                                            <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                                            <input
+                                                type="text"
+                                                placeholder="Company / Business Name"
+                                                value={companyName}
+                                                onChange={(e) => setCompanyName(e.target.value)}
+                                                required
+                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {view !== 'forgot_password' && (
+                                        <div className="relative group">
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                                            <input
+                                                type="password"
+                                                placeholder="Password"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                required
+                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
                                 <div className="relative group">
                                     <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                                     <input
                                         type="text"
-                                        placeholder="Company / Business Name"
-                                        value={companyName}
-                                        onChange={(e) => setCompanyName(e.target.value)}
+                                        placeholder="Enter 6-digit code"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                         required
-                                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
-                                    />
-                                </div>
-                            )}
-
-                            {view !== 'forgot_password' && (
-                                <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                                    <input
-                                        type="password"
-                                        placeholder="Password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-center text-2xl font-bold tracking-[0.5em] text-emerald-600 placeholder:text-slate-300 placeholder:tracking-normal placeholder:text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                                     />
                                 </div>
                             )}
                         </div>
 
-                        {view === 'signin' && (
+                        {view === 'signin' && !showOtpInput && (
                             <div className="flex justify-end">
                                 <button
                                     type="button"
@@ -254,7 +316,7 @@ export default function AuthComponent() {
                             ) : (
                                 <>
                                     <span>
-                                        {view === 'signin' ? 'Sign In' : view === 'signup' ? 'Create Account' : 'Send Recovery Link'}
+                                        {showOtpInput ? 'Verify Code' : view === 'signin' ? 'Sign In' : view === 'signup' ? 'Create Account' : 'Send Recovery Link'}
                                     </span>
                                     <ArrowRight className="w-4 h-4 ml-1" />
                                 </>
@@ -263,7 +325,7 @@ export default function AuthComponent() {
                     </form>
 
                     {/* Divider */}
-                    {view !== 'forgot_password' && (
+                    {view !== 'forgot_password' && !showOtpInput && (
                         <>
                             <div className="relative my-8">
                                 <div className="absolute inset-0 flex items-center">
@@ -313,19 +375,36 @@ export default function AuthComponent() {
                     {/* Footer Toggle */}
                     <div className="mt-8 text-center">
                         <p className="text-sm text-slate-500 font-medium">
-                            {view === 'signin' ? "Don't have an account? " :
-                                view === 'signup' ? "Already have an account? " :
-                                    "Remember your password? "}
-                            <button
-                                onClick={() => {
-                                    setError(null);
-                                    setMessage(null);
-                                    setView(view === 'signin' ? 'signup' : 'signin');
-                                }}
-                                className="text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
-                            >
-                                {view === 'signin' ? 'Sign up' : 'Sign in'}
-                            </button>
+                            {showOtpInput ? (
+                                <button
+                                    onClick={() => {
+                                        setError(null);
+                                        setMessage(null);
+                                        setShowOtpInput(false);
+                                        setView('signup');
+                                    }}
+                                    className="text-emerald-600 hover:text-emerald-700 font-bold transition-colors underline flex items-center gap-1 mx-auto"
+                                >
+                                    <ArrowRight className="w-4 h-4 rotate-180" />
+                                    Back to signup
+                                </button>
+                            ) : (
+                                <>
+                                    {view === 'signin' ? "Don't have an account? " :
+                                        view === 'signup' ? "Already have an account? " :
+                                            "Remember your password? "}
+                                    <button
+                                        onClick={() => {
+                                            setError(null);
+                                            setMessage(null);
+                                            setView(view === 'signin' ? 'signup' : 'signin');
+                                        }}
+                                        className="text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
+                                    >
+                                        {view === 'signin' ? 'Sign up' : 'Sign in'}
+                                    </button>
+                                </>
+                            )}
                         </p>
                     </div>
                 </motion.div>

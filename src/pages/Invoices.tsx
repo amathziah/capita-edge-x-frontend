@@ -913,14 +913,15 @@ export function Invoices() {
                   setRecordingPaymentFor(viewInvoice);
                   setViewInvoiceId(null);
                 }}
-                disabled={viewInvoice?.status === 'paid'}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium shadow-soft transition ${viewInvoice?.status === 'paid'
+                disabled={viewInvoice?.status === 'paid' || viewInvoice?.status === 'draft'}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium shadow-soft transition ${(viewInvoice?.status === 'paid' || viewInvoice?.status === 'draft')
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
                   : 'bg-teal-600 text-white hover:bg-teal-700 hover:shadow-lg'
                   }`}
+                title={viewInvoice?.status === 'draft' ? "Please send or view the invoice before recording payment" : ""}
               >
                 {viewInvoice?.status === 'paid' ? <CheckCircle className="w-4 h-4" /> : <DollarSign className="w-4 h-4" />}
-                {viewInvoice?.status === 'paid' ? 'Payment Recorded' : 'Record Payment'}
+                {viewInvoice?.status === 'paid' ? 'Payment Recorded' : (viewInvoice?.status === 'draft' ? 'Payment Restricted' : 'Record Payment')}
               </button>
 
               <button

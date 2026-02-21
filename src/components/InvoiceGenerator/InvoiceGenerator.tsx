@@ -57,16 +57,18 @@ const InputField = ({
     onFocus,
     onBlur,
     placeholder,
-    className = ""
+    className = "",
+    readOnly = false
 }: {
     label?: string;
     type?: string;
     value: string | number;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onFocus?: () => void;
     onBlur?: () => void;
     placeholder?: string;
     className?: string;
+    readOnly?: boolean;
 }) => (
     <div className={`flex flex-col space-y-2 ${className}`}>
         {label && <label className="text-xs font-semibold text-text-light uppercase tracking-wider">{label}</label>}
@@ -76,8 +78,12 @@ const InputField = ({
             onChange={onChange}
             onFocus={onFocus}
             onBlur={onBlur}
+            readOnly={readOnly}
             placeholder={placeholder}
-            className="bg-gray-50/80 backdrop-blur-sm border-0 border-b-2 border-gray-200 rounded-t-xl px-4 py-3 text-sm font-medium focus:border-primary focus:bg-white outline-none transition-all duration-200 text-text-main placeholder-gray-400 hover:bg-gray-100/60 shadow-sm"
+            className={`bg-gray-50/80 backdrop-blur-sm border-0 border-b-2 border-gray-200 rounded-t-xl px-4 py-3 text-sm font-medium outline-none transition-all duration-200 text-text-main placeholder-gray-400 shadow-sm ${readOnly
+                ? 'cursor-not-allowed text-text-muted bg-gray-100/50'
+                : 'focus:border-primary focus:bg-white hover:bg-gray-100/60'
+                }`}
         />
     </div>
 );
@@ -92,7 +98,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
     const [seller, setSeller] = useState<Seller>({ name: "", phone: "", email: "", address: "", taxId: "" });
     const [buyer, setBuyer] = useState<Buyer>({ name: "", phone: "", email: "", address: "" });
     const [meta, setMeta] = useState<InvoiceMeta>({
-        number: `INV-${Date.now().toString().slice(-6)}`,
+        number: `INV-${Date.now()}`,
         date: new Date().toISOString().split("T")[0],
         dueDate: new Date().toISOString().split("T")[0],
     });
@@ -104,7 +110,8 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
 
     // UI State
 
-    const [loading, setLoading] = useState(false);
+    const [activeAction, setActiveAction] = useState<'saving' | 'downloading' | 'emailing' | 'printing' | 'uploading' | null>(null);
+    const loading = activeAction !== null;
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     const [emailTo, setEmailTo] = useState("");
     const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
@@ -178,7 +185,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setLoading(true);
+            setActiveAction('uploading');
             try {
                 const result = await dataService.uploadLogo(file);
                 setLogo(result.url);
@@ -188,7 +195,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                 reader.onloadend = () => setLogo(reader.result as string);
                 reader.readAsDataURL(file);
             } finally {
-                setLoading(false);
+                setActiveAction(null);
             }
         }
     };
@@ -242,7 +249,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
             return;
         }
 
-        setLoading(true);
+        setActiveAction('downloading');
         try {
             // 1. Save JSON Data
             const invoiceData = buildInvoiceData();
@@ -278,7 +285,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         } catch (error) {
             console.error("Failed to save/download", error);
             showToast("Failed to generate PDF", 'error');
-            setLoading(false);
+            setActiveAction(null);
         }
     };
 
@@ -290,7 +297,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
             return;
         }
 
-        setLoading(true);
+        setActiveAction('saving');
         try {
             const invoiceData = buildInvoiceData();
             await dataService.saveInvoice(invoiceData as any);
@@ -302,8 +309,17 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         } catch (error) {
             console.error("Failed to save", error);
             showToast("Failed to save invoice", 'error');
-            setLoading(false);
+            setActiveAction(null);
         }
+    };
+
+    const handlePrint = async () => {
+        setActiveAction('printing');
+        // Small delay to allow loader to show before print dialog blocks the thread
+        setTimeout(() => {
+            window.print();
+            setActiveAction(null);
+        }, 800);
     };
 
     const handleEmailClick = () => {
@@ -321,7 +337,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
             return;
         }
 
-        setLoading(true);
+        setActiveAction('emailing');
         try {
             // 1. Save Data
             const invoiceData = buildInvoiceData();
@@ -341,7 +357,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
             // 3. Send Email with Attachment
             if (!latestSettings.smtp_user || !latestSettings.smtp_pass) {
                 showToast("Email service not configured. Please go to Settings to connect your Gmail.", 'error');
-                setLoading(false);
+                setActiveAction(null);
                 return;
             }
 
@@ -354,7 +370,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
             console.error("Failed to send email", error);
             showToast("Failed to send email", 'error');
         } finally {
-            setLoading(false);
+            setActiveAction(null);
         }
     };
 
@@ -403,15 +419,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
 
             <div className="flex-1 overflow-y-auto p-8 lg:p-10 space-y-10 scrollbar-hide relative min-h-0">
 
-                {/* Loader Overlay with Glassmorphism */}
-                {loading && (
-                    <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center backdrop-blur-md">
-                        <div className="bg-white/90 backdrop-blur-xl p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.15)] flex flex-col items-center gap-4">
-                            <Loader2 className="w-12 h-12 text-primary animate-spin" strokeWidth={2.5} />
-                            <p className="text-sm font-medium text-text-muted">Processing...</p>
-                        </div>
-                    </div>
-                )}
+                {/* Loader Overlay removed to favor per-button loading states */}
 
                 {/* Email Modal with Premium Styling */}
                 {isEmailModalOpen && (
@@ -445,7 +453,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                     disabled={!emailTo || loading}
                                     className="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl hover:shadow-lg text-sm font-semibold flex items-center gap-2 shadow-soft transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {loading ? <Loader2 size={16} className="animate-spin" strokeWidth={2.5} /> : <Mail size={16} strokeWidth={2.5} />} Send Email
+                                    {activeAction === 'emailing' ? <Loader2 size={16} className="animate-spin" strokeWidth={2.5} /> : <Mail size={16} strokeWidth={2.5} />} Send Email
                                 </button>
                             </div>
                         </div>
@@ -462,19 +470,25 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                             {logo ? (
                                 <div className="relative w-full h-full p-3">
                                     <img src={logo} alt="Logo" className="w-full h-full object-contain" />
-                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/90 to-primary-dark/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 text-sm font-semibold backdrop-blur-sm rounded-3xl">Change Logo</div>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/90 to-primary-dark/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 text-sm font-semibold backdrop-blur-sm rounded-3xl">
+                                        {activeAction === 'uploading' ? <Loader2 className="animate-spin" /> : "Change Logo"}
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center text-gray-400 group-hover:text-primary transition-all duration-300">
-                                    <ImageIcon size={32} className="mb-3 opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" strokeWidth={2} />
-                                    <span className="text-sm font-semibold">Upload Logo</span>
+                                    {activeAction === 'uploading' ? (
+                                        <Loader2 size={32} className="mb-3 animate-spin text-primary" strokeWidth={2.5} />
+                                    ) : (
+                                        <ImageIcon size={32} className="mb-3 opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" strokeWidth={2} />
+                                    )}
+                                    <span className="text-sm font-semibold">{activeAction === 'uploading' ? 'Uploading...' : 'Upload Logo'}</span>
                                 </div>
                             )}
                         </div>
                     </div>
 
                     <div className="w-full md:w-1/3 space-y-4">
-                        <InputField label="Invoice #" value={meta.number || ''} onChange={(e) => setMeta({ ...meta, number: e.target.value })} />
+                        <InputField label="Invoice #" value={meta.number || ''} readOnly={true} />
                         <InputField label="Date" type="date" value={meta.date || ''} onChange={(e) => setMeta({ ...meta, date: e.target.value })} />
                         <InputField label="Due Date" type="date" value={meta.dueDate || ''} onChange={(e) => setMeta({ ...meta, dueDate: e.target.value })} />
                     </div>
@@ -779,16 +793,18 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                     <button
                         onClick={handleSaveOnly}
                         disabled={loading}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm bg-white border-2 border-gray-200 text-text-muted hover:text-text-main hover:bg-gray-50 hover:border-primary/40 disabled:opacity-50"
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm bg-white border-2 border-gray-200 text-text-muted hover:text-text-main hover:bg-gray-50 hover:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Save size={18} strokeWidth={2} /> Save Details
+                        {activeAction === 'saving' ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} strokeWidth={2} />}
+                        Save Details
                     </button>
                     <button
                         onClick={handleSaveAndDownload}
                         disabled={loading}
                         className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 bg-gradient-to-r from-primary via-primary to-primary-dark text-white hover:shadow-xl shadow-soft disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
                     >
-                        <Download size={18} strokeWidth={2} /> Save & PDF
+                        {activeAction === 'downloading' ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} strokeWidth={2} />}
+                        Save & PDF
                     </button>
 
                     {/* Secondary Actions */}
@@ -796,15 +812,18 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                         <button
                             onClick={handleEmailClick}
                             disabled={loading}
-                            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm bg-white border-2 border-gray-200 text-text-muted hover:text-text-main hover:bg-gray-50 hover:border-primary/40 disabled:opacity-50"
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm bg-white border-2 border-gray-200 text-text-muted hover:text-text-main hover:bg-gray-50 hover:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <Mail size={18} strokeWidth={2} /> Email
+                            {activeAction === 'emailing' ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} strokeWidth={2} />}
+                            Email
                         </button>
                         <button
-                            onClick={() => window.print()}
-                            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm bg-white border-2 border-gray-200 text-text-muted hover:text-text-main hover:bg-gray-50 hover:border-primary/40"
+                            onClick={handlePrint}
+                            disabled={loading}
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm bg-white border-2 border-gray-200 text-text-muted hover:text-text-main hover:bg-gray-50 hover:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <Printer size={18} strokeWidth={2} /> Print
+                            {activeAction === 'printing' ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} strokeWidth={2} />}
+                            Print
                         </button>
                     </div>
                 </div>

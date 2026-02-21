@@ -754,7 +754,7 @@ export function Payments() {
                         </div>
                         <div className="overflow-y-auto max-h-[240px] custom-scrollbar">
                           {allInvoices
-                            .filter(i => i.status !== 'paid')
+                            .filter(i => i.status !== 'paid' && i.status !== 'draft')
                             .filter(i =>
                               i.invoiceNumber.toLowerCase().includes(searchInvoice.toLowerCase()) ||
                               i.buyer?.name?.toLowerCase().includes(searchInvoice.toLowerCase())
