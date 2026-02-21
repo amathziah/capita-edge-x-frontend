@@ -815,58 +815,72 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
           }} className="p-8 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar relative">
 
           {/* Section: Basic Info */}
-          <div className="space-y-5">
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-6"
+          >
             <div className="flex items-center gap-2 mb-1">
-              <Info className="w-4 h-4 text-primary" />
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Basic Information</h4>
+              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Info className="w-4 h-4 text-primary" />
+              </div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Core Intelligence</h4>
             </div>
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-2 gap-6">
               <div className="col-span-2">
-                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Product Name</label>
-                <div className="relative mt-1.5">
-                  <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <label className="text-[11px] uppercase tracking-wider font-extrabold text-gray-500 ml-1">Product Designation</label>
+                <div className="relative mt-2 group">
+                  <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
                   <input
                     required
                     type="text"
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-medium"
-                    placeholder="e.g. Premium Wireless Headphones"
+                    className="w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200/60 rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-bold placeholder:font-medium placeholder:text-gray-300 shadow-sm"
+                    placeholder="e.g. Quantum Wireless Bridge"
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
               </div>
               <div className="col-span-2">
-                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Description</label>
+                <label className="text-[11px] uppercase tracking-wider font-extrabold text-gray-500 ml-1">Operational Description</label>
                 <textarea
-                  className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-medium min-h-[100px]"
-                  placeholder="Provide a detailed description of the product..."
+                  className="w-full px-5 py-4 mt-2 bg-gray-50/50 border border-gray-200/60 rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-medium min-h-[120px] placeholder:text-gray-300 shadow-sm"
+                  placeholder="Describe the product's primary function and performance metrics..."
                   rows={3}
                   value={formData.description}
                   onChange={e => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Section: Cataloging & Compliance */}
-          <div className="space-y-5">
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15 }}
+            className="space-y-6"
+          >
             <div className="flex items-center gap-2 mb-1">
-              <Layers className="w-4 h-4 text-primary" />
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Cataloging & Compliance</h4>
+              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Layers className="w-4 h-4 text-primary" />
+              </div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Inventory Classification</h4>
             </div>
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">SKU (Stock Keeping Unit)</label>
+                <label className="text-[11px] uppercase tracking-wider font-extrabold text-gray-500 ml-1">Product SKU</label>
                 <input
                   type="text"
-                  placeholder="e.g. WH-1000XM4-BLK"
-                  className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-mono"
+                  placeholder="e.g. QWB-2025-V1"
+                  className="w-full px-5 py-3.5 mt-2 bg-gray-50/50 border border-gray-200/60 rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-mono font-bold shadow-sm"
                   value={formData.sku}
                   onChange={e => setFormData({ ...formData, sku: e.target.value })}
                 />
               </div>
               <CustomSelect
-                label="Category"
+                label="Domain Category"
                 value={formData.category}
                 onChange={(val) => setFormData({ ...formData, category: val })}
                 options={[
@@ -876,92 +890,112 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
                   { value: 'Services', label: 'Services', icon: Bot },
                   { value: 'Office Supplies', label: 'Office Supplies', icon: Edit2 },
                 ]}
-                placeholder="Select Category"
+                placeholder="Select Domain"
               />
             </div>
-          </div>
+          </motion.div>
 
           {/* Section: Financials */}
-          <div className="space-y-5">
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-6"
+          >
             <div className="flex items-center gap-2 mb-1">
-              <Coins className="w-4 h-4 text-primary" />
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Financial Intelligence</h4>
+              <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Coins className="w-4 h-4 text-primary" />
+              </div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Revenue Metrics</h4>
             </div>
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Selling Price (₹)</label>
-                <div className="relative mt-1.5">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₹</span>
+                <label className="text-[11px] uppercase tracking-wider font-extrabold text-gray-500 ml-1">Unit List Price (₹)</label>
+                <div className="relative mt-2 group">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-black group-focus-within:scale-110 transition-transform">₹</span>
                   <input
                     required
                     type="number"
                     min="0"
-                    className="w-full pl-8 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-bold"
+                    className="w-full pl-10 pr-4 py-3.5 bg-gray-50/50 border border-gray-200/60 rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-black shadow-sm"
                     value={formData.price}
                     onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
                   />
                 </div>
               </div>
               <div>
-                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Cost Price (COGS) (₹)</label>
-                <div className="relative mt-1.5">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₹</span>
+                <label className="text-[11px] uppercase tracking-wider font-extrabold text-gray-500 ml-1">Landing Cost (₹)</label>
+                <div className="relative mt-2 group">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold group-focus-within:text-amber-600 transition-colors">₹</span>
                   <input
                     type="number"
                     min="0"
-                    className="w-full pl-8 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-bold text-gray-500"
+                    className="w-full pl-10 pr-4 py-3.5 bg-gray-50/50 border border-gray-200/60 rounded-2xl text-sm focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500/50 focus:border-amber-500 focus:bg-white transition-all outline-none font-bold text-gray-600 shadow-sm"
                     value={formData.costPrice}
                     onChange={e => setFormData({ ...formData, costPrice: Number(e.target.value) })}
                   />
                 </div>
               </div>
               <div>
-                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Tax Rate (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none"
-                  value={formData.taxRate}
-                  onChange={e => setFormData({ ...formData, taxRate: Number(e.target.value) })}
-                />
+                <label className="text-[11px] uppercase tracking-wider font-extrabold text-gray-500 ml-1">Tax Component (%)</label>
+                <div className="relative mt-2 group">
+                  <Activity className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    className="w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200/60 rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-bold shadow-sm"
+                    value={formData.taxRate}
+                    onChange={e => setFormData({ ...formData, taxRate: Number(e.target.value) })}
+                  />
+                </div>
               </div>
               <div>
-                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Vendor / Supplier</label>
-                <div className="relative mt-1.5">
-                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <label className="text-[11px] uppercase tracking-wider font-extrabold text-gray-500 ml-1">Supply Partner</label>
+                <div className="relative mt-2 group">
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
                   <input
                     type="text"
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-medium"
-                    placeholder="e.g. Acme Corp"
+                    className="w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200/60 rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-medium shadow-sm"
+                    placeholder="e.g. Apex Dynamics Ltd."
                     value={formData.vendor}
                     onChange={e => setFormData({ ...formData, vendor: e.target.value })}
                   />
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Section: Stock Management */}
-          <div className="space-y-5">
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.25 }}
+            className="space-y-6"
+          >
             <div className="flex items-center gap-2 mb-1">
-              <Activity className="w-4 h-4 text-primary" />
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Stock Logistics</h4>
+              <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                <Activity className="w-4 h-4 text-orange-600" />
+              </div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Node Logistics</h4>
             </div>
-            <div className="grid grid-cols-2 gap-5 pb-6">
+            <div className="grid grid-cols-2 gap-6 pb-6">
               <div>
-                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Current Stock Level</label>
-                <input
-                  required
-                  type="number"
-                  min="0"
-                  className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none font-bold"
-                  value={formData.stock}
-                  onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
-                />
+                <label className="text-[11px] uppercase tracking-wider font-extrabold text-gray-500 ml-1">Current Stock Level</label>
+                <div className="relative mt-2 group">
+                  <Package className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    className="w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200/60 rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-black shadow-sm"
+                    value={formData.stock}
+                    onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
+                  />
+                </div>
               </div>
               <CustomSelect
-                label="Unit of Measure"
+                label="Unit of Calculation"
                 value={formData.unit}
                 onChange={(val) => setFormData({ ...formData, unit: val })}
                 options={[
@@ -974,18 +1008,21 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
                 placeholder="Select Unit"
               />
               <div>
-                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Reorder Alert Level</label>
-                <input
-                  required
-                  type="number"
-                  min="0"
-                  className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all outline-none text-orange-600 font-bold"
-                  value={formData.minStock}
-                  onChange={e => setFormData({ ...formData, minStock: Number(e.target.value), reorderLevel: Number(e.target.value) })}
-                />
+                <label className="text-[11px] uppercase tracking-wider font-extrabold text-gray-500 ml-1">Reorder Activation Point</label>
+                <div className="relative mt-2 group">
+                  <AlertCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 group-focus-within:text-orange-600 transition-colors" />
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    className="w-full pl-11 pr-4 py-3.5 bg-gray-50/50 border border-gray-200/60 rounded-2xl text-sm focus:ring-4 focus:ring-orange-500/5 focus:border-orange-500/50 focus:bg-white transition-all outline-none text-orange-600 font-black shadow-sm"
+                    value={formData.minStock}
+                    onChange={e => setFormData({ ...formData, minStock: Number(e.target.value), reorderLevel: Number(e.target.value) })}
+                  />
+                </div>
               </div>
               <CustomSelect
-                label="Product Status"
+                label="Operational Status"
                 value={formData.status}
                 onChange={(val) => setFormData({ ...formData, status: val as 'Active' | 'Inactive' | 'Archived' })}
                 options={[
@@ -993,21 +1030,21 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
                   { value: 'Inactive', label: 'Inactive', icon: X, description: 'Temporarily hidden from catalog' },
                   { value: 'Archived', label: 'Archived', icon: Trash2, description: 'Disconnected from active operations' },
                 ]}
-                placeholder="Select Status"
+                placeholder="Select State"
               />
             </div>
-          </div>
+          </motion.div>
         </form>
 
         {/* Premium Footer Actions */}
-        <div className="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
+        <div className="px-8 py-8 bg-gray-50/80 border-t border-gray-100/60 flex items-center justify-between backdrop-blur-md">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 text-sm font-bold text-gray-400 hover:text-gray-900 transition-colors"
+            className="px-8 py-3 text-sm font-black text-gray-400 hover:text-gray-900 transition-all duration-300 hover:bg-white active:scale-95 rounded-2xl"
           >
             Discard Changes
           </button>
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <button
               type="button"
               onClick={() => {
@@ -1015,9 +1052,13 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
                   localFormRef.current.requestSubmit();
                 }
               }}
-              className="px-8 py-2.5 bg-gradient-to-r from-primary to-emerald-600 text-white font-black text-sm rounded-xl shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300 active:translate-y-0"
+              className="group relative px-10 py-4.5 bg-gray-900 text-white font-black text-sm rounded-2xl shadow-2xl shadow-gray-200 hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-500 active:translate-y-0 active:scale-95 overflow-hidden"
             >
-              {initialData ? 'Update Intelligence' : 'Deploy Product'}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative flex items-center gap-3">
+                {initialData ? <Activity className="w-4 h-4" /> : <Package className="w-4 h-4" />}
+                <span>{initialData ? 'Commit Intelligence' : 'Deploy To Catalog'}</span>
+              </div>
             </button>
           </div>
         </div>
