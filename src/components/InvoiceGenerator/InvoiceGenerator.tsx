@@ -627,7 +627,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                                         }, 0);
 
                                                         const availableStock = Math.max(0, product.stock - allocatedQty);
-                                                        const isOutOfStock = availableStock === 0;
+                                                        const isOutOfStock = product.isInventoryTracked && availableStock === 0;
 
                                                         return (
                                                             <button
@@ -648,7 +648,9 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                                                         quantity: newItems[idx].quantity || 1
                                                                     };
                                                                     setItems(newItems);
-                                                                    if (availableStock < 5) showToast(`Note: Only ${availableStock} left of ${product.name}`, 'info');
+                                                                    if (product.isInventoryTracked && availableStock < 5) {
+                                                                        showToast(`Note: Only ${availableStock} left of ${product.name}`, 'info');
+                                                                    }
                                                                 }}
                                                             >
                                                                 <div className="space-y-0.5">
@@ -656,12 +658,19 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                                                     <div className="flex items-center gap-2">
                                                                         {product.sku && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-500 font-mono">SKU: {product.sku}</span>}
                                                                         <span className="text-[10px] text-gray-400">{product.unit}</span>
+                                                                        {!product.isInventoryTracked && (
+                                                                            <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-bold uppercase tracking-widest">Service</span>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                                 <div className="text-right space-y-0.5">
                                                                     <div className="font-bold text-sm text-gray-900">{currency.symbol}{product.price.toLocaleString()}</div>
                                                                     <div>
-                                                                        {availableStock > 10 ? (
+                                                                        {!product.isInventoryTracked ? (
+                                                                            <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full flex items-center justify-end ml-auto w-fit">
+                                                                                Unlimited
+                                                                            </span>
+                                                                        ) : availableStock > 10 ? (
                                                                             <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1 justify-end ml-auto w-fit">
                                                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                                                                 {availableStock} left

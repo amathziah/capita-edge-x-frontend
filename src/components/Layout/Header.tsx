@@ -3,7 +3,6 @@ import { useLanguage } from '../LanguageProvider';
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { NotificationButton } from './NotificationButton';
 
 type LanguageCode = 'en' | 'hi' | 'mr';
 
@@ -125,8 +124,6 @@ export function Header() {
             </div>
           </div>
 
-          {/* Notifications */}
-          <NotificationButton />
 
         </div>
       </div>

@@ -9,6 +9,7 @@ import { InventorySettings, InventorySettingsData } from '../components/Inventor
 import { CustomSelect } from '../components/ui/CustomSelect';
 
 import { useData } from '../contexts/DataContext';
+import { usePersona } from '../contexts/PersonaContext';
 
 interface InventoryItem extends Product {
   sales: number;
@@ -16,6 +17,7 @@ interface InventoryItem extends Product {
 
 export function Inventory() {
   const { products, performance, loading, refreshData } = useData();
+  const { businessType, loading: personaLoading } = usePersona();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -42,6 +44,8 @@ export function Inventory() {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [stockFilter, setStockFilter] = useState('All');
   const [vendorFilter, setVendorFilter] = useState('All');
+
+  // Stress Test State (Removed)
 
   useEffect(() => {
     refreshData();
@@ -113,6 +117,8 @@ export function Inventory() {
   const overstockMultiplier = Number(invSettings.inv_overstocked_multiplier) || 3;
 
   const getStockStatus = (item: InventoryItem) => {
+    if (!item.isInventoryTracked) return { label: 'Service', color: 'bg-blue-500', ring: 'ring-blue-100', text: 'text-blue-600' };
+
     if (item.stock === 0) return { label: 'Out of Stock', color: 'bg-gray-900', ring: 'ring-gray-200', text: 'text-gray-900' };
 
     // Dead Stock logic
@@ -154,7 +160,7 @@ export function Inventory() {
   const lowStockCount = inventory.filter((i) => i.stock > 0 && i.stock < (i.minStock || defaultReorder)).length;
   const outOfStockCount = inventory.filter((i) => i.stock === 0).length;
 
-  if (loading) {
+  if (loading || personaLoading) {
     return (
       <div className="p-6 space-y-8 bg-gray-50 min-h-screen animate-pulse">
         {/* Header Skeleton */}
@@ -217,84 +223,98 @@ export function Inventory() {
       <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-primary/5 blur-[110px] -z-10" />
 
       {/* Page Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
-      >
-        <div>
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-primary mb-2">
-            Intelligence Engine
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-          </div>
-          <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
-            Inventory Intelligence
-          </h2>
-          <p className="text-gray-600 mt-1.5">Financial inventory tracking & proactive stock health monitoring.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="bg-white/80 backdrop-blur rounded-xl border border-primary/20 shadow-sm px-4 py-2 text-center">
-            <div className="text-[10px] text-primary font-bold uppercase">Products</div>
-            <div className="text-lg font-black text-gray-900">{inventory.length}</div>
-          </div>
-          <div className="bg-white/80 backdrop-blur rounded-xl border border-primary/20 shadow-sm px-4 py-2 text-center">
-            <div className="text-[10px] text-primary font-bold uppercase">Value</div>
-            <div className="text-lg font-black text-gray-900">₹{(totalValue / 1000).toFixed(0)}k</div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Insights Widget */}
-      <InventoryInsights />
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-        {[
-          { label: 'Total Products', value: inventory.length, icon: Package, gradient: 'from-primary to-primary-dark', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0 },
-          { label: 'Inventory Value', value: `₹${(totalValue / 1000).toFixed(1)}k`, icon: TrendingUp, gradient: 'from-primary/90 to-primary-dark', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0.04 },
-          { label: 'Reorder Alerts', value: lowStockCount, icon: AlertCircle, gradient: 'from-primary to-primary-dark', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0.08, pulse: lowStockCount > 0 },
-          { label: 'Out of Stock', value: outOfStockCount, icon: AlertTriangle, gradient: 'from-gray-800 to-gray-900', glow: 'shadow-gray-500/10', accent: 'text-gray-900', bg: 'bg-white/90', border: 'border-gray-200/80', ring: 'bg-gray-900', delay: 0.12, pulse: outOfStockCount > 0 },
-          { label: 'AI Strategy', value: 'Active', icon: Bot, gradient: 'from-primary-dark to-slate-900', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0.16, clickable: true },
-        ].map((card) => (
-          <motion.div
-            key={card.label}
-            initial={{ opacity: 0, y: 20, scale: 0.98 }}
-            whileHover={{ y: -5, scale: 1.02, rotate: 0.5 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0.05 + card.delay, ease: [0.23, 1, 0.32, 1] }}
-            onClick={card.clickable ? () => setInsightsOpen(true) : undefined}
-            className={`relative ${card.bg} backdrop-blur-2xl p-5 rounded-3xl border ${card.border} shadow-sm group overflow-hidden ${card.clickable ? 'cursor-pointer' : 'cursor-default'}`}
-          >
-            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${card.gradient} opacity-[0.03] rounded-full -mr-16 -mt-16 group-hover:opacity-[0.08] transition-opacity duration-700`} />
-
-            <div className="flex items-center gap-4">
-              <div className={`flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br ${card.gradient} text-white shadow-xl ${card.glow} group-hover:scale-110 transition-transform duration-500`}>
-                <card.icon size={20} strokeWidth={2.5} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{card.label}</p>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-2xl font-black text-gray-900 tracking-tight truncate">{card.value}</h3>
-                  {card.pulse && (
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${card.ring} opacity-60`} />
-                      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${card.ring}`} />
-                    </span>
-                  )}
-                </div>
-              </div>
+      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div>
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-primary mb-2">
+              Intelligence Engine
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             </div>
-          </motion.div>
-        ))}
+            <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
+              {businessType === 'agency' ? 'Services & Items' : 'Inventory Intelligence'}
+            </h2>
+            <p className="text-gray-600 mt-1.5">
+              {businessType === 'agency'
+                ? 'Manage your billable services and resellable items in one unified engine.'
+                : businessType === 'ecommerce' as any
+                  ? 'High-velocity operational tracking & proactive health monitoring.'
+                  : 'Financial inventory tracking & proactive stock health monitoring.'}
+            </p>
+          </div>
+        </motion.div>
+
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 mr-2">
+            <div className="bg-white/80 backdrop-blur rounded-xl border border-primary/20 shadow-sm px-4 py-2 text-center">
+              <div className="text-[10px] text-primary font-bold uppercase">Products</div>
+              <div className="text-lg font-black text-gray-900">{inventory.length}</div>
+            </div>
+            <div className="bg-white/80 backdrop-blur rounded-xl border border-primary/20 shadow-sm px-4 py-2 text-center">
+              <div className="text-[10px] text-primary font-bold uppercase">Value</div>
+              <div className="text-lg font-black text-gray-900">₹{(totalValue / 1000).toFixed(0)}k</div>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* Insights Widget */}
+      {businessType !== 'agency' && <InventoryInsights />}
+
+      {/* KPI Cards */}
+      {businessType !== 'agency' && (
+        < div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5" >
+          {
+            [
+              { label: 'Total Products', value: inventory.length, icon: Package, gradient: 'from-primary to-primary-dark', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0 },
+              { label: 'Inventory Value', value: `₹${(totalValue / 1000).toFixed(1)}k`, icon: TrendingUp, gradient: 'from-primary/90 to-primary-dark', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0.04 },
+              { label: 'Reorder Alerts', value: lowStockCount, icon: AlertCircle, gradient: 'from-primary to-primary-dark', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0.08, pulse: lowStockCount > 0 },
+              { label: 'Out of Stock', value: outOfStockCount, icon: AlertTriangle, gradient: 'from-gray-800 to-gray-900', glow: 'shadow-gray-500/10', accent: 'text-gray-900', bg: 'bg-white/90', border: 'border-gray-200/80', ring: 'bg-gray-900', delay: 0.12, pulse: outOfStockCount > 0 },
+              { label: 'AI Strategy', value: 'Active', icon: Bot, gradient: 'from-primary-dark to-slate-900', glow: 'shadow-primary/20', accent: 'text-primary', bg: 'bg-white/90', border: 'border-primary/10', ring: 'bg-primary', delay: 0.16, clickable: true },
+            ].map((card) => (
+              <motion.div
+                key={card.label}
+                initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                whileHover={{ y: -5, scale: 1.02, rotate: 0.5 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.05 + card.delay, ease: [0.23, 1, 0.32, 1] }}
+                onClick={card.clickable ? () => setInsightsOpen(true) : undefined}
+                className={`relative ${card.bg} backdrop-blur-2xl p-5 rounded-3xl border ${card.border} shadow-sm group overflow-hidden ${card.clickable ? 'cursor-pointer' : 'cursor-default'}`}
+              >
+                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${card.gradient} opacity-[0.03] rounded-full -mr-16 -mt-16 group-hover:opacity-[0.08] transition-opacity duration-700`} />
+
+                <div className="flex items-center gap-4">
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br ${card.gradient} text-white shadow-xl ${card.glow} group-hover:scale-110 transition-transform duration-500`}>
+                    <card.icon size={20} strokeWidth={2.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{card.label}</p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight truncate">{card.value}</h3>
+                      {card.pulse && (
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${card.ring} opacity-60`} />
+                          <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${card.ring}`} />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          }
+        </div >
+      )}
+
       {/* Search & Actions */}
-      <div className="flex flex-col gap-4">
+      < div className="flex flex-col gap-4" >
         {/* Top Action Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        < div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4" >
           {/* Filter Bar */}
-          <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-4 gap-3 bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
+          < div className="flex-1 w-full grid grid-cols-1 md:grid-cols-4 gap-3 bg-white p-1 rounded-xl border border-gray-200 shadow-sm" >
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -335,7 +355,7 @@ export function Inventory() {
                 <option key={v} value={v}>{v === 'All' ? 'All Vendors' : v}</option>
               ))}
             </select>
-          </div>
+          </div >
 
           <div className="flex gap-2 shrink-0">
             {(searchTerm || categoryFilter !== 'All' || stockFilter !== 'All' || vendorFilter !== 'All') && (
@@ -358,7 +378,7 @@ export function Inventory() {
               <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary-dark opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative flex items-center gap-2 text-sm font-black tracking-wide">
                 <Package className="w-4 h-4" />
-                Add Product
+                {businessType === 'agency' ? 'Add Item' : 'Add Product'}
               </div>
             </button>
             <button
@@ -368,12 +388,13 @@ export function Inventory() {
               <Settings2 className="w-5 h-5" />
             </button>
           </div>
-        </div>
-      </div>
+        </div >
+      </div >
 
       {/* Inventory Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
+      < motion.div
+        initial={{ opacity: 0, y: 12 }
+        }
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.15 }}
         className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm overflow-hidden border border-primary/10 flex flex-col h-[calc(100vh-340px)] min-h-[320px]"
@@ -382,9 +403,9 @@ export function Inventory() {
           <table className="min-w-full text-sm text-left relative">
             <thead className="bg-white/50 backdrop-blur sticky top-0 z-10">
               <tr>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Product Line</th>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">{businessType === 'agency' ? 'Item / Service' : 'Product Line'}</th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Cataloging</th>
-                {invSettings.inv_show_cost_column === 'true' && <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">COGS</th>}
+                {invSettings.inv_show_cost_column === 'true' && <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">{businessType === 'agency' ? 'Base Cost' : 'COGS'}</th>}
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Unit Price</th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Inventory</th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Market Value</th>
@@ -444,18 +465,27 @@ export function Inventory() {
                     </td>
                     <td className="px-6 py-5 text-center">
                       <div className="inline-flex flex-col items-center">
-                        <div className="font-black text-sm text-gray-900 leading-none">{item.stock}</div>
-                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">{item.unit}</div>
-                        {stockPct !== null && (
-                          <div className="w-10 mt-2">
-                            <div className="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-1000 ${stockPct > 80 ? 'bg-blue-500' : stockPct > 30 ? 'bg-emerald-500' : stockPct > 10 ? 'bg-amber-500' : 'bg-red-500'
-                                  }`}
-                                style={{ width: `${Math.min(stockPct, 100)}%` }}
-                              />
-                            </div>
-                          </div>
+                        <div className="font-black text-sm text-gray-900 leading-none">
+                          {item.isInventoryTracked && (businessType !== 'agency' || item.itemType !== 'service') ? item.stock : '∞'}
+                        </div>
+                        {(businessType !== 'agency' || item.itemType !== 'service') && (
+                          <>
+                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">{item.unit}</div>
+                            {item.isInventoryTracked && stockPct !== null && (
+                              <div className="w-10 mt-2">
+                                <div className="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-1000 ${stockPct > 80 ? 'bg-blue-500' : stockPct > 30 ? 'bg-emerald-500' : stockPct > 10 ? 'bg-amber-500' : 'bg-red-500'
+                                      }`}
+                                    style={{ width: `${Math.min(stockPct, 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {businessType === 'agency' && item.itemType === 'service' && (
+                          <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1">Unlimited</div>
                         )}
                       </div>
                     </td>
@@ -471,13 +501,14 @@ export function Inventory() {
                           </span>
                           {status.label}
                         </span>
-                        {invSettings.inv_show_velocity_badges === 'true' && (
+                        {item.isInventoryTracked && invSettings.inv_show_velocity_badges === 'true' && (
                           <div className="scale-90 origin-top">
                             <VelocityBadge
                               velocity={item.sales > 0 ? item.sales / Number(invSettings.inv_velocity_window || 30) : 0}
                               daysRemaining={item.sales > 0 ? item.stock / (item.sales / Number(invSettings.inv_velocity_window || 30)) : Infinity}
                               lastSoldDate={null}
                               hasSalesData={item.sales > 0}
+                              isInventoryTracked={item.isInventoryTracked}
                             />
                           </div>
                         )}
@@ -507,10 +538,10 @@ export function Inventory() {
             </tbody>
           </table>
         </div>
-      </motion.div>
+      </motion.div >
 
       {/* Create Product Modal */}
-      <CreateProductModal
+      < CreateProductModal
         isOpen={createModalOpen}
         onClose={() => {
           setCreateModalOpen(false);
@@ -521,183 +552,187 @@ export function Inventory() {
       />
 
       {/* Advanced Settings Panel */}
-      <InventorySettings
+      < InventorySettings
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onSettingsChange={(newSettings) => setInvSettings(newSettings)}
       />
 
       {/* Insights Modal */}
-      {createPortal(
-        <AnimatePresence>
-          {insightsOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
-            >
-              <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                onClick={() => setInsightsOpen(false)}
-              />
+      {
+        createPortal(
+          <AnimatePresence>
+            {insightsOpen && (
               <motion.div
-                initial={{ y: 20, opacity: 0, scale: 0.95 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                exit={{ y: 20, opacity: 0, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="relative z-10 max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
               >
-                {/* Premium Header */}
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Bot className="w-5 h-5 text-primary" />
+                <div
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  onClick={() => setInsightsOpen(false)}
+                />
+                <motion.div
+                  initial={{ y: 20, opacity: 0, scale: 0.95 }}
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  exit={{ y: 20, opacity: 0, scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  className="relative z-10 max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 overflow-hidden"
+                >
+                  {/* Premium Header */}
+                  <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Bot className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-bold text-gray-900">Inventory Intelligence</h4>
+                        <p className="text-xs text-primary font-medium tracking-wide uppercase">AI-Powered Analysis</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-900">Inventory Intelligence</h4>
-                      <p className="text-xs text-primary font-medium tracking-wide uppercase">AI-Powered Analysis</p>
-                    </div>
+                    <button
+                      onClick={() => setInsightsOpen(false)}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setInsightsOpen(false)}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
 
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-gray-50 to-white p-5 rounded-xl border border-gray-200/60 shadow-inner">
-                    <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-emerald-500" />
-                      Strategic Overview
-                    </h5>
-                    <p className="text-gray-600 text-sm leading-relaxed">
-                      Based on your current stock levels of <span className="font-semibold text-gray-900">{inventory.length} items</span> with a valuation of <span className="font-semibold text-gray-900">₹{totalValue.toLocaleString()}</span>:
-                    </p>
-                    <div className="mt-4 p-4 bg-white rounded-lg border border-primary/10 shadow-sm relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -mr-10 -mt-10 blur-xl"></div>
-                      <p className="text-sm font-medium text-gray-800 relative z-10">Use AI Recommendation:</p>
-                      <p className="text-sm text-gray-600 mt-1 relative z-10">
-                        {lowStockCount > 3
-                          ? "Alert: Multiple key items are below safety stock levels. We recommend a consolidated reorder to optimize shipping costs and prevent revenue loss."
-                          : "Status Healthy: Inventory levels are optimized. Capitalize on high-margin items and consider running promotions on slower-moving stock."}
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-br from-gray-50 to-white p-5 rounded-xl border border-gray-200/60 shadow-inner">
+                      <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-emerald-500" />
+                        Strategic Overview
+                      </h5>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        Based on your current stock levels of <span className="font-semibold text-gray-900">{inventory.length} items</span> with a valuation of <span className="font-semibold text-gray-900">₹{totalValue.toLocaleString()}</span>:
                       </p>
+                      <div className="mt-4 p-4 bg-white rounded-lg border border-primary/10 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -mr-10 -mt-10 blur-xl"></div>
+                        <p className="text-sm font-medium text-gray-800 relative z-10">Use AI Recommendation:</p>
+                        <p className="text-sm text-gray-600 mt-1 relative z-10">
+                          {lowStockCount > 3
+                            ? "Alert: Multiple key items are below safety stock levels. We recommend a consolidated reorder to optimize shipping costs and prevent revenue loss."
+                            : "Status Healthy: Inventory levels are optimized. Capitalize on high-margin items and consider running promotions on slower-moving stock."}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
-                  <button
-                    onClick={() => setInsightsOpen(false)}
-                    className="px-5 py-2 bg-white border border-gray-200 text-gray-600 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-                  >
-                    Close Analysis
-                  </button>
-                </div>
+                  <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                    <button
+                      onClick={() => setInsightsOpen(false)}
+                      className="px-5 py-2 bg-white border border-gray-200 text-gray-600 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                    >
+                      Close Analysis
+                    </button>
+                  </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+            )}
+          </AnimatePresence>,
+          document.body
+        )
+      }
 
       {/* Delete Confirmation Dialog */}
-      {createPortal(
-        <AnimatePresence>
-          {deleteTarget && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
-            >
-              <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                onClick={() => !deleting && setDeleteTarget(null)}
-              />
+      {
+        createPortal(
+          <AnimatePresence>
+            {deleteTarget && (
               <motion.div
-                initial={{ y: 20, opacity: 0, scale: 0.95 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                exit={{ y: 20, opacity: 0, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="relative z-10 max-w-md w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
               >
-                {/* Red accent bar */}
-                <div className="h-1 bg-gradient-to-r from-rose-500 to-red-500" />
+                <div
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  onClick={() => !deleting && setDeleteTarget(null)}
+                />
+                <motion.div
+                  initial={{ y: 20, opacity: 0, scale: 0.95 }}
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  exit={{ y: 20, opacity: 0, scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  className="relative z-10 max-w-md w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+                >
+                  {/* Red accent bar */}
+                  <div className="h-1 bg-gradient-to-r from-rose-500 to-red-500" />
 
-                <div className="p-6">
-                  {/* Icon + Title */}
-                  <div className="flex items-start gap-4 mb-5">
-                    <div className="p-3 bg-rose-50 rounded-xl flex-shrink-0">
-                      <AlertTriangle className="w-6 h-6 text-rose-600" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-900">Delete Product</h4>
-                      <p className="text-sm text-gray-500 mt-0.5">This action cannot be undone.</p>
-                    </div>
-                  </div>
-
-                  {/* Product Details Card */}
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 mb-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-gray-900">{deleteTarget.name}</span>
-                      <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{deleteTarget.sku || 'No SKU'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3 mt-3">
-                      <div className="text-center">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Stock</p>
-                        <p className="text-sm font-semibold text-gray-700 mt-0.5">{deleteTarget.stock} {deleteTarget.unit}</p>
+                  <div className="p-6">
+                    {/* Icon + Title */}
+                    <div className="flex items-start gap-4 mb-5">
+                      <div className="p-3 bg-rose-50 rounded-xl flex-shrink-0">
+                        <AlertTriangle className="w-6 h-6 text-rose-600" />
                       </div>
-                      <div className="text-center border-x border-gray-200">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Price</p>
-                        <p className="text-sm font-semibold text-gray-700 mt-0.5">₹{deleteTarget.price}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Value</p>
-                        <p className="text-sm font-semibold text-rose-600 mt-0.5">₹{(deleteTarget.stock * (deleteTarget.costPrice || 0)).toLocaleString()}</p>
+                      <div>
+                        <h4 className="text-lg font-bold text-gray-900">Delete Product</h4>
+                        <p className="text-sm text-gray-500 mt-0.5">This action cannot be undone.</p>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setDeleteTarget(null)}
-                      disabled={deleting}
-                      className="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleDeleteProduct}
-                      disabled={deleting}
-                      className="flex-1 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-red-500 text-white font-medium rounded-xl hover:from-rose-600 hover:to-red-600 transition-all text-sm shadow-lg shadow-rose-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {deleting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Deleting...
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="w-4 h-4" />
-                          Delete Product
-                        </>
-                      )}
-                    </button>
+                    {/* Product Details Card */}
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 mb-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-900">{deleteTarget.name}</span>
+                        <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{deleteTarget.sku || 'No SKU'}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3 mt-3">
+                        <div className="text-center">
+                          <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Stock</p>
+                          <p className="text-sm font-semibold text-gray-700 mt-0.5">{deleteTarget.stock} {deleteTarget.unit}</p>
+                        </div>
+                        <div className="text-center border-x border-gray-200">
+                          <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Price</p>
+                          <p className="text-sm font-semibold text-gray-700 mt-0.5">₹{deleteTarget.price}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Value</p>
+                          <p className="text-sm font-semibold text-rose-600 mt-0.5">₹{(deleteTarget.stock * (deleteTarget.costPrice || 0)).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setDeleteTarget(null)}
+                        disabled={deleting}
+                        className="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeleteProduct}
+                        disabled={deleting}
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-red-500 text-white font-medium rounded-xl hover:from-rose-600 hover:to-red-600 transition-all text-sm shadow-lg shadow-rose-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {deleting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-4 h-4" />
+                            Delete Product
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
-    </div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )
+      }
+    </div >
   );
 }
 
@@ -716,7 +751,9 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
     costPrice: 0,
     taxRate: 0,
     reorderLevel: 10,
-    status: 'Active' as 'Active' | 'Inactive' | 'Archived'
+    status: 'Active' as 'Active' | 'Inactive' | 'Archived',
+    isInventoryTracked: true,
+    itemType: 'physical' as 'physical' | 'service'
   });
 
   useEffect(() => {
@@ -734,7 +771,9 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
         costPrice: initialData.costPrice || 0,
         taxRate: initialData.taxRate || 0,
         reorderLevel: initialData.reorderLevel || 10,
-        status: initialData.status || 'Active'
+        status: initialData.status || 'Active',
+        isInventoryTracked: initialData.isInventoryTracked !== undefined ? initialData.isInventoryTracked : true,
+        itemType: initialData.itemType || 'physical'
       });
     } else {
       // Reset form
@@ -751,7 +790,9 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
         costPrice: 0,
         taxRate: 0,
         reorderLevel: 10,
-        status: 'Active'
+        status: 'Active',
+        isInventoryTracked: true,
+        itemType: 'physical'
       });
     }
   }, [initialData, isOpen]);
@@ -849,6 +890,31 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
                   placeholder="Select"
                 />
               </div>
+
+              <div className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl border border-gray-200/60 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${formData.isInventoryTracked ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400'}`}>
+                    <Package className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-gray-900">Track Inventory</div>
+                    <div className="text-[10px] text-gray-400 font-medium">Automatic stock deduction on sales</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    isInventoryTracked: !formData.isInventoryTracked,
+                    itemType: !formData.isInventoryTracked ? 'physical' : 'service'
+                  })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.isInventoryTracked ? 'bg-primary' : 'bg-gray-200'}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isInventoryTracked ? 'translate-x-6' : 'translate-x-1'}`}
+                  />
+                </button>
+              </div>
             </motion.div>
 
             {/* Financials & Stock */}
@@ -872,19 +938,21 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">Current Stock</label>
-                  <div className="relative mt-1.5 group">
-                    <Package className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-                    <input
-                      required
-                      type="number"
-                      className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200/60 rounded-xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-black shadow-sm"
-                      value={formData.stock}
-                      onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
-                    />
+                {formData.isInventoryTracked && (
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">Current Stock</label>
+                    <div className="relative mt-1.5 group">
+                      <Package className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                      <input
+                        required
+                        type="number"
+                        className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200/60 rounded-xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-black shadow-sm"
+                        value={formData.stock}
+                        onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -895,22 +963,25 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
                   options={[
                     { value: 'pcs', label: 'Pieces', icon: Box },
                     { value: 'kg', label: 'Kilograms', icon: Scale },
+                    { value: 'hr', label: 'Hours', icon: Activity },
                   ]}
                   placeholder="Select"
                 />
-                <div>
-                  <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">Reorder Level</label>
-                  <div className="relative mt-1.5 group">
-                    <Activity className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary group-focus-within:text-primary transition-colors" />
-                    <input
-                      required
-                      type="number"
-                      className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200/60 rounded-xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none text-primary font-black shadow-sm"
-                      value={formData.minStock}
-                      onChange={e => setFormData({ ...formData, minStock: Number(e.target.value), reorderLevel: Number(e.target.value) })}
-                    />
+                {formData.isInventoryTracked && (
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">Reorder Level</label>
+                    <div className="relative mt-1.5 group">
+                      <Activity className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary group-focus-within:text-primary transition-colors" />
+                      <input
+                        required
+                        type="number"
+                        className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200/60 rounded-xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none text-primary font-black shadow-sm"
+                        value={formData.minStock}
+                        onChange={e => setFormData({ ...formData, minStock: Number(e.target.value), reorderLevel: Number(e.target.value) })}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div>
@@ -957,3 +1028,5 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
     document.body
   );
 }
+
+export default Inventory;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../LanguageProvider";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePersona } from "../../contexts/PersonaContext";
+import { useSubscription } from "../../contexts/SubscriptionContext";
 
 // ── Types ────────────────────────────────────────────────────────────────
 type NavItem = {
@@ -72,6 +74,8 @@ const groups: NavGroup[] = [
 export function Sidebar() {
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
+  const { businessType } = usePersona();
+  const { planStatus } = useSubscription();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -112,8 +116,49 @@ export function Sidebar() {
     navigate("/login");
   };
 
-  // Inject dynamic badges into navigation groups
-  const navGroups = groups;
+  // Filter groups based on persona
+  const navGroups = useMemo(() => {
+    return groups.map(group => ({
+      ...group,
+      items: group.items.filter(item => {
+        // --- Solopreneur Mapping ---
+        if (businessType === 'solopreneur') {
+          // Solopreneurs typically don't need inventory or compliance
+          if (['inventory', 'compliance'].includes(item.name)) return false;
+        }
+
+        // --- SaaS Founder Mapping ---
+        if (businessType === 'saas') {
+          // SaaS Founders don't need inventory
+          if (item.name === 'inventory') return false;
+        }
+
+        // --- Agency Owner Mapping ---
+        if (businessType === 'agency') {
+          // Agencies might not need inventory
+          if (item.name === 'inventory') return false;
+        }
+
+        // --- E-commerce Mapping ---
+        if (businessType === 'ecommerce') {
+          // E-commerce needs everything (inventory, payments, etc.)
+          return true;
+        }
+
+        return true;
+      }).map(item => {
+        // Dynamic Label Renaming for Solopreneurs
+        if (businessType === 'solopreneur' && item.name === 'control_room') {
+          return { ...item, label: "Dashboard" };
+        }
+        // Dynamic Label Renaming for Agency
+        if (businessType === 'agency' && item.name === 'inventory') {
+          return { ...item, label: "Services & Items" };
+        }
+        return item;
+      })
+    })).filter(group => group.items.length > 0);
+  }, [businessType]);
 
   return (
     <aside
@@ -239,6 +284,51 @@ export function Sidebar() {
             </div>
           </div>
         ))}
+
+        {/* ── Plan Usage / Upgrade Section ──────────────────────── */}
+        {!collapsed && planStatus && (
+          <div className="mt-8 px-3">
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 transition-all hover:bg-white/[0.05]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Usage Details</span>
+                <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-tighter ${planStatus.plan_tier === 'pro'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  : 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                  }`}>
+                  {planStatus.plan_tier}
+                </span>
+              </div>
+
+              {/* Invoices Usage */}
+              <div className="space-y-1.5 mb-4">
+                <div className="flex justify-between text-[11px] font-medium">
+                  <span className="text-gray-400">Invoices</span>
+                  <span className="text-gray-200">
+                    {planStatus.usage.invoices.current}
+                    <span className="text-gray-500"> / {planStatus.usage.invoices.limit === Infinity ? '∞' : planStatus.usage.invoices.limit}</span>
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-teal-400 to-cyan-500 transition-all duration-500"
+                    style={{ width: `${Math.min(100, (planStatus.usage.invoices.current / (planStatus.usage.invoices.limit || 1)) * 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Upgrade Button (Free only) */}
+              {planStatus.plan_tier === 'free' && (
+                <NavLink
+                  to="/pricing"
+                  className="flex items-center justify-center gap-2 w-full py-2 px-3 bg-gradient-to-r from-teal-500/20 to-cyan-500/10 hover:from-teal-500 hover:to-cyan-600 text-white text-[11px] font-bold rounded-xl border border-teal-500/30 transition-all group/upg"
+                >
+                  <Zap className="w-3.5 h-3.5 text-teal-400 group-hover/upg:text-white" />
+                  Upgrade to Pro
+                </NavLink>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ── Footer: User Menu Dropdown ───────────────────────────── */}

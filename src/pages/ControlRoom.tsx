@@ -1,0 +1,672 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
+import { usePersona } from '../contexts/PersonaContext';
+import {
+    AlertTriangle,
+    TrendingUp,
+    Clock,
+    CheckCircle2,
+    ArrowRight,
+    Activity,
+    Users,
+    FileText,
+    CreditCard,
+    LayoutGrid,
+    Network,
+    AlertCircle
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { InvoiceLifecycleMap } from '../components/Visualizations/InvoiceLifecycleMap';
+import { InventoryService } from '../services/inventoryAnalysis';
+
+export const ControlRoom = () => {
+    const { user } = useAuth();
+    const { businessType, loading: personaLoading } = usePersona();
+    const navigate = useNavigate();
+    const { invoices, payments, customers, expenses, stats, loading, refreshData } = useData();
+    const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+    const [invSummary, setInvSummary] = useState<{ risks: number; outOfStock: number }>({ risks: 0, outOfStock: 0 });
+
+    useEffect(() => {
+        if (user) refreshData();
+    }, [user, refreshData]);
+
+    const isSolopreneur = businessType === 'solopreneur';
+
+    // Metrics Calculation
+    useEffect(() => {
+        const fetchInvHealth = async () => {
+            if (businessType === 'ecommerce' as any) {
+                const health = await InventoryService.analyzeInventoryHealth();
+                setInvSummary({
+                    risks: health.summary.stockout_risks,
+                    outOfStock: health.insights.filter((i: any) => i.current_stock === 0).length
+                });
+            }
+        };
+        fetchInvHealth();
+    }, [businessType]);
+
+    const metrics = useMemo(() => {
+        const overdue = Array.isArray(invoices) ? invoices.filter(i => i.status === 'overdue' || i.status === 'escalated') : [];
+
+        // SaaS Specifics
+        const monthlyExpenses = Array.isArray(expenses) ? expenses.reduce((sum: number, e: any) => sum + e.amount, 0) : 0;
+        const collected = stats.total_revenue || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'paid').reduce((sum: number, i: any) => sum + i.total, 0) : 0);
+        const runway = monthlyExpenses > 0 ? Math.floor(collected / (monthlyExpenses / 3 || 1)) : 12;
+
+        return {
+            overdueInvoices: overdue,
+            totalPending: stats.pending_payments || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent').reduce((sum, i) => sum + i.total, 0) : 0),
+            totalOverdue: stats.overdue_revenue || overdue.reduce((sum, i) => sum + i.total, 0),
+            totalCollected: collected,
+            pendingCount: stats.pending_invoices || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent').length : 0),
+            overdueCount: stats.overdue_invoices || overdue.length,
+            // SaaS Extensions
+            growthRate: 8.4, // Fallback placeholder but ideally calculated from historical stats
+            churnRate: 1.2,
+            cashRunway: Math.min(runway || 12, 24),
+            activeSubscriptions: stats.total_customers || (Array.isArray(customers) ? customers.length : 0),
+            // Agency Extensions
+            retainerUsage: 78,
+            unbilledHours: (stats.pending_invoices || 0) * 8
+        };
+    }, [invoices, stats, expenses, customers]);
+
+    const {
+        overdueInvoices,
+        totalPending,
+        totalOverdue,
+        totalCollected,
+        pendingCount,
+        overdueCount,
+        growthRate,
+        churnRate,
+        cashRunway,
+        activeSubscriptions,
+        retainerUsage,
+        unbilledHours
+    } = metrics;
+
+    const activityFeed = useMemo(() => {
+        return {
+            recentPayments: Array.isArray(payments) ? payments.slice(0, 3) : [],
+            recentInvoices: Array.isArray(invoices) ? invoices.filter(i => i.status !== 'overdue').slice(0, 3) : []
+        };
+    }, [payments, invoices]);
+
+    const { recentPayments, recentInvoices } = activityFeed;
+
+    if ((loading && invoices.length === 0) || personaLoading) {
+        return (
+            <div className="p-12 flex flex-col items-center justify-center min-h-[60vh] bg-gray-50/50 space-y-4">
+                <div className="relative mb-8">
+                    <div className="w-20 h-20 border-4 border-emerald-400 border-dotted rounded-full animate-spin [animation-duration:3s]"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-emerald-500 rounded-full opacity-10 animate-ping [animation-duration:1.5s]"></div>
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-3 h-3 bg-emerald-600 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+                    </div>
+                </div>
+                <div className="space-y-2 text-center">
+                    <h3 className="text-sm font-semibold tracking-widest text-emerald-800 uppercase">Synchronizing Neural Interface</h3>
+                    <div className="flex justify-center gap-1">
+                        <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce"></span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative h-full w-full">
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_#e8f5e9_0%,_#f1f8f6_45%,_#f6fbf7_100%)]"></div>
+            <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl -z-10"></div>
+            <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-emerald-200/30 blur-[110px] -z-10"></div>
+
+            <div className="p-4 lg:p-8 max-w-7xl mx-auto">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between"
+                >
+                    <div>
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
+                            {isSolopreneur ? "Dashboard Interface" : "Mission Control"}
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        </div>
+                        <h1 className="mt-2 text-3xl font-black text-gray-900 tracking-tight">
+                            {isSolopreneur ? "Dashboard" : "Control Room"}
+                        </h1>
+                        <p className="text-gray-500 mt-1 capitalize font-bold text-xs tracking-wide">
+                            {businessType || 'New'} Persona Matrix Active
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="bg-white p-1 rounded-xl border border-gray-200 flex items-center shadow-sm">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                title="Grid View"
+                            >
+                                <LayoutGrid size={18} />
+                            </button>
+                            {!isSolopreneur && (
+                                <button
+                                    onClick={() => setViewMode('map')}
+                                    className={`p-2 rounded-lg transition-all ${viewMode === 'map' ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    title="Workflow Map"
+                                >
+                                    <Network size={18} />
+                                </button>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => navigate('/invoices/create')}
+                            className="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
+                        >
+                            Quick Action
+                        </button>
+                    </div>
+                </motion.div>
+
+                <AnimatePresence mode="wait">
+                    {viewMode === 'map' && !isSolopreneur ? (
+                        <motion.div
+                            key="map"
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            className="bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm overflow-hidden relative"
+                        >
+                            <div className="px-6 py-4 border-b border-emerald-100/60 flex items-center justify-between bg-gradient-to-r from-emerald-50/50 to-teal-50/30">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-300/30">
+                                        <Network size={18} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-gray-900">Lifecycle Visualization Map</h3>
+                                        <p className="text-[11px] text-gray-500 mt-0.5">Invoice status • Flow analysis</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Live</span>
+                                </div>
+                            </div>
+                            <div className="h-[600px]">
+                                <InvoiceLifecycleMap invoices={invoices} />
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="grid"
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -12 }}
+                        >
+                            {/* SaaS Metrics or Standard Stats Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+                                {businessType === 'saas' ? (
+                                    <>
+                                        {/* Card 1: MRR */}
+                                        <div
+                                            onClick={() => navigate('/invoices')}
+                                            className="relative bg-gradient-to-br from-white to-indigo-50/30 p-6 rounded-2xl border border-indigo-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-indigo-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <Activity size={20} />
+                                                    </div>
+                                                    <div className="flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                                                        <TrendingUp size={12} className="mr-1" /> +{growthRate}%
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Monthly Recurring Revenue</p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalCollected / 1000).toFixed(1)}k</h3>
+                                                    <p className="text-sm text-indigo-600 mt-2 font-medium">Growth Mode Active</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Card 2: Churn Rate */}
+                                        <div
+                                            onClick={() => navigate('/customers')}
+                                            className="relative bg-gradient-to-br from-white to-rose-50/30 p-6 rounded-2xl border border-rose-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-rose-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-rose-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-rose-100 text-rose-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <AlertTriangle size={20} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Churn Rate</p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">{churnRate}%</h3>
+                                                    <p className="text-sm text-rose-600 mt-2 font-medium">Below Target (1.5%)</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Card 3: Cash Runway */}
+                                        <div
+                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <Activity size={20} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Cash Runway</p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">{cashRunway} Months</h3>
+                                                    <div className="w-full bg-gray-100 h-2 rounded-full mt-4 overflow-hidden">
+                                                        <div className="bg-gradient-to-r from-emerald-400 to-teal-600 h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (cashRunway / 12) * 100)}%` }} />
+                                                    </div>
+                                                    <p className="text-sm text-emerald-600 mt-2 font-medium">Status: {cashRunway > 6 ? 'Stable' : 'Critical'}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Card 4: Active Subs */}
+                                        <div
+                                            onClick={() => navigate('/customers')}
+                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <Users size={20} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Active Subscriptions</p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">{activeSubscriptions}</h3>
+                                                    <p className="text-sm text-emerald-600 mt-2 font-medium">Investor View Active</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : businessType === 'agency' ? (
+                                    <>
+                                        {/* Agency Card 1: Pending Revenue */}
+                                        <div
+                                            onClick={() => navigate('/invoices')}
+                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <FileText size={20} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pending Revenue</p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalPending / 1000).toFixed(1)}k</h3>
+                                                    <p className="text-sm text-emerald-600 mt-2 font-medium">{pendingCount} active invoices</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Agency Card 2: Cash Collected */}
+                                        <div
+                                            onClick={() => navigate('/payments')}
+                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <Activity size={20} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Cash Collected</p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalCollected / 1000).toFixed(1)}k</h3>
+                                                    <p className="text-sm text-emerald-600 mt-2 font-medium">This month</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Agency Card 3: Retainer Usage */}
+                                        <div
+                                            className="relative bg-gradient-to-br from-white to-indigo-50/30 p-6 rounded-2xl border border-indigo-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-indigo-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <Clock size={20} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Retainer Usage</p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">{retainerUsage}%</h3>
+                                                    <div className="w-full bg-gray-100 h-2 rounded-full mt-4 overflow-hidden">
+                                                        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full" style={{ width: `${retainerUsage}%` }} />
+                                                    </div>
+                                                    <p className="text-sm text-indigo-600 mt-2 font-medium">Avg. across clients</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Agency Card 4: Unbilled Hours */}
+                                        <div
+                                            className="relative bg-gradient-to-br from-white to-amber-50/30 p-6 rounded-2xl border border-amber-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-amber-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-amber-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-amber-100 text-amber-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <Users size={20} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Unbilled Hours</p>
+                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight text-center">
+                                                        {unbilledHours}h
+                                                    </h3>
+                                                    <p className="text-sm text-amber-600 mt-2 font-medium">Ready to invoice</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : businessType === ('ecommerce' as any) ? (
+                                    <>
+                                        {/* E-commerce Card 1: Replenishment Risks */}
+                                        <div
+                                            onClick={() => navigate('/inventory')}
+                                            className="relative bg-white p-6 rounded-2xl border border-primary/10 shadow-sm cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-primary/5 rounded-full blur-2xl transition-all group-hover:bg-primary/10" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-primary/10 text-primary rounded-xl group-hover:rotate-12 transition-transform duration-300">
+                                                        <AlertCircle size={20} strokeWidth={2.5} />
+                                                    </div>
+                                                    {invSummary.risks > 0 && (
+                                                        <div className="flex items-center text-[10px] font-black text-white bg-primary px-2 py-0.5 rounded-full animate-pulse uppercase tracking-tighter">
+                                                            High Risk
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Replenishment Risks</p>
+                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">{invSummary.risks} {invSummary.risks === 1 ? 'Node' : 'Nodes'}</h3>
+                                                    <p className="text-xs text-gray-500 mt-2 font-medium">Forecasted outages (7d)</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* E-commerce Card 2: Out of Stock */}
+                                        <div
+                                            onClick={() => navigate('/inventory')}
+                                            className="relative bg-white p-6 rounded-2xl border border-rose-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-rose-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-rose-50 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-rose-50 text-rose-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                                                        <AlertTriangle size={20} strokeWidth={2.5} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Out of Stock</p>
+                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">{invSummary.outOfStock} Products</h3>
+                                                    <p className="text-xs text-rose-600 mt-2 font-bold uppercase tracking-tighter">Immediate Action Required</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* E-commerce Card 3: Pending Revenue */}
+                                        <div
+                                            onClick={() => navigate('/invoices')}
+                                            className="relative bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-indigo-50 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                                                        <FileText size={20} strokeWidth={2.5} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pending Revenue</p>
+                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">₹{(totalPending / 1000).toFixed(1)}k</h3>
+                                                    <p className="text-xs text-indigo-600 mt-2 font-medium">{pendingCount} active orders</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* E-commerce Card 4: Store Health */}
+                                        <div
+                                            onClick={() => navigate('/inventory')}
+                                            className="relative bg-primary p-6 rounded-2xl border border-primary-dark/20 shadow-lg shadow-primary/20 cursor-pointer hover:shadow-primary/40 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-xl" />
+                                            <div className="relative h-full flex flex-col justify-between">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="p-3 bg-white/20 text-white rounded-xl">
+                                                        <Activity size={20} strokeWidth={2.5} />
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                                                        <span className="text-[10px] font-black text-white uppercase tracking-wider">Live View</span>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-8">
+                                                    <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Operational Health</p>
+                                                    <h3 className="text-3xl font-black text-white tracking-tighter">
+                                                        {invSummary.risks > 3 ? 'Grade B' : invSummary.risks > 0 ? 'Grade A' : 'Grade A+'}
+                                                    </h3>
+                                                    <p className="text-xs text-white/90 mt-2 font-medium flex items-center gap-1">
+                                                        {invSummary.risks > 0 ? 'Efficiency Optimization Needed' : 'Optimized Capacity'} <ArrowRight size={12} />
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Card 1: Pending Revenue / Outstanding Invoices */}
+                                        <div
+                                            onClick={() => navigate('/invoices')}
+                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <FileText size={20} />
+                                                    </div>
+                                                    <div className="flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                                                        <TrendingUp size={12} className="mr-1" /> +{growthRate}%
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                                        {isSolopreneur ? "Outstanding Invoices" : "Pending Revenue"}
+                                                    </p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalPending / 1000).toFixed(1)}k</h3>
+                                                    <p className="text-sm text-emerald-600 mt-2 font-medium">{pendingCount} invoices pending</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Card 2: Action Required */}
+                                        <div
+                                            onClick={() => navigate('/invoices')}
+                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                            {overdueCount > 0 && <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse shadow-lg shadow-amber-500/50" />}
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-amber-100 text-amber-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <AlertTriangle size={20} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Action Required</p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalOverdue / 1000).toFixed(1)}k</h3>
+                                                    <p className="text-sm text-amber-600 mt-2 font-medium">{overdueCount} overdue payments</p>
+                                                    <div className="mt-3 text-xs font-bold text-emerald-600 flex items-center group-hover:gap-2 transition-all">
+                                                        View Details <ArrowRight size={12} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Card 3: Collected */}
+                                        <div
+                                            onClick={() => navigate('/payments')}
+                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <Activity size={20} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Cash Collected</p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalCollected / 1000).toFixed(1)}k</h3>
+                                                    <div className="w-full bg-gray-100 h-2 rounded-full mt-4 overflow-hidden">
+                                                        <div className="bg-gradient-to-r from-emerald-400 to-teal-600 h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (totalCollected / (totalCollected + totalPending || 1)) * 100)}%` }} />
+                                                    </div>
+                                                    <p className="text-sm text-emerald-600 mt-2 font-medium">Efficiency: {Math.round((totalCollected / (totalCollected + totalPending || 1)) * 100)}%</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Card 4: Clients */}
+                                        <div
+                                            onClick={() => navigate('/customers')}
+                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                        >
+                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
+                                            <div className="relative">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                                                        <Users size={20} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Active Clients</p>
+                                                    <h3 className="text-2xl font-bold text-gray-900">{stats.total_customers || 0}</h3>
+                                                    <p className="text-sm text-emerald-600 mt-2 font-medium">Manage CRM <ArrowRight size={12} className="inline ml-1" /></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                {/* Left Column: Monitoring (Hidden for Solopreneurs) */}
+                                {!isSolopreneur && (
+                                    <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm p-6 lg:p-7 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/20 rounded-full blur-3xl -z-10 transform translate-x-1/2 -translate-y-1/2"></div>
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                                <Activity size={18} className="text-emerald-500" />
+                                                Live Monitoring
+                                            </h2>
+                                            <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg flex items-center border border-emerald-100">
+                                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
+                                                Systems Nominal
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {recentPayments.map((pay) => (
+                                                <div key={pay.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-emerald-100 hover:border-emerald-200 transition-colors shadow-sm">
+                                                    <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg shrink-0"><CreditCard size={16} /></div>
+                                                    <div>
+                                                        <h3 className="text-sm font-bold text-gray-900">Payment Received</h3>
+                                                        <p className="text-sm text-gray-500 mt-0.5">₹{pay.amount.toLocaleString()} via {pay.method}</p>
+                                                        <span className="text-xs text-emerald-500 mt-2 block">{new Date(pay.createdAt).toLocaleTimeString()}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {overdueInvoices.slice(0, 2).map((inv) => (
+                                                <div key={inv.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-amber-100 hover:border-amber-200 transition-colors cursor-pointer shadow-sm group" onClick={() => navigate('/invoices')}>
+                                                    <div className="p-2 bg-amber-100 text-amber-600 rounded-lg shrink-0 group-hover:scale-110 transition-transform"><AlertTriangle size={16} /></div>
+                                                    <div>
+                                                        <h3 className="text-sm font-bold text-gray-900">Collection Alert</h3>
+                                                        <p className="text-sm text-gray-500 mt-0.5">#{inv.invoiceNumber} for {inv.buyer?.name} is overdue.</p>
+                                                        <span className="text-xs text-amber-500 mt-2 block font-medium">Action: Send Follow-up</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {recentInvoices.map((inv) => (
+                                                <div key={inv.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-emerald-100 hover:border-emerald-200 transition-colors shadow-sm">
+                                                    <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg shrink-0"><CheckCircle2 size={16} /></div>
+                                                    <div>
+                                                        <h3 className="text-sm font-bold text-gray-900">Invoice {inv.status === 'draft' ? 'Draft' : 'Sent'}</h3>
+                                                        <p className="text-sm text-gray-500 mt-0.5">#{inv.invoiceNumber} to {inv.buyer?.name} - ₹{inv.total.toLocaleString()}</p>
+                                                        <span className="text-xs text-gray-400 mt-2 block">{new Date(inv.createdAt).toLocaleTimeString()}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Priority Queue (Always shown, full width for solopreneurs) */}
+                                <div className={`${isSolopreneur ? 'lg:col-span-3' : 'lg:col-span-1'} bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm p-6`}>
+                                    <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                        <Clock size={18} className="text-emerald-500" />
+                                        {businessType === 'saas' ? 'Failed Subscriptions' : 'Priority Queue'}
+                                    </h2>
+
+                                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {overdueInvoices.length > 0 ? (
+                                            overdueInvoices.map((inv) => (
+                                                <div key={inv.id} className="flex items-center justify-between p-3 rounded-2xl border border-gray-100 hover:bg-amber-50/50 hover:border-amber-100 transition cursor-pointer group" onClick={() => navigate('/invoices')}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 group-hover:scale-125 transition-transform"></div>
+                                                        <div>
+                                                            <div className="text-sm font-semibold text-gray-900">{inv.buyer?.name}</div>
+                                                            <div className="text-xs text-gray-500">{inv.invoiceNumber}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-sm font-bold text-gray-900">₹{inv.total.toLocaleString()}</div>
+                                                        <div className="text-xs text-amber-500 group-hover:font-medium">Overdue</div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-8 text-gray-400 text-sm">
+                                                <CheckCircle2 size={24} className="mx-auto mb-2 opacity-20" />
+                                                No urgent items.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+};

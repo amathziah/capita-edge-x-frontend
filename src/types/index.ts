@@ -26,6 +26,8 @@ export interface Product {
   costPrice?: number;   // Maps to cost_price
   taxRate?: number;     // Maps to tax_rate
   reorderLevel?: number;// Maps to reorder_level
+  isInventoryTracked?: boolean;
+  itemType?: 'physical' | 'service';
   status?: 'Active' | 'Inactive' | 'Archived';
   gstRate?: number;     // Legacy support
   createdAt: Date;
@@ -69,6 +71,8 @@ export interface Invoice {
   amountPaid?: number; // Calculated field
 
   status: 'draft' | 'pending' | 'paid' | 'overdue' | 'sent' | 'viewed' | 'cancelled' | 'escalated' | 'partially_paid';
+  type?: 'one-off' | 'subscription' | 'recurring';
+  is_recurring?: boolean;
   notes?: string;
   share_token?: string;
   createdAt: string;
@@ -197,4 +201,13 @@ export interface ProductPerformance {
   total_quantity_sold?: number;
   sales?: number;
   revenue?: number;
+}
+
+// Adaptive UI / Business Personas
+export type BusinessType = 'solopreneur' | 'agency' | 'saas' | 'ecommerce';
+
+export interface UserProfile {
+  id: string;
+  businessType: BusinessType;
+  updatedAt: Date;
 }

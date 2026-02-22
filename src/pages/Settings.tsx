@@ -19,7 +19,6 @@ export function Settings() {
     const [isVerified, setIsVerified] = useState(false);
     const [connectionChecked, setConnectionChecked] = useState(false);
 
-
     useEffect(() => {
         loadSettings();
     }, []);
@@ -225,7 +224,7 @@ export function Settings() {
                                 <span className="block">{tab.label}</span>
                                 <span className="text-[10px] font-medium text-text-light">{tab.description}</span>
                             </div>
-                            {activeTab === tab.id && <ChevronRight className="w-4 h-4 ml-auto text-primary" />}
+                            {activeTab === tab.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
                         </button>
                     ))}
                 </div>
@@ -714,8 +713,8 @@ export function Settings() {
                             )}
                         </motion.div>
                     </AnimatePresence>
-                </div >
-            </div >
-        </div >
+                </div>
+            </div>
+        </div>
     );
 }

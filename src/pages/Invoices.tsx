@@ -9,6 +9,8 @@ import InvoiceGenerator from '../components/InvoiceGenerator/InvoiceGenerator';
 import { Toast, ToastType } from '../components/Toast';
 import RecordPaymentModal from '../components/Invoice/RecordPaymentModal';
 import { useData } from "../contexts/DataContext";
+import { useSubscription } from "../contexts/SubscriptionContext";
+import { LimitReachedModal } from "../components/shared/LimitReachedModal";
 
 const STATUS_COLORS: Record<string, string> = {
   paid: "bg-status-success-bg text-status-success border-status-success/10",
@@ -50,6 +52,10 @@ export function Invoices() {
   // Toast State
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
+  // Plan Limit State
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const { isLimitReached } = useSubscription();
+
   const showToast = (message: string, type: ToastType = 'info') => {
     setToast({ message, type });
   };
@@ -85,10 +91,18 @@ export function Invoices() {
     return invoices
       .filter((inv) => {
         const buyerName = inv.buyer?.name || "Unknown";
+        const amountStr = inv.total.toString();
+        const dateStr = inv.date || "";
         return buyerName.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
-          inv.invoiceNumber.toLowerCase().includes(searchTerm.trim().toLowerCase());
+          inv.invoiceNumber.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
+          dateStr.includes(searchTerm.trim()) ||
+          amountStr.includes(searchTerm.trim());
       })
-      .filter((inv) => (filterStatus === "All" ? true : inv.status === filterStatus));
+      .filter((inv) => {
+        if (filterStatus === "All") return true;
+        if (filterStatus === "recurring") return inv.is_recurring || inv.type === 'subscription' || inv.type === 'recurring';
+        return inv.status === filterStatus;
+      });
   }, [invoices, searchTerm, filterStatus]);
 
   // Sorting
@@ -319,7 +333,13 @@ export function Invoices() {
         </div>
 
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={() => {
+            if (isLimitReached('invoices')) {
+              setShowLimitModal(true);
+            } else {
+              setShowCreate(true);
+            }
+          }}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-dark text-white text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300"
         >
           <Plus className="w-5 h-5" /> New Invoice
@@ -355,7 +375,7 @@ export function Invoices() {
                 setPage(1);
               }}
             >
-              {(["All", "paid", "overdue", "sent", "draft", "cancelled"]).map((s) => (
+              {(["All", "paid", "overdue", "sent", "draft", "cancelled", "recurring"]).map((s) => (
                 <option key={s} value={s}>
                   {s === "All" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)}
                 </option>
@@ -991,6 +1011,15 @@ export function Invoices() {
           document.body
         )
       }
+
+      {/* Limit Reached Modal */}
+      <LimitReachedModal
+        isOpen={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        feature="invoices"
+        title="Invoice Limit Reached"
+        description="You've reached the 5-invoice limit on our Free plan. Upgrade to Pro for unlimited invoices and advanced financial automation."
+      />
 
       {
         toast && (

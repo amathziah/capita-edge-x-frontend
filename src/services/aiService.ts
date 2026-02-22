@@ -1,9 +1,9 @@
 import { api } from '../api/client';
 
 export const aiService = {
-  chat: (query: string) => api.post('/ai/chat', { query }),
+  chat: (query: string, persona?: string) => api.post('/ai/chat', { query, persona }),
 
-  processQuery: (query: string, agentId?: string) => api.post<any>('/ai/chat', { query, agentId }),
+  processQuery: (query: string, agentId?: string, persona?: string) => api.post<any>('/ai/chat', { query, agentId, persona }),
 
   magicFill: (text: string) => api.post('/ai/magic-fill', { text }),
 

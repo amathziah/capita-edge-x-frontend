@@ -207,7 +207,7 @@ export function Compliance() {
       >
         <div>
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-emerald-600 mb-2">
-            Regulatory Guard
+            Compliance Monitoring
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
           <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
@@ -335,7 +335,7 @@ export function Compliance() {
                     Maturity <ArrowUpDown className={`w-3 h-3 transition-colors ${sortAsc ? 'text-emerald-500' : 'text-gray-400'}`} />
                   </div>
                 </th>
-                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Threat Level</th>
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Priority</th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Verification</th>
                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-right">Directives</th>
               </tr>
@@ -513,7 +513,7 @@ function ComplianceTaskModal({
                 <h3 className="text-lg font-black text-gray-900 tracking-tight">
                   {initialData ? "Modify Audit Task" : "Declare Audit Node"}
                 </h3>
-                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Regulatory Intelligence</p>
+                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Compliance Intelligence</p>
               </div>
             </div>
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 transition-colors">
@@ -573,7 +573,7 @@ function ComplianceTaskModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Threat Level</label>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Priority</label>
                 <div className="grid grid-cols-4 gap-2">
                   {(['low', 'medium', 'high', 'critical'] as const).map((lvl) => (
                     <button

@@ -54,12 +54,12 @@ export const InventoryInsights = () => {
                 <div>
                     <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-1 flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                        Static Inventory Value
+                        Liquid Capital Locked
                     </h4>
                     <p className="text-2xl font-black text-gray-900 font-display">
                         ₹{summary.cash_locked.toLocaleString()}
                     </p>
-                    <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">Liquid Capital Locked ({'>'}60d)</p>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">Dead Stock Value ({'>'}60d)</p>
                 </div>
                 <div className="p-2.5 bg-primary/5 rounded-xl text-primary">
                     <Activity className="w-5 h-5" strokeWidth={2.5} />
@@ -109,12 +109,16 @@ export const InventoryInsights = () => {
  * VelocityBadge — Shows stock health badge on product rows.
  * Only renders a badge when there's meaningful data to show (avoids false positives).
  */
-export const VelocityBadge = ({ velocity, daysRemaining, lastSoldDate, hasSalesData }: {
+export const VelocityBadge = ({ velocity, daysRemaining, lastSoldDate, hasSalesData, isInventoryTracked }: {
     velocity: number;
     daysRemaining: number;
     lastSoldDate?: string | null;
     hasSalesData?: boolean; // Whether we have reliable sales data
+    isInventoryTracked?: boolean;
 }) => {
+    // If it's a service/non-tracked item, don't show inventory-specific badges
+    if (isInventoryTracked === false) return null;
+
     // If no sales data available at all, don't show misleading badges
     if (!hasSalesData && !lastSoldDate) return null;
 

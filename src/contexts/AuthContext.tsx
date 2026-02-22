@@ -26,9 +26,15 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(() => {
+        // Optimistic: If we have a token hint, we assume we might be logged in
+        return !localStorage.getItem('sb-access-token');
+    });
     const [orgId, setOrgId] = useState<string | null>(localStorage.getItem('sb-org-id'));
-    const [checkingOrg, setCheckingOrg] = useState(true);
+    const [checkingOrg, setCheckingOrg] = useState(() => {
+        // If we have an orgId hint, we don't block the UI with a "Verifying Organization" screen
+        return !localStorage.getItem('sb-org-id');
+    });
 
     useEffect(() => {
         let mounted = true;
@@ -52,10 +58,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     fetchAndSetOrgContext(initialSession.user.id).catch(err =>
                         console.error("Background org fetch failed:", err)
                     );
+                } else {
+                    setCheckingOrg(false);
                 }
             } catch (error) {
                 console.error("Auth initialization failed:", error);
-                if (mounted) setLoading(false);
+                if (mounted) {
+                    setLoading(false);
+                    setCheckingOrg(false);
+                }
             }
         };
 
@@ -75,6 +86,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             } else {
                 localStorage.removeItem('sb-access-token');
                 localStorage.removeItem('sb-org-id');
+                setOrgId(null);
+                setCheckingOrg(false);
             }
         });
 

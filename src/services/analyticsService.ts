@@ -15,6 +15,8 @@ export const analyticsService = {
 
     getSafeToSpend: () => api.get('/analytics/safe-to-spend'),
 
+    getPersonaStats: (persona: string) => api.get(`/analytics/persona-stats?persona=${persona}`),
+
     exportData: async (type: string = 'invoices') => {
         // This returns a blob/csv, not JSON. api client expects JSON by default.
         // We need to handle this manually or extend api client.

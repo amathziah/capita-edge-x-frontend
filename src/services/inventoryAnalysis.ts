@@ -45,7 +45,7 @@ export class InventoryService {
         // 1. Fetch products — use columns we KNOW exist + optional new ones
         const { data: products, error } = await supabase
             .from('products')
-            .select('id, name, sku, stock, cost_price, minStock, sales_velocity_30d, last_sold_at, createdAt');
+            .select('id, name, sku, stock, cost_price, minStock, sales_velocity_30d, last_sold_at, createdAt, is_inventory_tracked');
 
         if (error) {
             console.warn("Inventory analysis query error:", error.message);
@@ -65,6 +65,21 @@ export class InventoryService {
         const SIXTY_DAYS_AGO = new Date(NOW.getTime() - 60 * 24 * 60 * 60 * 1000);
 
         for (const p of products) {
+            // [NEW] Skip analysis for non-tracked items (Services)
+            if (p.is_inventory_tracked === false) {
+                healthyCount++;
+                insights.push({
+                    product_id: p.id,
+                    name: p.name,
+                    sku: p.sku ?? 'N/A',
+                    current_stock: p.stock ?? 0,
+                    sales_velocity: 0,
+                    days_remaining: Infinity,
+                    status: 'healthy',
+                });
+                continue;
+            }
+
             const stock = p.stock ?? 0;
             const minStock = p.minStock ?? 10;
             const velocity = p.sales_velocity_30d ?? 0;

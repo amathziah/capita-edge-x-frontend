@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Bot, X, Send, Sparkles, Mic, MicOff, Zap, FileText, TrendingUp, Users, RotateCcw, Copy, Check, ChevronDown } from 'lucide-react';
+import { Bot, X, Send, Sparkles, Mic, MicOff, Zap, FileText, TrendingUp, Users, RotateCcw, Copy, Check, ChevronDown, AlertTriangle, CreditCard, Activity, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService } from '../../services/aiService';
+import { usePersona } from '../../contexts/PersonaContext';
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -13,28 +14,92 @@ interface Message {
   status?: 'sending' | 'sent' | 'error';
 }
 
-const quickActions = [
+const defaultActions = [
   { label: 'Revenue today', icon: TrendingUp, query: 'What is my total revenue?' },
   { label: 'Draft invoice', icon: FileText, query: 'Help me create a new invoice' },
   { label: 'Top customers', icon: Users, query: 'Who are my top customers?' },
   { label: 'Business health', icon: Zap, query: 'Give me a business health summary' },
 ];
 
+const routeActions: Record<string, typeof defaultActions> = {
+  '/invoices': [
+    { label: 'Draft invoice', icon: FileText, query: 'Help me create a new invoice' },
+    { label: 'Unpaid invoices', icon: AlertTriangle, query: 'Which invoices are currently overdue?' },
+    { label: 'Monthly billing', icon: TrendingUp, query: 'Show me my billing trends for this month' },
+  ],
+  '/payments': [
+    { label: 'Recent collections', icon: CreditCard, query: 'List my most recent payments' },
+    { label: 'Outstanding revenue', icon: Zap, query: 'How much revenue is outstanding?' },
+    { label: 'Top payers', icon: Users, query: 'Who are my most consistent payers?' },
+  ],
+  '/customers': [
+    { label: 'Add client', icon: Users, query: 'Help me add a new customer' },
+    { label: 'Customer health', icon: Activity, query: 'Analyze my customer retention' },
+  ]
+};
+
+const personaActions: Record<string, typeof defaultActions> = {
+  'solopreneur': [
+    { label: 'Check outstanding', icon: AlertTriangle, query: 'How many invoices are overdue?' },
+    { label: 'Expense summary', icon: CreditCard, query: 'Show me my expenses for this month' },
+    { label: 'Taxes due', icon: Zap, query: 'Estimate my taxes for this quarter' },
+  ],
+  'saas': [
+    { label: 'Check MRR', icon: TrendingUp, query: 'What is my current Monthly Recurring Revenue?' },
+    { label: 'Churn report', icon: Users, query: 'Analyze my customer churn' },
+    { label: 'Runway left', icon: Activity, query: 'How many months of cash runway do I have?' },
+  ],
+  'agency': [
+    { label: 'Unbilled hours', icon: Clock, query: 'Show me all unbilled hours' },
+    { label: 'Retainer health', icon: Activity, query: 'Are any retainers running low?' },
+    { label: 'Project profit', icon: TrendingUp, query: 'Which projects are most profitable?' },
+  ],
+  'ecommerce': [
+    { label: 'Stock risks', icon: AlertTriangle, query: 'Which products are at risk of stockout?' },
+    { label: 'Dead stock', icon: Zap, query: 'What is my total liquid capital locked in dead stock?' },
+    { label: 'Refund rate', icon: RotateCcw, query: 'What is my current refund rate?' },
+  ]
+};
+
 const formatTime = (date: Date) => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 export function AIAssistant() {
+  const { businessType } = usePersona();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
+
+  const getGreeting = () => {
+    switch (businessType) {
+      case 'solopreneur': return "Hey! I'm **Malika**. I'll keep your personal finances organized and your cash flow clear. What's on your mind?";
+      case 'saas': return "Systems Nominal. **Malika** here. I'm tracking your MRR, churn, and subscriptions. Ready for growth metrics?";
+      case 'agency': return "Hello! **Malika** here. I'm monitoring your client retainers and billable hours. How can I help you today?";
+      case 'ecommerce': return "Inventory secure. **Malika** active. I'm tracking your replenishment risks and store health. What do you need?";
+      default: return "Hey! 👋 I'm **Malika**, your financial copilot. I can help you check revenue, find invoices, analyze trends, or create new ones. What would you like to do?";
+    }
+  };
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       sender: 'bot',
-      text: "Hey! 👋 I'm **Malika**, your financial copilot. I can help you check revenue, find invoices, analyze trends, or create new ones. What would you like to do?",
+      text: getGreeting(),
       timestamp: new Date(),
     }
   ]);
+
+  // Update greeting if user hasn't started chatting and persona changes
+  useEffect(() => {
+    if (messages.length === 1 && messages[0].sender === 'bot') {
+      setMessages([{
+        id: '1',
+        sender: 'bot',
+        text: getGreeting(),
+        timestamp: new Date(),
+      }]);
+    }
+  }, [businessType]);
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -97,7 +162,7 @@ export function AIAssistant() {
 
     try {
       // Send ALL queries to backend AI — it handles intent detection + data lookup
-      let response = await aiService.processQuery(userMsg.text);
+      let response = await aiService.processQuery(userMsg.text, undefined, businessType || undefined);
 
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -211,9 +276,12 @@ export function AIAssistant() {
               {unreadCount}
             </motion.div>
           )}
-          {/* Pulse ring */}
+          {/* Pulse ring - active based on route context for extra attention */}
           {!isOpen && (
-            <div className="absolute inset-0 rounded-2xl bg-emerald-500/20 animate-ping [animation-duration:3s]" />
+            <div className={`absolute inset-0 rounded-2xl ${window.location.pathname === '/invoices' || window.location.pathname === '/payments'
+              ? 'bg-emerald-500/40 animate-[ping_2s_infinite]'
+              : 'bg-emerald-500/20 animate-[ping_3s_infinite]'
+              }`} />
           )}
         </div>
       </motion.button>
@@ -375,9 +443,11 @@ export function AIAssistant() {
             {/* Quick Actions */}
             {messages.length <= 2 && (
               <div className="px-4 py-2 border-t border-gray-50 bg-white">
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-2">Quick Actions</p>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-2">
+                  {routeActions[window.location.pathname] ? 'Suggested Actions' : 'Quick Actions'}
+                </p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {quickActions.map((action) => (
+                  {(personaActions[businessType as any] || routeActions[window.location.pathname] || defaultActions).map((action: any) => (
                     <button
                       key={action.label}
                       onClick={() => handleSend(action.query)}
