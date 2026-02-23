@@ -1,7 +1,7 @@
 import { invoiceService } from './invoiceService';
 import { customerService } from './customerService';
 import { productService } from './productService';
-import { expenseService, paymentService, settingService, complianceService, notificationService } from './domainServices';
+import { expenseService, paymentService, settingService, complianceService, notificationService, reportService } from './domainServices';
 import { aiService } from './aiService';
 import { analyticsService } from './analyticsService';
 
@@ -15,6 +15,7 @@ export {
   settingService,
   complianceService,
   notificationService,
+  reportService,
   aiService,
   analyticsService
 };
@@ -70,6 +71,10 @@ class DataService {
 
   // Notifications
   getNotifications = notificationService.getNotifications;
+
+  // Reports (Operational Integrity)
+  getReports = reportService.getReports;
+  createReport = reportService.createReport;
 
   // Utilities
   generateId = () => Math.random().toString(36).substring(2) + Date.now().toString(36);

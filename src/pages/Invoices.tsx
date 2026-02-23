@@ -10,6 +10,7 @@ import { Toast, ToastType } from '../components/Toast';
 import RecordPaymentModal from '../components/Invoice/RecordPaymentModal';
 import { useData } from "../contexts/DataContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
+import { usePersona } from "../contexts/PersonaContext";
 import { LimitReachedModal } from "../components/shared/LimitReachedModal";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -26,6 +27,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export function Invoices() {
   const { invoices, loading, refreshData, setData } = useData();
+  const { businessType } = usePersona();
 
   // UI state
   const [searchTerm, setSearchTerm] = useState("");
@@ -200,7 +202,7 @@ export function Invoices() {
           const blob = await pdf(
             <InvoicePDF
               invoice={inv}
-              settings={settings}
+              settings={{ ...settings, businessType }}
               logoUrl={dataService.getLogoUrl(settings.logoFilename)}
             />
           ).toBlob();
@@ -247,7 +249,7 @@ export function Invoices() {
       const blob = await pdf(
         <InvoicePDF
           invoice={inv}
-          settings={settings}
+          settings={{ ...settings, businessType }}
           logoUrl={dataService.getLogoUrl(settings.logoFilename)}
         />
       ).toBlob();
@@ -540,7 +542,7 @@ export function Invoices() {
                               const blob = await pdf(
                                 <InvoicePDF
                                   invoice={inv}
-                                  settings={settings}
+                                  settings={{ ...settings, businessType }}
                                   logoUrl={dataService.getLogoUrl(settings.logoFilename)}
                                 />
                               ).toBlob();
@@ -704,6 +706,11 @@ export function Invoices() {
                         </span>
                       </div>
                       <p className="text-text-muted text-lg tracking-tight">#{viewInvoice.invoiceNumber}</p>
+                      {viewInvoice.projectName && (
+                        <p className="text-primary font-bold text-sm mt-2 flex items-center gap-1">
+                          <span className="text-text-light uppercase tracking-widest text-[10px]">Project:</span> {viewInvoice.projectName}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right space-y-1">
                       <div className="text-xs font-medium text-text-light uppercase tracking-wide">Date Issued</div>
@@ -730,19 +737,27 @@ export function Invoices() {
                       <h4 className="text-xs font-bold text-text-light uppercase tracking-wide mb-3">Bill To</h4>
                       <div className="font-bold text-text-main text-lg mb-1">{viewInvoice.buyer?.name}</div>
                       <div className="text-sm text-text-muted space-y-0.5">
-                        <p className="whitespace-pre-line">{viewInvoice.buyer?.address}</p>
-                        <p>{viewInvoice.buyer?.email}</p>
                         <p>{viewInvoice.buyer?.phone}</p>
                       </div>
                     </div>
                   </div>
+
+                  {viewInvoice.shippingAddress && (
+                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
+                      <h4 className="text-[10px] font-bold text-text-light uppercase tracking-wider mb-1">Shipping Destination</h4>
+                      <p className="text-sm text-text-main font-medium">{viewInvoice.shippingAddress}</p>
+                    </div>
+                  )}
 
                   {/* Items Table */}
                   <div className="border border-gray-200 rounded-xl overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50/50 border-b border-gray-200">
                         <tr>
-                          <th className="px-6 py-3 text-left font-semibold text-text-muted w-1/2">Description</th>
+                          <th className="px-6 py-3 text-left font-semibold text-text-muted">Description</th>
+                          {(viewInvoice?.projectName || viewInvoice?.items?.some(i => i.serviceStartDate)) && (
+                            <th className="px-6 py-3 text-center font-semibold text-text-muted">Service Period</th>
+                          )}
                           <th className="px-6 py-3 text-center font-semibold text-text-muted">Unit</th>
                           <th className="px-6 py-3 text-center font-semibold text-text-muted">Qty</th>
                           <th className="px-6 py-3 text-right font-semibold text-text-muted">Price</th>
@@ -753,7 +768,15 @@ export function Invoices() {
                         {viewInvoice.items && viewInvoice.items.length > 0 ? (
                           viewInvoice.items.map((item, idx) => (
                             <tr key={idx} className="hover:bg-gray-50/50">
-                              <td className="px-6 py-4 font-medium text-text-main">{item.description}</td>
+                              <td className="px-6 py-4 font-medium text-text-main">
+                                {item.description}
+                                {item.sku && <span className="block text-[10px] text-text-light mt-0.5">SKU: {item.sku}</span>}
+                              </td>
+                              {(viewInvoice?.projectName || viewInvoice?.items?.some(i => i.serviceStartDate)) && (
+                                <td className="px-6 py-4 text-center text-[10px] text-text-muted">
+                                  {item.serviceStartDate ? `${new Date(item.serviceStartDate).toLocaleDateString()} - ${item.serviceEndDate ? new Date(item.serviceEndDate).toLocaleDateString() : ''}` : '—'}
+                                </td>
+                              )}
                               <td className="px-6 py-4 text-center text-text-muted">{item.unit || "Qty"}</td>
                               <td className="px-6 py-4 text-center text-text-main">{item.quantity}</td>
                               <td className="px-6 py-4 text-right text-text-muted">₹{item.price.toLocaleString()}</td>
@@ -820,7 +843,7 @@ export function Invoices() {
                     const blob = await pdf(
                       <InvoicePDF
                         invoice={viewInvoice}
-                        settings={settings}
+                        settings={{ ...settings, businessType }}
                         logoUrl={dataService.getLogoUrl(settings.logoFilename)}
                       />
                     ).toBlob();
@@ -870,7 +893,7 @@ export function Invoices() {
                       const blob = await pdf(
                         <InvoicePDF
                           invoice={viewInvoice}
-                          settings={settings}
+                          settings={{ ...settings, businessType }}
                           logoUrl={dataService.getLogoUrl(settings.logoFilename)}
                         />
                       ).toBlob();

@@ -22,6 +22,7 @@ import { LoginPage } from './pages/LoginPage';
 import { UpdatePassword } from './pages/UpdatePassword';
 import { SetupPage } from './pages/SetupPage';
 import PricingPage from './components/Pricing/PricingPage';
+import { Support } from './pages/Support';
 
 import { ControlRoom } from './pages/ControlRoom';
 
@@ -55,6 +56,7 @@ function App() {
                         <Route path="profile" element={<Profile />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="pricing" element={<PricingPage />} />
+                        <Route path="integrity" element={<Support />} />
                       </Route>
                     </Route>
 

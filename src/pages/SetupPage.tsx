@@ -2,26 +2,58 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usePersona } from '../contexts/PersonaContext';
-import { Loader2, ShieldCheck, AlertCircle, Building, CheckCircle2, Zap, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+    Loader2,
+    ShieldCheck,
+    AlertCircle,
+    Building,
+    CheckCircle2,
+    Zap,
+    ArrowRight,
+    ArrowLeft,
+    Cpu,
+    Globe,
+    Database,
+    Terminal,
+    Activity
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type Step = 'identity' | 'persona' | 'processing' | 'done';
+type Step = 'calibrate' | 'identity' | 'persona' | 'processing' | 'done';
 
 export function SetupPage() {
     const { user, refreshOrgContext, orgId } = useAuth();
-    const { businessType, updatePersona } = usePersona();
+    const { updatePersona } = usePersona();
     const navigate = useNavigate();
 
-    const [step, setStep] = useState<Step>('identity');
+    const [step, setStep] = useState<Step>('calibrate');
     const [companyName, setCompanyName] = useState(user?.user_metadata?.company_name || '');
     const [selectedPersona, setSelectedPersona] = useState<'solopreneur' | 'agency' | 'saas' | 'ecommerce'>('solopreneur');
     const [error, setError] = useState<string | null>(null);
+    const [calibrationLogs, setCalibrationLogs] = useState<string[]>([]);
 
     useEffect(() => {
-        if (orgId && !businessType) {
-            setStep('persona');
+        if (step === 'calibrate') {
+            const logs = [
+                "Initializing Malika Core v2.5...",
+                "Scanning secure nodes...",
+                "Calibrating neural UI layers...",
+                "Synchronizing with protocol...",
+                "Establishment sequence ready."
+            ];
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < logs.length) {
+                    setCalibrationLogs(prev => [...prev, `[SYSTEM]: ${logs[i]}`]);
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => setStep('identity'), 1000);
+                }
+            }, 600);
+            return () => clearInterval(interval);
         }
-    }, [orgId, businessType]);
+    }, [step]);
 
     useEffect(() => {
         if (user?.user_metadata?.company_name && !companyName) {
@@ -56,77 +88,126 @@ export function SetupPage() {
             // 3. Refresh context and redirect
             await refreshOrgContext();
             setStep('done');
-            setTimeout(() => navigate('/'), 2000);
+            setTimeout(() => navigate('/'), 2500);
         } catch (err: any) {
             console.error('Setup error:', err);
             setError(err.message);
-            setStep('identity'); // Go back to start on error
+            setStep('identity');
         }
     };
 
     const personas = [
-        { id: 'solopreneur', label: 'Solopreneur', desc: 'Managing it all myself.', icon: '🧑‍💻' },
-        { id: 'saas', label: 'SaaS Founder', desc: 'Subscriptions & MRR.', icon: '🚀' },
-        { id: 'agency', label: 'Agency Owner', desc: 'Clients & Projects.', icon: '🏢' },
-        { id: 'ecommerce', label: 'E-commerce', desc: 'Products & Orders.', icon: '📦' },
+        { id: 'solopreneur', label: 'Solopreneur', desc: 'Sovereign individual managing holistic operations.', icon: <Activity className="w-6 h-6" /> },
+        { id: 'saas', label: 'SaaS Founder', desc: 'Scalable subscription architecture & MRR tracking.', icon: <Zap className="w-6 h-6" /> },
+        { id: 'agency', label: 'Agency Owner', desc: 'Multi-client coordination & project-based billing.', icon: <Globe className="w-6 h-6" /> },
+        { id: 'ecommerce', label: 'E-commerce', desc: 'Universal product ledger & automated order flows.', icon: <Database className="w-6 h-6" /> },
     ];
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-[#080a14] font-sans selection:bg-teal-500/20 overflow-hidden relative">
-            {/* Background Ambient Glows */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-teal-500/10 blur-[120px] rounded-full" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full" />
+        <div className="min-h-screen bg-[#040608] font-sans selection:bg-teal-500/20 relative overflow-x-hidden flex flex-col items-center justify-center py-6 md:py-12 px-4">
+            {/* Background Grid & Particles */}
+            <div className="fixed inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
 
-            <div className="w-full max-w-[540px] px-6 relative z-10">
+            {/* Ambient Glows */}
+            <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-teal-500/5 blur-[130px] rounded-full animate-pulse pointer-events-none" />
+            <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 blur-[130px] rounded-full animate-pulse pointer-events-none" />
+
+            <div className="w-full max-w-[500px] relative z-10">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                    className="bg-[#111625]/80 backdrop-blur-xl border border-white/10 rounded-[40px] p-10 shadow-2xl shadow-black/40"
+                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    className="bg-[#0c111d]/50 backdrop-blur-2xl border border-white/10 rounded-[32px] p-6 md:p-10 shadow-2xl flex flex-col min-h-[460px] w-full"
                 >
                     <AnimatePresence mode="wait">
+                        {step === 'calibrate' && (
+                            <motion.div
+                                key="calibrate"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="flex flex-col flex-1 justify-center items-center space-y-8"
+                            >
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-teal-500/20 rounded-full blur-2xl animate-pulse" />
+                                    <Terminal className="w-12 h-12 text-teal-400 relative z-10" />
+                                </div>
+                                <div className="w-full max-w-sm space-y-2">
+                                    {calibrationLogs.map((log, i) => (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            className="font-mono text-[11px] text-teal-500/70"
+                                        >
+                                            {log}
+                                        </motion.div>
+                                    ))}
+                                </div>
+                                <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <motion.div
+                                        className="h-full bg-teal-500"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: '100%' }}
+                                        transition={{ duration: 3.5, ease: "easeInOut" }}
+                                    />
+                                </div>
+                            </motion.div>
+                        )}
+
                         {step === 'identity' && (
                             <motion.div
                                 key="identity"
-                                initial={{ opacity: 0, x: 20 }}
+                                initial={{ opacity: 0, x: 40 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="space-y-8"
+                                exit={{ opacity: 0, x: -40 }}
+                                className="space-y-10"
                             >
-                                <div className="text-center">
-                                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-[28px] bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-teal-500/30 text-teal-400 mb-6 shadow-lg shadow-teal-500/10">
-                                        <Building className="w-10 h-10" />
+                                <div className="text-center space-y-3">
+                                    <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400 shadow-inner">
+                                        <Building className="w-6 h-6" />
                                     </div>
-                                    <h1 className="text-3xl font-black text-white tracking-tight mb-2">Build your space.</h1>
-                                    <p className="text-gray-400 text-sm font-medium">Initialize your business identity in the protocol.</p>
+                                    <div>
+                                        <h1 className="text-3xl font-black text-white tracking-tight leading-none mb-2">Build your space.</h1>
+                                        <p className="text-gray-400 text-[13px] font-medium">Initialize your business identity in the protocol architecture.</p>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-6">
-                                    <div className="space-y-2.5">
-                                        <label className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 ml-1">Workspace Identity</label>
-                                        <input
-                                            type="text"
-                                            value={companyName}
-                                            onChange={(e) => setCompanyName(e.target.value)}
-                                            placeholder="e.g. Malika Core"
-                                            className="w-full px-6 py-4.5 bg-white/[0.03] border-2 border-white/[0.06] rounded-[24px] text-white font-bold focus:bg-white/[0.05] focus:border-teal-500/50 focus:ring-4 focus:ring-teal-500/5 outline-none transition-all placeholder:text-gray-600"
-                                        />
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 ml-1">Universal Identity String</label>
+                                        <div className="relative group">
+                                            <input
+                                                type="text"
+                                                value={companyName}
+                                                onChange={(e) => setCompanyName(e.target.value)}
+                                                placeholder="e.g. Malika Nexus"
+                                                className="w-full px-6 py-4 bg-white/[0.04] border-2 border-white/[0.08] rounded-2xl text-white text-base font-bold focus:bg-white/[0.06] focus:border-teal-500/40 focus:ring-8 focus:ring-teal-500/5 outline-none transition-all placeholder:text-gray-700"
+                                            />
+                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-focus-within:opacity-100 transition-opacity">
+                                                <Cpu className="w-4 h-4 text-teal-500/50 animate-spin" />
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {error && (
-                                        <div className="p-4 rounded-[20px] bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold flex items-center gap-3 animate-shake">
-                                            <AlertCircle className="w-4 h-4" />
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="p-5 rounded-[24px] bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold flex items-center gap-4"
+                                        >
+                                            <AlertCircle className="w-5 h-5 shrink-0" />
                                             {error}
-                                        </div>
+                                        </motion.div>
                                     )}
 
                                     <button
                                         onClick={() => companyName && setStep('persona')}
                                         disabled={!companyName}
-                                        className="w-full py-5 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white rounded-[24px] font-black text-sm shadow-xl shadow-teal-500/20 transition-all flex items-center justify-center gap-3 disabled:opacity-20 group active:scale-[0.98]"
+                                        className="w-full py-4 bg-gradient-to-br from-teal-400 to-blue-600 hover:brightness-110 text-white rounded-2xl font-black text-sm shadow-2xl shadow-teal-500/20 transition-all flex items-center justify-center gap-3 group disabled:opacity-30 active:scale-[0.98]"
                                     >
-                                        Next Component
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        Establish Connection
+                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
                                     </button>
                                 </div>
                             </motion.div>
@@ -135,46 +216,54 @@ export function SetupPage() {
                         {step === 'persona' && (
                             <motion.div
                                 key="persona"
-                                initial={{ opacity: 0, x: 20 }}
+                                initial={{ opacity: 0, x: 40 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="space-y-8"
+                                exit={{ opacity: 0, x: -40 }}
+                                className="space-y-10"
                             >
-                                <div className="text-center">
-                                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-[28px] bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-teal-500/30 text-teal-400 mb-6 shadow-lg shadow-teal-500/10">
-                                        <Zap className="w-10 h-10" />
+                                <div className="text-center space-y-3">
+                                    <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-inner">
+                                        <Zap className="w-6 h-6" />
                                     </div>
-                                    <h1 className="text-3xl font-black text-white tracking-tight mb-2">How do you work?</h1>
-                                    <p className="text-gray-400 text-sm font-medium">The UI will adapt its neural layout to your model.</p>
+                                    <div>
+                                        <h1 className="text-3xl font-black text-white tracking-tight leading-none mb-2">Define Operation.</h1>
+                                        <p className="text-gray-400 text-[13px] font-medium">Adapting neural UI layers to your specific business model.</p>
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-3">
                                     {personas.map((p, idx) => (
                                         <motion.button
                                             key={p.id}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: idx * 0.1 }}
+                                            transition={{ delay: idx * 0.05 }}
                                             onClick={() => setSelectedPersona(p.id as any)}
-                                            className={`p-5 rounded-[28px] border-2 text-left transition-all relative group h-full
+                                            className={`flex items-center gap-4 p-4 rounded-xl border transition-all relative group
                                                 ${selectedPersona === p.id
-                                                    ? 'border-teal-500 bg-teal-500/10 ring-8 ring-teal-500/5'
-                                                    : 'border-white/5 bg-white/[0.02] hover:border-white/10 hover:bg-white/[0.04]'}`}
+                                                    ? 'border-teal-500/50 bg-teal-500/[0.03] shadow-sm'
+                                                    : 'border-white/10 bg-white/[0.01] hover:border-white/20 hover:bg-white/[0.02]'}`}
                                         >
-                                            <div className="text-3xl mb-4 grayscale group-hover:grayscale-0 transition-all duration-300 transform group-hover:scale-110 origin-left">
+                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border transition-all
+                                                ${selectedPersona === p.id
+                                                    ? 'bg-teal-500/10 border-teal-500/20 text-teal-400'
+                                                    : 'bg-white/5 border-white/5 text-gray-500'}`}>
                                                 {p.icon}
                                             </div>
-                                            <h4 className={`font-black text-sm tracking-tight ${selectedPersona === p.id ? 'text-teal-400' : 'text-white'}`}>
-                                                {p.label}
-                                            </h4>
-                                            <p className="text-[10px] text-gray-500 font-bold mt-1.5 leading-relaxed group-hover:text-gray-400 transition-colors">
-                                                {p.desc}
-                                            </p>
-                                            {selectedPersona === p.id && (
-                                                <div className="absolute top-4 right-4 text-teal-400">
-                                                    <CheckCircle2 className="w-6 h-6 fill-teal-400/10" />
-                                                </div>
-                                            )}
+                                            <div className="flex-1 text-left">
+                                                <h4 className={`font-bold text-sm tracking-tight ${selectedPersona === p.id ? 'text-teal-400' : 'text-white'}`}>
+                                                    {p.label}
+                                                </h4>
+                                                <p className="text-[10px] text-gray-500 font-medium leading-tight mt-0.5">
+                                                    {p.desc}
+                                                </p>
+                                            </div>
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all
+                                                ${selectedPersona === p.id
+                                                    ? 'border-teal-500 bg-teal-500'
+                                                    : 'border-white/10'}`}>
+                                                {selectedPersona === p.id && <CheckCircle2 className="w-2.5 h-2.5 text-[#040608]" />}
+                                            </div>
                                         </motion.button>
                                     ))}
                                 </div>
@@ -182,15 +271,15 @@ export function SetupPage() {
                                 <div className="flex gap-4">
                                     <button
                                         onClick={() => setStep('identity')}
-                                        className="p-5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-[24px] border border-white/5 transition-all active:scale-95"
+                                        className="px-6 py-4 bg-white/[0.03] hover:bg-white/[0.08] text-gray-500 hover:text-white rounded-2xl border border-white/10 transition-all active:scale-95 group"
                                     >
-                                        <ArrowLeft className="w-5 h-5" />
+                                        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                                     </button>
                                     <button
                                         onClick={handleProvisioning}
-                                        className="flex-1 py-5 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white rounded-[24px] font-black text-sm shadow-xl shadow-teal-500/20 transition-all flex items-center justify-center gap-3 active:scale-[0.98] group"
+                                        className="flex-1 py-4 bg-gradient-to-br from-teal-400 to-blue-600 hover:brightness-110 text-white rounded-2xl font-black text-sm shadow-2xl shadow-teal-500/20 transition-all flex items-center justify-center gap-3 group active:scale-[0.98]"
                                     >
-                                        Launch Platform
+                                        Initialize Protocol
                                         <ShieldCheck className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                                     </button>
                                 </div>
@@ -202,16 +291,38 @@ export function SetupPage() {
                                 key="processing"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="text-center py-12"
+                                className="flex flex-col flex-1 justify-center items-center text-center space-y-10"
                             >
-                                <div className="relative inline-flex mb-10">
-                                    <div className="absolute inset-0 bg-teal-500/20 rounded-full animate-ping"></div>
-                                    <div className="relative bg-[#0c0f1a] rounded-full p-8 shadow-2xl border border-teal-500/20">
-                                        <Loader2 className="w-14 h-14 text-teal-400 animate-spin" />
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-teal-500/20 rounded-full blur-3xl animate-ping opacity-30"></div>
+                                    <div className="relative bg-[#0c111d] rounded-3xl p-8 shadow-2xl border border-white/10 overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-teal-500/5 to-transparent" />
+                                        <Loader2 className="w-12 h-12 text-teal-400 animate-spin relative z-10" />
                                     </div>
                                 </div>
-                                <h1 className="text-2xl font-black text-white mb-3 tracking-tight">Deploying Workspace...</h1>
-                                <p className="text-gray-500 text-sm font-medium">Initializing secure modules and adapting neural UI layers.</p>
+                                <div className="space-y-3">
+                                    <h1 className="text-2xl font-black text-white tracking-tight">Deploying Instance...</h1>
+                                    <p className="text-gray-500 text-[13px] font-medium max-w-xs mx-auto">
+                                        Seeding secure financial modules and establishing encrypted cloud connectivity.
+                                    </p>
+                                </div>
+                                <div className="flex gap-2">
+                                    {[0, 1, 2].map((i) => (
+                                        <motion.div
+                                            key={i}
+                                            animate={{
+                                                scale: [1, 1.5, 1],
+                                                opacity: [0.3, 1, 0.3]
+                                            }}
+                                            transition={{
+                                                repeat: Infinity,
+                                                duration: 1.5,
+                                                delay: i * 0.2
+                                            }}
+                                            className="w-2 h-2 rounded-full bg-teal-500"
+                                        />
+                                    ))}
+                                </div>
                             </motion.div>
                         )}
 
@@ -220,21 +331,45 @@ export function SetupPage() {
                                 key="done"
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="text-center py-12"
+                                className="flex flex-col flex-1 justify-center items-center text-center space-y-10"
                             >
-                                <div className="inline-flex items-center justify-center w-28 h-28 rounded-[36px] bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-2xl shadow-emerald-500/30 mb-10">
-                                    <ShieldCheck className="w-14 h-14" />
+                                <motion.div
+                                    initial={{ y: 20 }}
+                                    animate={{ y: 0 }}
+                                    className="inline-flex items-center justify-center w-24 h-24 rounded-[32px] bg-gradient-to-br from-emerald-400 to-teal-700 text-white shadow-3xl shadow-emerald-500/30 mb-2 border border-white/20"
+                                >
+                                    <CheckCircle2 className="w-12 h-12" />
+                                </motion.div>
+                                <div className="space-y-3">
+                                    <h1 className="text-3xl font-black text-white tracking-tight">Access Granted.</h1>
+                                    <p className="text-gray-500 text-[13px] font-medium">Welcome to your new autonomous financial nervous system.</p>
                                 </div>
-                                <h1 className="text-2xl font-black text-white mb-3 tracking-tight">Ready to Go.</h1>
-                                <p className="text-gray-500 text-sm font-medium">Welcome to your new financial nervous system.</p>
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.8 }}
+                                    className="text-teal-500/50 font-mono text-[10px] uppercase tracking-[0.4em] animate-pulse"
+                                >
+                                    Redirecting to secure terminal...
+                                </motion.div>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </motion.div>
 
-                <div className="text-center mt-12">
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-700/60">Malika AI Protocol v2.5 // Secure Node</p>
-                </div>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.3 }}
+                    transition={{ delay: 1 }}
+                    className="text-center mt-8 space-y-3"
+                >
+                    <p className="text-[9px] font-black uppercase tracking-[0.5em] text-gray-500">Malika AI Protocol v2.5 // Core-Node-Alpha</p>
+                    <div className="flex justify-center gap-3 opacity-30">
+                        <div className="w-1 h-px bg-gray-600" />
+                        <div className="w-3 h-px bg-teal-600" />
+                        <div className="w-1 h-px bg-gray-600" />
+                    </div>
+                </motion.div>
             </div>
         </div>
     );

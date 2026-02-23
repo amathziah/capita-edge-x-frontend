@@ -68,6 +68,12 @@ const groups: NavGroup[] = [
       { name: "reports", label: "Reports", href: "/reports", icon: BarChart3 },
     ],
   },
+  {
+    title: "OPERATIONAL",
+    items: [
+      { name: "integrity", label: "Integrity", href: "/integrity", icon: ShieldCheck, highlight: "Report" },
+    ],
+  },
 ];
 
 // ── Component ────────────────────────────────────────────────────────────
@@ -123,41 +129,39 @@ export function Sidebar() {
       items: group.items.filter(item => {
         // --- Solopreneur Mapping ---
         if (businessType === 'solopreneur') {
-          // Solopreneurs typically don't need inventory or compliance
-          if (['inventory', 'compliance'].includes(item.name)) return false;
+          // Solopreneurs need "Services & Items" (renamed inventory) but not compliance
+          if (item.name === 'compliance') return false;
         }
 
         // --- SaaS Founder Mapping ---
         if (businessType === 'saas') {
-          // SaaS Founders don't need inventory
-          if (item.name === 'inventory') return false;
+          // SaaS Founders now use "Services & Items"
+          return true;
         }
 
         // --- Agency Owner Mapping ---
         if (businessType === 'agency') {
-          // Agencies might not need inventory
-          if (item.name === 'inventory') return false;
-        }
-
-        // --- E-commerce Mapping ---
-        if (businessType === 'ecommerce') {
-          // E-commerce needs everything (inventory, payments, etc.)
+          // Agencies use "Services & Items"
           return true;
         }
 
         return true;
-      }).map(item => {
-        // Dynamic Label Renaming for Solopreneurs
+        // Dynamic Label Renaming for Solopreneur/Agency/SaaS
+        if (['solopreneur', 'agency', 'saas'].includes(businessType as string) && item.name === 'inventory') {
+          return { ...item, label: "Services & Items" };
+        }
         if (businessType === 'solopreneur' && item.name === 'control_room') {
           return { ...item, label: "Dashboard" };
         }
-        // Dynamic Label Renaming for Agency
-        if (businessType === 'agency' && item.name === 'inventory') {
-          return { ...item, label: "Services & Items" };
-        }
         return item;
       })
-    })).filter(group => group.items.length > 0);
+    })).map(group => {
+      // Dynamic Group Title Renaming
+      if (['solopreneur', 'agency', 'saas'].includes(businessType as string) && group.title === "SPEND & ASSETS") {
+        return { ...group, title: "OFFERINGS & SPEND" };
+      }
+      return group;
+    }).filter(group => group.items.length > 0);
   }, [businessType]);
 
   return (
@@ -178,8 +182,11 @@ export function Sidebar() {
         </div>
         {!collapsed && (
           <div className="text-left overflow-hidden">
-            <span className="text-[15px] font-bold text-white tracking-tight block">Malika</span>
-            <span className="block text-[10px] text-gray-500 font-medium tracking-wide">Financial OS</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[15px] font-bold text-white tracking-tight block">Malika</span>
+              <span className="px-1 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-[8px] font-black text-teal-400/80 uppercase tracking-tighter">v2.5</span>
+            </div>
+            <span className="block text-[10px] text-gray-500 font-medium tracking-wide">Protocol Architecture</span>
           </div>
         )}
       </button>

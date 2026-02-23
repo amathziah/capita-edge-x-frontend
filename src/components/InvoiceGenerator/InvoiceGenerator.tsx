@@ -17,6 +17,7 @@ import { Toast, ToastType } from '../Toast';
 import InvoicePDF from '../PDF/InvoicePDF';
 import { dataService } from '../../services/dataService';
 import { Invoice, InvoiceItem, Product } from '../../types';
+import { usePersona } from "../../contexts/PersonaContext";
 
 // Constants
 const CURRENCIES = [
@@ -89,6 +90,8 @@ const InputField = ({
 );
 
 export default function InvoiceGenerator({ onClose, initialData, editingInvoice }: InvoiceGeneratorProps) {
+    const { businessType } = usePersona();
+
     // Global Settings
     const [currency, setCurrency] = useState(CURRENCIES[0]);
     const [taxLabel, setTaxLabel] = useState('GST');
@@ -102,8 +105,14 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         date: new Date().toISOString().split("T")[0],
         dueDate: new Date().toISOString().split("T")[0],
     });
+
+    // Persona-Specific Global Fields
+    const [projectName, setProjectName] = useState("");
+    const [shippingAddress, setShippingAddress] = useState("");
+    const [orderNumber, setOrderNumber] = useState("");
+
     const [items, setItems] = useState<InvoiceItem[]>([
-        { description: "", quantity: 1, unit: 'Qty', price: 0, discount: 0 },
+        { description: "", quantity: 1, unit: businessType === 'agency' ? 'Hours' : 'Qty', price: 0, discount: 0 },
     ]);
     const [taxRate, setTaxRate] = useState<number>(18);
     const [shipping, setShipping] = useState<number>(0);
@@ -139,10 +148,15 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
             });
             setSeller(editingInvoice.seller || { name: "", phone: "", email: "", address: "", taxId: "" });
             setBuyer(editingInvoice.buyer || { name: "", phone: "", email: "", address: "" });
-            setItems(editingInvoice.items?.length ? (editingInvoice.items as InvoiceItem[]).map((i: InvoiceItem) => ({ ...i, unit: i.unit || 'Qty' })) : [{ description: "", quantity: 1, unit: 'Qty', price: 0, discount: 0 }]);
+            setItems(editingInvoice.items?.length ? (editingInvoice.items as InvoiceItem[]).map((i: InvoiceItem) => ({ ...i, unit: i.unit || 'Qty' })) : [{ description: "", quantity: 1, unit: businessType === 'agency' ? 'Hours' : 'Qty', price: 0, discount: 0 }]);
             setTaxRate(editingInvoice.taxRate || 18);
             setShipping(editingInvoice.shipping || 0);
             setTaxLabel(editingInvoice.taxType || 'GST');
+
+            // Persona fields
+            if (editingInvoice.projectName) setProjectName(editingInvoice.projectName);
+            if (editingInvoice.shippingAddress) setShippingAddress(editingInvoice.shippingAddress);
+            if (editingInvoice.orderNumber) setOrderNumber(editingInvoice.orderNumber);
         } else {
             dataService.generateInvoiceNumber().then(num => {
                 setMeta(prev => ({ ...prev, number: num }));
@@ -202,7 +216,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
 
     // Item Management
     const bottomRef = useRef<HTMLDivElement | null>(null);
-    const addItem = () => setItems([...items, { description: "", quantity: 1, unit: 'Qty', price: 0, discount: 0 }]);
+    const addItem = () => setItems([...items, { description: "", quantity: 1, unit: businessType === 'agency' ? 'Hours' : 'Qty', price: 0, discount: 0 }]);
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
     const updateItem = <K extends keyof InvoiceItem>(index: number, field: K, value: InvoiceItem[K]) => {
         const newItems = [...items];
@@ -237,7 +251,10 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
             shipping: shipping,
             total: total,
             status: editingInvoice?.status || 'draft' as const,
-            notes: editingInvoice?.notes || ''
+            notes: editingInvoice?.notes || '',
+            projectName,
+            shippingAddress,
+            orderNumber
         };
     };
 
@@ -494,6 +511,40 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                     </div>
                 </div>
 
+                {/* Persona-Specific Global Inputs */}
+                {(businessType === 'agency' || businessType === 'ecommerce' || businessType === 'saas') && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white/40 backdrop-blur-md p-6 rounded-3xl border border-gray-200/50 shadow-sm">
+                        {businessType === 'agency' && (
+                            <InputField
+                                label="Project Name"
+                                placeholder="e.g. Website Redesign"
+                                value={projectName}
+                                onChange={(e) => setProjectName(e.target.value)}
+                            />
+                        )}
+                        {businessType === 'ecommerce' && (
+                            <div className="flex flex-col space-y-2">
+                                <label className="text-xs font-semibold text-text-light uppercase tracking-wider">Shipping Address</label>
+                                <textarea
+                                    className="bg-gray-50/80 backdrop-blur-sm border-0 border-b-2 border-gray-200 rounded-t-xl px-4 py-3 text-sm font-medium outline-none focus:border-primary focus:bg-white hover:bg-gray-100/60 transition-all shadow-sm"
+                                    placeholder="Enter full shipping destination"
+                                    rows={1}
+                                    value={shippingAddress}
+                                    onChange={(e) => setShippingAddress(e.target.value)}
+                                />
+                            </div>
+                        )}
+                        {(businessType === 'ecommerce' || businessType === 'saas') && (
+                            <InputField
+                                label="Order / Ref #"
+                                placeholder="e.g. ORD-9981"
+                                value={orderNumber}
+                                onChange={(e) => setOrderNumber(e.target.value)}
+                            />
+                        )}
+                    </div>
+                )}
+
                 <hr className="border-gray-200/60" />
 
                 {/* Seller & Buyer Grid with Glassmorphic Cards */}
@@ -587,7 +638,10 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                 <div className="space-y-4">
                     <div className="bg-white/80 backdrop-blur-sm rounded-3xl border border-gray-200/50 shadow-md">
                         <div className="grid grid-cols-12 gap-4 p-5 text-xs font-bold text-text-muted border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-primary-light/10 uppercase tracking-widest">
-                            <div className="col-span-10 sm:col-span-5">Description</div>
+                            <div className="col-span-10 sm:col-span-4">Description</div>
+                            {(businessType === 'saas' || businessType === 'agency') && (
+                                <div className="col-span-3 hidden sm:block text-center">Service Period</div>
+                            )}
                             <div className="col-span-2 hidden sm:block text-center">Unit</div>
                             <div className="col-span-2 sm:col-span-1 text-center">Qty</div>
                             <div className="col-span-2 text-center">Price</div>
@@ -598,24 +652,36 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                         <div className="divide-y divide-gray-100">
                             {items.map((item, idx) => (
                                 <div key={idx} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gradient-to-r hover:from-primary-light/10 hover:to-transparent transition-all duration-200 group">
-                                    <div className="col-span-10 sm:col-span-5 relative">
+                                    <div className={`col-span-10 ${businessType === 'saas' || businessType === 'agency' ? 'sm:col-span-4' : 'sm:col-span-5'} relative`}>
                                         <input
                                             className="w-full bg-transparent border-0 focus:outline-none p-0 text-sm font-medium text-text-main placeholder-gray-400"
                                             placeholder="Item description or search product..."
                                             value={item.description}
                                             onChange={(e) => updateItem(idx, "description", e.target.value)}
-                                            onFocus={() => setFocusedItemIndex(idx)}
+                                            onFocus={() => {
+                                                // Only show automatic dropdown for E-commerce or Solopreneur personas
+                                                if (businessType === 'ecommerce' || businessType === 'solopreneur') {
+                                                    setFocusedItemIndex(idx);
+                                                }
+                                            }}
                                             onBlur={() => setTimeout(() => setFocusedItemIndex(null), 200)}
                                         />
                                         {/* Product Autocomplete Dropdown - Enhanced with Stock Logic */}
                                         {focusedItemIndex === idx && (
                                             <div className="absolute left-0 top-full mt-2 w-[120%] min-w-[300px] bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 max-h-72 overflow-y-auto z-[100] animate-in fade-in slide-in-from-top-2 duration-200 backdrop-blur-xl bg-white/95">
                                                 <div className="sticky top-0 bg-gray-50/90 backdrop-blur-sm px-4 py-2 border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400 z-10 flex justify-between">
-                                                    <span>Available Products</span>
-                                                    <span>Real-time Stock</span>
+                                                    <span>Available Products (Inventory)</span>
+                                                    <span>Stock Health</span>
                                                 </div>
                                                 {products
-                                                    .filter(p => !item.description || p.name.toLowerCase().includes(item.description.toLowerCase()) || p.sku?.toLowerCase().includes(item.description.toLowerCase()))
+                                                    .filter(p => {
+                                                        const matchesSearch = !item.description || p.name.toLowerCase().includes(item.description.toLowerCase()) || p.sku?.toLowerCase().includes(item.description.toLowerCase());
+
+                                                        if (!matchesSearch) return false;
+
+                                                        // Strictly show inventory/physical products for suggestions
+                                                        return p.isInventoryTracked;
+                                                    })
                                                     .slice(0, 50)
                                                     .map(product => {
                                                         // [STOCK LOGIC] Calculate real-time availability including items currently in the cart
@@ -700,6 +766,24 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                             </div>
                                         )}
                                     </div>
+
+                                    {(businessType === 'saas' || businessType === 'agency') && (
+                                        <div className="col-span-3 flex items-center gap-1">
+                                            <input
+                                                type="date"
+                                                className="w-full bg-gray-50/50 border border-gray-100 rounded-lg p-1 text-[10px] outline-none focus:border-primary"
+                                                value={item.serviceStartDate || ''}
+                                                onChange={(e) => updateItem(idx, "serviceStartDate", e.target.value)}
+                                            />
+                                            <span className="text-[10px] text-gray-400">-</span>
+                                            <input
+                                                type="date"
+                                                className="w-full bg-gray-50/50 border border-gray-100 rounded-lg p-1 text-[10px] outline-none focus:border-primary"
+                                                value={item.serviceEndDate || ''}
+                                                onChange={(e) => updateItem(idx, "serviceEndDate", e.target.value)}
+                                            />
+                                        </div>
+                                    )}
                                     <div className="col-span-2 hidden sm:block">
                                         <select
                                             className="w-full bg-gray-50/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-medium focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none text-text-muted transition-all"

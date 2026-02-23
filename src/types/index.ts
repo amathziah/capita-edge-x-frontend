@@ -41,6 +41,9 @@ export interface InvoiceItem {
   price: number;
   unit?: string;
   discount?: number;
+  // Persona Specifics
+  serviceStartDate?: string;
+  serviceEndDate?: string;
   // Inventory Link
   productId?: string;
   sku?: string;
@@ -57,6 +60,9 @@ export interface Invoice {
   seller: any;
   buyer: any;
   shipTo?: any;
+  shippingAddress?: string; // For E-commerce
+  projectName?: string;     // For Agency
+  orderNumber?: string;     // For E-commerce/SaaS
 
   items: InvoiceItem[];
 

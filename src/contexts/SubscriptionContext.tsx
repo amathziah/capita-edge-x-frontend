@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { api } from '../api/client';
 
 export type PlanTier = 'free' | 'pro';
 
@@ -43,16 +44,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         try {
             setLoading(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/plans/status`, {
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch plan status');
-
-            const data = await response.json();
+            const data = await api.get<PlanStatus>('/plans/status');
             setPlanStatus(data);
         } catch (err) {
             console.error('Error fetching plan status:', err);

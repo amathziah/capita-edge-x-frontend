@@ -46,3 +46,8 @@ export const complianceService = {
 export const notificationService = {
     getNotifications: () => api.get<any[]>('/notifications')
 };
+
+export const reportService = {
+    getReports: () => api.get<any[]>('/reports'),
+    createReport: (report: any) => api.post<{ success: boolean, report: any }>('/reports', report)
+};

@@ -235,14 +235,12 @@ export function Inventory() {
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             </div>
             <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
-              {businessType === 'agency' ? 'Services & Items' : 'Inventory Intelligence'}
+              {['solopreneur', 'agency', 'saas'].includes(businessType as string) ? 'Services & Items' : 'Inventory Intelligence'}
             </h2>
             <p className="text-gray-600 mt-1.5">
-              {businessType === 'agency'
+              {['solopreneur', 'agency', 'saas'].includes(businessType as string)
                 ? 'Manage your billable services and resellable items in one unified engine.'
-                : businessType === 'ecommerce' as any
-                  ? 'High-velocity operational tracking & proactive health monitoring.'
-                  : 'Financial inventory tracking & proactive stock health monitoring.'}
+                : 'High-velocity operational tracking & proactive health monitoring.'}
             </p>
           </div>
         </motion.div>
@@ -541,7 +539,7 @@ export function Inventory() {
       </motion.div >
 
       {/* Create Product Modal */}
-      < CreateProductModal
+      <CreateProductModal
         isOpen={createModalOpen}
         onClose={() => {
           setCreateModalOpen(false);
@@ -549,6 +547,7 @@ export function Inventory() {
         }}
         onSave={handleSaveProduct}
         initialData={editingProduct}
+        businessType={businessType}
       />
 
       {/* Advanced Settings Panel */}
@@ -736,7 +735,13 @@ export function Inventory() {
   );
 }
 
-function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: boolean; onClose: () => void; onSave: (data: Partial<Product>) => void; initialData?: Product | null }) {
+function CreateProductModal({ isOpen, onClose, onSave, initialData, businessType }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: Partial<Product>) => void;
+  initialData?: Product | null;
+  businessType: any;
+}) {
   const localFormRef = useRef<HTMLFormElement>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -776,26 +781,26 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
         itemType: initialData.itemType || 'physical'
       });
     } else {
-      // Reset form
+      // Reset form with persona-based defaults
       setFormData({
         name: '',
         description: '',
         price: 0,
         stock: 0,
-        unit: 'pcs',
+        unit: businessType === 'agency' ? 'hr' : 'pcs',
         minStock: 10,
         sku: '',
-        category: '',
+        category: businessType === 'agency' || businessType === 'saas' ? 'Services' : '',
         vendor: '',
         costPrice: 0,
         taxRate: 0,
         reorderLevel: 10,
         status: 'Active',
-        isInventoryTracked: true,
-        itemType: 'physical'
+        isInventoryTracked: businessType !== 'agency' && businessType !== 'saas',
+        itemType: businessType === 'agency' || businessType === 'saas' ? 'service' : 'physical'
       });
     }
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen, businessType]);
 
   if (!isOpen) return null;
 
@@ -820,7 +825,10 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
               </div>
               <div>
                 <h3 className="text-lg font-black text-gray-900 tracking-tight">
-                  {initialData ? 'Update Product' : 'Add New Product'}
+                  {initialData
+                    ? (businessType === 'agency' || businessType === 'saas' ? 'Update Service' : 'Update Product')
+                    : (businessType === 'agency' || businessType === 'saas' ? 'Add New Service' : 'Add New Product')
+                  }
                 </h3>
                 <p className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">
                   Intelligence Engine
@@ -835,7 +843,6 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
             </button>
           </div>
         </div>
-
         <form
           ref={localFormRef}
           onSubmit={(e) => {
@@ -852,14 +859,16 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
               className="space-y-4"
             >
               <div>
-                <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">Product Designation</label>
+                <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">
+                  {businessType === 'agency' || businessType === 'saas' ? 'Service Designation' : 'Product Name'}
+                </label>
                 <div className="relative mt-1.5 group">
                   <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
                   <input
                     required
                     type="text"
                     className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200/60 rounded-xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-bold shadow-sm"
-                    placeholder="e.g. Quantum Bridge"
+                    placeholder={businessType === 'agency' || businessType === 'saas' ? "e.g. Project Consultation" : "e.g. Quantum Bridge"}
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                   />
@@ -868,10 +877,12 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">SKU ID</label>
+                  <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">
+                    {businessType === 'ecommerce' ? 'SKU ID' : 'Reference ID'}
+                  </label>
                   <input
                     type="text"
-                    placeholder="QWB-V1"
+                    placeholder={businessType === 'ecommerce' ? "QWB-V1" : "SVC-001"}
                     className="w-full px-4 py-3 mt-1.5 bg-gray-50/50 border border-gray-200/60 rounded-xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-mono font-bold shadow-sm"
                     value={formData.sku}
                     onChange={e => setFormData({ ...formData, sku: e.target.value })}
@@ -881,12 +892,21 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
                   label="Category"
                   value={formData.category}
                   onChange={(val) => setFormData({ ...formData, category: val })}
-                  options={[
-                    { value: 'Electronics', label: 'Electronics', icon: Zap },
-                    { value: 'Clothing', label: 'Clothing', icon: Tag },
-                    { value: 'Groceries', label: 'Groceries', icon: Package },
-                    { value: 'Services', label: 'Services', icon: Bot },
-                  ]}
+                  options={
+                    (businessType === 'agency' || businessType === 'saas')
+                      ? [
+                        { value: 'Consulting', label: 'Consulting', icon: Bot },
+                        { value: 'Development', label: 'Development', icon: Zap },
+                        { value: 'Design', label: 'Design', icon: Tag },
+                        { value: 'Services', label: 'General Services', icon: Package },
+                      ]
+                      : [
+                        { value: 'Electronics', label: 'Electronics', icon: Zap },
+                        { value: 'Clothing', label: 'Clothing', icon: Tag },
+                        { value: 'Groceries', label: 'Groceries', icon: Package },
+                        { value: 'Products', label: 'Standard Products', icon: Box },
+                      ]
+                  }
                   placeholder="Select"
                 />
               </div>
@@ -897,8 +917,12 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
                     <Package className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-gray-900">Track Inventory</div>
-                    <div className="text-[10px] text-gray-400 font-medium">Automatic stock deduction on sales</div>
+                    <div className="text-xs font-bold text-gray-900">
+                      {businessType === 'agency' || businessType === 'saas' ? 'Track Availability' : 'Track Inventory'}
+                    </div>
+                    <div className="text-[10px] text-gray-400 font-medium">
+                      {businessType === 'agency' || businessType === 'saas' ? 'Manage bookings & capacity' : 'Automatic stock deduction on sales'}
+                    </div>
                   </div>
                 </div>
                 <button
@@ -926,7 +950,9 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
             >
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">Unit List Price (₹)</label>
+                  <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">
+                    {businessType === 'agency' ? 'Hourly Rate (₹)' : 'Unit Price (₹)'}
+                  </label>
                   <div className="relative mt-1.5 group">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-black">₹</span>
                     <input
@@ -964,6 +990,7 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
                     { value: 'pcs', label: 'Pieces', icon: Box },
                     { value: 'kg', label: 'Kilograms', icon: Scale },
                     { value: 'hr', label: 'Hours', icon: Activity },
+                    { value: 'serv', label: 'Service', icon: Bot },
                   ]}
                   placeholder="Select"
                 />
@@ -1019,7 +1046,10 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData }: { isOpen: 
               }}
               className="px-8 py-3 bg-primary text-white font-black text-xs rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 transition-all active:translate-y-0"
             >
-              {initialData ? 'Update Intelligence' : 'Deploy Product'}
+              {initialData
+                ? 'Update Intelligence'
+                : (businessType === 'agency' || businessType === 'saas' ? 'Deploy Service' : 'Deploy Product')
+              }
             </button>
           </div>
         </div>

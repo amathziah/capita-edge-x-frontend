@@ -11,6 +11,7 @@ interface DataState {
     performance: ProductPerformance[];
     complianceTasks: ComplianceTask[];
     stats: DashboardStats;
+    reports: any[];
     lastFetched: number | null;
 }
 
@@ -34,6 +35,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         performance: [],
         complianceTasks: [],
         stats: { total_customers: 0 } as DashboardStats,
+        reports: [],
         lastFetched: null,
     });
     const [loading, setLoading] = useState(false);
@@ -46,7 +48,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         try {
             setLoading(true);
-            const [fetchedInvoices, fetchedStats, fetchedPayments, fetchedCustomers, fetchedExpenses, fetchedProducts, fetchedPerformance, fetchedCompliance] = await Promise.all([
+            const [fetchedInvoices, fetchedStats, fetchedPayments, fetchedCustomers, fetchedExpenses, fetchedProducts, fetchedPerformance, fetchedCompliance, fetchedReports] = await Promise.all([
                 dataService.getInvoices({ limit: 1000 }) as Promise<Invoice[]>,
                 dataService.getDashboardStats() as Promise<DashboardStats>,
                 dataService.getPayments({ limit: 1000 }) as Promise<Payment[]>,
@@ -54,7 +56,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 dataService.getExpenses() as Promise<Expense[]>,
                 dataService.getProducts() as Promise<Product[]>,
                 dataService.getProductPerformance().catch(() => []) as Promise<ProductPerformance[]>,
-                dataService.getComplianceTasks() as Promise<ComplianceTask[]>
+                dataService.getComplianceTasks() as Promise<ComplianceTask[]>,
+                dataService.getReports() as Promise<any[]>
             ]);
 
             setState({
@@ -66,6 +69,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 products: fetchedProducts || [],
                 performance: fetchedPerformance || [],
                 complianceTasks: fetchedCompliance || [],
+                reports: fetchedReports || [],
                 lastFetched: now,
             });
         } catch (error) {

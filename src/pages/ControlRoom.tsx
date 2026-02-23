@@ -556,25 +556,6 @@ export const ControlRoom = () => {
                                             </div>
                                         </div>
 
-                                        {/* Card 4: Clients */}
-                                        <div
-                                            onClick={() => navigate('/customers')}
-                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
-                                        >
-                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
-                                            <div className="relative">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
-                                                        <Users size={20} />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Active Clients</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">{stats.total_customers || 0}</h3>
-                                                    <p className="text-sm text-emerald-600 mt-2 font-medium">Manage CRM <ArrowRight size={12} className="inline ml-1" /></p>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </>
                                 )}
                             </div>
