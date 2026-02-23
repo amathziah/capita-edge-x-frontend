@@ -85,7 +85,7 @@ export function Support() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Submission Form */}
-                <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-soft p-6 md:p-8">
+                <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-soft p-5 md:p-6">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Category</label>
@@ -94,13 +94,13 @@ export function Support() {
                                     key={cat.id}
                                     type="button"
                                     onClick={() => setType(cat.id as ReportType)}
-                                    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all text-center group
+                                    className={`flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border transition-all text-center group
                                             ${type === cat.id
                                             ? 'border-primary/30 bg-primary/5'
                                             : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'}`}
                                 >
-                                    <cat.icon className={`w-5 h-5 ${type === cat.id ? 'text-primary' : 'text-gray-400 group-hover:text-gray-500'}`} />
-                                    <span className={`text-[10px] font-bold ${type === cat.id ? 'text-gray-900' : 'text-gray-500'}`}>{cat.label}</span>
+                                    <cat.icon className={`w-4 h-4 ${type === cat.id ? 'text-primary' : 'text-gray-400 group-hover:text-gray-500'}`} />
+                                    <span className={`text-[9px] font-bold ${type === cat.id ? 'text-gray-900' : 'text-gray-500'}`}>{cat.label}</span>
                                 </button>
                             ))}
                         </div>
@@ -124,8 +124,8 @@ export function Support() {
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     placeholder="Describe the issue or suggestion in detail..."
-                                    rows={5}
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-primary/40 outline-none transition-all resize-none"
+                                    rows={3}
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-900 text-sm font-medium focus:bg-white focus:border-primary/40 outline-none transition-all resize-none"
                                 />
                             </div>
                         </div>
@@ -142,11 +142,11 @@ export function Support() {
                                     <span className="text-sm font-bold">Report submitted successfully.</span>
                                 </motion.div>
                             ) : (
-                                <div className="flex justify-end">
+                                <div className="flex justify-end pt-2">
                                     <button
                                         type="submit"
                                         disabled={isSubmitting || !title}
-                                        className="px-8 py-3 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-sm shadow-lg shadow-slate-900/10 transition-all flex items-center gap-2 disabled:opacity-30 active:scale-[0.98]"
+                                        className="px-6 py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-sm shadow-lg shadow-slate-900/10 transition-all flex items-center gap-2 disabled:opacity-30 active:scale-[0.98]"
                                     >
                                         {isSubmitting ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
