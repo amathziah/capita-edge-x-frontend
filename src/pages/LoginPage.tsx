@@ -9,7 +9,7 @@ export function LoginPage() {
 
     useEffect(() => {
         if (user) {
-            navigate('/');
+            navigate('/dashboard');
         }
     }, [user, navigate]);
 

@@ -99,8 +99,21 @@ class DataService {
     return `${API_URL}/uploads/logos/${filename}`;
   };
 
+  // Cache for analytics and AI
+  private cache: { [key: string]: { data: any, timestamp: number } } = {};
+  private CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+
   // Analytics
-  getRevenueTrends = analyticsService.getRevenueTrends;
+  getRevenueTrends = async (period: string = 'monthly') => {
+    const cacheKey = `revenue_trends_${period}`;
+    const cached = this.cache[cacheKey];
+    if (cached && (Date.now() - cached.timestamp < this.CACHE_TTL)) {
+      return cached.data;
+    }
+    const data = await analyticsService.getRevenueTrends(period);
+    this.cache[cacheKey] = { data, timestamp: Date.now() };
+    return data;
+  };
   getAnalyticsCustomerInsights = analyticsService.getCustomerInsights;
   getProductPerformance = analyticsService.getProductPerformance;
   getInventorySettings = settingService.getInventorySettings;
@@ -116,7 +129,16 @@ class DataService {
   // AI
   getSafeToSpend = analyticsService.getSafeToSpend;
   generateSettlementOffer = aiService.generateSettlementOffer;
-  getAiInsights = aiService.getInsights;
+  getAiInsights = async () => {
+    const cacheKey = 'ai_insights';
+    const cached = this.cache[cacheKey];
+    if (cached && (Date.now() - cached.timestamp < this.CACHE_TTL)) {
+      return cached.data;
+    }
+    const data = await aiService.getInsights();
+    this.cache[cacheKey] = { data, timestamp: Date.now() };
+    return data;
+  };
   sendCommand = aiService.sendCommand;
 }
 

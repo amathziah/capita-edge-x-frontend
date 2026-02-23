@@ -42,36 +42,36 @@ const groups: NavGroup[] = [
   {
     title: "HEADQUARTERS",
     items: [
-      { name: "control_room", label: "Control Room", href: "/", icon: LayoutDashboard },
-      { name: "calendar", label: "Calendar", href: "/calendar", icon: CalendarClock, highlight: "Liquidity" },
+      { name: "control_room", label: "Control Room", href: "/dashboard", icon: LayoutDashboard },
+      { name: "calendar", label: "Calendar", href: "/dashboard/calendar", icon: CalendarClock, highlight: "Liquidity" },
     ],
   },
   {
     title: "REVENUE OPS",
     items: [
-      { name: "invoices", label: "Invoices", href: "/invoices", icon: FileText },
-      { name: "payments", label: "Payments", href: "/payments", icon: CreditCard },
-      { name: "customers", label: "Customers", href: "/customers", icon: Users },
+      { name: "invoices", label: "Invoices", href: "/dashboard/invoices", icon: FileText },
+      { name: "payments", label: "Payments", href: "/dashboard/payments", icon: CreditCard },
+      { name: "customers", label: "Customers", href: "/dashboard/customers", icon: Users },
     ],
   },
   {
     title: "SPEND & ASSETS",
     items: [
-      { name: "expenses", label: "Expenses", href: "/expenses", icon: Receipt },
-      { name: "inventory", label: "Inventory", href: "/inventory", icon: Package },
-      { name: "compliance", label: "Compliance", href: "/compliance", icon: ShieldCheck, statusDot: "bg-emerald-500" },
+      { name: "expenses", label: "Expenses", href: "/dashboard/expenses", icon: Receipt },
+      { name: "inventory", label: "Inventory", href: "/dashboard/inventory", icon: Package },
+      { name: "compliance", label: "Compliance", href: "/dashboard/compliance", icon: ShieldCheck, statusDot: "bg-emerald-500" },
     ],
   },
   {
     title: "ANALYTICS",
     items: [
-      { name: "reports", label: "Reports", href: "/reports", icon: BarChart3 },
+      { name: "reports", label: "Reports", href: "/dashboard/reports", icon: BarChart3 },
     ],
   },
   {
     title: "OPERATIONAL",
     items: [
-      { name: "integrity", label: "Integrity", href: "/integrity", icon: ShieldCheck, highlight: "Report" },
+      { name: "integrity", label: "Integrity", href: "/dashboard/integrity", icon: ShieldCheck, highlight: "Report" },
     ],
   },
 ];

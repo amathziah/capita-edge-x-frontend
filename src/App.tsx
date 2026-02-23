@@ -13,7 +13,7 @@ import { Compliance } from './pages/Compliance';
 import { Profile } from './pages/Profile';
 import { LiquidityCalendar } from './components/features/LiquidityCalendar';
 import { Settings } from './pages/Settings';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PersonaProvider } from './contexts/PersonaContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -25,6 +25,21 @@ import PricingPage from './components/Pricing/PricingPage';
 import { Support } from './pages/Support';
 
 import { ControlRoom } from './pages/ControlRoom';
+import { Landing } from './pages/Landing';
+import { Loader2 } from 'lucide-react';
+
+const HomeLoader = () => {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-[#0c0f1a] space-y-4">
+        <Loader2 className="w-10 h-10 text-teal-400 animate-spin" />
+        <p className="text-gray-400 text-sm font-bold tracking-tight">Syncing Security Protocol...</p>
+      </div>
+    );
+  }
+  return user ? <Navigate to="/dashboard" replace /> : <Landing />;
+};
 
 function App() {
   return (
@@ -36,13 +51,14 @@ function App() {
               <DataProvider>
                 <BrowserRouter>
                   <Routes>
+                    <Route path="/" element={<HomeLoader />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/update-password" element={<UpdatePassword />} />
                     <Route path="/setup" element={<SetupPage />} />
 
                     {/* Protected Routes */}
                     <Route element={<ProtectedRoute />}>
-                      <Route path="/" element={<Layout />}>
+                      <Route path="/dashboard" element={<Layout />}>
                         <Route index element={<ControlRoom />} />
                         <Route path="invoices" element={<Invoices />} />
                         <Route path="invoices/create" element={<InvoiceGenerator />} />

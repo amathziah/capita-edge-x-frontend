@@ -72,13 +72,13 @@ export function Support() {
         <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
             {/* Header */}
             <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.2em] text-primary">
                     <ShieldCheck className="w-4 h-4" />
                     Operational Integrity
                     <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
                 </div>
                 <h1 className="text-3xl font-black text-gray-900 tracking-tight">Support & Feedback</h1>
-                <p className="text-gray-500 text-sm font-medium">
+                <p className="text-gray-500 text-[15px] font-medium">
                     Help us improve the platform by reporting issues or suggesting new features.
                 </p>
             </div>
@@ -88,26 +88,28 @@ export function Support() {
                 <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-soft p-5 md:p-6">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Category</label>
-                            {categories.map((cat) => (
-                                <button
-                                    key={cat.id}
-                                    type="button"
-                                    onClick={() => setType(cat.id as ReportType)}
-                                    className={`flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border transition-all text-center group
-                                            ${type === cat.id
-                                            ? 'border-primary/30 bg-primary/5'
-                                            : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'}`}
-                                >
-                                    <cat.icon className={`w-4 h-4 ${type === cat.id ? 'text-primary' : 'text-gray-400 group-hover:text-gray-500'}`} />
-                                    <span className={`text-[9px] font-bold ${type === cat.id ? 'text-gray-900' : 'text-gray-500'}`}>{cat.label}</span>
-                                </button>
-                            ))}
+                            <label className="text-[12px] font-black uppercase tracking-[0.2em] text-gray-400">Category</label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {categories.map((cat) => (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        onClick={() => setType(cat.id as ReportType)}
+                                        className={`flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border transition-all text-center group
+                                                ${type === cat.id
+                                                ? 'border-primary/30 bg-primary/5'
+                                                : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'}`}
+                                    >
+                                        <cat.icon className={`w-5 h-5 ${type === cat.id ? 'text-primary' : 'text-gray-400 group-hover:text-gray-500'}`} />
+                                        <span className={`text-[11px] font-bold ${type === cat.id ? 'text-gray-900' : 'text-gray-500'}`}>{cat.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         <div className="space-y-4">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Subject</label>
+                                <label className="text-[12px] font-black uppercase tracking-[0.2em] text-gray-400">Subject</label>
                                 <input
                                     type="text"
                                     value={title}
@@ -119,7 +121,7 @@ export function Support() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Description</label>
+                                <label className="text-[12px] font-black uppercase tracking-[0.2em] text-gray-400">Description</label>
                                 <textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
@@ -139,14 +141,14 @@ export function Support() {
                                     className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600"
                                 >
                                     <CheckCircle2 className="w-5 h-5 shrink-0" />
-                                    <span className="text-sm font-bold">Report submitted successfully.</span>
+                                    <span className="text-[15px] font-bold">Report submitted successfully.</span>
                                 </motion.div>
                             ) : (
                                 <div className="flex justify-end pt-2">
                                     <button
                                         type="submit"
                                         disabled={isSubmitting || !title}
-                                        className="px-6 py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-sm shadow-lg shadow-slate-900/10 transition-all flex items-center gap-2 disabled:opacity-30 active:scale-[0.98]"
+                                        className="px-6 py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-[15px] shadow-lg shadow-slate-900/10 transition-all flex items-center gap-2 disabled:opacity-30 active:scale-[0.98]"
                                     >
                                         {isSubmitting ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -166,8 +168,8 @@ export function Support() {
                 {/* History List */}
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-soft overflow-hidden flex flex-col h-[600px]">
                     <div className="p-6 border-b border-gray-50 flex items-center gap-3 bg-gray-50/30">
-                        <History className="w-4 h-4 text-gray-400" />
-                        <h2 className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">Recent Reports</h2>
+                        <History className="w-5 h-5 text-gray-400" />
+                        <h2 className="text-[12px] font-black uppercase tracking-[0.2em] text-gray-500">Recent Reports</h2>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                         {loadingReports ? (
@@ -191,7 +193,7 @@ export function Support() {
                                 <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center">
                                     <MessageSquare className="w-6 h-6 text-gray-200" />
                                 </div>
-                                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">No reports found</p>
+                                <p className="text-gray-400 text-[12px] font-bold uppercase tracking-widest">No reports found</p>
                             </div>
                         ) : (
                             reports.map((report) => (
@@ -202,18 +204,18 @@ export function Support() {
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="space-y-1.5 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${report.type === 'bug' ? 'bg-rose-50 text-rose-500' :
+                                                <span className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${report.type === 'bug' ? 'bg-rose-50 text-rose-500' :
                                                     report.type === 'feature_request' ? 'bg-amber-50 text-amber-500' :
                                                         report.type === 'ui_issue' ? 'bg-blue-50 text-blue-500' : 'bg-primary-light text-primary'
                                                     }`}>
                                                     {report.type.replace('_', ' ')}
                                                 </span>
-                                                <span className="text-[9px] font-bold text-gray-300">
+                                                <span className="text-[11px] font-bold text-gray-300">
                                                     {new Date(report.created_at).toLocaleDateString()}
                                                 </span>
                                             </div>
-                                            <h3 className="text-gray-900 font-bold text-[13px] truncate">{report.title}</h3>
-                                            <p className="text-gray-500 text-[11px] line-clamp-2 leading-relaxed">{report.description}</p>
+                                            <h3 className="text-gray-900 font-bold text-[15px] truncate">{report.title}</h3>
+                                            <p className="text-gray-500 text-[13px] line-clamp-2 leading-relaxed">{report.description}</p>
                                         </div>
                                         <div className={`shrink-0 w-2 h-2 rounded-full mt-2 ${report.status === 'resolved' ? 'bg-emerald-500' :
                                             report.status === 'in_progress' ? 'bg-amber-500' : 'bg-primary/20'
