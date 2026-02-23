@@ -35,54 +35,53 @@ interface NodeStyleConfig {
 
 const NODE_STYLES: Record<string, NodeStyleConfig> = {
     draft: {
-        bg: 'bg-gradient-to-br from-gray-50 to-slate-50',
-        border: 'border-gray-200',
-        iconBg: 'bg-gray-100',
-        iconColor: 'text-gray-500',
+        bg: 'bg-white/[0.03]',
+        border: 'border-white/[0.08]',
+        iconBg: 'bg-white/[0.05]',
+        iconColor: 'text-gray-400',
         glow: '',
-        textColor: 'text-gray-700',
+        textColor: 'text-gray-300',
     },
     sent: {
-        bg: 'bg-gradient-to-br from-blue-50 to-indigo-50',
-        border: 'border-blue-200',
-        iconBg: 'bg-blue-100',
-        iconColor: 'text-blue-600',
-        glow: 'shadow-blue-100/50',
-        textColor: 'text-blue-700',
+        bg: 'bg-indigo-500/5',
+        border: 'border-indigo-500/20',
+        iconBg: 'bg-indigo-500/10',
+        iconColor: 'text-indigo-400',
+        glow: 'shadow-indigo-500/10',
+        textColor: 'text-indigo-300',
     },
-    // partially_paid: { ... }
     partially_paid: {
-        bg: 'bg-gradient-to-br from-cyan-50 to-teal-50',
-        border: 'border-cyan-300',
-        iconBg: 'bg-cyan-100',
-        iconColor: 'text-cyan-600',
-        glow: 'shadow-cyan-100/50',
-        textColor: 'text-cyan-700',
+        bg: 'bg-cyan-500/5',
+        border: 'border-cyan-500/20',
+        iconBg: 'bg-cyan-500/10',
+        iconColor: 'text-cyan-400',
+        glow: 'shadow-cyan-500/10',
+        textColor: 'text-cyan-300',
     },
     overdue: {
-        bg: 'bg-gradient-to-br from-red-50 to-rose-50',
-        border: 'border-red-300',
-        iconBg: 'bg-red-100',
-        iconColor: 'text-red-600',
-        glow: 'shadow-red-200/60',
-        textColor: 'text-red-700',
+        bg: 'bg-red-500/5',
+        border: 'border-red-500/20',
+        iconBg: 'bg-red-500/10',
+        iconColor: 'text-red-400',
+        glow: 'shadow-red-500/10',
+        textColor: 'text-red-300',
         badge: 'ALERT',
     },
     escalated: {
-        bg: 'bg-gradient-to-br from-orange-50 to-red-50',
-        border: 'border-orange-300',
-        iconBg: 'bg-orange-100',
-        iconColor: 'text-orange-600',
-        glow: 'shadow-orange-200/60',
-        textColor: 'text-orange-700',
+        bg: 'bg-orange-500/5',
+        border: 'border-orange-500/20',
+        iconBg: 'bg-orange-500/10',
+        iconColor: 'text-orange-400',
+        glow: 'shadow-orange-500/10',
+        textColor: 'text-orange-300',
     },
     paid: {
-        bg: 'bg-gradient-to-br from-emerald-50 to-green-50',
-        border: 'border-emerald-300',
-        iconBg: 'bg-emerald-100',
-        iconColor: 'text-emerald-600',
-        glow: 'shadow-emerald-200/60',
-        textColor: 'text-emerald-700',
+        bg: 'bg-teal-500/5',
+        border: 'border-teal-500/20',
+        iconBg: 'bg-teal-500/10',
+        iconColor: 'text-teal-400',
+        glow: 'shadow-teal-500/10',
+        textColor: 'text-teal-300',
     },
 };
 
@@ -114,12 +113,14 @@ const StatusNode = ({ data }: {
     const Icon = ICON_MAP[data.styleKey] || FileText;
 
     return (
-        <div className={`relative px-5 py-4 rounded-2xl border-2 min-w-[170px] transition-all duration-300 hover:scale-105 cursor-pointer ${style.bg} ${style.border} ${style.glow ? `shadow-lg ${style.glow}` : 'shadow-sm'}`}>
-            <Handle type="target" position={Position.Left} className="!bg-gray-300 !w-2 !h-2 !border-2 !border-white" />
+        <div className={`relative px-5 py-4 rounded-2xl border backdrop-blur-md min-w-[170px] transition-all duration-300 hover:scale-105 cursor-pointer ${style.bg} ${style.border} ${style.glow ? `shadow-lg ${style.glow}` : 'shadow-sm'}`}>
+            <Handle type="target" position={Position.Left} className="!bg-gray-600 !w-2 !h-2 !border !border-white/10" />
 
-            <div className="absolute -top-2.5 -right-2.5 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md bg-red-500 text-white animate-pulse">
-                ● ALERT
-            </div>
+            {data.styleKey === 'overdue' && (
+                <div className="absolute -top-2.5 -right-2.5 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md bg-red-500 text-white animate-pulse">
+                    ● ALERT
+                </div>
+            )}
 
             {/* Icon */}
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2.5 ${style.iconBg}`}>
@@ -130,7 +131,7 @@ const StatusNode = ({ data }: {
             <div className={`font-bold text-sm ${style.textColor}`}>{data.label}</div>
 
             {/* Count */}
-            <div className="text-[22px] font-black text-gray-900 leading-tight mt-0.5">{data.count}</div>
+            <div className="text-[22px] font-black text-white leading-tight mt-0.5">{data.count}</div>
 
             {/* Value */}
             <div className="text-[11px] text-gray-500 font-mono mt-1">
@@ -139,38 +140,39 @@ const StatusNode = ({ data }: {
 
             {/* Subtitle */}
             {data.subtitle && (
-                <div className={`text-[10px] mt-1.5 font-semibold ${style.textColor} opacity-80`}>
+                <div className={`text-[10px] mt-1.5 font-semibold ${style.textColor} opacity-60`}>
                     {data.subtitle}
                 </div>
             )}
 
-            <Handle type="source" position={Position.Right} className="!bg-gray-300 !w-2 !h-2 !border-2 !border-white" />
+            <Handle type="source" position={Position.Right} className="!bg-gray-600 !w-2 !h-2 !border !border-white/10" />
         </div>
     );
 };
 
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // Central hub node
 // ---------------------------------------------------------------------------
 const HubNode = ({ data }: { data: { label: string; total: number } }) => (
-    <div className="relative px-6 py-5 rounded-3xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-teal-50 shadow-xl shadow-emerald-100/40 min-w-[180px] text-center transition-all duration-300 hover:scale-105 cursor-pointer">
-        <Handle type="target" position={Position.Left} className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-white" />
+    <div className="relative px-6 py-5 rounded-3xl border border-white/[0.08] bg-[#161a2b] shadow-2xl shadow-teal-500/10 min-w-[180px] text-center transition-all duration-300 hover:scale-105 cursor-pointer overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(20,184,166,0.1),_transparent_60%)]" />
+        <Handle type="target" position={Position.Left} className="!bg-teal-400 !w-3 !h-3 !border !border-white/20" />
 
-        <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-3 shadow-lg shadow-emerald-300/40">
-            <Wallet size={22} className="text-white" />
+        <div className="relative">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center mb-3 shadow-lg shadow-teal-500/25">
+                <Wallet size={22} className="text-white" />
+            </div>
+            <div className="font-black text-base text-white">{data.label}</div>
+            <div className="text-2xl font-black text-teal-400 mt-1">
+                ₹{(data.total / 1000).toFixed(1)}k
+            </div>
+            <div className="text-[10px] text-gray-500 mt-1 font-semibold uppercase tracking-wider">Total Pipeline</div>
         </div>
-        <div className="font-black text-base text-gray-900">{data.label}</div>
-        <div className="text-2xl font-black text-emerald-600 mt-1">
-            ₹{(data.total / 1000).toFixed(1)}k
-        </div>
-        <div className="text-[10px] text-gray-500 mt-1 font-semibold uppercase tracking-wider">Total Pipeline</div>
 
         {/* Animated ring */}
-        <div className="absolute -inset-1 rounded-[20px] border-2 border-emerald-200/40 animate-pulse pointer-events-none" />
+        <div className="absolute -inset-1 rounded-[24px] border border-teal-500/20 animate-pulse pointer-events-none" />
 
-        <Handle type="source" position={Position.Right} className="!bg-emerald-400 !w-3 !h-3 !border-2 !border-white" />
+        <Handle type="source" position={Position.Right} className="!bg-teal-400 !w-3 !h-3 !border !border-white/20" />
     </div>
 );
 
@@ -254,27 +256,25 @@ const InvoiceLifecycleMapBase: React.FC<InvoiceLifecycleMapProps> = ({ invoices,
             position: { x: 770, y: 330 },
             data: { label: 'Escalated', count: stats.escalated.count, value: stats.escalated.value, styleKey: 'escalated', subtitle: 'Critical' },
         },
-    ], [stats, totalPipeline, overdueCount]);
+    ], [stats, totalPipeline]);
 
     // ── Edges ─────────────────────────────────────────────────────────────────
     const edges: Edge[] = useMemo(() => [
         // Lifecycle flow
-        { id: 'draft-sent', source: 'draft', target: 'sent', animated: true, style: { stroke: '#6366f1', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#6366f1' } },
-        { id: 'sent-hub', source: 'sent', target: 'hub', animated: true, style: { stroke: '#10b981', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' } },
+        { id: 'draft-sent', source: 'draft', target: 'sent', animated: true, style: { stroke: '#818cf8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#818cf8' } },
+        { id: 'sent-hub', source: 'sent', target: 'hub', animated: true, style: { stroke: '#2dd4bf', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#2dd4bf' } },
 
         // Hub to outcomes
-        { id: 'hub-partial', source: 'hub', target: 'partially_paid', animated: true, style: { stroke: '#06b6d4', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#06b6d4' } },
-        { id: 'hub-overdue', source: 'hub', target: 'overdue', animated: true, style: { stroke: '#ef4444', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' }, label: '⚠', labelStyle: { fontSize: 14 } },
-        { id: 'hub-paid', source: 'hub', target: 'paid', animated: true, style: { stroke: '#10b981', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' } },
+        { id: 'hub-partial', source: 'hub', target: 'partially_paid', animated: true, style: { stroke: '#22d3ee', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#22d3ee' } },
+        { id: 'hub-overdue', source: 'hub', target: 'overdue', animated: true, style: { stroke: '#f87171', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#f87171' }, label: '⚠', labelStyle: { fontSize: 14, fill: '#f87171' } },
+        { id: 'hub-paid', source: 'hub', target: 'paid', animated: true, style: { stroke: '#2dd4bf', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#2dd4bf' } },
 
         // Partial → Paid
-        { id: 'partial-paid', source: 'partially_paid', target: 'paid', animated: true, style: { stroke: '#10b981', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' } },
+        { id: 'partial-paid', source: 'partially_paid', target: 'paid', animated: true, style: { stroke: '#2dd4bf', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#2dd4bf' } },
 
         // Overdue paths
-        { id: 'overdue-escalated', source: 'overdue', target: 'escalated', animated: true, style: { stroke: '#dc2626', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#dc2626' } },
-        { id: 'overdue-paid', source: 'overdue', target: 'paid', style: { stroke: '#10b981', strokeWidth: 1.5, strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' }, label: 'Recovery', labelStyle: { fontSize: 10, fill: '#10b981', fontWeight: 700 } },
-
-        { id: 'delta-charlie', source: 'agent_delta', target: 'agent_charlie', style: { stroke: '#14b8a6', strokeWidth: 1.5, strokeDasharray: '6,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#14b8a6' } },
+        { id: 'overdue-escalated', source: 'overdue', target: 'escalated', animated: true, style: { stroke: '#ef4444', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' } },
+        { id: 'overdue-paid', source: 'overdue', target: 'paid', style: { stroke: '#2dd4bf', strokeWidth: 1.5, strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#2dd4bf' }, label: 'Recovery', labelStyle: { fontSize: 10, fill: '#2dd4bf', fontWeight: 700 } },
     ], []);
 
     const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -284,33 +284,33 @@ const InvoiceLifecycleMapBase: React.FC<InvoiceLifecycleMapProps> = ({ invoices,
     }, [onStatusSelect]);
 
     return (
-        <div className="h-full w-full rounded-2xl overflow-hidden relative">
+        <div className="h-full w-full rounded-2xl overflow-hidden relative bg-[#0c0f1a]">
             {/* Legend */}
-            <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-xl rounded-xl border border-gray-200 shadow-lg p-3 space-y-2">
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Workflow Legend</div>
-                <div className="flex items-center gap-2 text-[11px] text-gray-600">
-                    <div className="w-6 h-0.5 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded" />
+            <div className="absolute top-4 left-4 z-10 bg-[#161a2b]/80 backdrop-blur-xl rounded-xl border border-white/[0.06] shadow-2xl p-3 space-y-2">
+                <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Workflow Legend</div>
+                <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                    <div className="w-6 h-0.5 bg-gradient-to-r from-indigo-500 to-teal-500 rounded" />
                     <span className="font-medium">Invoice Flow</span>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-gray-600">
+                <div className="flex items-center gap-2 text-[11px] text-gray-400">
                     <div className="w-6 h-0.5 bg-red-500 rounded" />
                     <span className="font-medium">Risk Path</span>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-gray-600">
-                    <div className="w-6 h-0.5 rounded" style={{ borderTop: '2px dashed #10b981' }} />
+                <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                    <div className="w-6 h-0.5 rounded" style={{ borderTop: '2px dashed #2dd4bf' }} />
                     <span className="font-medium">Recovery Path</span>
                 </div>
             </div>
 
             {/* Stats bar */}
             <div className="absolute top-4 right-4 z-10 flex gap-2">
-                <div className="bg-white/90 backdrop-blur-xl rounded-lg border border-gray-200 shadow-sm px-3 py-1.5 text-center">
-                    <div className="text-[10px] text-gray-400 font-bold uppercase">Pipeline</div>
-                    <div className="text-sm font-black text-gray-900">₹{(totalPipeline / 1000).toFixed(0)}k</div>
+                <div className="bg-[#161a2b]/80 backdrop-blur-xl rounded-lg border border-white/[0.06] shadow-sm px-3 py-1.5 text-center">
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Pipeline</div>
+                    <div className="text-sm font-black text-white">₹{(totalPipeline / 1000).toFixed(0)}k</div>
                 </div>
-                <div className="bg-white/90 backdrop-blur-xl rounded-lg border border-red-200 shadow-sm px-3 py-1.5 text-center">
-                    <div className="text-[10px] text-red-400 font-bold uppercase">At Risk</div>
-                    <div className="text-sm font-black text-red-600">{overdueCount}</div>
+                <div className="bg-red-500/10 backdrop-blur-xl rounded-lg border border-red-500/20 shadow-sm px-3 py-1.5 text-center">
+                    <div className="text-[10px] text-red-400 font-bold uppercase tracking-tight">At Risk</div>
+                    <div className="text-sm font-black text-red-500">{overdueCount}</div>
                 </div>
             </div>
 
@@ -325,9 +325,9 @@ const InvoiceLifecycleMapBase: React.FC<InvoiceLifecycleMapProps> = ({ invoices,
                 minZoom={0.4}
                 maxZoom={1.5}
             >
-                <Background gap={20} size={1} color="#e2e8f0" />
+                <Background gap={20} size={1} color="rgba(255, 255, 255, 0.05)" />
                 <Controls
-                    className="!bg-white/90 !backdrop-blur !rounded-xl !border !border-gray-200 !shadow-lg"
+                    className="!bg-[#161a2b]/80 !backdrop-blur !rounded-xl !border !border-white/[0.06] !shadow-2xl [&_button]:!invert [&_button]:!opacity-60 hover:[&_button]:!opacity-100"
                     showInteractive={false}
                 />
             </ReactFlow>

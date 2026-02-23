@@ -1,23 +1,13 @@
-import { Globe, ChevronDown, Plus, BarChart2, FilePlus, CreditCard } from 'lucide-react';
-import { useLanguage } from '../LanguageProvider';
+import { ChevronDown, Plus, BarChart2, FilePlus, CreditCard } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
-type LanguageCode = 'en' | 'hi' | 'mr';
-
 export function Header() {
-  const { language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
 
   const quickActionsRef = useRef<HTMLDivElement>(null);
-
-  const languages: { code: LanguageCode; name: string }[] = [
-    { code: 'en', name: 'English' },
-    { code: 'hi', name: 'हिन्दी' },
-    { code: 'mr', name: 'मराठी' },
-  ];
 
   const quickActions = [
     { id: 1, text: 'Add Invoice', icon: <FilePlus className="w-4 h-4" />, path: '/invoices/create' },
@@ -100,29 +90,6 @@ export function Header() {
             <BarChart2 className="w-4 h-4" />
             <span>Reports</span>
           </button>
-
-          {/* Language selector */}
-          <div className="relative group">
-            <button className="flex items-center gap-1.5 px-3 py-2 text-sm text-text-muted hover:bg-gray-50 rounded-xl transition">
-              <Globe className="w-4 h-4" />
-              <span className="hidden sm:inline">{languages.find((l) => l.code === language)?.name}</span>
-            </button>
-
-            <div className="absolute right-0 z-50 w-40 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200 p-1">
-              {languages.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => setLanguage(lang.code)}
-                  className={`block w-full px-3 py-2 text-sm text-left rounded-xl transition-colors ${language === lang.code
-                    ? 'bg-primary-light text-primary font-medium'
-                    : 'text-text-muted hover:bg-gray-50'
-                    }`}
-                >
-                  {lang.name}
-                </button>
-              ))}
-            </div>
-          </div>
 
 
         </div>

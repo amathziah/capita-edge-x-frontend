@@ -235,12 +235,16 @@ export function Inventory() {
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             </div>
             <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
-              {['solopreneur', 'agency', 'saas'].includes(businessType as string) ? 'Services & Items' : 'Inventory Intelligence'}
+              {businessType === 'solopreneur' ? 'My Offerings' :
+                businessType === 'agency' ? 'Service Catalog' :
+                  businessType === 'saas' ? 'Product Tiers' :
+                    'Inventory Intelligence'}
             </h2>
             <p className="text-gray-600 mt-1.5">
-              {['solopreneur', 'agency', 'saas'].includes(businessType as string)
-                ? 'Manage your billable services and resellable items in one unified engine.'
-                : 'High-velocity operational tracking & proactive health monitoring.'}
+              {businessType === 'solopreneur' ? 'Manage your bespoke services and offerings in one unified workspace.' :
+                businessType === 'agency' ? 'High-velocity service catalog architecture & operational health.' :
+                  businessType === 'saas' ? 'Manage product tiers, subscriptions, and platform items with precision.' :
+                    'High-velocity operational tracking & proactive health monitoring.'}
             </p>
           </div>
         </motion.div>
@@ -401,11 +405,21 @@ export function Inventory() {
           <table className="min-w-full text-sm text-left relative">
             <thead className="bg-white/50 backdrop-blur sticky top-0 z-10">
               <tr>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">{businessType === 'agency' ? 'Item / Service' : 'Product Line'}</th>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">
+                  {['solopreneur', 'agency'].includes(businessType as string) ? 'Service / Offering' :
+                    businessType === 'saas' ? 'Feature / Tier' : 'Product Line'}
+                </th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Cataloging</th>
-                {invSettings.inv_show_cost_column === 'true' && <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">{businessType === 'agency' ? 'Base Cost' : 'COGS'}</th>}
-                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Unit Price</th>
-                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Inventory</th>
+                {invSettings.inv_show_cost_column === 'true' && <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">
+                  {['solopreneur', 'agency'].includes(businessType as string) ? 'Base Cost' :
+                    businessType === 'saas' ? 'Unit Cost' : 'COGS'}
+                </th>}
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">
+                  {businessType === 'saas' ? 'Tier Price' : 'Unit Price'}
+                </th>
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">
+                  {['solopreneur', 'agency', 'saas'].includes(businessType as string) ? 'Availability' : 'Inventory'}
+                </th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Market Value</th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Health Score</th>
                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-right">Actions</th>

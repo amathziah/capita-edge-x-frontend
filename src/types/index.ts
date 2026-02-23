@@ -159,13 +159,11 @@ export interface DashboardStats {
   [key: string]: any;
 }
 
-export type Language = 'en' | 'hi' | 'mr';
+export type Language = 'en';
 
 export interface Translation {
   [key: string]: {
     en: string;
-    hi: string;
-    mr: string;
   };
 }
 

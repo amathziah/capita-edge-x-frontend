@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { Language } from '../types';
 import { translations } from '../translations';
 
@@ -11,14 +11,10 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<Language>(() => {
-    const saved = localStorage.getItem('invoicing_language');
-    return (saved as Language) || 'en';
-  });
+  const language: Language = 'en';
 
-  useEffect(() => {
-    localStorage.setItem('invoicing_language', language);
-  }, [language]);
+  // setLanguage is kept as a no-op for backward compatibility
+  const setLanguage = () => { };
 
   const t = (key: string): string => {
     return translations[key]?.[language] || key;

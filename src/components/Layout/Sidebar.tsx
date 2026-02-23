@@ -124,44 +124,55 @@ export function Sidebar() {
 
   // Filter groups based on persona
   const navGroups = useMemo(() => {
-    return groups.map(group => ({
-      ...group,
-      items: group.items.filter(item => {
-        // --- Solopreneur Mapping ---
-        if (businessType === 'solopreneur') {
-          // Solopreneurs need "Services & Items" (renamed inventory) but not compliance
-          if (item.name === 'compliance') return false;
-        }
-
-        // --- SaaS Founder Mapping ---
-        if (businessType === 'saas') {
-          // SaaS Founders now use "Services & Items"
+    return groups
+      .map(group => {
+        // Filter items first
+        const filteredItems = group.items.filter(item => {
+          // --- Solopreneur Mapping ---
+          if (businessType === 'solopreneur') {
+            // Solopreneurs don't need compliance
+            if (item.name === 'compliance') return false;
+          }
           return true;
+        });
+
+        // Transform remaining items
+        const transformedItems = filteredItems.map(item => {
+          // --- Solopreneur Granular Labeling ---
+          if (businessType === 'solopreneur') {
+            if (item.name === 'inventory') return { ...item, label: "My Offerings" };
+            if (item.name === 'control_room') return { ...item, label: "Dashboard" };
+          }
+
+          // --- Agency Granular Labeling ---
+          if (businessType === 'agency') {
+            if (item.name === 'inventory') return { ...item, label: "Service Catalog" };
+          }
+
+          // --- SaaS Granular Labeling ---
+          if (businessType === 'saas') {
+            if (item.name === 'inventory') return { ...item, label: "Product Tiers" };
+          }
+
+          return item;
+        });
+
+        // Dynamic Group Title Renaming
+        let groupTitle = group.title;
+        if (group.title === "SPEND & ASSETS") {
+          if (businessType === 'solopreneur') groupTitle = "MY BUSINESS";
+          else if (businessType === 'agency') groupTitle = "SERVICE OPS";
+          else if (businessType === 'saas') groupTitle = "PRODUCT OPS";
+          else if (['agency', 'saas'].includes(businessType as string)) groupTitle = "OFFERINGS & SPEND"; // Fallback
         }
 
-        // --- Agency Owner Mapping ---
-        if (businessType === 'agency') {
-          // Agencies use "Services & Items"
-          return true;
-        }
-
-        return true;
-        // Dynamic Label Renaming for Solopreneur/Agency/SaaS
-        if (['solopreneur', 'agency', 'saas'].includes(businessType as string) && item.name === 'inventory') {
-          return { ...item, label: "Services & Items" };
-        }
-        if (businessType === 'solopreneur' && item.name === 'control_room') {
-          return { ...item, label: "Dashboard" };
-        }
-        return item;
+        return {
+          ...group,
+          title: groupTitle,
+          items: transformedItems
+        };
       })
-    })).map(group => {
-      // Dynamic Group Title Renaming
-      if (['solopreneur', 'agency', 'saas'].includes(businessType as string) && group.title === "SPEND & ASSETS") {
-        return { ...group, title: "OFFERINGS & SPEND" };
-      }
-      return group;
-    }).filter(group => group.items.length > 0);
+      .filter(group => group.items.length > 0);
   }, [businessType]);
 
   return (

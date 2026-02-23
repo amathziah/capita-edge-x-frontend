@@ -185,21 +185,21 @@ export const ControlRoom = () => {
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.98 }}
-                            className="bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm overflow-hidden relative"
+                            className="bg-[#0c0f1a] backdrop-blur-xl rounded-3xl border border-white/[0.08] shadow-2xl overflow-hidden relative"
                         >
-                            <div className="px-6 py-4 border-b border-emerald-100/60 flex items-center justify-between bg-gradient-to-r from-emerald-50/50 to-teal-50/30">
+                            <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-[#161a2b]/80">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-300/30">
+                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
                                         <Network size={18} className="text-white" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-gray-900">Lifecycle Visualization Map</h3>
+                                        <h3 className="text-sm font-bold text-white">Lifecycle Visualization Map</h3>
                                         <p className="text-[11px] text-gray-500 mt-0.5">Invoice status • Flow analysis</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Live</span>
+                                    <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Live</span>
                                 </div>
                             </div>
                             <div className="h-[600px]">

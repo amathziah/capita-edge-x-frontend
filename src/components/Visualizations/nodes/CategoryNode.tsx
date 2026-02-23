@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { AlertCircle } from 'lucide-react';
 
-const COLORS = ["#10B981", "#E5E7EB"]; // Green vs Gray
 
 export function CategoryNode({ data }: { data: { category: string; amount: number; total: number; isHighest: boolean } }) {
     const percentage = Math.round((data.amount / data.total) * 100) || 0;
@@ -12,12 +11,12 @@ export function CategoryNode({ data }: { data: { category: string; amount: numbe
     return (
         <motion.div
             whileHover={{ scale: 1.05 }}
-            className={`relative bg-white rounded-2xl p-4 shadow-md border-2 w-48 transition-all ${data.isHighest ? 'border-emerald-400 ring-4 ring-emerald-50' : 'border-gray-100 hover:border-gray-200'
+            className={`relative bg-[#161a2b]/60 backdrop-blur-md rounded-2xl p-4 shadow-xl border-2 w-48 transition-all ${data.isHighest ? 'border-teal-500/40 shadow-teal-500/10' : 'border-white/[0.06] hover:border-white/[0.12]'
                 }`}
         >
             {data.isHighest && (
-                <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-[10px] px-2 py-1 rounded-full shadow-sm font-bold flex items-center gap-1 z-10">
-                    <AlertCircle size={10} /> Highest
+                <div className="absolute -top-3 -right-2 bg-gradient-to-r from-teal-400 to-cyan-500 text-white text-[9px] px-2.5 py-1 rounded-full shadow-lg font-black flex items-center gap-1 z-10 tracking-widest uppercase">
+                    <AlertCircle size={10} /> Peak
                 </div>
             )}
 
@@ -35,24 +34,24 @@ export function CategoryNode({ data }: { data: { category: string; amount: numbe
                                 endAngle={-270}
                                 stroke="none"
                             >
-                                <Cell fill={data.isHighest ? "#10B981" : "#8B5CF6"} />
-                                <Cell fill="#F3F4F6" />
+                                <Cell fill={data.isHighest ? "#2dd4bf" : "#818cf8"} />
+                                <Cell fill="rgba(255,255,255,0.05)" />
                             </Pie>
                         </PieChart>
                     </ResponsiveContainer>
-                    <div className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-gray-400">
+                    <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white/40">
                         {percentage}%
                     </div>
                 </div>
 
                 <div>
-                    <div className="text-sm font-bold text-gray-800 line-clamp-1" title={data.category}>{data.category}</div>
-                    <div className="text-xs font-semibold text-gray-500">₹{data.amount.toLocaleString()}</div>
+                    <div className="text-[13px] font-bold text-white line-clamp-1" title={data.category}>{data.category}</div>
+                    <div className="text-[11px] font-black text-gray-500 tracking-tight mt-0.5">₹{data.amount.toLocaleString()}</div>
                 </div>
             </div>
 
-            <Handle type="target" position={Position.Top} className="!bg-gray-300" />
-            <Handle type="source" position={Position.Bottom} className="!bg-gray-300" />
+            <Handle type="target" position={Position.Top} className="!bg-gray-600 !w-2 !h-2 !border !border-white/10" />
+            <Handle type="source" position={Position.Bottom} className="!bg-gray-600 !w-2 !h-2 !border !border-white/10" />
         </motion.div>
     );
 }

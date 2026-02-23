@@ -232,29 +232,29 @@ export function ExpensesMap({ expenses, onExport }: ExpensesMapProps) {
     }, [initialNodes, initialEdges, setNodes, setEdges, isInitialLoad]);
 
     return (
-        <div className="w-full h-full rounded-2xl overflow-hidden relative">
+        <div className="w-full h-full rounded-2xl overflow-hidden relative bg-[#0c0f1a]">
             {/* Legend */}
-            <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-xl rounded-xl border border-gray-200 shadow-lg p-3 space-y-2">
-                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Expense Flow</div>
-                <div className="flex items-center gap-2 text-[11px] text-gray-600">
-                    <div className="w-5 h-0.5 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded" />
+            <div className="absolute top-4 left-4 z-10 bg-[#161a2b]/80 backdrop-blur-xl rounded-xl border border-white/[0.06] shadow-2xl p-3 space-y-2">
+                <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Expense Flow</div>
+                <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                    <div className="w-5 h-0.5 bg-gradient-to-r from-teal-500 to-cyan-500 rounded" />
                     <span className="font-medium">Category Flow</span>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-gray-600">
-                    <div className="w-5 h-0.5 rounded" style={{ borderTop: '2px dashed #a855f7' }} />
+                <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                    <div className="w-5 h-0.5 rounded" style={{ borderTop: '2px dashed #818cf8' }} />
                     <span className="font-medium">Insight Link</span>
                 </div>
             </div>
 
             {/* Stats bar */}
             <div className="absolute top-4 right-4 z-10 flex gap-2">
-                <div className="bg-white/90 backdrop-blur-xl rounded-lg border border-gray-200 shadow-sm px-3 py-1.5 text-center">
-                    <div className="text-[10px] text-gray-400 font-bold uppercase">Total</div>
-                    <div className="text-sm font-black text-gray-900">₹{(expenses.reduce((s, e) => s + Number(e.amount || 0), 0) / 1000).toFixed(0)}k</div>
+                <div className="bg-[#161a2b]/80 backdrop-blur-xl rounded-lg border border-white/[0.06] shadow-sm px-3 py-1.5 text-center">
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Total</div>
+                    <div className="text-sm font-black text-white">₹{(expenses.reduce((s, e) => s + Number(e.amount || 0), 0) / 1000).toFixed(0)}k</div>
                 </div>
-                <div className="bg-white/90 backdrop-blur-xl rounded-lg border border-emerald-200 shadow-sm px-3 py-1.5 text-center">
-                    <div className="text-[10px] text-emerald-400 font-bold uppercase">Categories</div>
-                    <div className="text-sm font-black text-emerald-600">{Object.keys(expenses.reduce((acc, e) => { acc[e.category || 'Other'] = true; return acc; }, {} as Record<string, boolean>)).length}</div>
+                <div className="bg-teal-500/10 backdrop-blur-xl rounded-lg border border-teal-500/20 shadow-sm px-3 py-1.5 text-center">
+                    <div className="text-[10px] text-teal-400 font-bold uppercase tracking-tight">Categories</div>
+                    <div className="text-sm font-black text-teal-500">{Object.keys(expenses.reduce((acc, e) => { acc[e.category || 'Other'] = true; return acc; }, {} as Record<string, boolean>)).length}</div>
                 </div>
             </div>
 
@@ -281,14 +281,13 @@ export function ExpensesMap({ expenses, onExport }: ExpensesMapProps) {
                 zoomOnDoubleClick={false}
             >
                 <Background
-                    color="#e5e7eb"
+                    color="rgba(255, 255, 255, 0.05)"
                     gap={40}
-                    size={1.5}
+                    size={1}
                     variant={BackgroundVariant.Dots}
-                    className="opacity-30"
                 />
                 <Controls
-                    className="!bg-white/90 !backdrop-blur !rounded-xl !border !border-gray-200 !shadow-lg"
+                    className="!bg-[#161a2b]/80 !backdrop-blur !rounded-xl !border !border-white/[0.06] !shadow-2xl [&_button]:!invert [&_button]:!opacity-60 hover:[&_button]:!opacity-100"
                     showInteractive={false}
                 />
             </ReactFlow>
