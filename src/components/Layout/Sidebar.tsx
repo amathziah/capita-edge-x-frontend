@@ -137,21 +137,27 @@ export function Sidebar() {
         });
 
         // Transform remaining items
+        const displayName = getDisplayName();
         const transformedItems = filteredItems.map(item => {
           // --- Solopreneur Granular Labeling ---
           if (businessType === 'solopreneur') {
-            if (item.name === 'inventory') return { ...item, label: "My Offerings" };
-            if (item.name === 'control_room') return { ...item, label: "Dashboard" };
+            if (item.name === 'inventory') return { ...item, label: `${displayName}'s Offerings` };
+            if (item.name === 'control_room') return { ...item, label: `${displayName}'s Dashboard` };
           }
 
           // --- Agency Granular Labeling ---
           if (businessType === 'agency') {
-            if (item.name === 'inventory') return { ...item, label: "Service Catalog" };
+            if (item.name === 'inventory') return { ...item, label: `${displayName}'s Services` };
           }
 
           // --- SaaS Granular Labeling ---
           if (businessType === 'saas') {
-            if (item.name === 'inventory') return { ...item, label: "Product Tiers" };
+            if (item.name === 'inventory') return { ...item, label: `${displayName}'s Products` };
+          }
+
+          // --- E-commerce / Default Granular Labeling ---
+          if (item.name === 'inventory') {
+            return { ...item, label: `${displayName}'s Inventory` };
           }
 
           return item;

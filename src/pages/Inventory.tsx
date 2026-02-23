@@ -10,6 +10,7 @@ import { CustomSelect } from '../components/ui/CustomSelect';
 
 import { useData } from '../contexts/DataContext';
 import { usePersona } from '../contexts/PersonaContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface InventoryItem extends Product {
   sales: number;
@@ -18,6 +19,7 @@ interface InventoryItem extends Product {
 export function Inventory() {
   const { products, performance, loading, refreshData } = useData();
   const { businessType, loading: personaLoading } = usePersona();
+  const { user } = useAuth();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -235,16 +237,26 @@ export function Inventory() {
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             </div>
             <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
-              {businessType === 'solopreneur' ? 'My Offerings' :
-                businessType === 'agency' ? 'Service Catalog' :
-                  businessType === 'saas' ? 'Product Tiers' :
-                    'Inventory Intelligence'}
+              {user?.email ? (
+                <>
+                  <span className="text-primary">{user.email.split('@')[0].split(/[._-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}'s</span>{' '}
+                  {businessType === 'solopreneur' ? 'Offerings' :
+                    businessType === 'agency' ? 'Service Catalog' :
+                      businessType === 'saas' ? 'Products' :
+                        'Inventory'}
+                </>
+              ) : (
+                businessType === 'solopreneur' ? 'My Offerings' :
+                  businessType === 'agency' ? 'Service Catalog' :
+                    businessType === 'saas' ? 'Product Tiers' :
+                      'Inventory Intelligence'
+              )}
             </h2>
             <p className="text-gray-600 mt-1.5">
-              {businessType === 'solopreneur' ? 'Manage your bespoke services and offerings in one unified workspace.' :
-                businessType === 'agency' ? 'High-velocity service catalog architecture & operational health.' :
-                  businessType === 'saas' ? 'Manage product tiers, subscriptions, and platform items with precision.' :
-                    'High-velocity operational tracking & proactive health monitoring.'}
+              {businessType === 'solopreneur' ? 'Your bespoke services and offerings in one unified workspace.' :
+                businessType === 'agency' ? 'Your high-velocity service catalog architecture & operational health.' :
+                  businessType === 'saas' ? 'Your product tiers, subscriptions, and platform items with precision.' :
+                    'Your high-velocity operational tracking & proactive health monitoring.'}
             </p>
           </div>
         </motion.div>
