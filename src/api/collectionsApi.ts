@@ -6,7 +6,7 @@
  *   POST /api/ai/collections/send
  */
 
-import { api, API_URL } from './client';
+import { api } from './client';
 import { ENDPOINTS } from './endpoints';
 
 export interface CollectionDraft {

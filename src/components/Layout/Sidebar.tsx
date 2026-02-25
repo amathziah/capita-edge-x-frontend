@@ -183,7 +183,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`hidden lg:flex flex-col h-screen bg-[#0c0f1a] text-gray-300 select-none transition-all duration-300 ease-in-out ${collapsed ? "w-[68px]" : "w-[220px]"
+      className={`hidden lg:flex flex-col h-screen bg-[#0c0f1a] text-gray-300 select-none transition-all duration-300 ease-in-out overflow-visible ${collapsed ? "w-[68px]" : "w-[220px]"
         }`}
     >
 
@@ -394,11 +394,11 @@ export function Sidebar() {
       </nav>
 
       {/* ── Footer: User Menu Dropdown ───────────────────────────── */}
-      <div ref={userMenuRef} className={`relative border-t border-white/[0.06] py-3 ${collapsed ? "px-1.5" : "px-3"}`}>
+      <div ref={userMenuRef} className={`relative z-20 border-t border-white/[0.06] py-3 ${collapsed ? "px-1.5" : "px-3"}`}>
         {/* Dropdown Popover (opens upward) */}
         {userMenuOpen && (
           <div
-            className={`absolute bottom-full mb-2 rounded-xl bg-[#161a2b] border border-white/[0.08] shadow-2xl shadow-black/40 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200 ${collapsed ? "left-1/2 -translate-x-1/2 w-48" : "left-3 right-3"
+            className={`absolute bottom-full mb-2 z-[100] rounded-xl bg-[#161a2b] border border-white/[0.08] shadow-2xl shadow-black/40 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200 ${collapsed ? "left-1/2 -translate-x-1/2 w-48" : "left-3 right-3"
               }`}
           >
             <div className="py-1.5">
