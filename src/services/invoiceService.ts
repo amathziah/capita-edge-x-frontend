@@ -1,51 +1,38 @@
-import { api } from '../api/client';
+import { api, API_URL } from '../api/client';
+import { ENDPOINTS } from '../api/endpoints';
 import { Invoice } from '../types';
 
 export const invoiceService = {
     getInvoices: (params?: { limit?: number }) => {
-        let url = '/invoices';
+        let url = ENDPOINTS.INVOICES;
         if (params?.limit) url += `?limit=${params.limit}`;
         return api.get<Invoice[]>(url);
     },
 
-    getInvoice: (id: string) => api.get<Invoice>(`/invoices/${id}`),
+    getInvoice: (id: string) => api.get<Invoice>(ENDPOINTS.INVOICE(id)),
 
-    saveInvoice: (invoice: Invoice) => api.post<{ id: string }>('/invoices', invoice),
+    saveInvoice: (invoice: Invoice) => api.post<{ id: string }>(ENDPOINTS.INVOICES, invoice),
 
-    deleteInvoice: (id: string) => api.delete<void>(`/invoices/${id}`),
+    deleteInvoice: (id: string) => api.delete<void>(ENDPOINTS.INVOICE(id)),
 
-    duplicateInvoice: (id: string) => api.post<Invoice>(`/invoices/${id}/duplicate`),
+    duplicateInvoice: (id: string) => api.post<Invoice>(ENDPOINTS.INVOICE_DUPLICATE(id)),
 
     generateNumber: async () => {
-        const res = await api.get<{ nextNumber: string }>('/invoices/next-number');
+        const res = await api.get<{ nextNumber: string }>(ENDPOINTS.INVOICE_NEXT_NUMBER);
         return res.nextNumber;
     },
 
     // Email Actions
     sendEmail: (invoiceId: string, to: string, pdfBase64?: string) =>
-        api.post('/email/send-invoice', { invoiceId, to, pdfAttachment: pdfBase64 }), // Note: route might need checking if it was moved to /api/invoices/:id/send in backend?
-    // Backend refactor put it at `invoiceRoutes.post('/:id/send', ...)` -> `/api/invoices/:id/send`
-    // BUT legacy `server.js` had `/api/email/send-invoice`.
-    // My backend refactor might have changed this if I wasn't careful.
-    // Let's check `invoiceController.js`. It has `sendInvoiceEmail`. 
-    // And `invoiceRoutes.js` mounts it at `/:id/send` -> `/api/invoices/:id/send`.
-    // If I want to match the NEW backend structure, I should use `/invoices/${id}/send`.
-    // If I want to verify what I deployed in server.js...
-    // I deployed `invoiceRoutes` at `/api/invoices`.
-    // So `router.post('/:id/send')` is `/api/invoices/:id/send`.
-    // I should update this service to match that NEW structure.
-    // The old `dataService` used `/email/send-invoice`.
-    // I must make sure the backend supports that OR update frontend here.
-    // Since I am updating frontend now, I will use the NEW Clean path.
+        api.post(ENDPOINTS.EMAIL_SEND_INVOICE, { invoiceId, to, pdfAttachment: pdfBase64 }),
 
     sendInvoice: (id: string, to: string, pdfBase64?: string | null) =>
-        api.post(`/invoices/${id}/send`, { to, pdfAttachment: pdfBase64 }),
+        api.post(ENDPOINTS.INVOICE_SEND(id), { to, pdfAttachment: pdfBase64 }),
 
     sendReminder: (id: string, to: string, pdfBase64?: string | null) =>
-        api.post(`/invoices/${id}/reminder`, { to, pdfAttachment: pdfBase64 }),
+        api.post(ENDPOINTS.INVOICE_REMINDER(id), { to, pdfAttachment: pdfBase64 }),
 
     getShareUrl: (token: string) => {
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-        return `${baseUrl}/invoices/share/${token}`;
+        return `${API_URL}${ENDPOINTS.INVOICE_SHARE(token)}`;
     }
 };

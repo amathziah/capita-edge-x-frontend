@@ -1,12 +1,13 @@
 import { api } from '../api/client';
+import { ENDPOINTS } from '../api/endpoints';
 import { Product } from '../types';
 
 export const productService = {
-    getProducts: () => api.get<Product[]>('/products'),
+    getProducts: () => api.get<Product[]>(ENDPOINTS.PRODUCTS),
 
-    saveProduct: (product: Product) => api.post<{ id: string }>('/products', product),
+    saveProduct: (product: Product) => api.post<{ id: string }>(ENDPOINTS.PRODUCTS, product),
 
-    updateProduct: (id: string, product: Partial<Product>) => api.post<void>('/products', { ...product, id }),
+    updateProduct: (id: string, product: Partial<Product>) => api.post<void>(ENDPOINTS.PRODUCTS, { ...product, id }),
 
-    deleteProduct: (id: string) => api.delete<void>(`/products/${id}`)
+    deleteProduct: (id: string) => api.delete<void>(ENDPOINTS.PRODUCT(id))
 };

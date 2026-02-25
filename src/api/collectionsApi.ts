@@ -6,16 +6,8 @@
  *   POST /api/ai/collections/send
  */
 
-const getBaseUrl = () => {
-    let url = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-    url = url.replace(/\/$/, '');
-    if (!url.endsWith('/api')) {
-        url += '/api';
-    }
-    return url;
-};
-
-const API_URL = getBaseUrl();
+import { api, API_URL } from './client';
+import { ENDPOINTS } from './endpoints';
 
 export interface CollectionDraft {
     subject: string;
@@ -54,17 +46,6 @@ const STRATEGIES: Record<string, { strategy: string; tone: 'friendly' | 'direct'
     },
 };
 
-function getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('sb-access-token');
-    const organizationId = localStorage.getItem('sb-org-id');
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-    };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    if (organizationId) headers['X-Organization-ID'] = organizationId;
-    return headers;
-}
-
 function pickFallbackStrategy(daysOverdue: number): typeof STRATEGIES[string] {
     if (daysOverdue > 14) return STRATEGIES.escalation;
     if (daysOverdue > 7) return STRATEGIES.firm;
@@ -85,15 +66,7 @@ export async function generateDraft(
     invoiceData?: { customerName?: string; amount?: number; dueDate?: string; daysOverdue?: number }
 ): Promise<CollectionDraft> {
     try {
-        const res = await fetch(`${API_URL}/ai/collections/generate-draft`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ invoiceId, forceAggressive }),
-        });
-
-        if (res.ok) {
-            return await res.json();
-        }
+        return await api.post<CollectionDraft>(ENDPOINTS.AI_COLLECTIONS_DRAFT, { invoiceId, forceAggressive });
     } catch (e) {
         // Backend unavailable, use local fallback
     }
@@ -125,15 +98,7 @@ export async function sendReminder(
     draft: { subject: string; body: string }
 ): Promise<SendResult> {
     try {
-        const res = await fetch(`${API_URL}/ai/collections/send`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ invoiceId, ...draft }),
-        });
-
-        if (res.ok) {
-            return await res.json();
-        }
+        return await api.post<SendResult>(ENDPOINTS.AI_COLLECTIONS_SEND, { invoiceId, ...draft });
     } catch (e) {
         // Backend unavailable
     }

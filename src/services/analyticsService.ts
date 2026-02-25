@@ -1,35 +1,29 @@
-import { api } from '../api/client';
+import { api, API_URL } from '../api/client';
+import { ENDPOINTS } from '../api/endpoints';
 
 export const analyticsService = {
-    getDashboardStats: () => api.get('/dashboard-stats'), // Mounted at /api/dashboard-stats
+    getDashboardStats: () => api.get(ENDPOINTS.DASHBOARD_STATS),
 
-    getRevenueTrends: (period: string = 'monthly') => api.get(`/analytics/revenue-trends?period=${period}`),
+    getRevenueTrends: (period: string = 'monthly') => api.get(`${ENDPOINTS.ANALYTICS_REVENUE}?period=${period}`),
 
-    getCustomerInsights: () => api.get('/analytics/customer-insights'),
+    getCustomerInsights: () => api.get(ENDPOINTS.ANALYTICS_CUSTOMER),
 
-    getProductPerformance: () => api.get('/analytics/product-performance'),
+    getProductPerformance: () => api.get(ENDPOINTS.ANALYTICS_PRODUCT),
 
-    getCashFlow: () => api.get('/analytics/cash-flow'),
+    getCashFlow: () => api.get(ENDPOINTS.ANALYTICS_CASH_FLOW),
 
-    getHealthScore: () => api.get('/analytics/health-score'),
+    getHealthScore: () => api.get(ENDPOINTS.ANALYTICS_HEALTH),
 
-    getSafeToSpend: () => api.get('/analytics/safe-to-spend'),
+    getSafeToSpend: () => api.get(ENDPOINTS.ANALYTICS_SAFE_TO_SPEND),
 
-    getPersonaStats: (persona: string) => api.get(`/analytics/persona-stats?persona=${persona}`),
+    getPersonaStats: (persona: string) => api.get(`${ENDPOINTS.ANALYTICS_PERSONA}?persona=${persona}`),
 
     exportData: async (type: string = 'invoices') => {
-        // This returns a blob/csv, not JSON. api client expects JSON by default.
-        // We need to handle this manually or extend api client.
-        // For now, let's use the fetch wrapper logic but handle blob.
-
-        // Actually, let's just do a direct fetch here or add getBlob to api client.
-        // Re-implementing logic for brevity:
         const token = localStorage.getItem('sb-access-token');
         const headers: any = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-        const res = await fetch(`${API_URL}/analytics/export?type=${type}`, { headers });
+        const res = await fetch(`${API_URL}${ENDPOINTS.ANALYTICS_EXPORT}?type=${type}`, { headers });
         if (!res.ok) throw new Error('Failed to export');
 
         const blob = await res.blob();

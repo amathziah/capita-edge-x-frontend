@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, Github, CheckCircle, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../api/client';
+import { ENDPOINTS } from '../api/endpoints';
 
 type AuthView = 'signin' | 'signup' | 'forgot_password';
 
@@ -45,19 +47,7 @@ export default function AuthComponent() {
         try {
             // Call backend API instead of direct Supabase signup
             // This ensures the confirmation email is sent via our SMTP service
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/signup`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password, companyName }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to create account');
-            }
+            await api.post<any>(ENDPOINTS.AUTH_SIGNUP, { email, password, companyName });
 
             setMessage('Account created! Please check your email for the 6-digit verification code.');
             setShowOtpInput(true);
@@ -73,19 +63,7 @@ export default function AuthComponent() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/verify-otp`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, otp }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Invalid or expired code');
-            }
+            await api.post<any>(ENDPOINTS.AUTH_VERIFY_OTP, { email, otp });
 
             setMessage('Email verified successfully! You can now sign in.');
             setShowOtpInput(false);
@@ -140,19 +118,7 @@ export default function AuthComponent() {
         try {
             // Call backend API instead of direct Supabase resend
             // This allows us to use our own SMTP as a fallback
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/resend-confirmation`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to resend confirmation email');
-            }
+            await api.post<any>(ENDPOINTS.AUTH_RESEND, { email });
 
             setMessage('A new verification code has been sent to your email.');
         } catch (error: any) {

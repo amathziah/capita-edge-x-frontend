@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from './AuthContext';
 
-export type BusinessType = 'solopreneur' | 'agency' | 'saas' | 'ecommerce';
+export type BusinessType = 'solopreneur' | 'agency' | 'saas' | 'ecommerce' | 'ca';
 
 interface PersonaContextType {
     businessType: BusinessType | null;

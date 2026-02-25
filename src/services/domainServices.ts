@@ -1,53 +1,54 @@
 import { api } from '../api/client';
+import { ENDPOINTS } from '../api/endpoints';
 import { Expense, Payment } from '../types';
 
 export const expenseService = {
-    getExpenses: () => api.get<Expense[]>('/expenses'),
-    saveExpense: (expense: Expense) => api.post<{ id: string }>('/expenses', expense),
-    deleteExpense: (id: string) => api.delete<void>(`/expenses/${id}`)
+    getExpenses: () => api.get<Expense[]>(ENDPOINTS.EXPENSES),
+    saveExpense: (expense: Expense) => api.post<{ id: string }>(ENDPOINTS.EXPENSES, expense),
+    deleteExpense: (id: string) => api.delete<void>(ENDPOINTS.EXPENSE(id))
 };
 
 export const paymentService = {
     getPayments: (params?: { limit?: number }) => {
-        let url = '/payments';
+        let url = ENDPOINTS.PAYMENTS;
         if (params?.limit) url += `?limit=${params.limit}`;
         return api.get<Payment[]>(url);
     },
-    savePayment: (payment: Payment) => api.post<{ id: string }>('/payments', payment),
-    downloadReceipt: (paymentId: string) => api.getBlob(`/payments/download-receipt/${paymentId}`),
-    reconcilePayment: (paymentId: string) => api.patch(`/payments/${paymentId}/reconcile`, {})
+    savePayment: (payment: Payment) => api.post<{ id: string }>(ENDPOINTS.PAYMENTS, payment),
+    downloadReceipt: (paymentId: string) => api.getBlob(ENDPOINTS.PAYMENT_RECEIPT(paymentId)),
+    reconcilePayment: (paymentId: string) => api.patch(ENDPOINTS.PAYMENT_RECONCILE(paymentId), {})
 };
 
 export const settingService = {
-    getSettings: () => api.get<any>('/settings'),
+    getSettings: () => api.get<any>(ENDPOINTS.SETTINGS),
 
-    saveSetting: (key: string, value: string) => api.post('/settings', { key, value }),
+    saveSetting: (key: string, value: string) => api.post(ENDPOINTS.SETTINGS, { key, value }),
 
-    getInventorySettings: () => api.get<any>('/inventory/settings'),
+    getInventorySettings: () => api.get<any>(ENDPOINTS.INVENTORY_SETTINGS),
 
-    saveInventorySettings: (settings: any) => api.post('/inventory/settings', settings),
+    saveInventorySettings: (settings: any) => api.post(ENDPOINTS.INVENTORY_SETTINGS, settings),
 
-    testEmail: (smtp_user: string, smtp_pass: string) => api.post('/email/test-connection', { smtp_user, smtp_pass }),
+    testEmail: (smtp_user: string, smtp_pass: string) => api.post(ENDPOINTS.EMAIL_TEST, { smtp_user, smtp_pass }),
 
     uploadLogo: (file: File) => {
         const formData = new FormData();
         formData.append('logo', file);
-        return api.post<{ filename: string, url: string }>('/upload/logo', formData);
+        return api.post<{ filename: string, url: string }>(ENDPOINTS.UPLOAD_LOGO, formData);
     }
 };
 
 export const complianceService = {
-    getTasks: () => api.get<any[]>('/compliance'),
-    saveTask: (task: any) => api.post<{ id: string }>('/compliance', task),
-    updateTask: (id: string, updates: any) => api.put(`/compliance/${id}`, updates),
-    deleteTask: (id: string) => api.delete(`/compliance/${id}`)
+    getTasks: () => api.get<any[]>(ENDPOINTS.COMPLIANCE),
+    saveTask: (task: any) => api.post<{ id: string }>(ENDPOINTS.COMPLIANCE, task),
+    updateTask: (id: string, updates: any) => api.put(ENDPOINTS.COMPLIANCE_TASK(id), updates),
+    deleteTask: (id: string) => api.delete(ENDPOINTS.COMPLIANCE_TASK(id))
 };
 
 export const notificationService = {
-    getNotifications: () => api.get<any[]>('/notifications')
+    getNotifications: () => api.get<any[]>(ENDPOINTS.NOTIFICATIONS)
 };
 
 export const reportService = {
-    getReports: () => api.get<any[]>('/reports'),
-    createReport: (report: any) => api.post<{ success: boolean, report: any }>('/reports', report)
+    getReports: () => api.get<any[]>(ENDPOINTS.REPORTS),
+    createReport: (report: any) => api.post<{ success: boolean, report: any }>(ENDPOINTS.REPORTS, report)
 };

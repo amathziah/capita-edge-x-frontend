@@ -1,14 +1,15 @@
 import { api } from '../api/client';
+import { ENDPOINTS } from '../api/endpoints';
 import { Customer } from '../types';
 
 export const customerService = {
-    getCustomers: () => api.get<Customer[]>('/customers'),
+    getCustomers: () => api.get<Customer[]>(ENDPOINTS.CUSTOMERS),
 
-    saveCustomer: (customer: Customer) => api.post<{ id: string }>('/customers', customer),
+    saveCustomer: (customer: Customer) => api.post<{ id: string }>(ENDPOINTS.CUSTOMERS, customer),
 
-    deleteCustomer: (id: string) => api.delete<void>(`/customers/${id}`),
+    deleteCustomer: (id: string) => api.delete<void>(ENDPOINTS.CUSTOMER(id)),
 
-    getCustomerInsights: (id: string) => api.get<any>(`/customers/${id}/insights`),
+    getCustomerInsights: (id: string) => api.get<any>(ENDPOINTS.CUSTOMER_INSIGHTS(id)),
 
-    getCustomerInvoices: (id: string) => api.get<any[]>(`/customers/${id}/invoices`)
+    getCustomerInvoices: (id: string) => api.get<any[]>(ENDPOINTS.CUSTOMER_INVOICES(id))
 };

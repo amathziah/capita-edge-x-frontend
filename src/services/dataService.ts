@@ -4,6 +4,8 @@ import { productService } from './productService';
 import { expenseService, paymentService, settingService, complianceService, notificationService, reportService } from './domainServices';
 import { aiService } from './aiService';
 import { analyticsService } from './analyticsService';
+import { API_URL } from '../api/client';
+import { ENDPOINTS } from '../api/endpoints';
 
 // Re-export services for direct usage
 export {
@@ -95,8 +97,7 @@ class DataService {
   uploadLogo = settingService.uploadLogo;
   getLogoUrl = (filename?: string) => {
     if (!filename) return '';
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-    return `${API_URL}/uploads/logos/${filename}`;
+    return `${API_URL}${ENDPOINTS.LOGO_URL(filename)}`;
   };
 
   // Cache for analytics and AI

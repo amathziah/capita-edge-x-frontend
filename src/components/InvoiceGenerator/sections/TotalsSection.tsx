@@ -1,0 +1,205 @@
+import React from 'react';
+import { CurrencyOption, INDIAN_STATES } from '../constants';
+import { BusinessType } from '../../../contexts/PersonaContext';
+import { numberToIndianWords } from '../utils';
+
+interface TotalsSectionProps {
+    businessType: BusinessType;
+    currency: CurrencyOption;
+    subtotal: number;
+    taxAmount: number;
+    taxRate: number;
+    setTaxRate: (v: number) => void;
+    taxLabel: string;
+    shipping: number;
+    setShipping: (v: number) => void;
+    total: number;
+    // Solopreneur
+    isGstRegistered: boolean;
+    // CA
+    reverseCharge: boolean;
+    placeOfSupply: string;
+    caIsInterState: boolean;
+    // Agency
+    isInterState: boolean;
+    setIsInterState: (v: boolean) => void;
+    // Ecommerce
+    deliveryState: string;
+    setDeliveryState: (v: string) => void;
+    ecomIsInterState: boolean;
+}
+
+export default function TotalsSection({
+    businessType, currency, subtotal, taxAmount, taxRate, setTaxRate, taxLabel,
+    shipping, setShipping, total,
+    isGstRegistered,
+    reverseCharge, placeOfSupply, caIsInterState,
+    isInterState, setIsInterState,
+    deliveryState, setDeliveryState, ecomIsInterState,
+}: TotalsSectionProps) {
+
+    /** Shared CGST/SGST display */
+    const CgstSgstDisplay = ({ rate, amount }: { rate: number; amount: number }) => (
+        <>
+            <div className="flex justify-between items-center text-sm text-text-muted font-medium">
+                <span>CGST @ {(rate / 2).toFixed(1)}%</span>
+                <span className="font-semibold text-text-main">{currency.symbol}{(amount / 2).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm text-text-muted font-medium">
+                <span>SGST @ {(rate / 2).toFixed(1)}%</span>
+                <span className="font-semibold text-text-main">{currency.symbol}{(amount / 2).toFixed(2)}</span>
+            </div>
+        </>
+    );
+
+    /** Shared IGST display */
+    const IgstDisplay = ({ rate, amount }: { rate: number; amount: number }) => (
+        <div className="flex justify-between items-center text-sm text-text-muted font-medium">
+            <span>IGST @ {rate}%</span>
+            <span className="font-semibold text-text-main">{currency.symbol}{amount.toFixed(2)}</span>
+        </div>
+    );
+
+    /** Shared GST rate input */
+    const GstRateInput = ({ label = "GST Rate" }: { label?: string }) => (
+        <div className="flex items-center justify-between">
+            <span className="text-sm text-text-muted font-medium">{label}</span>
+            <div className="relative w-16">
+                <input type="number" value={taxRate} onChange={(e) => setTaxRate(Number(e.target.value))}
+                    className="w-full border-b-2 border-primary/30 bg-transparent text-center focus:border-primary focus:outline-none text-xs font-semibold py-1 transition-all" />
+                <span className="absolute right-0 top-1 text-xs font-medium">%</span>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="flex justify-end pt-8 border-t border-gray-200/60 mt-6">
+            <div className="w-full sm:w-1/2 md:w-1/3 space-y-5 bg-gradient-to-br from-white/80 to-primary-light/10 backdrop-blur-md p-7 rounded-3xl border border-gray-200/50 shadow-md">
+
+                {/* Subtotal */}
+                <div className="flex justify-between text-sm text-text-muted font-medium">
+                    <span>Subtotal</span>
+                    <span className="font-semibold text-text-main">{currency.symbol}{subtotal.toFixed(2)}</span>
+                </div>
+
+                {/* ─── Tax Breakdown by Persona ─── */}
+                {businessType === 'solopreneur' && !isGstRegistered ? (
+                    <div className="flex justify-between items-center text-sm text-text-muted font-medium">
+                        <span>{taxLabel}</span>
+                        <span className="text-xs font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-lg">Not Applicable (Turnover &lt; ₹20L)</span>
+                    </div>
+
+                ) : businessType === 'ca' ? (
+                    <>
+                        <div className="flex justify-between text-sm text-text-muted font-medium">
+                            <span>Taxable Value</span>
+                            <span className="font-semibold text-text-main">{currency.symbol}{subtotal.toFixed(2)}</span>
+                        </div>
+                        {reverseCharge && (
+                            <div className="flex justify-between items-center text-sm text-text-muted font-medium">
+                                <span>Reverse Charge</span>
+                                <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-lg">Yes</span>
+                            </div>
+                        )}
+                        <div className="flex justify-between items-center text-[11px] text-text-muted font-medium bg-gray-50/80 rounded-lg px-3 py-2">
+                            <span>Place of Supply</span>
+                            <span className="font-semibold text-text-main">{placeOfSupply}</span>
+                        </div>
+                        <GstRateInput />
+                        {caIsInterState
+                            ? <IgstDisplay rate={taxRate} amount={taxAmount} />
+                            : <CgstSgstDisplay rate={taxRate} amount={taxAmount} />}
+                    </>
+
+                ) : businessType === 'agency' ? (
+                    <>
+                        <div className="flex items-center justify-between bg-gray-50/80 rounded-xl px-3 py-2 border border-gray-200 mb-2">
+                            <div className="flex gap-1">
+                                <button type="button" onClick={() => setIsInterState(false)}
+                                    className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all duration-200 ${!isInterState ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:bg-gray-100'}`}>
+                                    Intra-state
+                                </button>
+                                <button type="button" onClick={() => setIsInterState(true)}
+                                    className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all duration-200 ${isInterState ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:bg-gray-100'}`}>
+                                    Inter-state
+                                </button>
+                            </div>
+                            <div className="relative w-16">
+                                <input type="number" value={taxRate} onChange={(e) => setTaxRate(Number(e.target.value))}
+                                    className="w-full border-b-2 border-primary/30 bg-transparent text-center focus:border-primary focus:outline-none text-xs font-semibold py-1 transition-all" />
+                                <span className="absolute right-0 top-1 text-xs font-medium">%</span>
+                            </div>
+                        </div>
+                        {isInterState
+                            ? <IgstDisplay rate={taxRate} amount={taxAmount} />
+                            : <CgstSgstDisplay rate={taxRate} amount={taxAmount} />}
+                    </>
+
+                ) : businessType === 'ecommerce' ? (
+                    <>
+                        <div className="flex flex-col space-y-2">
+                            <label className="text-xs font-semibold text-text-light uppercase tracking-wider">Delivery State</label>
+                            <select value={deliveryState} onChange={(e) => setDeliveryState(e.target.value)}
+                                className="bg-gray-50/80 border-0 border-b-2 border-gray-200 rounded-t-xl px-3 py-2 text-xs font-medium outline-none focus:border-primary focus:bg-white transition-all shadow-sm">
+                                <option value="">— Select —</option>
+                                {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                        </div>
+                        {deliveryState && (
+                            <div className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg text-center ${ecomIsInterState
+                                ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                                : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                                }`}>
+                                {ecomIsInterState ? 'Interstate Transaction — IGST applies' : 'Intra-state Transaction — CGST + SGST applies'}
+                            </div>
+                        )}
+                        <GstRateInput />
+                        {ecomIsInterState
+                            ? <IgstDisplay rate={taxRate} amount={taxAmount} />
+                            : <CgstSgstDisplay rate={taxRate} amount={taxAmount} />}
+                    </>
+
+                ) : (
+                    /* Default: simple tax line */
+                    <div className="flex justify-between items-center text-sm text-text-muted gap-4 font-medium">
+                        <div className="flex items-center gap-2">
+                            <span>{taxLabel}</span>
+                            <div className="relative w-16">
+                                <input type="number" value={taxRate} onChange={(e) => setTaxRate(Number(e.target.value))}
+                                    className="w-full border-b-2 border-primary/30 bg-transparent text-center focus:border-primary focus:outline-none text-xs font-semibold py-1 transition-all" />
+                                <span className="absolute right-0 top-1 text-xs font-medium">%</span>
+                            </div>
+                        </div>
+                        <span className="font-semibold text-text-main">{currency.symbol}{taxAmount.toFixed(2)}</span>
+                    </div>
+                )}
+
+                {/* Shipping */}
+                <div className="flex justify-between items-center text-sm text-text-muted gap-4 font-medium">
+                    <span>Shipping</span>
+                    <div className="relative w-28">
+                        <span className="absolute left-3 top-2 text-xs text-text-light font-medium">{currency.symbol}</span>
+                        <input type="number" value={shipping} onChange={(e) => setShipping(Number(e.target.value))}
+                            className="w-full bg-gray-50/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 pl-7 text-right text-xs font-semibold focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all shadow-sm" />
+                    </div>
+                </div>
+
+                {/* Grand Total */}
+                <div className="flex justify-between text-xl font-bold text-text-main border-t-2 border-primary/20 pt-5 mt-3">
+                    <span>Total</span>
+                    <span className="text-primary bg-primary-light/30 px-4 py-1 rounded-xl">{currency.symbol}{total.toFixed(2)}</span>
+                </div>
+
+                {/* Amount in Words */}
+                {currency.code === 'INR' && total > 0 && (
+                    <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
+                        <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Amount in Words</p>
+                        <p className="text-xs font-semibold text-text-main bg-gray-50/80 rounded-xl px-4 py-2.5 border border-gray-100 italic">
+                            {numberToIndianWords(total)}
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

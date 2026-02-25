@@ -1,19 +1,20 @@
 import { api } from '../api/client';
+import { ENDPOINTS } from '../api/endpoints';
 
 export const aiService = {
-  chat: (query: string, persona?: string) => api.post('/ai/chat', { query, persona }),
+  chat: (query: string, persona?: string) => api.post(ENDPOINTS.AI_CHAT, { query, persona }),
 
-  processQuery: (query: string, agentId?: string, persona?: string) => api.post<any>('/ai/chat', { query, agentId, persona }),
+  processQuery: (query: string, agentId?: string, persona?: string) => api.post<any>(ENDPOINTS.AI_CHAT, { query, agentId, persona }),
 
-  magicFill: (text: string) => api.post('/ai/magic-fill', { text }),
+  magicFill: (text: string) => api.post(ENDPOINTS.AI_MAGIC_FILL, { text }),
 
-  getInsights: () => api.get('/ai/insights'),
+  getInsights: () => api.get(ENDPOINTS.AI_INSIGHTS),
 
-  predictRevenue: (historicalData: any[]) => api.post('/ai/predict-revenue', { historicalData }),
+  predictRevenue: (historicalData: any[]) => api.post(ENDPOINTS.AI_PREDICT_REVENUE, { historicalData }),
 
-  sendCommand: (command: string) => api.post('/ai/command', { command }),
+  sendCommand: (command: string) => api.post(ENDPOINTS.AI_COMMAND, { command }),
 
-  generateSettlementOffer: (id: string) => api.post('/ai/settlement', { id }), // Can also use legacy /negotiate-settlement
+  generateSettlementOffer: (id: string) => api.post(ENDPOINTS.AI_SETTLEMENT, { id }),
 
   // Helper for converting blob to base64 if needed for other AI tasks
   blobToBase64: (blob: Blob): Promise<string> => {

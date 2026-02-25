@@ -3,6 +3,8 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { dataService } from '../../services/dataService';
+import { API_URL } from '../../api/client';
+import { ENDPOINTS } from '../../api/endpoints';
 import { Invoice } from '../../types';
 import { ArrowLeft, Plus, Save, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 
@@ -104,9 +106,8 @@ export function CreateInvoice() {
             // I will use raw fetch but with correct error handling WITHOUT mock fallback.
 
             const token = localStorage.getItem('sb-access-token');
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-            const response = await fetch(`${API_URL}/ai/audit-invoice`, {
+            const response = await fetch(`${API_URL}${ENDPOINTS.AI_AUDIT_INVOICE}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

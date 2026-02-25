@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usePersona } from '../contexts/PersonaContext';
+import { api } from '../api/client';
+import { ENDPOINTS } from '../api/endpoints';
 import {
     Loader2,
     ShieldCheck,
@@ -67,19 +69,7 @@ export function SetupPage() {
         try {
             // 1. Call backend to provision organization (only if not already set)
             if (!orgId) {
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/provision`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${(await (await import('../supabaseClient')).supabase.auth.getSession()).data.session?.access_token}`,
-                    },
-                    body: JSON.stringify({ companyName }),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to set up organization');
-                }
+                await api.post(ENDPOINTS.AUTH_PROVISION, { companyName });
             }
 
             // 2. Update persona

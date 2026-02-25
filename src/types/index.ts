@@ -30,6 +30,7 @@ export interface Product {
   itemType?: 'physical' | 'service';
   status?: 'Active' | 'Inactive' | 'Archived';
   gstRate?: number;     // Legacy support
+  hsnCode?: string;     // HSN code for e-commerce
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +48,8 @@ export interface InvoiceItem {
   // Inventory Link
   productId?: string;
   sku?: string;
+  sacCode?: string;
+  hsnCode?: string;
 }
 
 export interface Invoice {
