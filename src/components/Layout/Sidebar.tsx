@@ -201,7 +201,11 @@ export function Sidebar() {
           <div className="text-left overflow-hidden">
             <div className="flex items-center gap-1.5">
               <span className="text-[15px] font-bold text-white tracking-tight block">Malika</span>
-              <span className="px-1 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-[8px] font-black text-teal-400/80 uppercase tracking-tighter">v2.5</span>
+              {planStatus?.plan_tier === 'pro' ? (
+                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-400 uppercase tracking-tighter animate-pulse">PRO</span>
+              ) : (
+                <span className="px-1 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-[8px] font-black text-teal-400/80 uppercase tracking-tighter">v2.5</span>
+              )}
             </div>
             <span className="block text-[10px] text-gray-500 font-medium tracking-wide">Protocol Architecture</span>
           </div>
@@ -310,46 +314,80 @@ export function Sidebar() {
         ))}
 
         {/* ── Plan Usage / Upgrade Section ──────────────────────── */}
-        {!collapsed && planStatus && (
+        {!collapsed && (
           <div className="mt-8 px-3">
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 transition-all hover:bg-white/[0.05]">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Usage Details</span>
-                <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-tighter ${planStatus.plan_tier === 'pro'
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
-                  }`}>
-                  {planStatus.plan_tier}
-                </span>
-              </div>
+            <div className="relative overflow-hidden group bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 transition-all hover:bg-white/[0.04] hover:border-white/[0.1]">
+              {/* Background Glow */}
+              <div className="absolute -top-12 -right-12 w-24 h-24 bg-teal-500/10 blur-[40px] rounded-full pointer-events-none group-hover:bg-teal-500/20 transition-all duration-700" />
 
-              {/* Invoices Usage */}
-              <div className="space-y-1.5 mb-4">
-                <div className="flex justify-between text-[11px] font-medium">
-                  <span className="text-gray-400">Invoices</span>
-                  <span className="text-gray-200">
-                    {planStatus.usage.invoices.current}
-                    <span className="text-gray-500"> / {planStatus.usage.invoices.limit === Infinity ? '∞' : planStatus.usage.invoices.limit}</span>
-                  </span>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Protocol Usage</span>
+                  <div className="flex items-center gap-1.5">
+                    {planStatus?.plan_tier === 'pro' && <Zap className="w-3 h-3 text-amber-400 fill-amber-400/20" />}
+                    <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter ${planStatus?.plan_tier === 'pro'
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
+                      : 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                      }`}>
+                      {planStatus?.plan_tier || 'free'}
+                    </span>
+                  </div>
                 </div>
-                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-teal-400 to-cyan-500 transition-all duration-500"
-                    style={{ width: `${Math.min(100, (planStatus.usage.invoices.current / (planStatus.usage.invoices.limit || 1)) * 100)}%` }}
-                  />
-                </div>
-              </div>
 
-              {/* Upgrade Button (Free only) */}
-              {planStatus.plan_tier === 'free' && (
-                <NavLink
-                  to="/pricing"
-                  className="flex items-center justify-center gap-2 w-full py-2 px-3 bg-gradient-to-r from-teal-500/20 to-cyan-500/10 hover:from-teal-500 hover:to-cyan-600 text-white text-[11px] font-bold rounded-xl border border-teal-500/30 transition-all group/upg"
-                >
-                  <Zap className="w-3.5 h-3.5 text-teal-400 group-hover/upg:text-white" />
-                  Upgrade to Pro
-                </NavLink>
-              )}
+                {/* Invoices Usage - Instrument Style */}
+                <div className="space-y-2 mb-5">
+                  <div className="flex justify-between items-end">
+                    <div className="space-y-0.5">
+                      <span className="block text-[10px] text-gray-500 font-bold uppercase tracking-tight">Data Packets</span>
+                      <span className="block text-[13px] font-mono text-gray-200">
+                        {(planStatus?.usage?.invoices?.current ?? 0).toString().padStart(2, '0')}
+                        <span className="text-gray-500 mx-1">/</span>
+                        {planStatus?.usage?.invoices?.limit === Infinity ? '∞' : (planStatus?.usage?.invoices?.limit ?? 5).toString().padStart(2, '0')}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-teal-500/80">
+                      {Math.round(Math.min(100, ((planStatus?.usage?.invoices?.current ?? 0) / (planStatus?.usage?.invoices?.limit || 5)) * 100))}%
+                    </span>
+                  </div>
+                  <div className="h-1 w-full bg-white/[0.03] rounded-full overflow-hidden border border-white/[0.05]">
+                    <div
+                      className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 shadow-[0_0_8px_rgba(20,184,166,0.4)] transition-all duration-1000 ease-out"
+                      style={{ width: `${Math.min(100, ((planStatus?.usage?.invoices?.current ?? 0) / (planStatus?.usage?.invoices?.limit || 5)) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Upgrade CTA (Free only) */}
+                {(planStatus?.plan_tier === 'free' || !planStatus) && (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                        <ShieldCheck className="w-3 h-3 text-teal-500/70" />
+                        <span>Gemini Pro AI Insights</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                        <Zap className="w-3 h-3 text-teal-500/70" />
+                        <span>Unlimited Invoices</span>
+                      </div>
+                    </div>
+
+                    <NavLink
+                      to="/pricing"
+                      className="flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-gradient-to-br from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white text-[11px] font-bold rounded-xl shadow-lg shadow-teal-500/10 border border-white/10 transition-all active:scale-[0.98] group/btn"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-white animate-pulse" />
+                      <span>INITIALIZE PRO</span>
+                    </NavLink>
+                  </div>
+                )}
+
+                {planStatus?.plan_tier === 'pro' && (
+                  <div className="pt-2 border-t border-white/[0.05] flex items-center gap-2">
+                    <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                    <span className="text-[10px] font-medium text-gray-500">System Priority Active</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
