@@ -1,3 +1,5 @@
+import { supabase } from '../supabaseClient';
+
 export const getBaseUrl = () => {
     let url = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
     // Ensure it doesn't end with a trailing slash for consistency
@@ -13,7 +15,15 @@ export const API_URL = getBaseUrl();
 
 class ApiClient {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-        const token = localStorage.getItem('sb-access-token');
+        let token = localStorage.getItem('sb-access-token');
+        // Fallback: OAuth redirect may set the session before localStorage is written
+        if (!token) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) {
+                token = session.access_token;
+                localStorage.setItem('sb-access-token', token);
+            }
+        }
         const organizationId = localStorage.getItem('sb-org-id');
 
         const headers: HeadersInit = {
@@ -107,7 +117,15 @@ class ApiClient {
     }
 
     async getBlob(endpoint: string, options?: RequestInit): Promise<Blob> {
-        const token = localStorage.getItem('sb-access-token');
+        let token = localStorage.getItem('sb-access-token');
+        // Fallback: same race-condition guard
+        if (!token) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) {
+                token = session.access_token;
+                localStorage.setItem('sb-access-token', token);
+            }
+        }
         const organizationId = localStorage.getItem('sb-org-id');
 
         const headers: HeadersInit = {

@@ -27,10 +27,31 @@ import { Support } from './pages/Support';
 import { ControlRoom } from './pages/ControlRoom';
 import { Landing } from './pages/Landing';
 import { Loader2 } from 'lucide-react';
+import { usePersona } from './contexts/PersonaContext';
 
 const HomeLoader = () => {
-  const { user, loading } = useAuth();
-  if (loading) {
+  const { user, loading: loadingAuth, orgId, checkingOrg } = useAuth();
+  const { businessType, loading: loadingPersona } = usePersona();
+
+  // The Smoking Gun: Check for hints of a returning user
+  const hasToken = !!localStorage.getItem('sb-access-token');
+  const isHydrating = loadingAuth || checkingOrg || loadingPersona;
+
+  // RULE 1: If we have ANY hint of a session (token), stay in NEUTRAL mode.
+  // This removes the "Syncing Security Protocol" text and flashes for established users.
+  if (isHydrating && hasToken) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#040608]">
+        <div className="relative">
+          <div className="w-12 h-12 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
+          <div className="absolute inset-0 bg-teal-500/10 blur-xl rounded-full" />
+        </div>
+      </div>
+    );
+  }
+
+  // RULE 2: Only show onboarding-themed loading for users with NO token (fresh sign-ups)
+  if (isHydrating) {
     return (
       <div className="flex flex-col h-screen items-center justify-center bg-[#0c0f1a] space-y-4">
         <Loader2 className="w-10 h-10 text-teal-400 animate-spin" />
@@ -38,7 +59,16 @@ const HomeLoader = () => {
       </div>
     );
   }
-  return user ? <Navigate to="/dashboard" replace /> : <Landing />;
+
+  // RULE 3: Routing Decisions (Only after isHydrating is false)
+  if (user) {
+    if (orgId && businessType) {
+      return <Navigate to="/dashboard" replace />;
+    }
+    return <Navigate to="/setup" replace />;
+  }
+
+  return <Landing />;
 };
 
 function App() {

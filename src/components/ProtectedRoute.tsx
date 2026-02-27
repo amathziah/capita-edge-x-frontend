@@ -8,9 +8,21 @@ export const ProtectedRoute = () => {
     const { businessType, loading: loadingPersona } = usePersona();
     const isSetupPage = window.location.pathname === '/setup';
 
-    // OPTIMISTIC RENDERING: If we have a cached persona and org, don't block with loading screen
+    // OPTIMISTIC RENDERING: If we have a cached persona and org, don't block with onboarding UI
     const hasCachedState = !!(orgId && businessType);
+    const hasToken = !!localStorage.getItem('sb-access-token');
 
+    // RULE 1: If we have ANY session markers, stay in neutral entry mode while hydrating
+    // This prevents seeing "Syncing..." or "Build your space" flashes
+    if ((loading || loadingPersona || checkingOrg) && (hasToken || hasCachedState)) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-[#040608]">
+                <div className="w-12 h-12 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    // Standard Onboarding Loader (only if no session hint at all)
     if ((loading || loadingPersona) && !hasCachedState) {
         return (
             <div className="flex flex-col h-screen items-center justify-center bg-[#0c0f1a] space-y-4">
@@ -20,21 +32,12 @@ export const ProtectedRoute = () => {
         );
     }
 
-    if (!user) {
+    // Only redirect to login AFTER hydration is fully proven invalid
+    if (!loading && !user && !hasToken) {
         return <Navigate to="/login" replace />;
     }
 
-    // Only block if we truly have no identity and no cached organization
-    if (checkingOrg && !orgId && !hasCachedState) {
-        return (
-            <div className="flex flex-col h-screen items-center justify-center bg-[#0c0f1a] space-y-4">
-                <Loader2 className="w-10 h-10 text-teal-400 animate-spin" />
-                <p className="text-gray-400 text-sm font-bold tracking-tight">Authenticating Workspace...</p>
-            </div>
-        );
-    }
-
-    // Redirect to setup if EVERTHING is loaded and we STILL have no organization OR no persona
+    // Redirect to setup ONLY after hydration confirms missing identity
     const isFullyLoaded = !loading && !checkingOrg && !loadingPersona;
     if (user && isFullyLoaded && (!orgId || !businessType) && !isSetupPage) {
         return <Navigate to="/setup" replace />;

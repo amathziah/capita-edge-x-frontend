@@ -35,15 +35,10 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 .from('profiles')
                 .select('business_type')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (error) {
-                if (error.code === 'PGRST116') {
-                    // Profile not found, this is expected for brand new users
-                    setBusinessType(null);
-                } else {
-                    throw error;
-                }
+                throw error;
             } else if (data && data.business_type) {
                 const type = data.business_type as BusinessType;
                 setBusinessType(type);
@@ -75,45 +70,44 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const updatePersona = async (newType: BusinessType) => {
         if (!user) return;
 
-        const maxRetries = 3;
-        let attempt = 0;
+        try {
+            setLoading(true);
+            console.log('[PersonaContext] Updating to:', newType, 'for user:', user.id);
 
-        const performUpdate = async (): Promise<boolean> => {
-            const { data, error } = await supabase
+            // First try a normal update
+            const { data: updateData, error: updateError } = await supabase
                 .from('profiles')
                 .update({ business_type: newType })
                 .eq('id', user.id)
                 .select();
 
-            if (error) {
-                console.error(`Attempt ${attempt + 1} failed:`, error);
-                return false;
+            if (updateError) {
+                console.warn('[PersonaContext] Update warning:', updateError);
             }
 
-            // If data is empty, the profile doesn't exist yet (race condition with DB trigger)
-            return !!(data && data.length > 0);
-        };
+            const updated = !!(updateData && updateData.length > 0);
 
-        try {
-            setLoading(true);
-            let success = false;
+            // If update returned nothing, profile row doesn't exist yet — upsert it
+            if (!updated) {
+                console.log('[PersonaContext] Profile not found, upserting...');
+                const { error: upsertError } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: user.id,
+                        business_type: newType,
+                    }, { onConflict: 'id' });
 
-            while (attempt < maxRetries && !success) {
-                success = await performUpdate();
-                if (!success) {
-                    attempt++;
-                    if (attempt < maxRetries) {
-                        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s
-                    }
+                if (upsertError) {
+                    console.error('[PersonaContext] Upsert error:', upsertError);
+                    throw new Error(`Profile initialization failed: ${upsertError.message}`);
                 }
             }
 
-            if (!success) throw new Error('Failed to update persona after multiple attempts. Profile might not be initialized.');
-
+            console.log('[PersonaContext] Success.');
             setBusinessType(newType);
             localStorage.setItem('malika-persona', newType);
-        } catch (err) {
-            console.error('Error updating persona:', err);
+        } catch (err: any) {
+            console.error('[PersonaContext] Final Error:', err);
             throw err;
         } finally {
             setLoading(false);

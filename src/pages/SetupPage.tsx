@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePersona } from '../contexts/PersonaContext';
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
+import { supabase } from '../supabaseClient';
 import {
     Loader2,
     ShieldCheck,
@@ -17,18 +18,37 @@ import {
     Globe,
     Database,
     Terminal,
-    Activity
+    Activity,
+    Scale
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Step = 'calibrate' | 'identity' | 'persona' | 'processing' | 'done';
 
 export function SetupPage() {
-    const { user, refreshOrgContext, orgId } = useAuth();
+    const { user, refreshOrgContext, orgId, loading: authLoading, checkingOrg } = useAuth();
     const { updatePersona } = usePersona();
     const navigate = useNavigate();
 
     const [step, setStep] = useState<Step>('calibrate');
+    const { businessType, loading: loadingPersona } = usePersona();
+
+    // Guard: redirect to login if not authenticated
+    useEffect(() => {
+        if (!authLoading && !user) {
+            navigate('/login', { replace: true });
+        }
+    }, [authLoading, user, navigate]);
+
+    // Guard: hydration check - stay in neutral theme until status is 100% stable
+    // (Actual early return logic moved below hooks to comply with React rules)
+
+    // Guard: redirect out of setup if already provisioned
+    useEffect(() => {
+        if (!authLoading && !checkingOrg && !loadingPersona && orgId && businessType) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [authLoading, checkingOrg, loadingPersona, orgId, businessType, navigate]);
     const [companyName, setCompanyName] = useState(user?.user_metadata?.company_name || '');
     const [selectedPersona, setSelectedPersona] = useState<'solopreneur' | 'agency' | 'saas' | 'ecommerce'>('solopreneur');
     const [error, setError] = useState<string | null>(null);
@@ -67,6 +87,21 @@ export function SetupPage() {
         setStep('processing');
         setError(null);
         try {
+            // 0. Wait for Supabase session to be ready (PKCE exchange can take a moment after OAuth redirect)
+            let session = null;
+            for (let attempt = 0; attempt < 17; attempt++) {
+                const { data } = await supabase.auth.getSession();
+                if (data.session?.access_token) {
+                    session = data.session;
+                    break;
+                }
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            if (!session?.access_token) {
+                throw new Error('Authentication session not ready. Please refresh and try again.');
+            }
+            localStorage.setItem('sb-access-token', session.access_token);
+
             // 1. Call backend to provision organization (only if not already set)
             if (!orgId) {
                 await api.post(ENDPOINTS.AUTH_PROVISION, { companyName });
@@ -90,8 +125,20 @@ export function SetupPage() {
         { id: 'solopreneur', label: 'Solopreneur', desc: 'Sovereign individual managing holistic operations.', icon: <Activity className="w-6 h-6" /> },
         { id: 'saas', label: 'SaaS Founder', desc: 'Scalable subscription architecture & MRR tracking.', icon: <Zap className="w-6 h-6" /> },
         { id: 'agency', label: 'Agency Owner', desc: 'Multi-client coordination & project-based billing.', icon: <Globe className="w-6 h-6" /> },
+        { id: 'ca', label: 'CA / Accountant', desc: 'Practice management, SAC codes & compliance-first billing.', icon: <Scale className="w-6 h-6" /> },
         { id: 'ecommerce', label: 'E-commerce', desc: 'Universal product ledger & automated order flows.', icon: <Database className="w-6 h-6" /> },
     ];
+
+    // Guard: hydration check - stay in neutral theme until status is 100% stable
+    // MOVED here to comply with Rules of Hooks (must be after all top-level hooks)
+    const isHydratingStatus = authLoading || checkingOrg || loadingPersona;
+    if (isHydratingStatus) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-[#040608]">
+                <div className="w-12 h-12 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#040608] font-sans selection:bg-teal-500/20 relative overflow-x-hidden flex flex-col items-center justify-center py-6 md:py-12 px-4">

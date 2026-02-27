@@ -141,14 +141,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await supabase.auth.signOut();
         localStorage.removeItem('sb-access-token');
         localStorage.removeItem('sb-org-id');
+        localStorage.removeItem('malika-persona');
         setOrgId(null);
     };
+
+    const hasToken = !!localStorage.getItem('sb-access-token');
 
     return (
         <AuthContext.Provider value={{ session, user, loading, orgId, checkingOrg, signOut, refreshOrgContext }}>
             {loading ? (
-                <div className="flex items-center justify-center h-screen bg-gray-50">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+                <div className={`flex items-center justify-center h-screen ${hasToken ? 'bg-[#040608]' : 'bg-gray-50'}`}>
+                    <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${hasToken ? 'border-teal-500' : 'border-violet-600'}`}></div>
                 </div>
             ) : (
                 children
