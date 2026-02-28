@@ -48,7 +48,7 @@ export default function ItemsTable({
     const lineTotal = (item: InvoiceItem) => item.quantity * item.price * (1 - (item.discount || 0) / 100);
 
     return (
-        <div className="space-y-4">
+        <div className={`space-y-4 relative ${focusedItemIndex !== null ? 'z-[40]' : 'z-0'}`}>
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl border border-gray-200/50 shadow-md">
 
                 {/* ═══ DESKTOP HEADER ═══ */}
@@ -91,7 +91,7 @@ export default function ItemsTable({
                             <Fragment key={idx}>
 
                                 {/* ─── Desktop Row ─── */}
-                                <div className={`hidden sm:grid ${gridClass} gap-3 p-4 items-center hover:bg-gradient-to-r hover:from-primary-light/10 hover:to-transparent transition-all duration-200 group`}>
+                                <div className={`hidden sm:grid ${gridClass} gap-3 p-4 items-center hover:bg-gradient-to-r hover:from-primary-light/10 hover:to-transparent transition-all duration-200 group relative ${focusedItemIndex === idx ? 'z-[50]' : 'z-0'}`}>
 
                                     {/* Description + Product Autocomplete */}
                                     <div className="relative">
@@ -153,7 +153,7 @@ export default function ItemsTable({
                                                                         unit: product.unit,
                                                                         productId: product.id,
                                                                         sku: product.sku,
-                                                                        hsnCode: (product as any).hsnCode || '',
+                                                                        hsnCode: product.hsnCode || '',
                                                                         quantity: newItems[idx].quantity || 1
                                                                     };
                                                                     setItems(newItems);
@@ -216,8 +216,8 @@ export default function ItemsTable({
                                                 className="w-full bg-gray-50/80 backdrop-blur-sm border border-gray-200 rounded-xl px-2 py-2 text-[11px] font-medium focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none text-text-muted text-center transition-all font-mono"
                                                 placeholder="998311"
                                                 title="Service Accounting Code — required for GST"
-                                                value={(item as any).sacCode || ''}
-                                                onChange={(e) => updateItem(idx, "sacCode" as any, e.target.value)}
+                                                value={item.sacCode || ''}
+                                                onChange={(e) => updateItem(idx, "sacCode", e.target.value)}
                                             />
                                         </div>
                                     )}
@@ -320,7 +320,7 @@ export default function ItemsTable({
                                 </div>
 
                                 {/* ─── Mobile Row — FIX 8 ─── */}
-                                <div className="grid sm:hidden grid-cols-[2fr_60px_80px_70px_30px] gap-2 p-3 items-center hover:bg-gradient-to-r hover:from-primary-light/10 hover:to-transparent transition-all duration-200">
+                                <div className={`grid sm:hidden grid-cols-[2fr_60px_80px_70px_30px] gap-2 p-3 items-center hover:bg-gradient-to-r hover:from-primary-light/10 hover:to-transparent transition-all duration-200 relative ${focusedItemIndex === idx ? 'z-[50]' : 'z-0'}`}>
 
                                     {/* Description */}
                                     <div className="relative">

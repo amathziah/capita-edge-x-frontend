@@ -5,7 +5,7 @@ import {
     CheckCircle2, ChevronRight, Globe, Lock,
     ChevronDown, Clock, TrendingUp, Users,
     FileText, CreditCard, Calendar, Package,
-    AlertTriangle, Activity
+    AlertTriangle, Activity, Star, Crown, Briefcase, Building2, X
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -302,6 +302,113 @@ function ReportsMock() {
     );
 }
 
+// ─── Tier config for landing page ──────────────────────────────────────────
+const TIERS = [
+    {
+        slug: 'starter',
+        name: 'Starter',
+        tagline: 'Get started for free',
+        price: 0,
+        priceAnnual: 0,
+        icon: Star,
+        gradient: 'from-gray-400 to-gray-600',
+        borderColor: 'border-white/[0.08]',
+        bgTint: 'bg-white/[0.02]',
+        features: [
+            '5 Invoices',
+            '10 AI Requests/day',
+            'PDF Download',
+            '20 Products & Customers',
+            'Basic Reports',
+        ],
+        notIncluded: ['Email Invoices', 'Bulk Email', 'Priority Support'],
+        cta: 'Get Started Free',
+    },
+    {
+        slug: 'freelancer',
+        name: 'Freelancer',
+        tagline: 'For solo hustlers scaling up',
+        price: 499,
+        priceAnnual: 4990,
+        icon: Zap,
+        gradient: 'from-blue-500 to-indigo-600',
+        borderColor: 'border-blue-500/30',
+        bgTint: 'bg-blue-500/5',
+        popular: true,
+        features: [
+            'Unlimited Invoices',
+            '100 AI Requests/day',
+            'Email Invoices',
+            'PDF Download',
+            'Full Reports & Analytics',
+            'Unlimited Products & Customers',
+            'Basic Inventory',
+        ],
+        cta: 'Start Freelancer',
+    },
+    {
+        slug: 'smb',
+        name: 'SMB',
+        tagline: 'For growing teams & agencies',
+        price: 1499,
+        priceAnnual: 14990,
+        icon: Briefcase,
+        gradient: 'from-violet-500 to-purple-700',
+        borderColor: 'border-violet-500/30',
+        bgTint: 'bg-violet-500/5',
+        features: [
+            'Unlimited Everything',
+            '500 AI Requests/day',
+            'Email + Bulk Email',
+            'Priority Support',
+            'Full Inventory Management',
+            'Advanced Reports',
+        ],
+        cta: 'Go SMB',
+    },
+    {
+        slug: 'ca_pro',
+        name: 'CA Pro',
+        tagline: 'White-label for CAs',
+        price: 10000,
+        priceAnnual: null,
+        priceLabel: '₹10K + ₹500/mo',
+        icon: Crown,
+        gradient: 'from-amber-500 to-orange-600',
+        borderColor: 'border-amber-500/30',
+        bgTint: 'bg-amber-500/5',
+        features: [
+            'White-label Branding',
+            'Multi-client Management',
+            '200 AI Requests/day',
+            'Compliance-ready Templates',
+            'Priority Support',
+            'Unlimited Invoices',
+        ],
+        cta: 'Start CA Pro',
+    },
+    {
+        slug: 'enterprise',
+        name: 'Enterprise',
+        tagline: 'Custom solutions at scale',
+        price: null,
+        priceAnnual: null,
+        icon: Building2,
+        gradient: 'from-emerald-500 to-teal-700',
+        borderColor: 'border-emerald-500/30',
+        bgTint: 'bg-emerald-500/5',
+        features: [
+            'Everything in SMB',
+            'Unlimited AI Requests',
+            'Custom Integrations',
+            'Dedicated Account Manager',
+            'SLA Guarantee',
+            'Custom Reports',
+        ],
+        cta: 'Contact Sales',
+    },
+];
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export const Landing: React.FC = () => {
     const [scrolled, setScrolled] = useState(false);
@@ -318,6 +425,8 @@ export const Landing: React.FC = () => {
 
     const words = ['Payments.', 'Invoices.', 'Overdue Bills.', 'Revenue.'];
     const [wIdx, setWIdx] = useState(0);
+    const [isAnnual, setIsAnnual] = useState(false);
+
     useEffect(() => {
         const id = setInterval(() => setWIdx(i => (i + 1) % words.length), 2800);
         return () => clearInterval(id);
@@ -629,44 +738,101 @@ export const Landing: React.FC = () => {
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_70%_at_50%_50%,transparent_40%,#050810_90%)]" />
                 </div>
                 <div className="max-w-4xl mx-auto px-6 relative z-10">
-                    <div className="text-center mb-16">
+                    <div className="text-center mb-12">
                         <div className="text-teal-400 font-black uppercase tracking-[0.22em] text-[11px] mb-4">Pricing</div>
                         <h2 className="display font-black text-white leading-tight mb-5" style={{ fontSize: 'clamp(30px, 5vw, 60px)' }}>Simple, honest pricing.</h2>
-                        <p className="text-slate-400 max-w-xl mx-auto font-medium">One plan, everything included. No hidden fees, no tier confusion.</p>
+                        <p className="text-slate-400 max-w-xl mx-auto font-medium">Choose the plan that matches your business stage. Upgrade or downgrade anytime.</p>
+
+                        {/* Monthly / Annual Toggle */}
+                        <div className="mt-8 inline-flex items-center gap-2 p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl">
+                            <button
+                                onClick={() => setIsAnnual(false)}
+                                className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${!isAnnual ? 'bg-teal-500 text-white shadow-[0_0_15px_rgba(20,184,166,0.3)]' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                Monthly
+                            </button>
+                            <button
+                                onClick={() => setIsAnnual(true)}
+                                className={`px-5 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${isAnnual ? 'bg-teal-500 text-white shadow-[0_0_15px_rgba(20,184,166,0.3)]' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                Annual
+                                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-wider">Save 17%</span>
+                            </button>
+                        </div>
                     </div>
-                    <motion.div initial={{ opacity: 0, scale: 0.97 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="relative max-w-2xl mx-auto">
-                        <div className="absolute -inset-px rounded-[2rem] overflow-hidden pointer-events-none">
-                            <motion.div className="absolute inset-0" animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-                                style={{ background: 'conic-gradient(from 0deg, transparent 0deg, rgba(20,184,166,0.6) 60deg, rgba(6,182,212,0.5) 120deg, rgba(20,184,166,0.3) 180deg, transparent 240deg)' }} />
-                        </div>
-                        <div className="relative bg-[#07101f] rounded-[2rem] p-10 md:p-14 grid md:grid-cols-2 gap-10 items-center">
-                            <div className="absolute top-6 right-6">
-                                <span className="bg-teal-500 text-[10px] font-black uppercase tracking-[0.18em] px-3 py-1.5 rounded-full text-white">All Access</span>
-                            </div>
-                            <div>
-                                <div className="text-[11px] font-black uppercase tracking-[0.2em] text-teal-400 mb-3">Monthly Plan</div>
-                                <div className="flex items-baseline gap-2 mb-5">
-                                    <span className="display font-black text-white" style={{ fontSize: 68 }}>₹999</span>
-                                    <span className="text-slate-500 font-bold">/month</span>
-                                </div>
-                                <p className="text-slate-400 text-[14px] mb-7 leading-relaxed">Everything your agency needs to get paid faster, starting today.</p>
-                                <Link to="/login" className="block w-full py-4 text-center bg-teal-500 hover:bg-teal-400 text-white rounded-xl font-black text-[16px] transition-all hover:shadow-[0_0_30px_rgba(20,184,166,0.4)] hover:-translate-y-0.5 active:scale-95">
-                                    Get Started
-                                </Link>
-                                <p className="text-center text-slate-600 text-[11px] mt-2.5">No credit card required · Cancel anytime</p>
-                            </div>
-                            <div className="space-y-3.5">
-                                {['Unlimited Invoice Generation', 'Debt Hunter AI Collections', 'Real-time Control Room', 'Payment Reconciliation', 'Revenue Analytics & P&L', 'GST & Compliance Tracking', 'Inventory Management', 'Expense Tracking', 'Calendar View'].map((f) => (
-                                    <div key={f} className="flex items-center gap-3">
-                                        <div className="w-4 h-4 rounded-full bg-teal-500/20 flex items-center justify-center flex-shrink-0">
-                                            <CheckCircle2 className="w-2.5 h-2.5 text-teal-400" />
-                                        </div>
-                                        <span className="text-slate-300 text-[14px] font-medium">{f}</span>
+
+                    {/* Tier Cards Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 max-w-7xl mx-auto">
+                        {TIERS.map((tier: any, idx: number) => (
+                            <motion.div
+                                key={tier.slug}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: idx * 0.1 }}
+                                className={`relative rounded-3xl p-6 flex flex-col transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.05] ${tier.bgTint} border ${tier.borderColor} ${tier.popular ? 'shadow-[0_0_30px_rgba(59,130,246,0.15)] md:-translate-y-2' : ''}`}
+                            >
+                                {tier.popular && (
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 w-full px-4 text-center">
+                                        <span className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-blue-500/30">
+                                            Most Popular
+                                        </span>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    </motion.div>
+                                )}
+
+                                <div className="mt-2 mb-4">
+                                    <div className={`inline-flex p-2.5 rounded-2xl bg-gradient-to-br ${tier.gradient} shadow-lg mb-4`}>
+                                        <tier.icon className="w-5 h-5 text-white" strokeWidth={2.5} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white">{tier.name}</h3>
+                                    <p className="text-[11px] text-slate-400 mt-1">{tier.tagline}</p>
+                                </div>
+
+                                <div className="mb-6">
+                                    <div className="flex items-baseline gap-1">
+                                        {tier.priceLabel ? (
+                                            <span className="text-xl md:text-[18px] lg:text-[20px] font-black text-white leading-tight">
+                                                {tier.priceLabel}
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <span className="text-3xl font-black text-white">
+                                                    {tier.price === null ? 'Custom' : tier.price === 0 ? 'Free' : isAnnual && tier.priceAnnual ? `₹${Math.round(tier.priceAnnual / 12).toLocaleString()}` : `₹${tier.price.toLocaleString()}`}
+                                                </span>
+                                                {tier.price !== null && tier.price > 0 && (
+                                                    <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">/mo</span>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                    {isAnnual && tier.priceAnnual && !tier.priceLabel && (
+                                        <p className="text-[10px] text-emerald-400 font-semibold mt-1">Billed ₹{tier.priceAnnual.toLocaleString()}/year</p>
+                                    )}
+                                </div>
+
+                                <ul className="space-y-3 mb-8 flex-1">
+                                    {tier.features.map((f: any, i: number) => (
+                                        <li key={i} className="flex items-start gap-2 text-[12px] text-slate-300 font-medium tracking-tight">
+                                            <div className={`p-0.5 rounded-full bg-gradient-to-br ${tier.gradient} mt-0.5 flex-shrink-0`}>
+                                                <CheckCircle2 className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                                            </div>
+                                            <span className="leading-snug">{f}</span>
+                                        </li>
+                                    ))}
+                                    {tier.notIncluded?.map((f: any, i: number) => (
+                                        <li key={`no-${i}`} className="flex items-start gap-2 text-[12px] text-slate-600 font-medium tracking-tight">
+                                            <X className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" strokeWidth={2} />
+                                            <span className="line-through leading-snug">{f}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <Link to="/login" className={`w-full py-3 px-4 rounded-xl text-center text-[12px] font-black uppercase tracking-wider transition-all duration-300 ${tier.popular ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]' : 'bg-white/[0.05] text-white hover:bg-white/[0.1] border border-white/[0.1]'}`}>
+                                    {tier.cta}
+                                </Link>
+                            </motion.div>
+                        ))}
+                    </div>
                 </div>
             </section>
 

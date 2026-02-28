@@ -9,9 +9,7 @@ import InvoiceGenerator from '../components/InvoiceGenerator/InvoiceGenerator';
 import { Toast, ToastType } from '../components/Toast';
 import RecordPaymentModal from '../components/Invoice/RecordPaymentModal';
 import { useData } from "../contexts/DataContext";
-import { useSubscription } from "../contexts/SubscriptionContext";
 import { usePersona } from "../contexts/PersonaContext";
-import { LimitReachedModal } from "../components/shared/LimitReachedModal";
 
 const STATUS_COLORS: Record<string, string> = {
   paid: "bg-status-success-bg text-status-success border-status-success/10",
@@ -54,9 +52,6 @@ export function Invoices() {
   // Toast State
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
-  // Plan Limit State
-  const [showLimitModal, setShowLimitModal] = useState(false);
-  const { isLimitReached } = useSubscription();
 
   const showToast = (message: string, type: ToastType = 'info') => {
     setToast({ message, type });
@@ -335,13 +330,7 @@ export function Invoices() {
         </div>
 
         <button
-          onClick={() => {
-            if (isLimitReached('invoices')) {
-              setShowLimitModal(true);
-            } else {
-              setShowCreate(true);
-            }
-          }}
+          onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-dark text-white text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300"
         >
           <Plus className="w-5 h-5" /> New Invoice
@@ -1035,14 +1024,7 @@ export function Invoices() {
         )
       }
 
-      {/* Limit Reached Modal */}
-      <LimitReachedModal
-        isOpen={showLimitModal}
-        onClose={() => setShowLimitModal(false)}
-        feature="invoices"
-        title="Invoice Limit Reached"
-        description="You've reached the 5-invoice limit on our Free plan. Upgrade to Pro for unlimited invoices and advanced financial automation."
-      />
+
 
       {
         toast && (

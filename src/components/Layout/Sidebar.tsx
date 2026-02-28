@@ -201,8 +201,8 @@ export function Sidebar() {
           <div className="text-left overflow-hidden">
             <div className="flex items-center gap-1.5">
               <span className="text-[15px] font-bold text-white tracking-tight block">Malika</span>
-              {planStatus?.plan_tier === 'pro' ? (
-                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-400 uppercase tracking-tighter animate-pulse">PRO</span>
+              {planStatus?.plan_tier !== 'starter' ? (
+                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-400 uppercase tracking-tighter animate-pulse">{planStatus?.plan_tier}</span>
               ) : (
                 <span className="px-1 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-[8px] font-black text-teal-400/80 uppercase tracking-tighter">v2.5</span>
               )}
@@ -324,12 +324,12 @@ export function Sidebar() {
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Protocol Usage</span>
                   <div className="flex items-center gap-1.5">
-                    {planStatus?.plan_tier === 'pro' && <Zap className="w-3 h-3 text-amber-400 fill-amber-400/20" />}
-                    <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter ${planStatus?.plan_tier === 'pro'
+                    {planStatus?.plan_tier !== 'starter' && <Zap className="w-3 h-3 text-amber-400 fill-amber-400/20" />}
+                    <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter ${planStatus?.plan_tier !== 'starter'
                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
                       : 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
                       }`}>
-                      {planStatus?.plan_tier || 'free'}
+                      {planStatus?.plan_name || 'starter'}
                     </span>
                   </div>
                 </div>
@@ -357,8 +357,8 @@ export function Sidebar() {
                   </div>
                 </div>
 
-                {/* Upgrade CTA (Free only) */}
-                {(planStatus?.plan_tier === 'free' || !planStatus) && (
+                {/* Upgrade CTA (Starter only) */}
+                {(planStatus?.plan_tier === 'starter' || !planStatus) && (
                   <div className="space-y-3">
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-[10px] text-gray-400">
@@ -376,12 +376,12 @@ export function Sidebar() {
                       className="flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-gradient-to-br from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white text-[11px] font-bold rounded-xl shadow-lg shadow-teal-500/10 border border-white/10 transition-all active:scale-[0.98] group/btn"
                     >
                       <Zap className="w-3.5 h-3.5 text-white animate-pulse" />
-                      <span>INITIALIZE PRO</span>
+                      <span>INITIALIZE UPGRADE</span>
                     </NavLink>
                   </div>
                 )}
 
-                {planStatus?.plan_tier === 'pro' && (
+                {planStatus?.plan_tier !== 'starter' && (
                   <div className="pt-2 border-t border-white/[0.05] flex items-center gap-2">
                     <ShieldCheck className="w-3 h-3 text-emerald-500" />
                     <span className="text-[10px] font-medium text-gray-500">System Priority Active</span>
@@ -403,7 +403,7 @@ export function Sidebar() {
           >
             <div className="py-1.5">
               <NavLink
-                to="/profile"
+                to="/dashboard/profile"
                 onClick={() => setUserMenuOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-all duration-150 ${isActive
@@ -421,7 +421,7 @@ export function Sidebar() {
               </NavLink>
 
               <NavLink
-                to="/settings"
+                to="/dashboard/settings"
                 onClick={() => setUserMenuOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-all duration-150 ${isActive
@@ -433,7 +433,7 @@ export function Sidebar() {
                 {({ isActive }) => (
                   <>
                     <Settings className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-teal-400" : "text-gray-500"}`} strokeWidth={1.8} />
-                    <span>Settings</span>
+                    <span>Organization Settings</span>
                   </>
                 )}
               </NavLink>

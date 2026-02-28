@@ -2,19 +2,39 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useAuth } from './AuthContext';
 import { api } from '../api/client';
 
-export type PlanTier = 'free' | 'pro';
+// ═══════════════════════════════════════════════════════════════════════
+//  Types
+// ═══════════════════════════════════════════════════════════════════════
+
+export type PlanTier = 'starter' | 'freelancer' | 'smb' | 'ca_pro' | 'enterprise';
 
 interface UsageStats {
     current: number;
     limit: number;
 }
 
+interface PlanFeatures {
+    email_invoices: boolean;
+    bulk_email: boolean;
+    pdf_download: boolean;
+    reports: string;       // 'basic' | 'full' | 'custom'
+    white_label: boolean;
+    multi_client: boolean;
+    priority_support: boolean;
+    inventory: string | boolean;    // false | 'basic' | 'full'
+}
+
 interface PlanStatus {
     plan_tier: PlanTier;
+    plan_name: string;
+    plan_label: string;
     usage: {
         invoices: UsageStats;
         ai_requests: UsageStats;
+        products: { limit: number };
+        customers: { limit: number };
     };
+    features: PlanFeatures;
 }
 
 interface SubscriptionContextType {
@@ -22,6 +42,8 @@ interface SubscriptionContextType {
     loading: boolean;
     refreshPlanStatus: () => Promise<void>;
     isLimitReached: (feature: 'invoices' | 'ai_requests') => boolean;
+    hasFeature: (feature: keyof PlanFeatures) => boolean;
+    tierName: string;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
@@ -29,7 +51,13 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
     loading: true,
     refreshPlanStatus: async () => { },
     isLimitReached: () => false,
+    hasFeature: () => false,
+    tierName: 'Starter',
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Provider
+// ═══════════════════════════════════════════════════════════════════════
 
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { session, orgId } = useAuth();
@@ -60,15 +88,26 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const isLimitReached = (feature: 'invoices' | 'ai_requests') => {
         if (!planStatus) return false;
         const usage = planStatus.usage[feature];
+        if (!usage || usage.limit === Infinity || usage.limit === null) return false;
         return usage.current >= usage.limit;
     };
+
+    const hasFeature = (feature: keyof PlanFeatures) => {
+        if (!planStatus) return false;
+        const val = planStatus.features[feature];
+        return val === true || val === 'full' || val === 'custom' || val === 'basic';
+    };
+
+    const tierName = planStatus?.plan_name || 'Starter';
 
     return (
         <SubscriptionContext.Provider value={{
             planStatus,
             loading,
             refreshPlanStatus: fetchPlanStatus,
-            isLimitReached
+            isLimitReached,
+            hasFeature,
+            tierName,
         }}>
             {children}
         </SubscriptionContext.Provider>

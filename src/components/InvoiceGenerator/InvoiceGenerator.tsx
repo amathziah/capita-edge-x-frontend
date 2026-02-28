@@ -1,20 +1,18 @@
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
 import {
     Download, Printer, X, Settings, Mail, Loader2, Save, AlertCircle
 } from "lucide-react";
-import { pdf } from '@react-pdf/renderer';
-import { Toast, ToastType } from '../Toast';
-import InvoicePDF from '../PDF/InvoicePDF';
-import { dataService } from '../../services/dataService';
-import { Invoice, InvoiceItem, Product } from '../../types';
+import { Toast } from '../Toast';
+import { Invoice, InvoiceItem } from '../../types';
 import { usePersona } from "../../contexts/PersonaContext";
-import { SellerErrors } from './sections/SellerSection';
-import { BuyerErrors } from './sections/BuyerSection';
-import { HeaderErrors } from './sections/InvoiceHeader';
 
 // ─── Local Modules ─────────────────────────────────────────────────────
-import { CURRENCIES, TAX_LABELS, Seller, Buyer, InvoiceMeta } from './constants';
+import { CURRENCIES, TAX_LABELS, InvoiceMeta, Buyer } from './constants';
 import InputField from './InputField';
+
+// ─── Hooks ─────────────────────────────────────────────────────────────
+import { useInvoiceState } from './hooks/useInvoiceState';
+import { useInvoiceActions } from './hooks/useInvoiceActions';
 
 // ─── Section Components ────────────────────────────────────────────────
 import InvoiceHeader from './sections/InvoiceHeader';
@@ -43,297 +41,38 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
     const { businessType: _bt } = usePersona();
     const businessType = _bt ?? 'solopreneur';
 
-    // ─── Global Settings ───────────────────────────────────────────────
-    const [currency, setCurrency] = useState(CURRENCIES[0]);
-    const [taxLabel, setTaxLabel] = useState('GST');
-    const [logo, setLogo] = useState<string | null>(null);
+    // ─── Hooks ─────────────────────────────────────────────────────────
+    const state = useInvoiceState({ businessType, editingInvoice, initialData });
+    const actions = useInvoiceActions(state, onClose);
 
-    // ─── Invoice Data ──────────────────────────────────────────────────
-    const [seller, setSeller] = useState<Seller>({ name: "", phone: "", email: "", address: "", taxId: "", upiId: "" });
-    const [buyer, setBuyer] = useState<Buyer>({ name: "", phone: "", email: "", address: "", taxId: "" });
-    const [notes, setNotes] = useState<string>("");
-    const [meta, setMeta] = useState<InvoiceMeta>({
-        number: `INV-${Date.now()}`,
-        date: new Date().toISOString().split("T")[0],
-        dueDate: new Date().toISOString().split("T")[0],
-    });
+    const {
+        currency, setCurrency, taxLabel, setTaxLabel, logo,
+        seller, setSeller, buyer, setBuyer, notes, setNotes, meta, setMeta,
+        projectName, setProjectName, shippingAddress, setShippingAddress,
+        orderNumber, setOrderNumber,
+        isGstRegistered, setIsGstRegistered,
+        isInterState, setIsInterState,
+        authorizedSignatory, setAuthorizedSignatory,
+        placeOfSupply, setPlaceOfSupply, reverseCharge, setReverseCharge,
+        deliveryState, setDeliveryState, dispatchDate, setDispatchDate,
+        courierTracking, setCourierTracking,
+        items, setItems, taxRate, setTaxRate, shipping, setShipping,
+        subtotal, taxAmount, total,
+        caIsInterState, ecomIsInterState,
+        activeAction, loading,
+        isEmailModalOpen, setIsEmailModalOpen, emailTo, setEmailTo,
+        toast, setToast, showToast,
+        sellerErrors, buyerErrors, headerErrors, itemErrors,
+        clearErrors,
+        products, focusedItemIndex, setFocusedItemIndex,
+        customers, isBuyerFocused, setIsBuyerFocused,
+        bottomRef,
+    } = state;
 
-    // ─── Persona-Specific State ────────────────────────────────────────
-    const [projectName, setProjectName] = useState("");
-    const [shippingAddress, setShippingAddress] = useState("");
-    const [orderNumber, setOrderNumber] = useState("");
-
-    // Solopreneur
-    const [isGstRegistered, setIsGstRegistered] = useState(false);
-
-    // Agency
-    const [isInterState, setIsInterState] = useState(false);
-    const [authorizedSignatory, setAuthorizedSignatory] = useState("");
-
-    // CA
-    const [placeOfSupply, setPlaceOfSupply] = useState('27 - Maharashtra');
-    const [reverseCharge, setReverseCharge] = useState(false);
-    const caIsInterState = businessType === 'ca' && placeOfSupply && seller.taxId
-        ? placeOfSupply.substring(0, 2) !== (seller.taxId.substring(0, 2) || '')
-        : false;
-
-    // Ecommerce
-    const [deliveryState, setDeliveryState] = useState('');
-    const [dispatchDate, setDispatchDate] = useState('');
-    const [courierTracking, setCourierTracking] = useState('');
-    const ecomIsInterState = businessType === 'ecommerce' && deliveryState && seller.taxId
-        ? deliveryState.substring(0, 2) !== (seller.taxId.substring(0, 2) || '')
-        : false;
-
-    // ─── Items & Totals ────────────────────────────────────────────────
-    const [items, setItems] = useState<InvoiceItem[]>([
-        { description: "", quantity: 1, unit: (businessType === 'agency' || businessType === 'solopreneur') ? 'Hours' : 'Qty', price: 0, discount: 0 },
-    ]);
-    const [taxRate, setTaxRate] = useState<number>(businessType === 'solopreneur' ? 0 : 18);
-    const [shipping, setShipping] = useState<number>(0);
-
-    const subtotal = items.reduce((acc, i) => {
-        const lineTotal = i.quantity * i.price;
-        const discountAmt = (lineTotal * (i.discount || 0)) / 100;
-        return acc + (lineTotal - discountAmt);
-    }, 0);
-    const taxAmount = subtotal * (taxRate / 100);
-    const total = subtotal + taxAmount + shipping;
-
-    // ─── UI State ──────────────────────────────────────────────────────
-    const [activeAction, setActiveAction] = useState<'saving' | 'downloading' | 'emailing' | 'printing' | 'uploading' | null>(null);
-    const loading = activeAction !== null;
-    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-    const [emailTo, setEmailTo] = useState("");
-    const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-
-    // ─── Validation Errors ─────────────────────────────────────────────
-    const [sellerErrors, setSellerErrors] = useState<SellerErrors>({});
-    const [buyerErrors, setBuyerErrors] = useState<BuyerErrors>({});
-    const [headerErrors, setHeaderErrors] = useState<HeaderErrors>({});
-    const [itemErrors, setItemErrors] = useState<Record<number, string>>({});
-
-    // Inventory + Customer
-    const [products, setProducts] = useState<Product[]>([]);
-    const [focusedItemIndex, setFocusedItemIndex] = useState<number | null>(null);
-    const [customers, setCustomers] = useState<any[]>([]);
-    const [isBuyerFocused, setIsBuyerFocused] = useState(false);
-
-    const bottomRef = useRef<HTMLDivElement | null>(null);
-
-    const showToast = (message: string, type: ToastType = 'info') => {
-        setToast({ message, type });
-    };
-
-    // ─── Effects ───────────────────────────────────────────────────────
-    useEffect(() => {
-        if (editingInvoice) {
-            setMeta({
-                number: editingInvoice.invoiceNumber,
-                date: editingInvoice.date || new Date().toISOString().split("T")[0],
-                dueDate: editingInvoice.dueDate || new Date().toISOString().split("T")[0],
-            });
-            setSeller(editingInvoice.seller || { name: "", phone: "", email: "", address: "", taxId: "", upiId: "" });
-            setBuyer(editingInvoice.buyer || { name: "", phone: "", email: "", address: "", taxId: "" });
-            if (editingInvoice.notes) setNotes(editingInvoice.notes);
-            setItems(editingInvoice.items?.length ? (editingInvoice.items as InvoiceItem[]).map((i: InvoiceItem) => ({ ...i, unit: i.unit || 'Qty' })) : [{ description: "", quantity: 1, unit: businessType === 'agency' ? 'Hours' : 'Qty', price: 0, discount: 0 }]);
-            setTaxRate(editingInvoice.taxRate || 18);
-            setShipping(editingInvoice.shipping || 0);
-            setTaxLabel(editingInvoice.taxType || 'GST');
-            if (editingInvoice.projectName) setProjectName(editingInvoice.projectName);
-            if (editingInvoice.shippingAddress) setShippingAddress(editingInvoice.shippingAddress);
-            if (editingInvoice.orderNumber) setOrderNumber(editingInvoice.orderNumber);
-        } else {
-            dataService.generateInvoiceNumber().then(num => {
-                setMeta(prev => ({ ...prev, number: num }));
-            }).catch(err => console.error("Failed to fetch next invoice number", err));
-        }
-
-        dataService.getSettings().then(settings => {
-            if (settings.logoFilename) setLogo(dataService.getLogoUrl(settings.logoFilename));
-            if (!editingInvoice) {
-                setSeller({
-                    name: settings.businessName || "",
-                    phone: settings.phone || "",
-                    email: settings.email || "",
-                    address: settings.address || "",
-                    taxId: settings.companyTaxId || "",
-                    upiId: settings.upiId || ""
-                });
-            }
-        }).catch(e => console.error("Failed to load settings", e));
-
-        dataService.getProducts().then(setProducts).catch(err => console.error("Failed to fetch products", err));
-        dataService.getCustomers().then(setCustomers).catch(err => console.error("Failed to fetch customers", err));
-    }, [editingInvoice]);
-
-    useEffect(() => {
-        if (initialData) {
-            if (initialData.buyer) setBuyer(prev => ({ ...prev, ...initialData.buyer }));
-            if (initialData.items && initialData.items.length > 0) {
-                setItems(initialData.items.map(i => ({ ...i, unit: i.unit || 'Qty' })));
-            }
-        }
-    }, [initialData]);
-
-    useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [items]);
-
-    // ─── Handlers ──────────────────────────────────────────────────────
-    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setActiveAction('uploading');
-            try {
-                const result = await dataService.uploadLogo(file);
-                setLogo(result.url);
-            } catch (error) {
-                console.error("Logo upload failed", error);
-                const reader = new FileReader();
-                reader.onloadend = () => setLogo(reader.result as string);
-                reader.readAsDataURL(file);
-            } finally {
-                setActiveAction(null);
-            }
-        }
-    };
-
-    const buildInvoiceData = () => ({
-        id: editingInvoice?.id,
-        invoiceNumber: meta.number,
-        date: meta.date,
-        dueDate: meta.dueDate,
-        seller, buyer, items,
-        subtotal, taxAmount,
-        taxType: taxLabel,
-        taxRate, discount: 0, shipping, total,
-        status: editingInvoice?.status || 'draft' as const,
-        notes: notes || editingInvoice?.notes || '',
-        projectName, shippingAddress, orderNumber
-    });
-
-    /** Validate all required fields. Returns true if valid. */
-    const validateForm = (): boolean => {
-        const sErr: SellerErrors = {};
-        const bErr: BuyerErrors = {};
-        const hErr: HeaderErrors = {};
-        const iErr: Record<number, string> = {};
-        let errorCount = 0;
-
-        // Seller
-        if (!seller.name.trim()) { sErr.name = 'Business name is required'; errorCount++; }
-        if ((businessType === 'ca' || businessType === 'agency') && !seller.taxId.trim()) {
-            sErr.taxId = `${taxLabel} ID is required for ${businessType === 'ca' ? 'CA' : 'Agency'} invoices`;
-            errorCount++;
-        }
-
-        // Buyer
-        if (!buyer.name.trim()) { bErr.name = 'Client name is required'; errorCount++; }
-
-        // Meta
-        if (!meta.date) { hErr.date = 'Invoice date is required'; errorCount++; }
-
-        // Items
-        items.forEach((item, idx) => {
-            if (!item.description.trim()) { iErr[idx] = 'Description is required'; errorCount++; }
-            else if (item.price <= 0) { iErr[idx] = 'Price must be greater than 0'; errorCount++; }
-            else if (item.quantity <= 0) { iErr[idx] = 'Quantity must be at least 1'; errorCount++; }
-        });
-
-        setSellerErrors(sErr);
-        setBuyerErrors(bErr);
-        setHeaderErrors(hErr);
-        setItemErrors(iErr);
-
-        if (errorCount > 0) {
-            showToast(`Please fix ${errorCount} error${errorCount > 1 ? 's' : ''} before submitting.`, 'error');
-            return false;
-        }
-        return true;
-    };
-
-    /** Clear all errors (called when user starts editing after a failed validation) */
-    const clearErrors = () => {
-        if (Object.keys(sellerErrors).length || Object.keys(buyerErrors).length || Object.keys(headerErrors).length || Object.keys(itemErrors).length) {
-            setSellerErrors({});
-            setBuyerErrors({});
-            setHeaderErrors({});
-            setItemErrors({});
-        }
-    };
-
-    const handleSaveAndDownload = async () => {
-        if (!validateForm()) return;
-        setActiveAction('downloading');
-        try {
-            const invoiceData = buildInvoiceData();
-            await dataService.saveInvoice(invoiceData as any);
-            const latestSettings = await dataService.getSettings();
-            const blob = await pdf(<InvoicePDF invoice={invoiceData as any} settings={latestSettings} logoUrl={logo} />).toBlob();
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `Invoice_${meta.number}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast("Invoice saved & PDF downloaded!", 'success');
-            setTimeout(() => { if (onClose) onClose(); }, 1500);
-        } catch (error) {
-            console.error("Failed to save/download", error);
-            showToast("Failed to generate PDF", 'error');
-            setActiveAction(null);
-        }
-    };
-
-    const handleSaveOnly = async () => {
-        if (!validateForm()) return;
-        setActiveAction('saving');
-        try {
-            await dataService.saveInvoice(buildInvoiceData() as any);
-            showToast("Invoice saved successfully!", 'success');
-            setTimeout(() => { if (onClose) onClose(); }, 1000);
-        } catch (error) {
-            console.error("Failed to save", error);
-            showToast("Failed to save invoice", 'error');
-            setActiveAction(null);
-        }
-    };
-
-    const handlePrint = async () => {
-        setActiveAction('printing');
-        setTimeout(() => { window.print(); setActiveAction(null); }, 800);
-    };
-
-    const handleEmailClick = () => {
-        setEmailTo(buyer.email || "");
-        setIsEmailModalOpen(true);
-    };
-
-    const handleSendEmail = async () => {
-        if (!emailTo) return;
-        if (!validateForm()) return;
-        setActiveAction('emailing');
-        try {
-            const invoiceData = buildInvoiceData();
-            const { id } = await dataService.saveInvoice(invoiceData as any);
-            const latestSettings = await dataService.getSettings();
-            const blob = await pdf(<InvoicePDF invoice={invoiceData as any} settings={latestSettings} logoUrl={logo} />).toBlob();
-            if (!latestSettings.smtp_user || !latestSettings.smtp_pass) {
-                showToast("Email service not configured. Please go to Settings to connect your Gmail.", 'error');
-                setActiveAction(null);
-                return;
-            }
-            await dataService.sendInvoiceEmail(id, emailTo, blob);
-            showToast("Invoice sent successfully!", 'success');
-            setIsEmailModalOpen(false);
-            setEmailTo('');
-        } catch (error) {
-            console.error("Failed to send email", error);
-            showToast("Failed to send email", 'error');
-        } finally {
-            setActiveAction(null);
-        }
-    };
+    const {
+        handleLogoUpload, handleSaveAndDownload, handleSaveOnly,
+        handlePrint, handleEmailClick, handleSendEmail,
+    } = actions;
 
     // ═══════════════════════════════════════════════════════════════════
     //  Render
@@ -460,7 +199,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                     deliveryState={deliveryState} setDeliveryState={setDeliveryState} ecomIsInterState={ecomIsInterState}
                 />
 
-                <div ref={bottomRef} />
+                <div ref={bottomRef as React.RefObject<HTMLDivElement>} />
             </div>
 
             {/* ─── Footer Actions ─── */}
