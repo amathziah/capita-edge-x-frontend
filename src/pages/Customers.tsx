@@ -315,8 +315,7 @@ export function Customers() {
                 {customerInsights ? (
                   <>
                     {(() => {
-                      const healthScore = customerInsights.healthScore;
-                      const churnRisk = healthScore < 50 ? 80 : 15;
+                      const churnRisk = customerInsights.churnRisk;
                       const nextPurchase = customerInsights.totalInvoices > 0 ? "Expected in ~14 days" : "No data available";
                       return (
                         <>

@@ -13,17 +13,14 @@ import { Link } from 'react-router-dom';
 function Blob({ className, color, delay = 0 }: { className: string; color: string; delay?: number }) {
     return (
         <motion.div
-            className={`absolute rounded-[60%_40%_30%_70%/60%_30%_70%_40%] pointer-events-none ${className}`}
-            style={{ background: color }}
+            className={`absolute rounded-full pointer-events-none ${className}`}
+            style={{ background: color, willChange: 'transform' }}
             animate={{
-                borderRadius: [
-                    '60% 40% 30% 70% / 60% 30% 70% 40%',
-                    '30% 60% 70% 40% / 50% 60% 30% 60%',
-                    '55% 45% 50% 65% / 40% 70% 55% 35%',
-                    '60% 40% 30% 70% / 60% 30% 70% 40%',
-                ],
+                x: [0, 40, -30, 0],
+                y: [0, -50, 30, 0],
+                scale: [1, 1.1, 0.9, 1],
             }}
-            transition={{ duration: 22, delay, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 18, delay, repeat: Infinity, ease: 'easeInOut' }}
         />
     );
 }
@@ -530,10 +527,12 @@ export const Landing: React.FC = () => {
                             ))}
                         </motion.div>
                     </div>
+                </motion.div>
+                <div className="max-w-6xl mx-auto px-6 relative z-10">
                     <motion.div id="product" initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.6 }}>
                         <DashboardMockup />
                     </motion.div>
-                </motion.div>
+                </div>
             </section>
 
             {/* STATS */}
@@ -894,6 +893,6 @@ export const Landing: React.FC = () => {
                     <div className="text-slate-600 text-[11px] font-semibold">© {new Date().getFullYear()} Laboratory Malika, Inc.</div>
                 </div>
             </footer>
-        </div>
+        </div >
     );
 };

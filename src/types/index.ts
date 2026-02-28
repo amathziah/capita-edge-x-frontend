@@ -189,6 +189,7 @@ export interface CustomerInsights {
     draft: number;
   };
   healthScore: number;
+  churnRisk: number;
   healthLabel: 'VIP' | 'Active' | 'Regular' | 'At Risk' | 'New';
 }
 

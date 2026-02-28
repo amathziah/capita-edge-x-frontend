@@ -93,6 +93,10 @@ const CalendarEvent = memo(({ event }: EventProps<CalendarInvoiceEvent>) => {
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
+const CALENDAR_VIEWS = ['month', 'week'] as any;
+const CALENDAR_COMPONENTS = { event: CalendarEvent };
+const CALENDAR_STYLE = { height: 620 };
+
 export function LiquidityCalendar() {
     const { invoices, stats: backendStats, loading, refreshData } = useData();
 
@@ -253,8 +257,9 @@ export function LiquidityCalendar() {
         <div className="relative h-full w-full overflow-y-auto">
             {/* Background */}
             <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_#e6fffa_0%,_#f0fdfa_45%,_#f5fffe_100%)]" />
-            <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-teal-200/40 blur-3xl -z-10" />
-            <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-teal-200/30 blur-[110px] -z-10" />
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_#e6fffa_0%,_#f0fdfa_45%,_#f5fffe_100%)]" />
+            <div className="absolute -top-16 -right-16 h-64 w-64 -z-10 pointer-events-none" style={{ background: 'radial-gradient(50% 50% at 50% 50%, rgba(153,246,228,0.4) 0%, transparent 100%)' }} />
+            <div className="absolute bottom-10 left-10 h-72 w-72 -z-10 pointer-events-none" style={{ background: 'radial-gradient(50% 50% at 50% 50%, rgba(153,246,228,0.3) 0%, transparent 100%)' }} />
 
             <div className="p-6 lg:p-10">
                 {/* ─── Header ───────────────────────────────────────────────────── */}
@@ -555,7 +560,7 @@ export function LiquidityCalendar() {
                     transition={{ duration: 0.4, delay: 0.2 }}
                 >
                     <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-teal-100/60 shadow-sm p-4 md:p-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-100/20 rounded-full blur-3xl -z-10 transform translate-x-1/2 -translate-y-1/2" />
+                        <div className="absolute top-0 right-0 w-64 h-64 -z-10 pointer-events-none transform translate-x-1/2 -translate-y-1/2" style={{ background: 'radial-gradient(50% 50% at 50% 50%, rgba(204,251,241,0.5) 0%, transparent 100%)' }} />
 
                         <style>{`
               .rbc-calendar { font-family: 'Manrope', sans-serif; }
@@ -583,12 +588,12 @@ export function LiquidityCalendar() {
                             events={events}
                             startAccessor="start"
                             endAccessor="end"
-                            style={{ height: 620 }}
-                            views={['month', 'week']}
+                            style={CALENDAR_STYLE}
+                            views={CALENDAR_VIEWS}
                             defaultView="month"
                             onSelectEvent={handleSelectEvent}
                             eventPropGetter={eventStyleGetter}
-                            components={{ event: CalendarEvent }}
+                            components={CALENDAR_COMPONENTS}
                             popup
                             selectable={false}
                         />
