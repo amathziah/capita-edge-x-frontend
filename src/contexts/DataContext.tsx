@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { Invoice, Payment, Customer, Expense, Product, ProductPerformance, ComplianceTask, DashboardStats } from '../types';
 import { dataService } from '../services/dataService';
+import { useAuth } from './AuthContext';
 
 interface DataState {
     invoices: Invoice[];
@@ -39,6 +40,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         lastFetched: null,
     });
     const [loading, setLoading] = useState(false);
+    const { orgId } = useAuth();
+
+    // Clear state when user logs out or switches org
+    useEffect(() => {
+        if (!orgId) {
+            setState({
+                invoices: [],
+                payments: [],
+                customers: [],
+                expenses: [],
+                products: [],
+                performance: [],
+                complianceTasks: [],
+                stats: { total_customers: 0 } as DashboardStats,
+                reports: [],
+                lastFetched: null,
+            });
+        }
+    }, [orgId]);
 
     const refreshData = useCallback(async (force = false) => {
         const now = Date.now();

@@ -82,8 +82,8 @@ export function Customers() {
   // ── Filtered & Sorted ─────────────────────────────────────────────────
   const filteredCustomers = useMemo(() => {
     let result = customers.filter(c =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.phone?.includes(searchTerm) ||
       c.tags?.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
     );
