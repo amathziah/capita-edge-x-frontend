@@ -3,18 +3,19 @@ import { PersonaConfig } from './types';
 const ecommerceConfig: PersonaConfig = {
     type: 'ecommerce',
 
-    // Defaults
+    // // Defaults
     defaultUnit: 'Qty',
     defaultTaxRate: 18,
 
-    // Item Table
-    showProductAutocomplete: true,
-    showSacColumn: false,
-    showHsnColumn: true,
-    showSkuColumn: true,
-    showServicePeriod: false,
+    // // Header fields
+    showPlaceOfSupply: true,
+    showReverseCharge: false,
+    showProjectName: false,
+    showShippingAddress: true,
+    showOrderNumber: true,
+    showDispatchDate: true,
 
-    // Seller
+    // // Seller fields
     showGstToggle: false,
     showTagline: false,
     showPanField: false,
@@ -22,25 +23,36 @@ const ecommerceConfig: PersonaConfig = {
     showBankDetails: false,
     taxIdRequired: false,
 
-    // Header
-    showPlaceOfSupply: false,
-    showReverseCharge: false,
-    showProjectName: false,
-    showShippingAddress: true,
-    showOrderNumber: true,
-    showDispatchDate: true,
+    // // Buyer fields
+    buyerTaxIdRequired: false,
 
-    // Notes & Extras
+    // // Line items
+    showProductAutocomplete: true,
+    showSacColumn: false,
+    showHsnColumn: true,
+    showSkuColumn: true,
+    showServicePeriod: false,
+    showServicePeriodPerLine: false,
+    showTaxableValueColumn: false,
+    showGstColumn: false,
+    inventoryEnabled: true,
+
+    // // Tax behavior
+    interStateMode: 'auto-delivery-state',
+    showTaxPlaceholderUntilStateSelected: true,
+    showTDSToggle: false,
+    showTDSInTotals: false,
+    showShippingInTotals: true,
+
+    // // Payment & notes
     showCourierTracking: true,
     showAuthorizedSignatory: false,
     showUpiPaymentBox: false,
 
-    // Tax
-    interStateMode: 'auto-delivery-state',
-
-    // Buyer
-    buyerNamePlaceholder: 'Client Business Name',
+    // // Labels & placeholders
+    buyerNamePlaceholder: 'Buyer / Company Name',
     buyerTaxIdLabel: 'Buyer GSTIN',
+    placeOfSupplyLabel: 'Delivery State',
 };
 
 export default ecommerceConfig;

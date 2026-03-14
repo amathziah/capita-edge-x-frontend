@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await supabase.auth.signOut();
         localStorage.removeItem('sb-access-token');
         localStorage.removeItem('sb-org-id');
-        localStorage.removeItem('malika-persona');
+        localStorage.removeItem('capita-persona');
         setOrgId(null);
     };
 

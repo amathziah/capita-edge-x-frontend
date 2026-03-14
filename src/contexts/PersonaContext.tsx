@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from './AuthContext';
 
-export type BusinessType = 'solopreneur' | 'agency' | 'saas' | 'ecommerce' | 'ca';
+export type BusinessType = 'solopreneur' | 'services_firm' | 'subscription' | 'ecommerce' | 'ca';
 
 interface PersonaContextType {
     businessType: BusinessType | null;
@@ -20,13 +20,8 @@ const PersonaContext = createContext<PersonaContextType>({
 
 export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
-    const [businessType, setBusinessType] = useState<BusinessType | null>(() => {
-        return localStorage.getItem('malika-persona') as BusinessType | null;
-    });
-    const [loading, setLoading] = useState(() => {
-        // If we have a cached persona, we can start with loading: false for optimistic rendering
-        return !localStorage.getItem('malika-persona');
-    });
+    const [businessType, setBusinessType] = useState<BusinessType | null>(null);
+    const [loading, setLoading] = useState(true);
 
     const fetchPersona = async (userId: string) => {
         try {
@@ -42,10 +37,8 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
             } else if (data && data.business_type) {
                 const type = data.business_type as BusinessType;
                 setBusinessType(type);
-                localStorage.setItem('malika-persona', type);
             } else {
                 setBusinessType(null);
-                localStorage.removeItem('malika-persona');
             }
         } catch (err) {
             console.error('Error fetching persona:', err);
@@ -105,7 +98,6 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
             console.log('[PersonaContext] Success.');
             setBusinessType(newType);
-            localStorage.setItem('malika-persona', newType);
         } catch (err: any) {
             console.error('[PersonaContext] Final Error:', err);
             throw err;

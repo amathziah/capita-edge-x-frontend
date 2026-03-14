@@ -241,21 +241,21 @@ export function Inventory() {
                 <>
                   <span className="text-primary">{user.email.split('@')[0].split(/[._-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}'s</span>{' '}
                   {businessType === 'solopreneur' ? 'Offerings' :
-                    businessType === 'agency' ? 'Service Catalog' :
-                      businessType === 'saas' ? 'Products' :
+                    businessType === 'services_firm' ? 'Service Catalog' :
+                      businessType === 'subscription' ? 'Products' :
                         'Inventory'}
                 </>
               ) : (
                 businessType === 'solopreneur' ? 'My Offerings' :
-                  businessType === 'agency' ? 'Service Catalog' :
-                    businessType === 'saas' ? 'Product Tiers' :
+                  businessType === 'services_firm' ? 'Service Catalog' :
+                    businessType === 'subscription' ? 'Product Tiers' :
                       'Inventory Intelligence'
               )}
             </h2>
             <p className="text-gray-600 mt-1.5">
               {businessType === 'solopreneur' ? 'Your bespoke services and offerings in one unified workspace.' :
-                businessType === 'agency' ? 'Your high-velocity service catalog architecture & operational health.' :
-                  businessType === 'saas' ? 'Your product tiers, subscriptions, and platform items with precision.' :
+                businessType === 'services_firm' ? 'Your high-velocity service catalog architecture & operational health.' :
+                  businessType === 'subscription' ? 'Your product tiers, subscriptions, and platform items with precision.' :
                     'Your high-velocity operational tracking & proactive health monitoring.'}
             </p>
           </div>
@@ -276,10 +276,10 @@ export function Inventory() {
       </div>
 
       {/* Insights Widget */}
-      {businessType !== 'agency' && <InventoryInsights />}
+      {businessType !== 'services_firm' && <InventoryInsights />}
 
       {/* KPI Cards */}
-      {businessType !== 'agency' && (
+      {businessType !== 'services_firm' && (
         < div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5" >
           {
             [
@@ -392,7 +392,7 @@ export function Inventory() {
               <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary-dark opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative flex items-center gap-2 text-sm font-black tracking-wide">
                 <Package className="w-4 h-4" />
-                {businessType === 'agency' ? 'Add Item' : 'Add Product'}
+                {businessType === 'services_firm' ? 'Add Item' : 'Add Product'}
               </div>
             </button>
             <button
@@ -418,19 +418,19 @@ export function Inventory() {
             <thead className="bg-white/50 backdrop-blur sticky top-0 z-10">
               <tr>
                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">
-                  {['solopreneur', 'agency'].includes(businessType as string) ? 'Service / Offering' :
-                    businessType === 'saas' ? 'Feature / Tier' : 'Product Line'}
+                  {['solopreneur', 'services_firm'].includes(businessType as string) ? 'Service / Offering' :
+                    businessType === 'subscription' ? 'Feature / Tier' : 'Product Line'}
                 </th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Cataloging</th>
                 {invSettings.inv_show_cost_column === 'true' && <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">
-                  {['solopreneur', 'agency'].includes(businessType as string) ? 'Base Cost' :
-                    businessType === 'saas' ? 'Unit Cost' : 'COGS'}
+                  {['solopreneur', 'services_firm'].includes(businessType as string) ? 'Base Cost' :
+                    businessType === 'subscription' ? 'Unit Cost' : 'COGS'}
                 </th>}
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">
-                  {businessType === 'saas' ? 'Tier Price' : 'Unit Price'}
+                  {businessType === 'subscription' ? 'Tier Price' : 'Unit Price'}
                 </th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">
-                  {['solopreneur', 'agency', 'saas'].includes(businessType as string) ? 'Availability' : 'Inventory'}
+                  {['solopreneur', 'services_firm', 'subscription'].includes(businessType as string) ? 'Availability' : 'Inventory'}
                 </th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Market Value</th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Health Score</th>
@@ -490,9 +490,9 @@ export function Inventory() {
                     <td className="px-6 py-5 text-center">
                       <div className="inline-flex flex-col items-center">
                         <div className="font-black text-sm text-gray-900 leading-none">
-                          {item.isInventoryTracked && (businessType !== 'agency' || item.itemType !== 'service') ? item.stock : '∞'}
+                          {item.isInventoryTracked && (businessType !== 'services_firm' || item.itemType !== 'service') ? item.stock : '∞'}
                         </div>
-                        {(businessType !== 'agency' || item.itemType !== 'service') && (
+                        {(businessType !== 'services_firm' || item.itemType !== 'service') && (
                           <>
                             <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">{item.unit}</div>
                             {item.isInventoryTracked && stockPct !== null && (
@@ -508,7 +508,7 @@ export function Inventory() {
                             )}
                           </>
                         )}
-                        {businessType === 'agency' && item.itemType === 'service' && (
+                        {businessType === 'services_firm' && item.itemType === 'service' && (
                           <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1">Unlimited</div>
                         )}
                       </div>
@@ -813,17 +813,17 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData, businessType
         description: '',
         price: 0,
         stock: 0,
-        unit: businessType === 'agency' ? 'hr' : 'pcs',
+        unit: businessType === 'services_firm' ? 'hr' : 'pcs',
         minStock: 10,
         sku: '',
-        category: businessType === 'agency' || businessType === 'saas' ? 'Services' : '',
+        category: businessType === 'services_firm' || businessType === 'subscription' ? 'Services' : '',
         vendor: '',
         costPrice: 0,
         taxRate: 0,
         reorderLevel: 10,
         status: 'Active',
-        isInventoryTracked: businessType !== 'agency' && businessType !== 'saas',
-        itemType: businessType === 'agency' || businessType === 'saas' ? 'service' : 'physical'
+        isInventoryTracked: businessType !== 'services_firm' && businessType !== 'subscription',
+        itemType: businessType === 'services_firm' || businessType === 'subscription' ? 'service' : 'physical'
       });
     }
   }, [initialData, isOpen, businessType]);
@@ -852,8 +852,8 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData, businessType
               <div>
                 <h3 className="text-lg font-black text-gray-900 tracking-tight">
                   {initialData
-                    ? (businessType === 'agency' || businessType === 'saas' ? 'Update Service' : 'Update Product')
-                    : (businessType === 'agency' || businessType === 'saas' ? 'Add New Service' : 'Add New Product')
+                    ? (businessType === 'services_firm' || businessType === 'subscription' ? 'Update Service' : 'Update Product')
+                    : (businessType === 'services_firm' || businessType === 'subscription' ? 'Add New Service' : 'Add New Product')
                   }
                 </h3>
                 <p className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">
@@ -886,7 +886,7 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData, businessType
             >
               <div>
                 <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">
-                  {businessType === 'agency' || businessType === 'saas' ? 'Service Designation' : 'Product Name'}
+                  {businessType === 'services_firm' || businessType === 'subscription' ? 'Service Designation' : 'Product Name'}
                 </label>
                 <div className="relative mt-1.5 group">
                   <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
@@ -894,7 +894,7 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData, businessType
                     required
                     type="text"
                     className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200/60 rounded-xl text-sm focus:ring-4 focus:ring-primary/5 focus:border-primary focus:bg-white transition-all outline-none font-bold shadow-sm"
-                    placeholder={businessType === 'agency' || businessType === 'saas' ? "e.g. Project Consultation" : "e.g. Quantum Bridge"}
+                    placeholder={businessType === 'services_firm' || businessType === 'subscription' ? "e.g. Project Consultation" : "e.g. Quantum Bridge"}
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                   />
@@ -919,7 +919,7 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData, businessType
                   value={formData.category}
                   onChange={(val) => setFormData({ ...formData, category: val })}
                   options={
-                    (businessType === 'agency' || businessType === 'saas')
+                    (businessType === 'services_firm' || businessType === 'subscription')
                       ? [
                         { value: 'Consulting', label: 'Consulting', icon: Bot },
                         { value: 'Development', label: 'Development', icon: Zap },
@@ -944,10 +944,10 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData, businessType
                   </div>
                   <div>
                     <div className="text-xs font-bold text-gray-900">
-                      {businessType === 'agency' || businessType === 'saas' ? 'Track Availability' : 'Track Inventory'}
+                      {businessType === 'services_firm' || businessType === 'subscription' ? 'Track Availability' : 'Track Inventory'}
                     </div>
                     <div className="text-[10px] text-gray-400 font-medium">
-                      {businessType === 'agency' || businessType === 'saas' ? 'Manage bookings & capacity' : 'Automatic stock deduction on sales'}
+                      {businessType === 'services_firm' || businessType === 'subscription' ? 'Manage bookings & capacity' : 'Automatic stock deduction on sales'}
                     </div>
                   </div>
                 </div>
@@ -977,7 +977,7 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData, businessType
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 ml-1">
-                    {businessType === 'agency' ? 'Hourly Rate (₹)' : 'Unit Price (₹)'}
+                    {businessType === 'services_firm' ? 'Hourly Rate (₹)' : 'Unit Price (₹)'}
                   </label>
                   <div className="relative mt-1.5 group">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-black">₹</span>
@@ -1074,7 +1074,7 @@ function CreateProductModal({ isOpen, onClose, onSave, initialData, businessType
             >
               {initialData
                 ? 'Update Intelligence'
-                : (businessType === 'agency' || businessType === 'saas' ? 'Deploy Service' : 'Deploy Product')
+                : (businessType === 'services_firm' || businessType === 'subscription' ? 'Deploy Service' : 'Deploy Product')
               }
             </button>
           </div>

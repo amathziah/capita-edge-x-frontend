@@ -108,8 +108,8 @@ export default function InvoiceHeader({
                 </div>
             </div>
 
-            {/* Re: Project Name (Agency) */}
-            {businessType === 'agency' && projectName && (
+            {/* Re: Project Name (services_firm) */}
+            {businessType === 'services_firm' && projectName && (
                 <div className="bg-primary-light/10 border border-primary/20 rounded-2xl px-5 py-3">
                     <span className="text-xs font-bold text-primary uppercase tracking-widest">Re: </span>
                     <span className="text-sm font-semibold text-text-main">{projectName}</span>
@@ -117,9 +117,9 @@ export default function InvoiceHeader({
             )}
 
             {/* Persona-Specific Global Inputs */}
-            {(businessType === 'agency' || businessType === 'ecommerce' || businessType === 'saas') && (
+            {(businessType === 'services_firm' || businessType === 'ecommerce' || businessType === 'subscription') && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white/40 backdrop-blur-md p-6 rounded-3xl border border-gray-200/50 shadow-sm">
-                    {businessType === 'agency' && (
+                    {businessType === 'services_firm' && (
                         <InputField label="Project Name" optional placeholder="e.g. Website Redesign" value={projectName} onChange={(e) => setProjectName(e.target.value)} />
                     )}
                     {businessType === 'ecommerce' && (
@@ -137,7 +137,7 @@ export default function InvoiceHeader({
                             />
                         </div>
                     )}
-                    {(businessType === 'ecommerce' || businessType === 'saas') && (
+                    {(businessType === 'ecommerce' || businessType === 'subscription') && (
                         <InputField label="Order / Ref #" optional placeholder="e.g. ORD-9981" value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} />
                     )}
                     {businessType === 'ecommerce' && (

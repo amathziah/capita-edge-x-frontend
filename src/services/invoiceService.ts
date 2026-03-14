@@ -3,9 +3,15 @@ import { ENDPOINTS } from '../api/endpoints';
 import { Invoice } from '../types';
 
 export const invoiceService = {
-    getInvoices: (params?: { limit?: number }) => {
+    getInvoices: (params?: { limit?: number; persona?: string }) => {
         let url = ENDPOINTS.INVOICES;
-        if (params?.limit) url += `?limit=${params.limit}`;
+        const queryParams = new URLSearchParams();
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+        if (params?.persona) queryParams.append('persona', params.persona);
+        
+        const queryString = queryParams.toString();
+        if (queryString) url += `?${queryString}`;
+        
         return api.get<Invoice[]>(url);
     },
 

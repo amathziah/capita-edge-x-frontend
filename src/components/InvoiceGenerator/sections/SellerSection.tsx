@@ -94,14 +94,14 @@ export default function SellerSection({
                     placeholder={`e.g. ${taxLabel}123456`}
                     value={seller.taxId || ''}
                     onChange={(e) => setSeller({ ...seller, taxId: e.target.value })}
-                    required={businessType === 'ca' || businessType === 'agency'}
-                    optional={businessType === 'solopreneur' || businessType === 'ecommerce' || businessType === 'saas'}
+                    required={businessType === 'ca' || businessType === 'services_firm'}
+                    optional={businessType === 'solopreneur' || businessType === 'ecommerce' || businessType === 'subscription'}
                     error={errors.taxId}
                 />
             )}
 
             {/* PAN */}
-            {(businessType === 'solopreneur' || businessType === 'agency' || businessType === 'ca') && (
+            {(businessType === 'solopreneur' || businessType === 'services_firm' || businessType === 'ca') && (
                 <InputField
                     label={businessType === 'solopreneur' ? 'PAN (for client TDS)' : 'PAN'}
                     placeholder="ABCDE1234F"

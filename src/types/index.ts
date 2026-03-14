@@ -86,6 +86,7 @@ export interface Invoice {
   share_token?: string;
   createdAt: string;
   updatedAt?: string;
+  persona?: string; // Links to businessType
 }
 
 export interface Payment {
@@ -212,7 +213,7 @@ export interface ProductPerformance {
 }
 
 // Adaptive UI / Business Personas
-export type BusinessType = 'solopreneur' | 'agency' | 'saas' | 'ecommerce';
+export type BusinessType = 'solopreneur' | 'services_firm' | 'subscription' | 'ecommerce' | 'ca';
 
 export interface UserProfile {
   id: string;

@@ -17,7 +17,7 @@ To ensure that your users receive authentication and notification emails 100% of
 5.  **SMTP Settings**:
     - Under **Authentication** > **SMTP Settings**, toggle **Enable Custom SMTP**.
     - Enter your credentials:
-        - **Sender Name**: Malika AI (or your business name)
+        - **Sender Name**: CapitaEdgeX (or your business name)
         - **Sender Email**: your-verified@domain.com
         - **Host**: (e.g., smtp.sendgrid.net)
         - **Port**: (usually 587)

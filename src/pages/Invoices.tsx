@@ -24,7 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function Invoices() {
-  const { invoices, loading, refreshData, setData } = useData();
+  const { filteredInvoices: invoices, loading, refreshData, setData } = useData();
   const { businessType } = usePersona();
 
   // UI state

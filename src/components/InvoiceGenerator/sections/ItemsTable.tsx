@@ -25,7 +25,7 @@ export default function ItemsTable({
 
     const addItem = () => setItems([
         ...items,
-        { description: "", quantity: 1, unit: (businessType === 'agency' || businessType === 'solopreneur') ? 'Hours' : 'Qty', price: 0, discount: 0 }
+        { description: "", quantity: 1, unit: (businessType === 'services_firm' || businessType === 'solopreneur') ? 'Hours' : 'Qty', price: 0, discount: 0 }
     ]);
 
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
@@ -39,8 +39,8 @@ export default function ItemsTable({
     // ─── FIX 1: Dynamic grid class per businessType ────────────────────
     const gridClass = {
         solopreneur: 'grid-cols-[2fr_80px_60px_100px_80px_70px_30px]',
-        agency: 'grid-cols-[2fr_80px_3fr_80px_60px_100px_80px_70px_30px]',
-        saas: 'grid-cols-[2fr_3fr_80px_60px_100px_80px_70px_30px]',
+        services_firm: 'grid-cols-[2fr_80px_3fr_80px_60px_100px_80px_70px_30px]',
+        subscription: 'grid-cols-[2fr_3fr_80px_60px_100px_80px_70px_30px]',
         ecommerce: 'grid-cols-[2fr_80px_80px_80px_60px_100px_80px_70px_30px]',
         ca: 'grid-cols-[2fr_80px_80px_60px_100px_80px_80px_70px_70px_30px]',
     }[businessType] ?? 'grid-cols-[2fr_80px_60px_100px_80px_70px_30px]';
@@ -55,10 +55,10 @@ export default function ItemsTable({
                 <div className={`hidden sm:grid ${gridClass} gap-3 p-5 text-xs font-bold text-text-muted border-b border-gray-200/50 bg-gradient-to-r from-gray-50/80 to-primary-light/10 uppercase tracking-widest`}>
                     <div>Description</div>
 
-                    {(businessType === 'agency' || businessType === 'ca') && <div className="text-center">SAC</div>}
+                    {(businessType === 'services_firm' || businessType === 'ca') && <div className="text-center">SAC</div>}
                     {businessType === 'ecommerce' && <div className="text-center">HSN</div>}
                     {businessType === 'ecommerce' && <div className="text-center">SKU / Code</div>}
-                    {(businessType === 'saas' || businessType === 'agency') && <div className="text-center">Service Period</div>}
+                    {(businessType === 'subscription' || businessType === 'services_firm') && <div className="text-center">Service Period</div>}
 
                     <div className="text-center">Unit</div>
                     <div className="text-center">Qty</div>
@@ -209,7 +209,7 @@ export default function ItemsTable({
                                     </div>
 
                                     {/* SAC Code (agency/CA) */}
-                                    {(businessType === 'agency' || businessType === 'ca') && (
+                                    {(businessType === 'services_firm' || businessType === 'ca') && (
                                         <div>
                                             <input
                                                 type="text"
@@ -256,7 +256,7 @@ export default function ItemsTable({
                                     )}
 
                                     {/* Service Period (saas/agency) — FIX 5 */}
-                                    {(businessType === 'saas' || businessType === 'agency') && (
+                                    {(businessType === 'subscription' || businessType === 'services_firm') && (
                                         <div className="flex items-center gap-1">
                                             <input type="date" className="w-full bg-gray-50/50 border border-gray-100 rounded-lg p-1 text-xs outline-none focus:border-primary" value={item.serviceStartDate || ''} onChange={(e) => updateItem(idx, "serviceStartDate", e.target.value)} />
                                             <span className="text-[10px] text-gray-400 shrink-0">to</span>

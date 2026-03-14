@@ -50,7 +50,7 @@ export default function NotesAndExtrasSection({
             )}
 
             {/* Authorized Signatory for Agency */}
-            {businessType === 'agency' && (
+            {businessType === 'services_firm' && (
                 <InputField
                     label="Authorized Signatory Name"
                     optional

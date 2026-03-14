@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode, use
 import { Invoice, Payment, Customer, Expense, Product, ProductPerformance, ComplianceTask, DashboardStats } from '../types';
 import { dataService } from '../services/dataService';
 import { useAuth } from './AuthContext';
+import { usePersona } from './PersonaContext';
 
 interface DataState {
     invoices: Invoice[];
@@ -20,6 +21,7 @@ interface DataContextType extends DataState {
     loading: boolean;
     refreshData: (force?: boolean) => Promise<void>;
     setData: (data: Partial<DataState>) => void;
+    filteredInvoices: Invoice[];
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -41,6 +43,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     const [loading, setLoading] = useState(false);
     const { orgId } = useAuth();
+    const { businessType } = usePersona();
 
     // Clear state when user logs out or switches org
     useEffect(() => {
@@ -103,11 +106,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setState(prev => ({ ...prev, ...newData }));
     }, []);
 
+    const filteredInvoices = React.useMemo(() => 
+        state.invoices.filter(inv => !businessType || inv.persona === businessType),
+        [state.invoices, businessType]
+    );
+
     const value = {
         ...state,
         loading,
         refreshData,
         setData,
+        filteredInvoices,
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

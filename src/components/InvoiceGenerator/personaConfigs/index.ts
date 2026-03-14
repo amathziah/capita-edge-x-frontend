@@ -1,27 +1,33 @@
 import { BusinessType } from '../../../contexts/PersonaContext';
 import { PersonaConfig } from './types';
 import solopreneurConfig from './solopreneur';
-import agencyConfig from './agency';
-import caConfig from './ca';
+import servicesFirmConfig from './services_firm';
+import subscriptionConfig from './subscription';
 import ecommerceConfig from './ecommerce';
-import saasConfig from './saas';
+import caConfig from './ca';
 
-// ─── Config Registry ───────────────────────────────────────────────────
-// To add a new persona, create a config file and register it here.
+/**
+ * Registry of all available persona configurations.
+ * Map the BusinessType string to its corresponding config object.
+ */
 const configMap: Record<BusinessType, PersonaConfig> = {
     solopreneur: solopreneurConfig,
-    agency: agencyConfig,
-    ca: caConfig,
+    services_firm: servicesFirmConfig,
+    subscription: subscriptionConfig,
     ecommerce: ecommerceConfig,
-    saas: saasConfig,
+    ca: caConfig,
 };
 
 /**
  * Resolve the persona configuration for a given business type.
  * Falls back to solopreneur if the type is not recognized.
  */
-export function getPersonaConfig(businessType: BusinessType): PersonaConfig {
-    return configMap[businessType] ?? solopreneurConfig;
+export function getPersonaConfig(businessType: BusinessType | null): PersonaConfig {
+    if (!businessType || !configMap[businessType]) {
+        return solopreneurConfig;
+    }
+    return configMap[businessType];
 }
 
+export { configMap as personaRegistry };
 export type { PersonaConfig } from './types';

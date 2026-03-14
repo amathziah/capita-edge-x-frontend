@@ -94,7 +94,7 @@ function DashboardMockup() {
                     <div className="flex-1 flex justify-center">
                         <div className="flex items-center gap-2 bg-white/[0.05] border border-white/[0.07] rounded-md px-3 py-1">
                             <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-                            <span className="text-[11px] text-slate-400 font-mono">app.malika.ai/dashboard</span>
+                            <span className="text-[11px] text-slate-400 font-mono">app.capita.ai/dashboard</span>
                         </div>
                     </div>
                 </div>
@@ -104,7 +104,7 @@ function DashboardMockup() {
                         <div className="flex items-center gap-2 mb-5">
                             <div className="w-7 h-7 rounded-full bg-teal-500 flex items-center justify-center text-[10px] font-black text-white">M</div>
                             <div>
-                                <div className="text-[12px] font-bold text-white">Malika</div>
+                                <div className="text-[12px] font-bold text-white">Capita</div>
                                 <div className="text-[9px] text-slate-500">Financial OS</div>
                             </div>
                         </div>
@@ -461,7 +461,7 @@ export const Landing: React.FC = () => {
                                     <Zap className="w-4 h-4 text-white" />
                                 </div>
                             </div>
-                            <span className="display font-black text-xl text-white tracking-tight">Malika <span className="text-teal-400">AI</span></span>
+                            <span className="display font-black text-xl text-white tracking-tight">Capita <span className="text-teal-400">AI</span></span>
                         </div>
                         <div className="hidden md:flex items-center gap-7">
                             {[['#features', 'Features'], ['#how-it-works', 'How it Works'], ['#pricing', 'Pricing'], ['#faq', 'FAQ']].map(([href, label]) => (
@@ -504,7 +504,7 @@ export const Landing: React.FC = () => {
                         </motion.h1>
                         <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, delay: 0.32 }}
                             className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-                            Malika AI is the complete Financial OS for Indian marketing agencies and freelancers — invoicing, collections, payments, compliance, and reporting, all in one place.
+                            CapitaEdgeX is the complete Financial OS for Indian marketing agencies and freelancers — invoicing, collections, payments, compliance, and reporting, all in one place.
                         </motion.p>
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.48 }}
                             className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -651,7 +651,7 @@ export const Landing: React.FC = () => {
                         <div>
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-400 text-[11px] font-black uppercase tracking-[0.18em] mb-5">Analytics & Reports</div>
                             <h3 className="display font-black text-white text-3xl md:text-4xl mb-4 leading-tight">P&L in real-time. No accountant needed.</h3>
-                            <p className="text-slate-400 text-[15px] leading-relaxed mb-6">Malika's Reports module tracks total revenue, expenses, net profit, and average margin automatically. Revenue vs Expenses charts with comparative analysis give you the full financial picture every month.</p>
+                            <p className="text-slate-400 text-[15px] leading-relaxed mb-6">Capita's Reports module tracks total revenue, expenses, net profit, and average margin automatically. Revenue vs Expenses charts with comparative analysis give you the full financial picture every month.</p>
                             <ul className="space-y-3">
                                 {['Automatic P&L calculation', 'Revenue vs Expenses trend chart', 'Comparative month-by-month analysis', 'One-click export'].map((f, i) => (
                                     <li key={i} className="flex items-center gap-3 text-[14px] text-slate-300 font-medium">
@@ -713,9 +713,9 @@ export const Landing: React.FC = () => {
                         <div className="hidden md:block absolute top-14 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-teal-500/30 to-transparent" />
                         {[
                             { n: '01', t: 'Create Account', d: 'Sign up with your email. No credit card required. Your Financial OS is ready instantly.' },
-                            { n: '02', t: 'Add Your Clients', d: 'Import or add clients manually. Malika stores all their billing info for fast invoicing.' },
+                            { n: '02', t: 'Add Your Clients', d: 'Import or add clients manually. Capita stores all their billing info for fast invoicing.' },
                             { n: '03', t: 'Create an Invoice', d: 'Generate a GST-compliant invoice in seconds. Customise, send, or save as draft.' },
-                            { n: '04', t: 'Activate Collections', d: 'Turn on automated follow-ups for overdue invoices and let Malika do the chasing.' },
+                            { n: '04', t: 'Activate Collections', d: 'Turn on automated follow-ups for overdue invoices and let Capita do the chasing.' },
                         ].map((s, i) => (
                             <motion.div key={s.n} initial={{ opacity: 0, y: 25 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.12 }}
                                 className="bg-white/[0.025] border border-white/[0.07] rounded-2xl p-6">
@@ -843,12 +843,12 @@ export const Landing: React.FC = () => {
                     </div>
                     <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-8 py-4">
                         {[
-                            { q: 'Is this built for Indian businesses?', a: 'Yes, completely. Malika handles GST-compliant invoicing, TDS, INR-native reporting, and is designed around how Indian agencies and freelancers actually bill clients — including UPI payment tracking and reconciliation.' },
-                            { q: 'Can I import my existing invoices and clients?', a: 'You can add clients manually or in bulk. You can start fresh with Malika immediately and build your invoice history from day one.' },
-                            { q: 'How does the Debt Hunter actually work?', a: 'You activate it per invoice. Malika then sends politely-worded automated email reminders on a smart schedule — escalating tone based on how overdue the invoice is. No spam, no robotic messages.' },
+                            { q: 'Is this built for Indian businesses?', a: 'Yes, completely. Capita handles GST-compliant invoicing, TDS, INR-native reporting, and is designed around how Indian agencies and freelancers actually bill clients — including UPI payment tracking and reconciliation.' },
+                            { q: 'Can I import my existing invoices and clients?', a: 'You can add clients manually or in bulk. You can start fresh with Capita immediately and build your invoice history from day one.' },
+                            { q: 'How does the Debt Hunter actually work?', a: 'You activate it per invoice. Capita then sends politely-worded automated email reminders on a smart schedule — escalating tone based on how overdue the invoice is. No spam, no robotic messages.' },
                             { q: 'Is my financial data secure?', a: 'Yes. All data is encrypted in transit and at rest. We follow industry-standard security practices. Your invoice and payment data is never shared or sold.' },
-                            { q: "Do I need to be technical to use it?", a: 'Not at all. Malika is designed for agency owners and freelancers, not developers. If you can use Gmail, you can use Malika. The setup takes under 5 minutes.' },
-                            { q: "What payment methods does Malika track?", a: 'Malika tracks UPI, cash, card, cheque, and net banking payments. You can manually record payments or link with Razorpay for automatic reconciliation.' },
+                            { q: "Do I need to be technical to use it?", a: 'Not at all. Capita is designed for agency owners and freelancers, not developers. If you can use Gmail, you can use Capita. The setup takes under 5 minutes.' },
+                            { q: "What payment methods does Capita track?", a: 'Capita tracks UPI, cash, card, cheque, and net banking payments. You can manually record payments or link with Razorpay for automatic reconciliation.' },
                         ].map(item => <FAQItem key={item.q} q={item.q} a={item.a} />)}
                     </div>
                 </div>
@@ -884,13 +884,13 @@ export const Landing: React.FC = () => {
                                 <Zap className="w-3.5 h-3.5 text-white" />
                             </div>
                         </div>
-                        <span className="display font-black text-white tracking-tight">Malika AI</span>
+                        <span className="display font-black text-white tracking-tight">CapitaEdgeX</span>
                         <span className="text-slate-600 text-[12px] ml-1">— Financial OS for Agencies</span>
                     </div>
                     <div className="flex gap-7 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
                         {['Privacy', 'Terms', 'Contact'].map(l => <a key={l} href="#" className="hover:text-white transition-colors">{l}</a>)}
                     </div>
-                    <div className="text-slate-600 text-[11px] font-semibold">© {new Date().getFullYear()} Laboratory Malika, Inc.</div>
+                    <div className="text-slate-600 text-[11px] font-semibold">© {new Date().getFullYear()} Laboratory Capita, Inc.</div>
                 </div>
             </footer>
         </div >

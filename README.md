@@ -1,6 +1,6 @@
-# Malika AI Frontend
+# CapitaEdgeX Frontend
 
-Standalone React/Vite frontend for the Malika AI Invoicing platform.
+Standalone React/Vite frontend for the CapitaEdgeX Invoicing platform.
 
 ## Setup
 1. `npm install`

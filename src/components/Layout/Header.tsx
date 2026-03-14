@@ -36,7 +36,7 @@ export function Header() {
 
         {/* Left: Logo (Mobile only) */}
         <div className="lg:hidden flex items-center">
-          <span className="text-lg font-semibold text-text-main">Malika</span>
+          <span className="text-lg font-semibold text-text-main">Capita</span>
         </div>
 
         {/* Left: Spacer (Desktop) */}

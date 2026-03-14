@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { usePersona } from '../contexts/PersonaContext';
+import { usePersona, BusinessType } from '../contexts/PersonaContext';
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
 import { supabase } from '../supabaseClient';
@@ -50,14 +50,14 @@ export function SetupPage() {
         }
     }, [authLoading, checkingOrg, loadingPersona, orgId, businessType, navigate]);
     const [companyName, setCompanyName] = useState(user?.user_metadata?.company_name || '');
-    const [selectedPersona, setSelectedPersona] = useState<'solopreneur' | 'agency' | 'saas' | 'ecommerce'>('solopreneur');
+    const [selectedPersona, setSelectedPersona] = useState<BusinessType>('solopreneur');
     const [error, setError] = useState<string | null>(null);
     const [calibrationLogs, setCalibrationLogs] = useState<string[]>([]);
 
     useEffect(() => {
         if (step === 'calibrate') {
             const logs = [
-                "Initializing Malika Core v2.5...",
+                "Initializing Capita Core v2.5...",
                 "Scanning secure nodes...",
                 "Calibrating neural UI layers...",
                 "Synchronizing with protocol...",
@@ -123,8 +123,8 @@ export function SetupPage() {
 
     const personas = [
         { id: 'solopreneur', label: 'Solopreneur', desc: 'Sovereign individual managing holistic operations.', icon: <Activity className="w-6 h-6" /> },
-        { id: 'saas', label: 'SaaS Founder', desc: 'Scalable subscription architecture & MRR tracking.', icon: <Zap className="w-6 h-6" /> },
-        { id: 'agency', label: 'Agency Owner', desc: 'Multi-client coordination & project-based billing.', icon: <Globe className="w-6 h-6" /> },
+        { id: 'subscription', label: 'SaaS Founder', desc: 'Scalable subscription architecture & MRR tracking.', icon: <Zap className="w-6 h-6" /> },
+        { id: 'services_firm', label: 'Agency Owner', desc: 'Multi-client coordination & project-based billing.', icon: <Globe className="w-6 h-6" /> },
         { id: 'ca', label: 'CA / Accountant', desc: 'Practice management, SAC codes & compliance-first billing.', icon: <Scale className="w-6 h-6" /> },
         { id: 'ecommerce', label: 'E-commerce', desc: 'Universal product ledger & automated order flows.', icon: <Database className="w-6 h-6" /> },
     ];
@@ -218,7 +218,7 @@ export function SetupPage() {
                                                 type="text"
                                                 value={companyName}
                                                 onChange={(e) => setCompanyName(e.target.value)}
-                                                placeholder="e.g. Malika Nexus"
+                                                placeholder="e.g. Capita Nexus"
                                                 className="w-full px-6 py-4 bg-white/[0.04] border-2 border-white/[0.08] rounded-2xl text-white text-base font-bold focus:bg-white/[0.06] focus:border-teal-500/40 focus:ring-8 focus:ring-teal-500/5 outline-none transition-all placeholder:text-gray-700"
                                             />
                                             <div className="absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-focus-within:opacity-100 transition-opacity">
@@ -400,7 +400,7 @@ export function SetupPage() {
                     transition={{ delay: 1 }}
                     className="text-center mt-8 space-y-3"
                 >
-                    <p className="text-[9px] font-black uppercase tracking-[0.5em] text-gray-500">Malika AI Protocol v2.5 // Core-Node-Alpha</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.5em] text-gray-500">CapitaEdgeX Protocol v2.5 // Core-Node-Alpha</p>
                     <div className="flex justify-center gap-3 opacity-30">
                         <div className="w-1 h-px bg-gray-600" />
                         <div className="w-3 h-px bg-teal-600" />

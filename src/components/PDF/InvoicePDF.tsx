@@ -7,9 +7,9 @@ import { Invoice } from '../../types';
 
 const getPersonaColors = (type?: string) => {
     switch (type) {
-        case 'saas':
+        case 'subscription':
             return { primary: '#6366F1', secondary: '#EEF2FF', accent: '#4F46E5' }; // Indigo/Violet
-        case 'agency':
+        case 'services_firm':
             return { primary: '#0D9488', secondary: '#F0FDFA', accent: '#0F766E' }; // Teal
         case 'ecommerce':
             return { primary: '#F59E0B', secondary: '#FFFBEB', accent: '#D97706' }; // Amber/Orange
@@ -294,8 +294,8 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, settings, logoUrl }) =
     const businessType = settings.businessType || 'solopreneur';
     const styles = createStyles(businessType);
 
-    const isSaaS = businessType === 'saas';
-    const isAgency = businessType === 'agency';
+    const isSaaS = businessType === 'subscription';
+    const isAgency = businessType === 'services_firm';
     const isEcommerce = businessType === 'ecommerce';
 
     return (

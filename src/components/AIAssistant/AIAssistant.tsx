@@ -44,12 +44,12 @@ const personaActions: Record<string, typeof defaultActions> = {
     { label: 'Expense summary', icon: CreditCard, query: 'Show me my expenses for this month' },
     { label: 'Taxes due', icon: Zap, query: 'Estimate my taxes for this quarter' },
   ],
-  'saas': [
+  'subscription': [
     { label: 'Check MRR', icon: TrendingUp, query: 'What is my current Monthly Recurring Revenue?' },
     { label: 'Churn report', icon: Users, query: 'Analyze my customer churn' },
     { label: 'Runway left', icon: Activity, query: 'How many months of cash runway do I have?' },
   ],
-  'agency': [
+  'services_firm': [
     { label: 'Unbilled hours', icon: Clock, query: 'Show me all unbilled hours' },
     { label: 'Retainer health', icon: Activity, query: 'Are any retainers running low?' },
     { label: 'Project profit', icon: TrendingUp, query: 'Which projects are most profitable?' },
@@ -72,11 +72,11 @@ export function AIAssistant() {
 
   const getGreeting = () => {
     switch (businessType) {
-      case 'solopreneur': return "Hey! I'm **Malika**. I'll keep your personal finances organized and your cash flow clear. What's on your mind?";
-      case 'saas': return "Systems Nominal. **Malika** here. I'm tracking your MRR, churn, and subscriptions. Ready for growth metrics?";
-      case 'agency': return "Hello! **Malika** here. I'm monitoring your client retainers and billable hours. How can I help you today?";
-      case 'ecommerce': return "Inventory secure. **Malika** active. I'm tracking your replenishment risks and store health. What do you need?";
-      default: return "Hey! 👋 I'm **Malika**, your financial copilot. I can help you check revenue, find invoices, analyze trends, or create new ones. What would you like to do?";
+      case 'solopreneur': return "Hey! I'm **Capita**. I'll keep your personal finances organized and your cash flow clear. What's on your mind?";
+      case 'subscription': return "Systems Nominal. **Capita** here. I'm tracking your MRR, churn, and subscriptions. Ready for growth metrics?";
+      case 'services_firm': return "Hello! **Capita** here. I'm monitoring your client retainers and billable hours. How can I help you today?";
+      case 'ecommerce': return "Inventory secure. **Capita** active. I'm tracking your replenishment risks and store health. What do you need?";
+      default: return "Hey! 👋 I'm **Capita**, your financial copilot. I can help you check revenue, find invoices, analyze trends, or create new ones. What would you like to do?";
     }
   };
 
@@ -311,7 +311,7 @@ export function AIAssistant() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-white tracking-tight">Malika AI</h3>
+                    <h3 className="font-bold text-sm text-white tracking-tight">CapitaEdgeX</h3>
                     <p className="text-[11px] text-teal-400 font-semibold flex items-center gap-1.5">
                       Online · Copilot Mode
                     </p>
@@ -481,7 +481,7 @@ export function AIAssistant() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                    placeholder="Ask Malika anything..."
+                    placeholder="Ask Capita anything..."
                     className="w-full pl-4 pr-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-xl text-[13px] focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500/30 focus:bg-white/[0.05] transition-all placeholder-gray-500 text-white"
                   />
                 </div>
@@ -497,7 +497,7 @@ export function AIAssistant() {
                 </motion.button>
               </div>
               <p className="text-center mt-2 text-[9px] text-gray-500 font-medium">
-                Malika can make mistakes · Check important info
+                Capita can make mistakes · Check important info
               </p>
             </div>
           </motion.div>

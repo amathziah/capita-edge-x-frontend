@@ -153,14 +153,14 @@ const PricingPage = () => {
     // Suggest a recommended tier based on businessType
     const getRecommended = (): PlanTier => {
         if (businessType === 'ca') return 'ca_pro';
-        if (businessType === 'agency' || businessType === 'saas') return 'smb';
+        if (businessType === 'services_firm' || businessType === 'subscription') return 'smb';
         return 'freelancer';
     };
     const recommended = getRecommended();
 
     const handleCheckout = (tier: TierCard) => {
         if (tier.slug === 'enterprise') {
-            window.open('mailto:hello@malika.ai?subject=Enterprise%20Plan%20Inquiry', '_blank');
+            window.open('mailto:hello@capita.ai?subject=Enterprise%20Plan%20Inquiry', '_blank');
             return;
         }
 

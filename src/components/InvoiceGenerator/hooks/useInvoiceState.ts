@@ -260,7 +260,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         // Seller
         if (!seller.name.trim()) { sErr.name = 'Business name is required'; errorCount++; }
         if (config.taxIdRequired && !seller.taxId.trim()) {
-            sErr.taxId = `${taxLabel} ID is required for ${businessType === 'ca' ? 'CA' : 'Agency'} invoices`;
+            sErr.taxId = `${taxLabel} ID is required for ${businessType === 'ca' ? 'CA' : 'services_firm'} invoices`;
             errorCount++;
         }
 

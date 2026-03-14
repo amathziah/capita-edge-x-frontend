@@ -215,7 +215,7 @@ export const ControlRoom = () => {
                         >
                             {/* SaaS Metrics or Standard Stats Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-                                {businessType === 'saas' ? (
+                                {businessType === 'subscription' ? (
                                     <>
                                         {/* Card 1: MRR */}
                                         <div
@@ -302,7 +302,7 @@ export const ControlRoom = () => {
                                             </div>
                                         </div>
                                     </>
-                                ) : businessType === 'agency' ? (
+                                ) : businessType === 'services_firm' ? (
                                     <>
                                         {/* Agency Card 1: Pending Revenue */}
                                         <div
@@ -615,7 +615,7 @@ export const ControlRoom = () => {
                                 <div className={`${isSolopreneur ? 'lg:col-span-3' : 'lg:col-span-1'} bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm p-6`}>
                                     <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                                         <Clock size={18} className="text-emerald-500" />
-                                        {businessType === 'saas' ? 'Failed Subscriptions' : 'Priority Queue'}
+                                        {businessType === 'subscription' ? 'Failed Subscriptions' : 'Priority Queue'}
                                     </h2>
 
                                     <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">

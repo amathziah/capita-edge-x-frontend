@@ -111,7 +111,7 @@ export default function TotalsSection({
                             : <CgstSgstDisplay rate={taxRate} amount={taxAmount} />}
                     </>
 
-                ) : businessType === 'agency' ? (
+                ) : businessType === 'services_firm' ? (
                     <>
                         <div className="flex items-center justify-between bg-gray-50/80 rounded-xl px-3 py-2 border border-gray-200 mb-2">
                             <div className="flex gap-1">

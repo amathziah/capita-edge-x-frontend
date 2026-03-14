@@ -38,8 +38,8 @@ export const translations: Translation = {
   overdue: { en: 'Overdue' },
   cancelled: { en: 'Cancelled' },
 
-  // Malika AI
-  ai_assistant: { en: 'Malika AI' },
+  // CapitaEdgeX
+  ai_assistant: { en: 'CapitaEdgeX' },
   suggestions: { en: 'Suggestions' },
 
   // Reports

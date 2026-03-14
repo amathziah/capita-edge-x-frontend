@@ -145,13 +145,13 @@ export function Sidebar() {
             if (item.name === 'control_room') return { ...item, label: `${displayName}'s Dashboard` };
           }
 
-          // --- Agency Granular Labeling ---
-          if (businessType === 'agency') {
+          // --- services_firm Granular Labeling ---
+          if (businessType === 'services_firm') {
             if (item.name === 'inventory') return { ...item, label: `${displayName}'s Services` };
           }
 
-          // --- SaaS Granular Labeling ---
-          if (businessType === 'saas') {
+          // --- subscription Granular Labeling ---
+          if (businessType === 'subscription') {
             if (item.name === 'inventory') return { ...item, label: `${displayName}'s Products` };
           }
 
@@ -167,9 +167,9 @@ export function Sidebar() {
         let groupTitle = group.title;
         if (group.title === "SPEND & ASSETS") {
           if (businessType === 'solopreneur') groupTitle = "MY BUSINESS";
-          else if (businessType === 'agency') groupTitle = "SERVICE OPS";
-          else if (businessType === 'saas') groupTitle = "PRODUCT OPS";
-          else if (['agency', 'saas'].includes(businessType as string)) groupTitle = "OFFERINGS & SPEND"; // Fallback
+          else if (businessType === 'services_firm') groupTitle = "SERVICE OPS";
+          else if (businessType === 'subscription') groupTitle = "PRODUCT OPS";
+          else if (['services_firm', 'subscription'].includes(businessType as string)) groupTitle = "OFFERINGS & SPEND"; // Fallback
         }
 
         return {
@@ -200,7 +200,7 @@ export function Sidebar() {
         {!collapsed && (
           <div className="text-left overflow-hidden">
             <div className="flex items-center gap-1.5">
-              <span className="text-[15px] font-bold text-white tracking-tight block">Malika</span>
+              <span className="text-[15px] font-bold text-white tracking-tight block">Capita</span>
               {planStatus?.plan_tier !== 'starter' ? (
                 <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-400 uppercase tracking-tighter animate-pulse">{planStatus?.plan_tier}</span>
               ) : (
