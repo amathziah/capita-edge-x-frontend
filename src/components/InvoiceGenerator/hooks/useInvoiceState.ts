@@ -25,6 +25,7 @@ export interface UseInvoiceStateProps {
 export interface InvoiceState {
     // Config
     config: ReturnType<typeof getPersonaConfig>;
+    businessType: BusinessType;
 
     // Global Settings
     currency: typeof CURRENCIES[0];
@@ -67,6 +68,28 @@ export interface InvoiceState {
     setDispatchDate: (v: string) => void;
     courierTracking: string;
     setCourierTracking: (v: string) => void;
+    // TDS
+    tdsEnabled: boolean;
+    setTdsEnabled: (v: boolean) => void;
+    tdsRate: number;
+    setTdsRate: (v: number) => void;
+    // CA
+    frn: string;
+    setFrn: (v: string) => void;
+    lutNumber: string;
+    setLutNumber: (v: string) => void;
+    // Ecommerce
+    courierName: string;
+    setCourierName: (v: string) => void;
+    orderRef: string;
+    setOrderRef: (v: string) => void;
+    // GST
+    gstType: string | null;
+    setGstType: (v: string | null) => void;
+    sellerState: string;
+    setSellerState: (v: string) => void;
+    discountAmount: number;
+    setDiscountAmount: (v: number) => void;
 
     // Items & Totals
     items: InvoiceItem[];
@@ -146,6 +169,19 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
     const [deliveryState, setDeliveryState] = useState('');
     const [dispatchDate, setDispatchDate] = useState('');
     const [courierTracking, setCourierTracking] = useState('');
+    // TDS
+    const [tdsEnabled, setTdsEnabled] = useState(false);
+    const [tdsRate, setTdsRate] = useState(10);
+    // CA
+    const [frn, setFrn] = useState('');
+    const [lutNumber, setLutNumber] = useState('');
+    // Ecommerce
+    const [courierName, setCourierName] = useState('');
+    const [orderRef, setOrderRef] = useState('');
+    // GST
+    const [gstType, setGstType] = useState<string | null>(null);
+    const [sellerState, setSellerState] = useState('');
+    const [discountAmount, setDiscountAmount] = useState(0);
 
     // ─── Computed Inter-State ──────────────────────────────────────────
     const caIsInterState = config.interStateMode === 'auto-place-of-supply' && placeOfSupply && seller.taxId
@@ -214,6 +250,20 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
             if (editingInvoice.projectName) setProjectName(editingInvoice.projectName);
             if (editingInvoice.shippingAddress) setShippingAddress(editingInvoice.shippingAddress);
             if (editingInvoice.orderNumber) setOrderNumber(editingInvoice.orderNumber);
+            // New field hydration
+            if (editingInvoice.gstType) setGstType(editingInvoice.gstType);
+            if (editingInvoice.frn) setFrn(editingInvoice.frn);
+            if (editingInvoice.lutNumber) setLutNumber(editingInvoice.lutNumber);
+            if (editingInvoice.tdsApplicable) setTdsEnabled(editingInvoice.tdsApplicable);
+            if (editingInvoice.tdsRate) setTdsRate(editingInvoice.tdsRate);
+            if (editingInvoice.courierName) setCourierName(editingInvoice.courierName);
+            if (editingInvoice.orderRef) setOrderRef(editingInvoice.orderRef);
+            if (editingInvoice.reverseCharge) setReverseCharge(editingInvoice.reverseCharge);
+            if (editingInvoice.placeOfSupply) setPlaceOfSupply(editingInvoice.placeOfSupply);
+            if (editingInvoice.isGstRegistered !== undefined) setIsGstRegistered(editingInvoice.isGstRegistered !== false);
+            if (editingInvoice.discountAmount) setDiscountAmount(editingInvoice.discountAmount);
+            if (editingInvoice.dispatchDate) setDispatchDate(editingInvoice.dispatchDate);
+            if (editingInvoice.courierTracking) setCourierTracking(editingInvoice.courierTracking);
         } else {
             dataService.generateInvoiceNumber().then(num => {
                 setMeta(prev => ({ ...prev, number: num }));
@@ -247,7 +297,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         }
     }, [initialData]);
 
-    useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [items]);
+    // useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [items]);
 
     // ─── Validation ────────────────────────────────────────────────────
     const validateForm = (): boolean => {
@@ -319,6 +369,16 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         deliveryState, setDeliveryState,
         dispatchDate, setDispatchDate,
         courierTracking, setCourierTracking,
+        tdsEnabled, setTdsEnabled,
+        tdsRate, setTdsRate,
+        frn, setFrn,
+        lutNumber, setLutNumber,
+        courierName, setCourierName,
+        orderRef, setOrderRef,
+        gstType, setGstType,
+        sellerState, setSellerState,
+        discountAmount, setDiscountAmount,
+        businessType,
         items, setItems,
         taxRate, setTaxRate,
         shipping, setShipping,

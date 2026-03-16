@@ -16,6 +16,9 @@ interface TotalsSectionProps {
     total: number;
     // Solopreneur
     isGstRegistered: boolean;
+    tdsEnabled?: boolean;
+    tdsAmount?: number;
+    tdsRate?: number;
     // CA
     reverseCharge: boolean;
     placeOfSupply: string;
@@ -32,7 +35,7 @@ interface TotalsSectionProps {
 export default function TotalsSection({
     businessType, currency, subtotal, taxAmount, taxRate, setTaxRate, taxLabel,
     shipping, setShipping, total,
-    isGstRegistered,
+    isGstRegistered, tdsEnabled, tdsAmount, tdsRate,
     reverseCharge, placeOfSupply, caIsInterState,
     isInterState, setIsInterState,
     deliveryState, setDeliveryState, ecomIsInterState,
@@ -172,6 +175,20 @@ export default function TotalsSection({
                         </div>
                         <span className="font-semibold text-text-main">{currency.symbol}{taxAmount.toFixed(2)}</span>
                     </div>
+                )}
+
+                {/* TDS Deduction (Solopreneur) */}
+                {tdsEnabled && tdsAmount && tdsAmount > 0 && (
+                    <>
+                        <div className="flex justify-between items-center text-sm text-text-muted font-medium">
+                            <span>TDS @{tdsRate || 10}% (Sec. 194J)</span>
+                            <span className="font-semibold text-red-500">-{currency.symbol}{tdsAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm font-semibold">
+                            <span>Net receivable</span>
+                            <span className="text-emerald-600">{currency.symbol}{(subtotal - tdsAmount).toFixed(2)}</span>
+                        </div>
+                    </>
                 )}
 
                 {/* Shipping */}

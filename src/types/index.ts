@@ -1,14 +1,32 @@
 export interface Customer {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  taxId?: string; // Standardized from gstin
-  tags: string[];
+  organizationId?: string;
   organization_id?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  taxId?: string;
+  tags?: string[];
+  // Indian compliance
+  gstin?: string;
+  pan?: string;
+  state?: string;
+  city?: string;
+  pincode?: string;
+  country?: string;
+  // Capita intelligence (computed)
+  avgPaymentDays?: number;
+  avg_payment_days?: number;
+  totalInvoicedLifetime?: number;
+  totalPaidLifetime?: number;
+  latePaymentCount?: number;
+  lastInvoiceDate?: string;
+  riskScore?: 'green' | 'yellow' | 'red';
+  risk_score?: 'green' | 'yellow' | 'red';
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Product {
@@ -42,74 +60,132 @@ export interface InvoiceItem {
   price: number;
   unit?: string;
   discount?: number;
-  // Persona Specifics
+  discountPercent?: number;
   serviceStartDate?: string;
   serviceEndDate?: string;
-  // Inventory Link
   productId?: string;
   sku?: string;
+  // GST codes
   sacCode?: string;
   hsnCode?: string;
+  // Tax per line
+  taxRate?: number;
+  cgstRate?: number;
+  sgstRate?: number;
+  igstRate?: number;
+  cgstAmount?: number;
+  sgstAmount?: number;
+  igstAmount?: number;
+  taxableValue?: number;
+  sortOrder?: number;
 }
 
 export interface Invoice {
-  id: string; // UUID
+  id: string;
   invoiceNumber: string;
-  customerId?: string; // Link to Customer (optional for backward compatibility)
-  date: string; // ISO Date
-  dueDate: string; // ISO Date
-
-  // Denormalized for display/history
+  customerId?: string;
+  customer_id?: string;
+  date: string;
+  dueDate: string;
   seller: any;
   buyer: any;
   shipTo?: any;
-  shippingAddress?: string; // For E-commerce
-  projectName?: string;     // For Agency
-  orderNumber?: string;     // For E-commerce/SaaS
-
   items: InvoiceItem[];
-
-  // Financials
+  // Core totals
   subtotal: number;
   taxAmount: number;
   taxType?: string;
   taxRate?: number;
   discount?: number;
+  discountAmount?: number;
   shipping?: number;
   total: number;
-  amountPaid?: number; // Calculated field
-
-  status: 'draft' | 'pending' | 'paid' | 'overdue' | 'sent' | 'viewed' | 'cancelled' | 'escalated' | 'partially_paid';
-  type?: 'one-off' | 'subscription' | 'recurring';
+  amountPaid?: number;
+  // GST split
+  cgstAmount?: number;
+  sgstAmount?: number;
+  igstAmount?: number;
+  gstType?: 'cgst_sgst' | 'igst' | 'exempt' | 'not_applicable';
+  // TDS
+  tdsApplicable?: boolean;
+  tdsRate?: number;
+  tdsAmount?: number;
+  netReceivable?: number;
+  // Compliance
+  placeOfSupply?: string;
+  reverseCharge?: boolean;
+  isGstRegistered?: boolean;
+  frn?: string;
+  lutNumber?: string;
+  // Persona
+  persona?: string;
+  // Services firm
+  projectName?: string;
+  // Ecommerce
+  shippingAddress?: string;
+  orderNumber?: string;
+  orderRef?: string;
+  courierName?: string;
+  courierTracking?: string;
+  dispatchDate?: string;
+  // Status and tracking
+  status: 'draft' | 'sent' | 'viewed' | 'paid' |
+          'partially_paid' | 'overdue' |
+          'cancelled' | 'escalated';
+  type?: string;
   is_recurring?: boolean;
   notes?: string;
   share_token?: string;
+  shareViewedAt?: string;
+  // Follow-up tracking
+  followUpCount?: number;
+  followUp1SentAt?: string;
+  followUp2SentAt?: string;
+  followUp3SentAt?: string;
+  followUpLastSentAt?: string;
+  // Timestamps
   createdAt: string;
   updatedAt?: string;
-  persona?: string; // Links to businessType
+  // Relations
+  items_data?: InvoiceItem[];
 }
 
 export interface Payment {
   id: string;
   invoiceId: string;
+  organizationId?: string;
+  organization_id?: string;
   amount: number;
-  method: 'cash' | 'upi' | 'card' | 'bank_transfer' | 'check' | 'other';
-  status: 'pending' | 'completed' | 'failed';
-  transactionId?: string;
-  createdAt: Date;
-  date?: string; // Standardized ISO date for payment recording
+  date: string;
+  method?: string;
+  paymentMode?: 'upi' | 'neft' | 'imps' | 'rtgs' |
+               'cheque' | 'cash' | 'razorpay' |
+               'stripe' | 'other';
+  referenceNumber?: string;
+  upiTransactionId?: string;
   notes?: string;
+  status?: string;
+  createdAt?: string;
 }
 
 export interface Expense {
   id: string;
-  amount: number;
-  category: string;
+  organizationId?: string;
+  organization_id?: string;
   description: string;
-  date: Date;
-  gstAmount: number;
-  createdAt: Date;
+  amount: number;
+  date: string;
+  category?: string;
+  vendorName?: string;
+  vendor_name?: string;
+  gstAmount?: number;
+  isItcEligible?: boolean;
+  is_itc_eligible?: boolean;
   receiptUrl?: string;
+  receipt_url?: string;
+  paymentMode?: string;
+  referenceNumber?: string;
+  createdAt?: string;
 }
 
 export interface Reminder {

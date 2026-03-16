@@ -74,11 +74,12 @@ export async function generateDraft(
     // Fallback: use local templates with actual invoice data
     const daysOverdue = invoiceData?.daysOverdue || 0;
     const strat = forceAggressive ? STRATEGIES.escalation : pickFallbackStrategy(daysOverdue);
+    const safeId = String(invoiceId).slice(-6);
 
     return {
-        subject: strat.subject.replace('{id}', invoiceId.slice(-6)),
+        subject: strat.subject.replace('{id}', safeId),
         body: strat.body
-            .replace(/{id}/g, invoiceId.slice(-6))
+            .replace(/{id}/g, safeId)
             .replace(/{customer}/g, invoiceData?.customerName || 'Valued Customer')
             .replace(/{amount}/g, invoiceData?.amount ? `₹${invoiceData.amount.toLocaleString()}` : '—')
             .replace(/{dueDate}/g, invoiceData?.dueDate || '—')

@@ -105,13 +105,13 @@ export function CollectionsActionModal({ invoiceId, isOpen, onClose, onSent }: P
         }
     };
 
-    if (!isOpen) return null;
-
     const stratStyle = draft ? (STRATEGY_STYLES[draft.strategyTone] || STRATEGY_STYLES.direct) : null;
+    const safeId = String(invoiceId).slice(-8).toUpperCase();
 
     return createPortal(
         <AnimatePresence>
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            {isOpen && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -145,7 +145,7 @@ export function CollectionsActionModal({ invoiceId, isOpen, onClose, onSent }: P
                                     </span>
                                 </h2>
                                 <p className="text-xs text-gray-400 mt-1.5 font-medium" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                                    Target → Invoice {invoiceId.slice(-8).toUpperCase()}
+                                    Target → Invoice {safeId}
                                 </p>
                             </div>
                             <button
@@ -259,6 +259,7 @@ export function CollectionsActionModal({ invoiceId, isOpen, onClose, onSent }: P
                     )}
                 </motion.div>
             </div>
+            )}
         </AnimatePresence>,
         document.body
     );

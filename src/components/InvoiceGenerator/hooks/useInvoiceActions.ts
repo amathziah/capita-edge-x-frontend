@@ -13,6 +13,7 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
         seller, buyer, meta, items, notes,
         subtotal, taxAmount, taxLabel, taxRate, shipping, total,
         projectName, shippingAddress, orderNumber,
+        courierTracking, dispatchDate, businessType,
         logo, setLogo,
         setActiveAction,
         setIsEmailModalOpen, emailTo, setEmailTo,
@@ -20,19 +21,77 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
     } = state;
 
     // ─── Build Invoice Data ────────────────────────────────────────────
-    const buildInvoiceData = () => ({
-        id: undefined as string | undefined,
-        invoiceNumber: meta.number,
-        date: meta.date,
-        dueDate: meta.dueDate,
-        seller, buyer, items,
-        subtotal, taxAmount,
-        taxType: taxLabel,
-        taxRate, discount: 0, shipping, total,
-        status: 'draft' as const,
-        notes: notes || '',
-        projectName, shippingAddress, orderNumber,
-    });
+    const buildInvoiceData = () => {
+        // Compute GST split from taxAmount
+        const isIgst =
+            state.isInterState ||
+            state.gstType === 'igst' ||
+            (state.deliveryState &&
+             state.deliveryState !== state.sellerState);
+
+        const cgstAmount = isIgst ? 0 : taxAmount / 2;
+        const sgstAmount = isIgst ? 0 : taxAmount / 2;
+        const igstAmount = isIgst ? taxAmount : 0;
+
+        const gstType = !state.isGstRegistered
+            ? 'not_applicable'
+            : isIgst ? 'igst' : 'cgst_sgst';
+
+        // Compute TDS
+        const tdsAmount = state.tdsEnabled
+            ? (subtotal * (state.tdsRate || 10)) / 100
+            : 0;
+        const netReceivable = state.tdsEnabled
+            ? subtotal - tdsAmount
+            : null;
+
+        return {
+            id: undefined as string | undefined,
+            invoiceNumber: meta.number,
+            date: meta.date,
+            dueDate: meta.dueDate,
+            seller,
+            buyer,
+            items,
+            subtotal,
+            taxAmount,
+            taxType: taxLabel,
+            taxRate,
+            discount: 0,
+            discountAmount: state.discountAmount || 0,
+            shipping,
+            total,
+            status: 'draft' as const,
+            notes: notes || '',
+            // Persona
+            persona: businessType || null,
+            // Services firm
+            projectName,
+            // Ecommerce
+            shippingAddress,
+            orderNumber,
+            orderRef: state.orderRef || null,
+            courierName: state.courierName || null,
+            courierTracking,
+            dispatchDate,
+            // GST
+            gstType,
+            cgstAmount,
+            sgstAmount,
+            igstAmount,
+            isGstRegistered: state.isGstRegistered !== false,
+            placeOfSupply: state.placeOfSupply || null,
+            reverseCharge: state.reverseCharge || false,
+            // TDS (solopreneur)
+            tdsApplicable: state.tdsEnabled || false,
+            tdsRate: state.tdsRate || 10,
+            tdsAmount,
+            netReceivable,
+            // CA
+            frn: state.frn || null,
+            lutNumber: state.lutNumber || null,
+        };
+    };
 
     // ─── Logo Upload ───────────────────────────────────────────────────
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

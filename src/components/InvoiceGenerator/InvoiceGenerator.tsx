@@ -57,6 +57,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         deliveryState, setDeliveryState, dispatchDate, setDispatchDate,
         courierTracking, setCourierTracking,
         items, setItems, taxRate, setTaxRate, shipping, setShipping,
+        tdsEnabled, tdsRate,
         subtotal, taxAmount, total,
         caIsInterState, ecomIsInterState,
         activeAction, loading,
@@ -68,6 +69,8 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         customers, isBuyerFocused, setIsBuyerFocused,
         bottomRef,
     } = state;
+
+    const tdsAmount = tdsEnabled ? (subtotal * (tdsRate || 10)) / 100 : 0;
 
     const {
         handleLogoUpload, handleSaveAndDownload, handleSaveOnly,
@@ -177,7 +180,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                     businessType={businessType} items={items} setItems={(newItems) => { setItems(newItems); clearErrors(); }}
                     currency={currency} products={products}
                     focusedItemIndex={focusedItemIndex} setFocusedItemIndex={setFocusedItemIndex}
-                    showToast={showToast} taxRate={taxRate} itemErrors={itemErrors}
+                    taxRate={taxRate} itemErrors={itemErrors}
                 />
 
                 {/* ─── Notes, Courier, Signatory, UPI ─── */}
@@ -197,6 +200,9 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                     reverseCharge={reverseCharge} placeOfSupply={placeOfSupply} caIsInterState={caIsInterState}
                     isInterState={isInterState} setIsInterState={setIsInterState}
                     deliveryState={deliveryState} setDeliveryState={setDeliveryState} ecomIsInterState={ecomIsInterState}
+                    tdsEnabled={tdsEnabled}
+                    tdsAmount={tdsAmount}
+                    tdsRate={tdsRate}
                 />
 
                 <div ref={bottomRef as React.RefObject<HTMLDivElement>} />

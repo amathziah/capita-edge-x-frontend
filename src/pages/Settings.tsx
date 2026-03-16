@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Upload, Save, Building, Image as ImageIcon, Loader2, CheckCircle2, CreditCard, ChevronRight, Mail, AlertCircle, Phone, MapPin, Fingerprint, Receipt } from 'lucide-react';
+import { Settings as SettingsIcon, Upload, Save, Building, Image as ImageIcon, Loader2, CheckCircle2, CreditCard, ChevronRight, Mail, AlertCircle, Phone, MapPin, Fingerprint, Receipt, Settings2 as Settings2Icon } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type Tab = 'general' | 'branding' | 'payments' | 'email';
+type Tab = 'general' | 'branding' | 'payments' | 'compliance' | 'email';
 
 export function Settings() {
     const [activeTab, setActiveTab] = useState<Tab>('general');
@@ -131,6 +131,7 @@ export function Settings() {
         { id: 'general', label: 'General Info', icon: Building, description: 'Company name, contact, and address' },
         { id: 'branding', label: 'Branding', icon: ImageIcon, description: 'Logo and visual identity' },
         { id: 'payments', label: 'Invoicing & Payments', icon: CreditCard, description: 'Payment terms, footer, and bank details' },
+        { id: 'compliance', label: 'GST & Compliance', icon: Receipt, description: 'GSTIN, PAN, FRN, bank details' },
         { id: 'email', label: 'Email Integration', icon: Mail, description: 'Connect Gmail' },
     ];
 
@@ -534,6 +535,217 @@ export function Settings() {
                                 </div>
                             )}
 
+
+                            {activeTab === 'compliance' && (
+                                <div className="max-h-[calc(100vh-220px)] overflow-y-auto pr-3 custom-scrollbar space-y-6">
+
+                                    {/* GST & Tax Identity */}
+                                    <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 space-y-6">
+                                        <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
+                                            <div className="p-2 bg-primary/10 rounded-lg">
+                                                <Receipt className="w-5 h-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-text-main leading-tight">GST & Tax Identity</h3>
+                                                <p className="text-sm text-text-muted">Required for GST-compliant invoices</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">GSTIN</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.gstin || ''}
+                                                    onChange={(e) => handleSettingChange('gstin', e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400 font-mono uppercase"
+                                                    placeholder="27ABCDE1234F1Z5"
+                                                    maxLength={15}
+                                                />
+                                                <p className="text-xs text-text-light">15-digit GST Identification Number</p>
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">PAN Number</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.pan || ''}
+                                                    onChange={(e) => handleSettingChange('pan', e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400 font-mono uppercase"
+                                                    placeholder="ABCDE1234F"
+                                                    maxLength={10}
+                                                />
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">
+                                                    FRN — Firm Registration Number
+                                                    <span className="text-xs font-normal text-text-light ml-2">CA firms only</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.frn || ''}
+                                                    onChange={(e) => handleSettingChange('frn', e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400 font-mono"
+                                                    placeholder="000000N"
+                                                />
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">
+                                                    LUT Number
+                                                    <span className="text-xs font-normal text-text-light ml-2">for zero-rated exports</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.lutNumber || ''}
+                                                    onChange={(e) => handleSettingChange('lutNumber', e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
+                                                    placeholder="AD220421006927E"
+                                                />
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">
+                                                    MSME Registration Number
+                                                    <span className="text-xs font-normal text-text-light ml-2">optional</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.msmeNumber || ''}
+                                                    onChange={(e) => handleSettingChange('msmeNumber', e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
+                                                    placeholder="UDYAM-MH-00-0000000"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <SaveButton onClick={() => saveSection(['gstin', 'pan', 'frn', 'lutNumber', 'msmeNumber'], 'GST & Tax details')} />
+                                    </div>
+
+                                    {/* Bank Details */}
+                                    <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 space-y-6">
+                                        <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
+                                            <div className="p-2 bg-blue-50 rounded-lg">
+                                                <CreditCard className="w-5 h-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-text-main leading-tight">Bank Account Details</h3>
+                                                <p className="text-sm text-text-muted">Shown on invoices for bank transfers</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">Bank Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.bankName || ''}
+                                                    onChange={(e) => handleSettingChange('bankName', e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400"
+                                                    placeholder="HDFC Bank"
+                                                />
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">Account Number</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.bankAccountNumber || ''}
+                                                    onChange={(e) => handleSettingChange('bankAccountNumber', e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400 font-mono"
+                                                    placeholder="1234567890"
+                                                />
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">IFSC Code</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.bankIfsc || ''}
+                                                    onChange={(e) => handleSettingChange('bankIfsc', e.target.value.toUpperCase())}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-gray-400 font-mono uppercase"
+                                                    placeholder="HDFC0001234"
+                                                    maxLength={11}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <SaveButton onClick={() => saveSection(['bankName', 'bankAccountNumber', 'bankIfsc'], 'Bank details')} />
+                                    </div>
+
+                                    {/* Capita Automation Settings */}
+                                    <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 space-y-6">
+                                        <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
+                                            <div className="p-2 bg-purple-50 rounded-lg">
+                                                <Settings2Icon className="w-5 h-5 text-purple-500" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-text-main leading-tight">Capita Automation</h3>
+                                                <p className="text-sm text-text-muted">Configure when Capita acts automatically</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {[
+                                                { key: 'autoFollowUp', label: 'Auto follow-up emails', desc: 'Capita sends payment reminders automatically on day 7, 14, and 30' },
+                                                { key: 'reorderAlertsEnabled', label: 'Stock reorder alerts', desc: 'Get notified when products fall below minimum stock level' },
+                                                { key: 'mrrAlertsEnabled', label: 'MRR drop alerts', desc: 'Alert when monthly recurring revenue drops below last month' },
+                                                { key: 'weeklySummaryEnabled', label: 'Weekly cash summary', desc: 'Capita sends a Monday morning financial summary' },
+                                            ].map(item => (
+                                                <div key={item.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-text-main">{item.label}</p>
+                                                        <p className="text-xs text-text-muted mt-0.5">{item.desc}</p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSettingChange(item.key, settings[item.key] === 'true' || settings[item.key] === true ? 'false' : 'true')}
+                                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${settings[item.key] === 'true' || settings[item.key] === true ? 'bg-primary' : 'bg-gray-200'}`}
+                                                    >
+                                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings[item.key] === 'true' || settings[item.key] === true ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="grid md:grid-cols-3 gap-4">
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">Follow-up day 1</label>
+                                                <input
+                                                    type="number"
+                                                    value={settings.followUpDay1 || 7}
+                                                    onChange={(e) => handleSettingChange('followUpDay1', e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                                    min={1} max={30}
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">Follow-up day 2</label>
+                                                <input
+                                                    type="number"
+                                                    value={settings.followUpDay2 || 14}
+                                                    onChange={(e) => handleSettingChange('followUpDay2', e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                                    min={1} max={60}
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <label className="text-sm font-semibold text-text-main">Follow-up day 3</label>
+                                                <input
+                                                    type="number"
+                                                    value={settings.followUpDay3 || 30}
+                                                    onChange={(e) => handleSettingChange('followUpDay3', e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border-gray-100 border rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                                    min={1} max={90}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <SaveButton onClick={() => saveSection(['autoFollowUp', 'reorderAlertsEnabled', 'mrrAlertsEnabled', 'weeklySummaryEnabled', 'followUpDay1', 'followUpDay2', 'followUpDay3'], 'Automation settings')} />
+                                    </div>
+                                </div>
+                            )}
 
                             {activeTab === 'email' && (
                                 <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 space-y-8">

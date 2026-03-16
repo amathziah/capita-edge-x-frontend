@@ -56,16 +56,15 @@ export interface CalendarInvoiceEvent extends Event {
 const STATUS_CONFIG: Record<string, { bg: string; border: string; text: string; label: string; dot: string }> = {
     paid: { bg: '#0d9488', border: '#0f766e', text: '#ccfbf1', label: 'Paid', dot: 'bg-teal-500' },
     sent: { bg: '#0d9488', border: '#0f766e', text: '#ccfbf1', label: 'Sent', dot: 'bg-teal-500' },
-    pending: { bg: '#d97706', border: '#b45309', text: '#fef3c7', label: 'Pending', dot: 'bg-amber-500' },
+    viewed: { bg: '#0891b2', border: '#0e7490', text: '#cffafe', label: 'Viewed', dot: 'bg-cyan-500' },
     overdue: { bg: '#dc2626', border: '#b91c1c', text: '#fee2e2', label: 'Overdue', dot: 'bg-red-500' },
     draft: { bg: '#6b7280', border: '#4b5563', text: '#f3f4f6', label: 'Draft', dot: 'bg-gray-400' },
-    viewed: { bg: '#0d9488', border: '#0f766e', text: '#ccfbf1', label: 'Viewed', dot: 'bg-teal-500' },
     cancelled: { bg: '#9ca3af', border: '#6b7280', text: '#f9fafb', label: 'Cancelled', dot: 'bg-gray-400' },
     escalated: { bg: '#7c3aed', border: '#6d28d9', text: '#ede9fe', label: 'Escalated', dot: 'bg-violet-500' },
-    partially_paid: { bg: '#0891b2', border: '#0e7490', text: '#cffafe', label: 'Partial', dot: 'bg-cyan-500' },
+    partially_paid: { bg: '#0284c7', border: '#0369a1', text: '#e0f2fe', label: 'Partial', dot: 'bg-sky-500' },
 };
 
-const VISIBLE_STATUSES = ['paid', 'sent', 'pending', 'overdue', 'draft'];
+const VISIBLE_STATUSES = ['paid', 'sent', 'viewed', 'overdue', 'draft'];
 
 // ---------------------------------------------------------------------------
 // Custom Event component
@@ -129,7 +128,7 @@ export function LiquidityCalendar() {
     const stats = useMemo(() => {
         const arr = Array.isArray(invoices) ? invoices : [];
         const overdue = arr.filter(i => i.status === 'overdue' || i.status === 'escalated');
-        const pending = arr.filter(i => i.status === 'pending' || i.status === 'sent' || i.status === 'viewed');
+        const pending = arr.filter(i => i.status === 'sent' || i.status === 'viewed' || i.status === 'partially_paid');
         const paid = arr.filter(i => i.status === 'paid');
 
         return {
@@ -581,6 +580,93 @@ export function LiquidityCalendar() {
               .rbc-toolbar button.rbc-active { background: #0d9488; color: white; border-color: #0d9488; box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25); }
               .rbc-toolbar-label { font-size: 18px; font-weight: 700; color: #111827; font-family: 'Sora', sans-serif; }
               .rbc-show-more { color: #0d9488; font-size: 11px; font-weight: 700; font-family: 'Manrope', sans-serif; }
+              
+              /* ─── Ultra-Professional Show More Modal ─── */
+              .rbc-overlay {
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                z-index: 1000 !important;
+                background: white !important;
+                border-radius: 20px !important;
+                box-shadow: 
+                  0 0 0 1px rgba(0, 0, 0, 0.05),
+                  0 20px 50px -12px rgba(0, 0, 0, 0.3),
+                  0 0 0 9999px rgba(15, 23, 42, 0.6) !important; /* Neutral dark backdrop */
+                width: 95vw !important;
+                max-width: 400px !important;
+                max-height: 60vh !important;
+                overflow-y: auto !important;
+                padding: 0 !important; /* Remove default padding for clean header */
+                border: none !important;
+                border-left: 4px solid #0d9488 !important; /* Single teal accent line */
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+              }
+              
+              /* Professional Stealth Scrollbar */
+              .rbc-overlay::-webkit-scrollbar { width: 4px; }
+              .rbc-overlay::-webkit-scrollbar-track { background: transparent; }
+              .rbc-overlay::-webkit-scrollbar-thumb { 
+                background: rgba(0, 0, 0, 0.05); 
+                border-radius: 10px; 
+              }
+              .rbc-overlay:hover::-webkit-scrollbar-thumb { 
+                background: rgba(0, 0, 0, 0.1); 
+              }
+              
+              .rbc-overlay-header {
+                font-family: 'Sora', sans-serif !important;
+                font-weight: 700 !important;
+                font-size: 15px !important;
+                color: #1e293b !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.1em !important;
+                padding: 20px 24px !important;
+                margin: 0 !important;
+                border-bottom: 1px solid #f1f5f9 !important;
+                position: sticky !important;
+                top: 0 !important;
+                background: white !important;
+                z-index: 10 !important;
+              }
+              
+              /* Event items inside overlay - Professional List Style */
+              .rbc-overlay .rbc-event {
+                margin: 0 !important;
+                padding: 14px 24px !important;
+                border-radius: 0 !important;
+                border: none !important;
+                border-bottom: 1px solid #f8fafc !important;
+                background: transparent !important;
+                color: #334155 !important;
+                box-shadow: none !important;
+                font-size: 13px !important;
+                font-weight: 500 !important;
+                display: flex !important;
+                align-items: center !important;
+                transition: background 0.2s ease !important;
+              }
+              .rbc-overlay .rbc-event:hover {
+                background: #f8fafc !important;
+                filter: none !important;
+                transform: none !important;
+              }
+              .rbc-overlay .rbc-event:last-child {
+                border-bottom: none !important;
+              }
+              
+              /* Status dots inside overlay for professional look */
+              .rbc-overlay .rbc-event::before {
+                content: '';
+                display: inline-block;
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                margin-right: 12px;
+                background: currentColor;
+                opacity: 0.8;
+              }
             `}</style>
 
                         <Calendar<CalendarInvoiceEvent>

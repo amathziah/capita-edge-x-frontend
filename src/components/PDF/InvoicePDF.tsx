@@ -207,6 +207,11 @@ const createStyles = (type?: string) => {
             fontWeight: 'bold',
             color: '#111827',
         },
+        itemCodeText: {
+            fontSize: 7,
+            color: '#9CA3AF',
+            marginTop: 1,
+        },
         summaryContainer: {
             flexDirection: 'row',
             justifyContent: 'flex-end',
@@ -298,6 +303,27 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, settings, logoUrl }) =
     const isAgency = businessType === 'services_firm';
     const isEcommerce = businessType === 'ecommerce';
 
+    // Inline helper for summary rows
+    const SummaryRow = ({ label, value, isDeduction, isHighlight, isBold, isText }: {
+        label: string; value: any; isDeduction?: boolean;
+        isHighlight?: boolean; isBold?: boolean; isText?: boolean;
+    }) => (
+        <View style={isBold ? styles.totalRow : styles.summaryRow}>
+            <Text style={isBold ? styles.totalLabelLarge : styles.summaryLabel}>{label}</Text>
+            {isText ? (
+                <Text style={styles.summaryValue}>{value}</Text>
+            ) : (
+                <Text style={[
+                    isBold ? styles.totalValueLarge : styles.summaryValue,
+                    isDeduction ? { color: '#EF4444' } : {},
+                    isHighlight ? { color: '#10B981' } : {},
+                ]}>
+                    {currency}{typeof value === 'number' ? Math.abs(value).toFixed(2) : value}
+                </Text>
+            )}
+        </View>
+    );
+
     return (
         <Document>
             <Page size="A4" style={styles.page}>
@@ -349,6 +375,18 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, settings, logoUrl }) =
                             <Text style={styles.metaLabel}>Due Date</Text>
                             <Text style={styles.metaValue}>{new Date(invoice.dueDate).toLocaleDateString()}</Text>
                         </View>
+                        {invoice.placeOfSupply && (
+                            <View style={styles.metaRow}>
+                                <Text style={styles.metaLabel}>Place of Supply</Text>
+                                <Text style={styles.metaValue}>{invoice.placeOfSupply}</Text>
+                            </View>
+                        )}
+                        {invoice.reverseCharge && (
+                            <View style={styles.metaRow}>
+                                <Text style={[styles.metaLabel, { color: '#F59E0B' }]}>Reverse Charge</Text>
+                                <Text style={[styles.metaValue, { color: '#F59E0B' }]}>Yes</Text>
+                            </View>
+                        )}
                     </View>
                 </View>
 
@@ -388,6 +426,11 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, settings, logoUrl }) =
                                 {isEcommerce && item.sku && (
                                     <Text style={styles.rowTextSmall}>SKU: {item.sku}</Text>
                                 )}
+                                {(item.hsnCode || item.sacCode) && (
+                                    <Text style={styles.itemCodeText}>
+                                        {item.hsnCode ? `HSN: ${item.hsnCode}` : `SAC: ${item.sacCode}`}
+                                    </Text>
+                                )}
                             </View>
                             {(isSaaS || isAgency) && (
                                 <View style={styles.colPeriod}>
@@ -405,26 +448,43 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, settings, logoUrl }) =
 
                 <View style={styles.summaryContainer}>
                     <View style={styles.summaryBlock}>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.summaryLabel}>Subtotal</Text>
-                            <Text style={styles.summaryValue}>{currency}{Number(invoice.subtotal).toFixed(2)}</Text>
-                        </View>
-                        {Boolean(invoice.taxAmount && invoice.taxAmount > 0) && (
-                            <View style={styles.summaryRow}>
-                                <Text style={styles.summaryLabel}>{invoice.taxType} ({invoice.taxRate}%)</Text>
-                                <Text style={styles.summaryValue}>{currency}{Number(invoice.taxAmount).toFixed(2)}</Text>
-                            </View>
+                        {/* Subtotal */}
+                        <SummaryRow label="Subtotal" value={Number(invoice.subtotal)} />
+
+                        {/* GST split — show if GST registered */}
+                        {invoice.isGstRegistered !== false && invoice.gstType !== 'not_applicable' && (
+                            <>
+                                {invoice.gstType === 'igst' || (invoice.igstAmount && invoice.igstAmount > 0) ? (
+                                    <SummaryRow label={`IGST @ ${invoice.taxRate || 0}%`} value={invoice.igstAmount || Number(invoice.taxAmount)} />
+                                ) : (
+                                    <>
+                                        <SummaryRow label={`CGST @ ${(invoice.taxRate || 0) / 2}%`} value={invoice.cgstAmount || Number(invoice.taxAmount) / 2} />
+                                        <SummaryRow label={`SGST @ ${(invoice.taxRate || 0) / 2}%`} value={invoice.sgstAmount || Number(invoice.taxAmount) / 2} />
+                                    </>
+                                )}
+                            </>
                         )}
+
+                        {/* Not applicable badge */}
+                        {invoice.isGstRegistered === false && (
+                            <SummaryRow label="GST" value="Not Applicable" isText />
+                        )}
+
+                        {/* Shipping */}
                         {Boolean((invoice.shipping || 0) > 0) && (
-                            <View style={styles.summaryRow}>
-                                <Text style={styles.summaryLabel}>Shipping</Text>
-                                <Text style={styles.summaryValue}>{currency}{Number(invoice.shipping || 0).toFixed(2)}</Text>
-                            </View>
+                            <SummaryRow label="Shipping" value={Number(invoice.shipping || 0)} />
                         )}
-                        <View style={styles.totalRow}>
-                            <Text style={styles.totalLabelLarge}>Total</Text>
-                            <Text style={styles.totalValueLarge}>{currency}{Number(invoice.total).toFixed(2)}</Text>
-                        </View>
+
+                        {/* TDS */}
+                        {invoice.tdsApplicable && invoice.tdsAmount && invoice.tdsAmount > 0 && (
+                            <>
+                                <SummaryRow label={`TDS @${invoice.tdsRate || 10}% (Sec. 194J)`} value={-(invoice.tdsAmount)} isDeduction />
+                                <SummaryRow label="Net Receivable" value={invoice.netReceivable || Number(invoice.subtotal) - invoice.tdsAmount} isHighlight />
+                            </>
+                        )}
+
+                        {/* Total */}
+                        <SummaryRow label="Total" value={Number(invoice.total)} isBold />
                     </View>
                 </View>
 
