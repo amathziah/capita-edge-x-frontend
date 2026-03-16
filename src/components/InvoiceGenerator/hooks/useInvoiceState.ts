@@ -8,6 +8,9 @@ import { BusinessType } from '../../../contexts/PersonaContext';
 import { SellerErrors } from '../sections/SellerSection';
 import { BuyerErrors } from '../sections/BuyerSection';
 import { HeaderErrors } from '../sections/InvoiceHeader';
+import { InvoiceCalculator } from '../../../lib/financialMath';
+import { detectGstType } from '../../../lib/gstUtils';
+import { getDefaultTdsSection, TDS_RATES } from '../../../lib/sacDatabase';
 
 // ─── Props that this hook accepts ──────────────────────────────────────
 export interface UseInvoiceStateProps {
@@ -101,8 +104,13 @@ export interface InvoiceState {
     subtotal: number;
     taxAmount: number;
     total: number;
-    caIsInterState: boolean;
-    ecomIsInterState: boolean;
+    tdsAmount: number;
+    netReceivable: number;
+    totalCgst: number;
+    totalSgst: number;
+    totalIgst: number;
+    resolvedGstType: 'cgst_sgst' | 'igst' | 'not_applicable' | 'exempt';
+    calcResult: ReturnType<typeof InvoiceCalculator.calculate>;
 
     // UI State
     activeAction: 'saving' | 'downloading' | 'emailing' | 'printing' | 'uploading' | null;
@@ -170,7 +178,11 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
     const [dispatchDate, setDispatchDate] = useState('');
     const [courierTracking, setCourierTracking] = useState('');
     // TDS
-    const [tdsEnabled, setTdsEnabled] = useState(false);
+    const [tdsEnabled, setTdsEnabled] = useState(
+        businessType === 'solopreneur' ||
+        businessType === 'services_firm' ||
+        businessType === 'ca'
+    );
     const [tdsRate, setTdsRate] = useState(10);
     // CA
     const [frn, setFrn] = useState('');
@@ -183,29 +195,63 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
     const [sellerState, setSellerState] = useState('');
     const [discountAmount, setDiscountAmount] = useState(0);
 
-    // ─── Computed Inter-State ──────────────────────────────────────────
-    const caIsInterState = config.interStateMode === 'auto-place-of-supply' && placeOfSupply && seller.taxId
-        ? placeOfSupply.substring(0, 2) !== (seller.taxId.substring(0, 2) || '')
-        : false;
-
-    const ecomIsInterState = config.interStateMode === 'auto-delivery-state' && deliveryState && seller.taxId
-        ? deliveryState.substring(0, 2) !== (seller.taxId.substring(0, 2) || '')
-        : false;
+    // ─── Computed Inter-State (REPLACED BY resolvedGstType) ────────────
 
     // ─── Items & Totals ────────────────────────────────────────────────
     const [items, setItems] = useState<InvoiceItem[]>([
-        { description: "", quantity: 1, unit: config.defaultUnit, price: 0, discount: 0 },
+        { description: "", quantity: 1, unit: config.defaultUnit, price: 0, discount: 0, sac_code: "", tax_rate: 18, is_exempt: false },
     ]);
     const [taxRate, setTaxRate] = useState<number>(config.defaultTaxRate);
     const [shipping, setShipping] = useState<number>(0);
 
-    const subtotal = items.reduce((acc, i) => {
-        const lineTotal = i.quantity * i.price;
-        const discountAmt = (lineTotal * (i.discount || 0)) / 100;
-        return acc + (lineTotal - discountAmt);
-    }, 0);
-    const taxAmount = subtotal * (taxRate / 100);
-    const total = subtotal + taxAmount + shipping;
+    const resolvedGstType = detectGstType(
+        seller.taxId ?? '',
+        buyer.taxId ?? '',
+        {
+            isEcommerce: businessType === 'ecommerce',
+            deliveryState: deliveryState || undefined,
+            isLutActive: !!lutNumber,
+            isNotRegistered: !isGstRegistered,
+            isReverseCharge: reverseCharge,
+        }
+    );
+
+    const isInterStateResolved = resolvedGstType === 'igst';
+
+    const calcInput = {
+        line_items: items.map(item => ({
+            quantity: item.quantity,
+            unit_price: item.price,
+            discount: (item.discount && item.discount > 0)
+                ? { type: 'percentage' as const, value: item.discount }
+                : undefined,
+            tax_rate: item.is_exempt ? 0 : (item.tax_rate ?? taxRate),
+            is_interstate: isInterStateResolved,
+        })),
+        document_discount: discountAmount > 0
+            ? { type: 'flat' as const, value: discountAmount }
+            : undefined,
+        shipping_charges: shipping,
+        tds_rate: tdsEnabled ? tdsRate : 0,
+    };
+
+    const calcResult = InvoiceCalculator.calculate(calcInput);
+
+    const subtotal = parseFloat(calcResult.subtotal);
+    const taxAmount = parseFloat(calcResult.total_tax);
+    const total = parseFloat(calcResult.grand_total);
+    const tdsAmount = parseFloat(calcResult.tds_amount);
+    const netReceivable = parseFloat(calcResult.payable_amount);
+
+    const totalCgst = resolvedGstType === 'cgst_sgst'
+        ? calcResult.line_totals.reduce((s, l) => s + (l.tax_breakdown.cgst ?? 0), 0)
+        : 0;
+    const totalSgst = resolvedGstType === 'cgst_sgst'
+        ? calcResult.line_totals.reduce((s, l) => s + (l.tax_breakdown.sgst ?? 0), 0)
+        : 0;
+    const totalIgst = resolvedGstType === 'igst'
+        ? calcResult.line_totals.reduce((s, l) => s + (l.tax_breakdown.igst ?? 0), 0)
+        : 0;
 
     // ─── UI State ──────────────────────────────────────────────────────
     const [activeAction, setActiveAction] = useState<'saving' | 'downloading' | 'emailing' | 'printing' | 'uploading' | null>(null);
@@ -383,7 +429,13 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         taxRate, setTaxRate,
         shipping, setShipping,
         subtotal, taxAmount, total,
-        caIsInterState, ecomIsInterState,
+        tdsAmount,
+        netReceivable,
+        totalCgst,
+        totalSgst,
+        totalIgst,
+        resolvedGstType,
+        calcResult,
         activeAction, setActiveAction,
         loading,
         isEmailModalOpen, setIsEmailModalOpen,

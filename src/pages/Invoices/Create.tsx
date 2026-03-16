@@ -7,6 +7,7 @@ import { API_URL } from '../../api/client';
 import { ENDPOINTS } from '../../api/endpoints';
 import { Invoice } from '../../types';
 import { ArrowLeft, Plus, Save, Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { InvoiceCalculator } from '../../lib/financialMath';
 
 export function CreateInvoice() {
     const navigate = useNavigate();
@@ -25,7 +26,7 @@ export function CreateInvoice() {
             date: new Date().toISOString().split('T')[0],
             dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             status: 'draft',
-            items: [{ description: '', quantity: 1, rate: 0, amount: 0 }],
+            items: [{ description: '', quantity: 1, price: 0 }],
             customerName: '',
             customerEmail: ''
         }
@@ -36,12 +37,24 @@ export function CreateInvoice() {
         name: "items"
     });
 
-    // Calculations for display
-    const items = watch('items');
-    const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
-    const taxRate = 0.18; // Default 18% for now
-    const taxAmount = subtotal * taxRate;
-    const total = subtotal + taxAmount;
+// Calculations for display
+    const watchedItems = watch('items') || [];
+
+    const calcInput = {
+        line_items: watchedItems.map(item => ({
+            quantity: item.quantity || 0,
+            unit_price: item.price || 0,
+            tax_rate: 18, // Default for now
+            is_interstate: false, // Default for now
+        })),
+        shipping_charges: 0,
+    };
+
+    const calcResult = InvoiceCalculator.calculate(calcInput);
+
+    const subtotal = parseFloat(calcResult.subtotal);
+    const taxAmount = parseFloat(calcResult.total_tax);
+    const total = parseFloat(calcResult.grand_total);
 
     const onSave = async (data: InvoiceForm) => {
         try {
@@ -221,14 +234,14 @@ export function CreateInvoice() {
                                             <input type="number" {...register(`items.${index}.quantity` as const, { valueAsNumber: true })} placeholder="Qty" className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none" />
                                         </div>
                                         <div className="w-24">
-                                            <input type="number" {...register(`items.${index}.rate` as const, { valueAsNumber: true })} placeholder="Rate" className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none" />
+                                            <input type="number" {...register(`items.${index}.price` as const, { valueAsNumber: true })} placeholder="Rate" className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none" />
                                         </div>
                                         <button type="button" onClick={() => remove(index)} className="p-2 text-red-400 hover:text-red-600">
                                             &times;
                                         </button>
                                     </div>
                                 ))}
-                                <button type="button" onClick={() => append({ description: '', quantity: 1, rate: 0, amount: 0 })} className="flex items-center text-sm font-medium text-violet-600 hover:text-violet-700">
+                                <button type="button" onClick={() => append({ description: '', quantity: 1, price: 0 })} className="flex items-center text-sm font-medium text-violet-600 hover:text-violet-700">
                                     <Plus size={16} className="mr-1" /> Add Item
                                 </button>
                             </div>

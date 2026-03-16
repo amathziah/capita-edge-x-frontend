@@ -1,7 +1,8 @@
-import React from 'react';
+
 import InputField from '../InputField';
 import { Buyer, Seller } from '../constants';
 import { BusinessType } from '../../../contexts/PersonaContext';
+import { validateGstin, getStateFromGstin, getGstinStateDisplay } from '../../../lib/gstUtils';
 
 export interface BuyerErrors {
     name?: string;
@@ -31,7 +32,7 @@ export default function BuyerSection({
 
             <div className="relative">
                 <InputField
-                    label="Client Name"
+                    label={(businessType as string) === 'ca_firm' ? "Client's Legal Business Name" : "Client Name"}
                     required
                     placeholder={businessType === 'ca' ? "Client's Legal Business Name" : 'Client Business Name'}
                     value={buyer.name || ''}
@@ -80,7 +81,7 @@ export default function BuyerSection({
 
             <div className="flex flex-col space-y-1.5">
                 <label className="text-xs font-semibold text-text-light uppercase tracking-wider flex items-center gap-1.5">
-                    Address
+                    {(businessType as string) === 'ca_firm' ? 'Registered Business Address' : 'Address'}
                     <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-gray-400 normal-case tracking-normal bg-gray-100/80 px-1.5 py-0.5 rounded-md">optional</span>
                 </label>
                 <textarea
@@ -98,12 +99,38 @@ export default function BuyerSection({
             </div>
 
             <InputField
-                label={businessType === 'ca' ? 'Client GSTIN' : businessType === 'ecommerce' ? 'Buyer GSTIN' : seller.taxId ? 'GSTIN' : 'Tax ID'}
+                label={(businessType as string) === 'ca_firm' ? "Client's GSTIN" : 'Client GSTIN'}
                 placeholder={businessType === 'ca' ? 'e.g. 27ABCDE1234F1Z5' : businessType === 'ecommerce' ? 'e.g. 27ABCDE1234F1Z5' : seller.taxId ? 'e.g. 29ABCDE1234F1Z5' : 'Client tax identifier'}
                 value={buyer.taxId || ''}
-                onChange={(e) => setBuyer({ ...buyer, taxId: e.target.value })}
+                onChange={(e) => {
+                    const raw = e.target.value.toUpperCase().replace(/\s/g, '');
+                    const updated = { ...buyer, taxId: raw };
+                    if (raw.length === 15) {
+                        const state = getStateFromGstin(raw);
+                        // Using state code directly instead of state name mapped string from 'seller' structure logic or 'buyer.state'
+                        if (state) (updated as any).state = state;
+                    }
+                    setBuyer(updated);
+                }}
                 optional
             />
+            {buyer.taxId && (
+                <div className="mt-1 min-h-[16px]">
+                    {buyer.taxId.length < 15 ? (
+                        <span className="text-[11px] text-gray-400">
+                            {buyer.taxId.length}/15
+                        </span>
+                    ) : validateGstin(buyer.taxId) ? (
+                        <span className="text-[11px] font-medium text-green-600">
+                            Valid — {getGstinStateDisplay(buyer.taxId)}
+                        </span>
+                    ) : (
+                        <span className="text-[11px] font-medium text-amber-600">
+                            Invalid GSTIN format
+                        </span>
+                    )}
+                </div>
+            )}
             {businessType === 'ecommerce' && (
                 <p className="text-[10px] text-text-muted -mt-1 pl-1 italic">(Required for B2B wholesale only)</p>
             )}

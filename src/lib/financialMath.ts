@@ -209,12 +209,10 @@ export class InvoiceCalculator {
         const grandTotal = discountedSubtotal.plus(totalTax).plus(shippingCharges);
 
         // ── Step 5: TDS (Tax Deducted at Source) ──────────────────────────────
-        // TDS is calculated on the BASE amount (subtotal before tax), not on grand total.
-        // Example: Invoice = ₹1,00,000 + ₹18,000 GST = ₹1,18,000
-        //          TDS @ 10% of ₹1,00,000 = ₹10,000
-        //          Payable = ₹1,18,000 − ₹10,000 = ₹1,08,000
+        // TDS is calculated on grand total (inclusive of GST) per Indian tax law.
+        // Sec 194J, 194C, 194H etc. all apply on the gross payable amount.
         const tdsRate = toDecimal(input.tds_rate);
-        const tdsAmount = discountedSubtotal.mul(tdsRate).div(100);
+        const tdsAmount = grandTotal.mul(tdsRate).div(100);
 
         // ── Step 6: Round Off ──────────────────────────────────────────────────
         // Auto round to nearest ₹1 (or currency unit)
@@ -223,7 +221,7 @@ export class InvoiceCalculator {
         const roundOff = rounded.minus(preRound);
 
         // ── Step 7: Payable Amount ─────────────────────────────────────────────
-        const payableAmount = rounded;
+        const payableAmount = grandTotal.minus(tdsAmount).plus(roundOff);
 
         return {
             line_totals: lineTotals,

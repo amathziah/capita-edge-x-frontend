@@ -21,6 +21,7 @@ import BuyerSection from './sections/BuyerSection';
 import ItemsTable from './sections/ItemsTable';
 import NotesAndExtrasSection from './sections/NotesAndExtrasSection';
 import TotalsSection from './sections/TotalsSection';
+import CompliancePanel from './sections/CompliancePanel';
 
 // ─── Props ─────────────────────────────────────────────────────────────
 export interface InvoiceGeneratorProps {
@@ -58,8 +59,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         courierTracking, setCourierTracking,
         items, setItems, taxRate, setTaxRate, shipping, setShipping,
         tdsEnabled, tdsRate,
-        subtotal, taxAmount, total,
-        caIsInterState, ecomIsInterState,
+        subtotal, taxAmount, total, tdsAmount, netReceivable, totalCgst, totalSgst, totalIgst, resolvedGstType,
         activeAction, loading,
         isEmailModalOpen, setIsEmailModalOpen, emailTo, setEmailTo,
         toast, setToast, showToast,
@@ -70,7 +70,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         bottomRef,
     } = state;
 
-    const tdsAmount = tdsEnabled ? (subtotal * (tdsRate || 10)) / 100 : 0;
+    // TDS amount is now computed by the state hook's financial engine
 
     const {
         handleLogoUpload, handleSaveAndDownload, handleSaveOnly,
@@ -81,7 +81,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
     //  Render
     // ═══════════════════════════════════════════════════════════════════
     return (
-        <div className="bg-gradient-to-br from-white via-gray-50/30 to-primary-light/10 w-full h-[85vh] p-0 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col border border-gray-100/50 relative overflow-hidden font-sans text-text-main backdrop-blur-xl">
+        <div className="bg-gradient-to-br from-white via-gray-50/30 to-primary-light/10 w-full h-full p-0 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col border border-gray-100/50 relative overflow-hidden font-sans text-text-main backdrop-blur-xl">
 
             {/* ─── Top Bar ─── */}
             <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 p-5 flex flex-wrap gap-4 items-center justify-between shadow-sm sticky top-0 z-20">
@@ -191,18 +191,37 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                     seller={seller}
                 />
 
+                <CompliancePanel
+                    resolvedGstType={state.resolvedGstType}
+                    tdsEnabled={state.tdsEnabled}
+                    tdsRate={state.tdsRate}
+                    tdsSection="194J"
+                    grandTotal={state.total}
+                    tdsAmount={state.tdsAmount}
+                    netReceivable={state.netReceivable}
+                    is44ADA={
+                        state.businessType === 'solopreneur' ||
+                        state.businessType === 'services_firm' ||
+                        (state.businessType as string) === 'ca_firm' ||
+                        state.businessType === 'ca'
+                    }
+                    hasNilRatedItems={state.items.some(i => i.is_exempt === true)}
+                    persona={state.businessType}
+                    isLutActive={!!state.lutNumber}
+                    isReverseCharge={state.reverseCharge}
+                />
+
                 {/* ─── Totals ─── */}
                 <TotalsSection
                     businessType={businessType} currency={currency}
                     subtotal={subtotal} taxAmount={taxAmount} taxRate={taxRate} setTaxRate={setTaxRate}
                     taxLabel={taxLabel} shipping={shipping} setShipping={setShipping} total={total}
                     isGstRegistered={isGstRegistered}
-                    reverseCharge={reverseCharge} placeOfSupply={placeOfSupply} caIsInterState={caIsInterState}
-                    isInterState={isInterState} setIsInterState={setIsInterState}
-                    deliveryState={deliveryState} setDeliveryState={setDeliveryState} ecomIsInterState={ecomIsInterState}
-                    tdsEnabled={tdsEnabled}
-                    tdsAmount={tdsAmount}
-                    tdsRate={tdsRate}
+                    tdsEnabled={tdsEnabled} tdsAmount={tdsAmount} tdsRate={tdsRate}
+                    netReceivable={netReceivable}
+                    totalCgst={totalCgst} totalSgst={totalSgst} totalIgst={totalIgst}
+                    resolvedGstType={resolvedGstType}
+                    reverseCharge={reverseCharge} placeOfSupply={placeOfSupply}
                 />
 
                 <div ref={bottomRef as React.RefObject<HTMLDivElement>} />

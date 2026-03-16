@@ -461,6 +461,9 @@ export function Invoices() {
                   Total
                   {sortKey === "total" && <span className="ml-1 opacity-70">{sortDir === 'asc' ? '↑' : '↓'}</span>}
                 </th>
+                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">
+                  Net Receivable
+                </th>
                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer hover:text-primary transition" onClick={() => setSort("status")}>
                   Status
                   {sortKey === "status" && <span className="ml-1 opacity-70">{sortDir === 'asc' ? '↑' : '↓'}</span>}
@@ -501,6 +504,14 @@ export function Invoices() {
                     </td>
                     <td className="px-6 py-4 text-text-main">{inv.buyer?.name || "Unknown"}</td>
                     <td className="px-6 py-4 text-right font-medium text-text-main">₹{inv.total.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-right text-sm">
+                      {inv.netReceivable
+                        ? <span className="font-medium text-green-600">
+                            ₹{Number(inv.netReceivable).toLocaleString('en-IN')}
+                          </span>
+                        : <span className="text-gray-400 text-xs">No TDS</span>
+                      }
+                    </td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize border ${STATUS_COLORS[inv.status] || 'bg-gray-100 text-gray-600 border-gray-200'
                         }`}>
@@ -610,7 +621,12 @@ export function Invoices() {
                   Page {page} of {totalPages} • {sorted.length} Total Invoices
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-bold text-text-main">
-                  Total: ₹{totalVisible.toLocaleString()}
+                  Total: ₹{totalVisible.toLocaleString('en-IN')}
+                </td>
+                <td className="px-6 py-4 text-right text-sm font-bold text-green-600">
+                  Net: ₹{sorted.reduce((s, i) =>
+                    s + (Number(i.netReceivable) || Number(i.total) || 0), 0
+                  ).toLocaleString('en-IN')}
                 </td>
                 <td colSpan={2} />
               </tr>
@@ -782,22 +798,94 @@ export function Invoices() {
                   {/* Summary */}
                   <div className="flex justify-end">
                     <div className="w-72 bg-gray-50/50 p-6 rounded-xl space-y-3">
+
                       <div className="flex justify-between text-sm text-text-muted">
                         <span>Subtotal</span>
-                        <span className="font-medium text-text-main">₹{(viewInvoice.subtotal || 0).toLocaleString()}</span>
+                        <span className="font-medium text-text-main">
+                          ₹{(viewInvoice.subtotal || 0).toLocaleString('en-IN')}
+                        </span>
                       </div>
-                      <div className="flex justify-between text-sm text-text-muted">
-                        <span>Tax ({viewInvoice.taxRate || 0}%)</span>
-                        <span className="font-medium text-text-main">₹{(viewInvoice.taxAmount || 0).toLocaleString()}</span>
+
+                      {viewInvoice.discountAmount && viewInvoice.discountAmount > 0 ? (
+                        <div className="flex justify-between text-sm text-text-muted">
+                          <span>Discount</span>
+                          <span className="font-medium text-red-500">
+                            − ₹{viewInvoice.discountAmount.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      ) : null}
+
+                      {viewInvoice.gstType === 'cgst_sgst' && (
+                        <>
+                          <div className="flex justify-between text-sm text-text-muted">
+                            <span>CGST</span>
+                            <span className="font-medium text-blue-600">
+                              ₹{(viewInvoice.cgstAmount || 0).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm text-text-muted">
+                            <span>SGST</span>
+                            <span className="font-medium text-blue-600">
+                              ₹{(viewInvoice.sgstAmount || 0).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        </>
+                      )}
+
+                      {viewInvoice.gstType === 'igst' && (
+                        <div className="flex justify-between text-sm text-text-muted">
+                          <span>IGST</span>
+                          <span className="font-medium text-blue-600">
+                            ₹{(viewInvoice.igstAmount || 0).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      )}
+
+                      {viewInvoice.gstType === 'not_applicable' && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-text-muted">GST</span>
+                          <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
+                            Not Applicable
+                          </span>
+                        </div>
+                      )}
+
+                      {(viewInvoice.shipping || 0) > 0 && (
+                        <div className="flex justify-between text-sm text-text-muted">
+                          <span>Shipping</span>
+                          <span className="font-medium text-text-main">
+                            ₹{(viewInvoice.shipping || 0).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="border-t border-gray-200 pt-3">
+                        <div className="flex justify-between text-xl font-bold text-primary">
+                          <span>Total</span>
+                          <span>₹{(viewInvoice.total || 0).toLocaleString('en-IN')}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between text-sm text-text-muted border-b border-gray-200 pb-3">
-                        <span>Shipping</span>
-                        <span className="font-medium text-text-main">₹{(viewInvoice.shipping || 0).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-xl font-bold text-primary pt-1">
-                        <span>Total</span>
-                        <span>₹{(viewInvoice.total || 0).toLocaleString()}</span>
-                      </div>
+
+                      {viewInvoice.tdsApplicable && viewInvoice.tdsAmount && viewInvoice.tdsAmount > 0 ? (
+                        <div className="bg-gray-100 rounded-lg p-3 space-y-1.5 mt-2">
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>
+                              TDS Sec 194J
+                              @ {viewInvoice.tdsRate || 10}%
+                            </span>
+                            <span className="text-red-500 font-medium">
+                              − ₹{(viewInvoice.tdsAmount || 0).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm font-semibold">
+                            <span className="text-gray-700">You receive</span>
+                            <span className="text-green-600">
+                              ₹{(viewInvoice.netReceivable || 0).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        </div>
+                      ) : null}
+
                     </div>
                   </div>
 
@@ -976,8 +1064,8 @@ export function Invoices() {
       {/* Create Invoice Modal */}
       {
         showCreate && createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 text-left">
-            <div className="bg-white w-full max-w-5xl h-[90%] rounded-2xl overflow-hidden shadow-2xl relative">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 text-left">
+            <div className="bg-white w-full max-w-[98vw] h-[98vh] rounded-2xl overflow-hidden shadow-2xl relative">
               <InvoiceGenerator
                 onClose={() => {
                   setShowCreate(false);
@@ -993,8 +1081,8 @@ export function Invoices() {
       {/* Edit Invoice Modal */}
       {
         editingInvoice && createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 text-left">
-            <div className="bg-white w-full max-w-5xl h-[90%] rounded-2xl overflow-hidden shadow-2xl relative">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 text-left">
+            <div className="bg-white w-full max-w-[98vw] h-[98vh] rounded-2xl overflow-hidden shadow-2xl relative">
               <InvoiceGenerator
                 editingInvoice={editingInvoice}
                 onClose={async () => {

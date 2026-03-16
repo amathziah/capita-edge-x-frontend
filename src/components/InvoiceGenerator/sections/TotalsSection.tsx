@@ -19,26 +19,23 @@ interface TotalsSectionProps {
     tdsEnabled?: boolean;
     tdsAmount?: number;
     tdsRate?: number;
+    netReceivable?: number;
+    totalCgst?: number;
+    totalSgst?: number;
+    totalIgst?: number;
+    resolvedGstType?: 'cgst_sgst' | 'igst' | 'not_applicable' | 'exempt';
     // CA
     reverseCharge: boolean;
     placeOfSupply: string;
-    caIsInterState: boolean;
     // Agency
-    isInterState: boolean;
-    setIsInterState: (v: boolean) => void;
-    // Ecommerce
-    deliveryState: string;
-    setDeliveryState: (v: string) => void;
-    ecomIsInterState: boolean;
 }
 
 export default function TotalsSection({
     businessType, currency, subtotal, taxAmount, taxRate, setTaxRate, taxLabel,
     shipping, setShipping, total,
     isGstRegistered, tdsEnabled, tdsAmount, tdsRate,
-    reverseCharge, placeOfSupply, caIsInterState,
-    isInterState, setIsInterState,
-    deliveryState, setDeliveryState, ecomIsInterState,
+    netReceivable, totalCgst, totalSgst, totalIgst, resolvedGstType,
+    reverseCharge, placeOfSupply,
 }: TotalsSectionProps) {
 
     /** Shared CGST/SGST display */
@@ -109,55 +106,30 @@ export default function TotalsSection({
                             <span className="font-semibold text-text-main">{placeOfSupply}</span>
                         </div>
                         <GstRateInput />
-                        {caIsInterState
+                        {resolvedGstType === 'igst'
                             ? <IgstDisplay rate={taxRate} amount={taxAmount} />
                             : <CgstSgstDisplay rate={taxRate} amount={taxAmount} />}
                     </>
 
                 ) : businessType === 'services_firm' ? (
                     <>
-                        <div className="flex items-center justify-between bg-gray-50/80 rounded-xl px-3 py-2 border border-gray-200 mb-2">
-                            <div className="flex gap-1">
-                                <button type="button" onClick={() => setIsInterState(false)}
-                                    className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all duration-200 ${!isInterState ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:bg-gray-100'}`}>
-                                    Intra-state
-                                </button>
-                                <button type="button" onClick={() => setIsInterState(true)}
-                                    className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all duration-200 ${isInterState ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:bg-gray-100'}`}>
-                                    Inter-state
-                                </button>
-                            </div>
-                            <div className="relative w-16">
-                                <input type="number" value={taxRate} onChange={(e) => setTaxRate(Number(e.target.value))}
-                                    className="w-full border-b-2 border-primary/30 bg-transparent text-center focus:border-primary focus:outline-none text-xs font-semibold py-1 transition-all" />
-                                <span className="absolute right-0 top-1 text-xs font-medium">%</span>
-                            </div>
-                        </div>
-                        {isInterState
+                        {resolvedGstType === 'igst'
                             ? <IgstDisplay rate={taxRate} amount={taxAmount} />
                             : <CgstSgstDisplay rate={taxRate} amount={taxAmount} />}
                     </>
 
                 ) : businessType === 'ecommerce' ? (
                     <>
-                        <div className="flex flex-col space-y-2">
-                            <label className="text-xs font-semibold text-text-light uppercase tracking-wider">Delivery State</label>
-                            <select value={deliveryState} onChange={(e) => setDeliveryState(e.target.value)}
-                                className="bg-gray-50/80 border-0 border-b-2 border-gray-200 rounded-t-xl px-3 py-2 text-xs font-medium outline-none focus:border-primary focus:bg-white transition-all shadow-sm">
-                                <option value="">— Select —</option>
-                                {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                        </div>
-                        {deliveryState && (
-                            <div className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg text-center ${ecomIsInterState
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 mb-2">
+                             <div className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg text-center ${resolvedGstType === 'igst'
                                 ? 'bg-blue-50 text-blue-600 border border-blue-100'
                                 : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                                 }`}>
-                                {ecomIsInterState ? 'Interstate Transaction — IGST applies' : 'Intra-state Transaction — CGST + SGST applies'}
+                                {resolvedGstType === 'igst' ? 'Interstate (IGST)' : 'Intra-state (CGST+SGST)'}
                             </div>
-                        )}
+                        </div>
                         <GstRateInput />
-                        {ecomIsInterState
+                        {resolvedGstType === 'igst'
                             ? <IgstDisplay rate={taxRate} amount={taxAmount} />
                             : <CgstSgstDisplay rate={taxRate} amount={taxAmount} />}
                     </>

@@ -11,7 +11,7 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
 
     const {
         seller, buyer, meta, items, notes,
-        subtotal, taxAmount, taxLabel, taxRate, shipping, total,
+        taxLabel, taxRate, shipping,
         projectName, shippingAddress, orderNumber,
         courierTracking, dispatchDate, businessType,
         logo, setLogo,
@@ -22,29 +22,6 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
 
     // ─── Build Invoice Data ────────────────────────────────────────────
     const buildInvoiceData = () => {
-        // Compute GST split from taxAmount
-        const isIgst =
-            state.isInterState ||
-            state.gstType === 'igst' ||
-            (state.deliveryState &&
-             state.deliveryState !== state.sellerState);
-
-        const cgstAmount = isIgst ? 0 : taxAmount / 2;
-        const sgstAmount = isIgst ? 0 : taxAmount / 2;
-        const igstAmount = isIgst ? taxAmount : 0;
-
-        const gstType = !state.isGstRegistered
-            ? 'not_applicable'
-            : isIgst ? 'igst' : 'cgst_sgst';
-
-        // Compute TDS
-        const tdsAmount = state.tdsEnabled
-            ? (subtotal * (state.tdsRate || 10)) / 100
-            : 0;
-        const netReceivable = state.tdsEnabled
-            ? subtotal - tdsAmount
-            : null;
-
         return {
             id: undefined as string | undefined,
             invoiceNumber: meta.number,
@@ -52,15 +29,19 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
             dueDate: meta.dueDate,
             seller,
             buyer,
-            items,
-            subtotal,
-            taxAmount,
+            items: items.map(item => ({
+                ...item,
+                sac_code: item.sac_code || null,
+                tax_rate: item.tax_rate ?? 18,
+                is_exempt: item.is_exempt ?? false,
+                discount_percent: item.discount ?? 0,
+                is_service: true,
+            })),
             taxType: taxLabel,
             taxRate,
             discount: 0,
             discountAmount: state.discountAmount || 0,
             shipping,
-            total,
             status: 'draft' as const,
             notes: notes || '',
             // Persona
@@ -74,19 +55,13 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
             courierName: state.courierName || null,
             courierTracking,
             dispatchDate,
-            // GST
-            gstType,
-            cgstAmount,
-            sgstAmount,
-            igstAmount,
+            // GST configuration
             isGstRegistered: state.isGstRegistered !== false,
             placeOfSupply: state.placeOfSupply || null,
             reverseCharge: state.reverseCharge || false,
-            // TDS (solopreneur)
+            deliveryState: state.deliveryState || undefined,
+            // TDS configuration
             tdsApplicable: state.tdsEnabled || false,
-            tdsRate: state.tdsRate || 10,
-            tdsAmount,
-            netReceivable,
             // CA
             frn: state.frn || null,
             lutNumber: state.lutNumber || null,
@@ -118,11 +93,11 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
         setActiveAction('downloading');
         try {
             const invoiceData = buildInvoiceData();
-            await dataService.saveInvoice(invoiceData as unknown as Parameters<typeof dataService.saveInvoice>[0]);
+            const savedInvoice = await dataService.saveInvoice(invoiceData as unknown as Parameters<typeof dataService.saveInvoice>[0]);
             const latestSettings = await dataService.getSettings();
             const blob = await pdf(
                 React.createElement(InvoicePDF, {
-                    invoice: invoiceData as unknown as Parameters<typeof dataService.saveInvoice>[0],
+                    invoice: savedInvoice,
                     settings: latestSettings,
                     logoUrl: logo,
                 })
@@ -176,11 +151,11 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
         setActiveAction('emailing');
         try {
             const invoiceData = buildInvoiceData();
-            const { id } = await dataService.saveInvoice(invoiceData as unknown as Parameters<typeof dataService.saveInvoice>[0]);
+            const savedInvoice = await dataService.saveInvoice(invoiceData as unknown as Parameters<typeof dataService.saveInvoice>[0]);
             const latestSettings = await dataService.getSettings();
             const blob = await pdf(
                 React.createElement(InvoicePDF, {
-                    invoice: invoiceData as unknown as Parameters<typeof dataService.saveInvoice>[0],
+                    invoice: savedInvoice,
                     settings: latestSettings,
                     logoUrl: logo,
                 })
@@ -190,7 +165,7 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
                 setActiveAction(null);
                 return;
             }
-            await dataService.sendInvoiceEmail(id, emailTo, blob);
+            await dataService.sendInvoiceEmail(savedInvoice.id, emailTo, blob);
             showToast("Invoice sent successfully!", 'success');
             setIsEmailModalOpen(false);
             setEmailTo('');

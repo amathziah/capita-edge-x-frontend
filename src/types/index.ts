@@ -67,16 +67,27 @@ export interface InvoiceItem {
   sku?: string;
   // GST codes
   sacCode?: string;
+  sac_code?: string;
   hsnCode?: string;
+  hsn_code?: string;
   // Tax per line
   taxRate?: number;
+  tax_rate?: number;
+  is_exempt?: boolean;
   cgstRate?: number;
+  cgst_rate?: number;
   sgstRate?: number;
+  sgst_rate?: number;
   igstRate?: number;
+  igst_rate?: number;
   cgstAmount?: number;
+  cgst_amount?: number;
   sgstAmount?: number;
+  sgst_amount?: number;
   igstAmount?: number;
+  igst_amount?: number;
   taxableValue?: number;
+  taxable_value?: number;
   sortOrder?: number;
 }
 
