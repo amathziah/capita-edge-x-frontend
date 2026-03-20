@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Bot, X, Send, Sparkles, Mic, MicOff, Zap, FileText, TrendingUp, Users, RotateCcw, Copy, Check, ChevronDown, AlertTriangle, CreditCard, Activity, Clock } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { X, Send, Mic, MicOff, Zap, FileText, TrendingUp, Users, RotateCcw, Copy, Check, ChevronDown, AlertTriangle, CreditCard, Activity, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService } from '../../services/aiService';
 import { usePersona } from '../../contexts/PersonaContext';
 import ReactMarkdown from 'react-markdown';
+import { Logo } from '../common/Logo';
 
 interface Message {
   id: string;
@@ -16,48 +18,63 @@ interface Message {
 
 const defaultActions = [
   { label: 'Revenue today', icon: TrendingUp, query: 'What is my total revenue?' },
+  { label: 'Recent expenses', icon: CreditCard, query: 'Show me my last 5 expenses' },
   { label: 'Draft invoice', icon: FileText, query: 'Help me create a new invoice' },
-  { label: 'Top customers', icon: Users, query: 'Who are my top customers?' },
   { label: 'Business health', icon: Zap, query: 'Give me a business health summary' },
+  { label: 'Top customers', icon: Users, query: 'Who are my top customers?' },
+  { label: 'Net cash flow', icon: Activity, query: 'What is my current net cash flow?' },
 ];
 
 const routeActions: Record<string, typeof defaultActions> = {
-  '/invoices': [
+  '/dashboard/invoices': [
     { label: 'Draft invoice', icon: FileText, query: 'Help me create a new invoice' },
     { label: 'Unpaid invoices', icon: AlertTriangle, query: 'Which invoices are currently overdue?' },
-    { label: 'Monthly billing', icon: TrendingUp, query: 'Show me my billing trends for this month' },
+    { label: 'Collection rate', icon: TrendingUp, query: 'What is my payment collection rate?' },
+    { label: 'Invoice stats', icon: Activity, query: 'Show my invoice summary' },
   ],
-  '/payments': [
-    { label: 'Recent collections', icon: CreditCard, query: 'List my most recent payments' },
+  '/dashboard/payments': [
+    { label: 'Recent payments', icon: CreditCard, query: 'List my most recent payments' },
     { label: 'Outstanding revenue', icon: Zap, query: 'How much revenue is outstanding?' },
     { label: 'Top payers', icon: Users, query: 'Who are my most consistent payers?' },
+    { label: 'Payment trends', icon: TrendingUp, query: 'Are my collections improving?' },
   ],
-  '/customers': [
+  '/dashboard/customers': [
     { label: 'Add client', icon: Users, query: 'Help me add a new customer' },
+    { label: 'Top 5 clients', icon: TrendingUp, query: 'Who are my top 5 customers by revenue?' },
     { label: 'Customer health', icon: Activity, query: 'Analyze my customer retention' },
+  ],
+  '/dashboard/expenses': [
+    { label: 'Total spend', icon: CreditCard, query: 'How much have I spent in total?' },
+    { label: 'Biggest expense', icon: AlertTriangle, query: 'What was my largest expense recently?' },
+    { label: 'Profit vs Loss', icon: TrendingUp, query: 'Compare my revenue vs expenses' },
+    { label: 'Expense categories', icon: Zap, query: 'Break down my expenses by category' },
   ]
 };
 
 const personaActions: Record<string, typeof defaultActions> = {
   'solopreneur': [
-    { label: 'Check outstanding', icon: AlertTriangle, query: 'How many invoices are overdue?' },
-    { label: 'Expense summary', icon: CreditCard, query: 'Show me my expenses for this month' },
-    { label: 'Taxes due', icon: Zap, query: 'Estimate my taxes for this quarter' },
+    { label: 'Tax estimate', icon: Zap, query: 'Estimate my taxes for this quarter' },
+    { label: 'Expense check', icon: CreditCard, query: 'Show me my expenses for this month' },
+    { label: 'Cash availability', icon: Activity, query: 'How much cash is safe to spend?' },
+    { label: 'Personal vs Biz', icon: Users, query: 'Analyze my business spending habits' },
   ],
   'subscription': [
     { label: 'Check MRR', icon: TrendingUp, query: 'What is my current Monthly Recurring Revenue?' },
     { label: 'Churn report', icon: Users, query: 'Analyze my customer churn' },
-    { label: 'Runway left', icon: Activity, query: 'How many months of cash runway do I have?' },
+    { label: 'Growth rate', icon: Activity, query: 'What is my revenue growth month-over-month?' },
+    { label: 'LTV analysis', icon: Zap, query: 'What is the average customer lifetime value?' },
   ],
   'services_firm': [
-    { label: 'Unbilled hours', icon: Clock, query: 'Show me all unbilled hours' },
-    { label: 'Retainer health', icon: Activity, query: 'Are any retainers running low?' },
     { label: 'Project profit', icon: TrendingUp, query: 'Which projects are most profitable?' },
+    { label: 'Unbilled work', icon: Clock, query: 'Show me all unbilled hours' },
+    { label: 'Retainer risks', icon: AlertTriangle, query: 'Are any client retainers nearly empty?' },
+    { label: 'Team burn rate', icon: Activity, query: 'What is our current monthly burn rate?' },
   ],
   'ecommerce': [
     { label: 'Stock risks', icon: AlertTriangle, query: 'Which products are at risk of stockout?' },
-    { label: 'Dead stock', icon: Zap, query: 'What is my total liquid capital locked in dead stock?' },
+    { label: 'Dead stock ₹', icon: Zap, query: 'How much capital is locked in dead stock?' },
     { label: 'Refund rate', icon: RotateCcw, query: 'What is my current refund rate?' },
+    { label: 'Sales velocity', icon: TrendingUp, query: 'Which items are selling fastest today?' },
   ]
 };
 
@@ -67,6 +84,8 @@ const formatTime = (date: Date) => {
 
 export function AIAssistant() {
   const { businessType } = usePersona();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -188,7 +207,12 @@ export function AIAssistant() {
         } else if (action.type === 'navigate' && action.data?.to) {
           // Navigate to page after a brief delay so user sees the response first
           setTimeout(() => {
-            window.location.href = action.data.to;
+            let targetPath = action.data.to;
+            // Prefix internal dashboard routes if missing
+            if (targetPath.startsWith('/') && !targetPath.startsWith('/dashboard') && !['/login', '/setup', '/pricing'].includes(targetPath)) {
+              targetPath = `/dashboard${targetPath === '/' ? '' : targetPath}`;
+            }
+            navigate(targetPath);
           }, 1200);
         }
       }
@@ -253,7 +277,7 @@ export function AIAssistant() {
         className="fixed bottom-6 right-6 z-50"
       >
         <div className="relative">
-          <div className="w-14 h-14 bg-gradient-to-br from-teal-400 to-cyan-500 text-white rounded-2xl shadow-xl shadow-teal-500/30 flex items-center justify-center transition-all">
+          <div className="w-14 h-14 bg-[#0c0f1a] text-white rounded-2xl shadow-2xl border border-white/[0.08] flex items-center justify-center transition-all">
             <AnimatePresence mode="wait">
               {isOpen ? (
                 <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
@@ -261,7 +285,7 @@ export function AIAssistant() {
                 </motion.div>
               ) : (
                 <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                  <Sparkles size={22} />
+                  <Logo size={28} showBackground={false} showBorder={false} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -271,14 +295,14 @@ export function AIAssistant() {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg"
+              className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30"
             >
               {unreadCount}
             </motion.div>
           )}
           {/* Pulse ring - active based on route context for extra attention */}
           {!isOpen && (
-            <div className={`absolute inset-0 rounded-2xl ${window.location.pathname === '/invoices' || window.location.pathname === '/payments'
+            <div className={`absolute inset-0 rounded-2xl ${location.pathname === '/dashboard/invoices' || location.pathname === '/dashboard/payments'
               ? 'bg-teal-500/40 animate-[ping_2s_infinite]'
               : 'bg-teal-500/20 animate-[ping_3s_infinite]'
               }`} />
@@ -302,16 +326,14 @@ export function AIAssistant() {
               <div className="relative flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/25">
-                      <Bot size={18} className="text-white" strokeWidth={2.2} />
-                    </div>
+                    <Logo size={40} />
                     {/* Online dot */}
                     <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#161a2b] shadow-sm">
                       <div className="w-full h-full rounded-full bg-emerald-400 animate-ping [animation-duration:2s]" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-white tracking-tight">CapitaEdgeX</h3>
+                    <h3 className="font-bold text-sm text-white tracking-tight">Capita</h3>
                     <p className="text-[11px] text-teal-400 font-semibold flex items-center gap-1.5">
                       Online · Copilot Mode
                     </p>
@@ -349,7 +371,12 @@ export function AIAssistant() {
                   transition={{ duration: 0.2, delay: idx === messages.length - 1 ? 0.05 : 0 }}
                   className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className="group max-w-[85%]">
+                  <div className={`group max-w-[85%] flex gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                    {msg.sender === 'bot' && (
+                      <div className="flex-shrink-0 mt-1">
+                        <Logo size={24} showBackground={true} showBorder={false} />
+                      </div>
+                    )}
                     <div
                       className={`relative p-3.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ${msg.sender === 'user'
                         ? 'bg-gradient-to-br from-teal-500 to-cyan-600 text-white rounded-tr-md'
@@ -390,8 +417,11 @@ export function AIAssistant() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
-                    className="flex justify-start"
+                    className="flex justify-start gap-2"
                   >
+                    <div className="flex-shrink-0 mt-1">
+                      <Logo size={24} showBackground={true} showBorder={false} />
+                    </div>
                     <div className="bg-white/[0.03] p-3.5 rounded-2xl rounded-tl-md shadow-sm border border-white/[0.06] flex gap-1.5 items-center">
                       <div className="flex gap-1">
                         <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
@@ -440,20 +470,21 @@ export function AIAssistant() {
               )}
             </AnimatePresence>
 
-            {/* Quick Actions */}
-            {messages.length <= 2 && (
-              <div className="px-4 py-2 border-t border-white/[0.06] bg-[#0c0f1a]">
-                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-2">
-                  {routeActions[window.location.pathname] ? 'Suggested Actions' : 'Quick Actions'}
-                </p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {(personaActions[businessType as any] || routeActions[window.location.pathname] || defaultActions).map((action: any) => (
+            {/* Quick Suggestions - Horizontal Scroll */}
+            {!isTyping && (
+              <div className="px-4 py-3 border-t border-white/[0.06] bg-[#0c0f1a]">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar-hide -mx-1 px-1">
+                  {([...(personaActions[businessType as any] || []), ...(routeActions[location.pathname] || []), ...defaultActions]
+                    .filter((v, i, a) => a.findIndex(t => t.label === v.label) === i) // Unique actions
+                    .slice(0, 8) // Limit to 8
+                  ).map((action: any) => (
                     <button
                       key={action.label}
-                      onClick={() => handleSend(action.query)}
-                      className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] hover:bg-teal-500/10 border border-white/[0.06] hover:border-teal-500/30 rounded-xl text-[11px] font-semibold text-gray-400 hover:text-teal-400 transition-all group"
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); handleSend(action.query); }}
+                      className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 bg-white/[0.03] hover:bg-teal-500/10 border border-white/[0.06] hover:border-teal-500/30 rounded-full text-[12px] font-medium text-gray-400 hover:text-teal-400 transition-all group whitespace-nowrap"
                     >
-                      <action.icon size={12} className="text-gray-500 group-hover:text-teal-500 transition-colors" />
+                      <action.icon size={13} className="text-gray-500 group-hover:text-teal-500 transition-colors" />
                       {action.label}
                     </button>
                   ))}
@@ -480,18 +511,24 @@ export function AIAssistant() {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
                     placeholder="Ask Capita anything..."
                     className="w-full pl-4 pr-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-xl text-[13px] focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500/30 focus:bg-white/[0.05] transition-all placeholder-gray-500 text-white"
                   />
                 </div>
 
                 <motion.button
-                  onClick={() => handleSend()}
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); handleSend(); }}
                   disabled={!query.trim() || isTyping}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.9 }}
-                  className="p-2.5 bg-gradient-to-br from-teal-400 to-cyan-500 text-white rounded-xl shadow-lg shadow-teal-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all flex-shrink-0"
+                  className="p-2.5 bg-gradient-to-br from-teal-500 to-cyan-600 text-white rounded-xl shadow-lg shadow-teal-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all flex-shrink-0"
                 >
                   <Send size={16} />
                 </motion.button>

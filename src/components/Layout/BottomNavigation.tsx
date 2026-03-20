@@ -7,13 +7,14 @@ import {
     Bot,
 } from "lucide-react";
 import { useLanguage } from "../LanguageProvider";
+import { Logo } from "../common/Logo";
 
 const mobileNavigation = [
     { name: "dashboard", href: "/", icon: LayoutDashboard },
     { name: "invoices", href: "/invoices", icon: FileText },
     { name: "customers", href: "/customers", icon: Users },
     { name: "payments", href: "/payments", icon: CreditCard },
-    { name: "ai", href: "/ai", icon: Bot },
+    { name: "ai", href: "/ai", icon: () => <Logo size={24} className="rounded-lg shadow-none border-0" /> },
 ];
 
 export function BottomNavigation() {

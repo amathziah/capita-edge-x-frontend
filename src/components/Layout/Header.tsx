@@ -2,6 +2,7 @@ import { ChevronDown, Plus, BarChart2, FilePlus, CreditCard } from 'lucide-react
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Logo } from '../common/Logo';
 
 export function Header() {
   const navigate = useNavigate();
@@ -35,7 +36,8 @@ export function Header() {
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
 
         {/* Left: Logo (Mobile only) */}
-        <div className="lg:hidden flex items-center">
+        <div className="lg:hidden flex items-center gap-2">
+          <Logo size={28} />
           <span className="text-lg font-semibold text-text-main">Capita</span>
         </div>
 

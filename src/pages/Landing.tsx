@@ -8,6 +8,7 @@ import {
     AlertTriangle, Activity, Star, Crown, Briefcase, Building2, X
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Logo } from '../components/common/Logo';
 
 // ─── Morphing Blob ───────────────────────────────────────────────────────────
 function Blob({ className, color, delay = 0 }: { className: string; color: string; delay?: number }) {
@@ -102,7 +103,7 @@ function DashboardMockup() {
                     {/* Sidebar */}
                     <div className="w-44 flex-shrink-0 bg-[#080c16] border-r border-white/[0.04] p-4 flex flex-col gap-1">
                         <div className="flex items-center gap-2 mb-5">
-                            <div className="w-7 h-7 rounded-full bg-teal-500 flex items-center justify-center text-[10px] font-black text-white">M</div>
+                            <Logo size={28} />
                             <div>
                                 <div className="text-[12px] font-bold text-white">Capita</div>
                                 <div className="text-[9px] text-slate-500">Financial OS</div>
@@ -455,12 +456,7 @@ export const Landing: React.FC = () => {
                 <div className="max-w-6xl mx-auto">
                     <div className={`flex items-center justify-between px-5 py-3 rounded-2xl transition-all duration-400 ${scrolled ? 'bg-[#050810]/90 backdrop-blur-2xl border border-white/[0.07] shadow-2xl' : 'border border-transparent'}`}>
                         <div className="flex items-center gap-2.5">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-teal-500 blur-lg opacity-40 rounded-lg" />
-                                <div className="relative w-8 h-8 bg-gradient-to-br from-teal-400 to-cyan-600 rounded-lg flex items-center justify-center shadow-lg">
-                                    <Zap className="w-4 h-4 text-white" />
-                                </div>
-                            </div>
+                            <Logo size={32} />
                             <span className="display font-black text-xl text-white tracking-tight">Capita <span className="text-teal-400">AI</span></span>
                         </div>
                         <div className="hidden md:flex items-center gap-7">

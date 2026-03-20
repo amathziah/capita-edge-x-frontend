@@ -10,7 +10,6 @@ import { BuyerErrors } from '../sections/BuyerSection';
 import { HeaderErrors } from '../sections/InvoiceHeader';
 import { InvoiceCalculator } from '../../../lib/financialMath';
 import { detectGstType } from '../../../lib/gstUtils';
-import { getDefaultTdsSection, TDS_RATES } from '../../../lib/sacDatabase';
 
 // ─── Props that this hook accepts ──────────────────────────────────────
 export interface UseInvoiceStateProps {
@@ -57,8 +56,6 @@ export interface InvoiceState {
     setOrderNumber: (v: string) => void;
     isGstRegistered: boolean;
     setIsGstRegistered: (v: boolean) => void;
-    isInterState: boolean;
-    setIsInterState: (v: boolean) => void;
     authorizedSignatory: string;
     setAuthorizedSignatory: (v: string) => void;
     placeOfSupply: string;
@@ -91,16 +88,16 @@ export interface InvoiceState {
     setGstType: (v: string | null) => void;
     sellerState: string;
     setSellerState: (v: string) => void;
-    discountAmount: number;
-    setDiscountAmount: (v: number) => void;
+    discountAmount: number | undefined;
+    setDiscountAmount: (v: number | undefined) => void;
 
     // Items & Totals
     items: InvoiceItem[];
     setItems: (items: InvoiceItem[]) => void;
     taxRate: number;
     setTaxRate: (v: number) => void;
-    shipping: number;
-    setShipping: (v: number) => void;
+    shipping: number | undefined;
+    setShipping: (v: number | undefined) => void;
     subtotal: number;
     taxAmount: number;
     total: number;
@@ -170,7 +167,6 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
     const [shippingAddress, setShippingAddress] = useState("");
     const [orderNumber, setOrderNumber] = useState("");
     const [isGstRegistered, setIsGstRegistered] = useState(false);
-    const [isInterState, setIsInterState] = useState(false);
     const [authorizedSignatory, setAuthorizedSignatory] = useState("");
     const [placeOfSupply, setPlaceOfSupply] = useState('27 - Maharashtra');
     const [reverseCharge, setReverseCharge] = useState(false);
@@ -193,16 +189,14 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
     // GST
     const [gstType, setGstType] = useState<string | null>(null);
     const [sellerState, setSellerState] = useState('');
-    const [discountAmount, setDiscountAmount] = useState(0);
-
-    // ─── Computed Inter-State (REPLACED BY resolvedGstType) ────────────
+    const [discountAmount, setDiscountAmount] = useState<number | undefined>(undefined);
 
     // ─── Items & Totals ────────────────────────────────────────────────
     const [items, setItems] = useState<InvoiceItem[]>([
-        { description: "", quantity: 1, unit: config.defaultUnit, price: 0, discount: 0, sac_code: "", tax_rate: 18, is_exempt: false },
+        { description: "", quantity: 1, unit: config.defaultUnit, price: undefined, discount: undefined, sac_code: "", tax_rate: 18, is_exempt: false },
     ]);
     const [taxRate, setTaxRate] = useState<number>(config.defaultTaxRate);
-    const [shipping, setShipping] = useState<number>(0);
+    const [shipping, setShipping] = useState<number | undefined>(undefined);
 
     const resolvedGstType = detectGstType(
         seller.taxId ?? '',
@@ -220,18 +214,18 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
 
     const calcInput = {
         line_items: items.map(item => ({
-            quantity: item.quantity,
-            unit_price: item.price,
+            quantity: item.quantity ?? 0,
+            unit_price: item.price ?? 0,
             discount: (item.discount && item.discount > 0)
                 ? { type: 'percentage' as const, value: item.discount }
                 : undefined,
             tax_rate: item.is_exempt ? 0 : (item.tax_rate ?? taxRate),
             is_interstate: isInterStateResolved,
         })),
-        document_discount: discountAmount > 0
+        document_discount: (discountAmount && discountAmount > 0)
             ? { type: 'flat' as const, value: discountAmount }
             : undefined,
-        shipping_charges: shipping,
+        shipping_charges: shipping ?? 0,
         tds_rate: tdsEnabled ? tdsRate : 0,
     };
 
@@ -289,9 +283,9 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
             setSeller(editingInvoice.seller || { name: "", phone: "", email: "", address: "", taxId: "", upiId: "" });
             setBuyer(editingInvoice.buyer || { name: "", phone: "", email: "", address: "", taxId: "" });
             if (editingInvoice.notes) setNotes(editingInvoice.notes);
-            setItems(editingInvoice.items?.length ? (editingInvoice.items as InvoiceItem[]).map((i: InvoiceItem) => ({ ...i, unit: i.unit || 'Qty' })) : [{ description: "", quantity: 1, unit: config.defaultUnit, price: 0, discount: 0 }]);
+            setItems(editingInvoice.items?.length ? (editingInvoice.items as InvoiceItem[]).map((i: InvoiceItem) => ({ ...i, unit: i.unit || 'Qty' })) : [{ description: "", quantity: 1, unit: config.defaultUnit, price: undefined, discount: undefined }]);
             setTaxRate(editingInvoice.taxRate || 18);
-            setShipping(editingInvoice.shipping || 0);
+            setShipping(editingInvoice.shipping || undefined);
             setTaxLabel(editingInvoice.taxType || 'GST');
             if (editingInvoice.projectName) setProjectName(editingInvoice.projectName);
             if (editingInvoice.shippingAddress) setShippingAddress(editingInvoice.shippingAddress);
@@ -312,7 +306,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
             if (editingInvoice.courierTracking) setCourierTracking(editingInvoice.courierTracking);
         } else {
             dataService.generateInvoiceNumber().then(num => {
-                setMeta(prev => ({ ...prev, number: num }));
+                setMeta((prev: InvoiceMeta) => ({ ...prev, number: num }));
             }).catch(err => console.error("Failed to fetch next invoice number", err));
         }
 
@@ -336,7 +330,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
 
     useEffect(() => {
         if (initialData) {
-            if (initialData.buyer) setBuyer(prev => ({ ...prev, ...initialData.buyer }));
+            if (initialData.buyer) setBuyer((prev: Buyer) => ({ ...prev, ...initialData.buyer }));
             if (initialData.items && initialData.items.length > 0) {
                 setItems(initialData.items.map(i => ({ ...i, unit: i.unit || 'Qty' })));
             }
@@ -369,7 +363,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         // Items
         items.forEach((item, idx) => {
             if (!item.description.trim()) { iErr[idx] = 'Description is required'; errorCount++; }
-            else if (item.price <= 0) { iErr[idx] = 'Price must be greater than 0'; errorCount++; }
+            else if ((item.price ?? 0) <= 0) { iErr[idx] = 'Price must be greater than 0'; errorCount++; }
             else if (item.quantity <= 0) { iErr[idx] = 'Quantity must be at least 1'; errorCount++; }
         });
 
@@ -408,7 +402,6 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         shippingAddress, setShippingAddress,
         orderNumber, setOrderNumber,
         isGstRegistered, setIsGstRegistered,
-        isInterState, setIsInterState,
         authorizedSignatory, setAuthorizedSignatory,
         placeOfSupply, setPlaceOfSupply,
         reverseCharge, setReverseCharge,

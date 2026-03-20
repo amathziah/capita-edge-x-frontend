@@ -20,6 +20,7 @@ import { useLanguage } from "../LanguageProvider";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePersona } from "../../contexts/PersonaContext";
 import { useSubscription } from "../../contexts/SubscriptionContext";
+import { Logo } from "../common/Logo";
 
 // ── Types ────────────────────────────────────────────────────────────────
 type NavItem = {
@@ -194,9 +195,7 @@ export function Sidebar() {
           }`}
         title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/20 flex-shrink-0">
-          <Zap className="w-5 h-5 text-white" strokeWidth={2.5} />
-        </div>
+        <Logo size={36} className="flex-shrink-0" />
         {!collapsed && (
           <div className="text-left overflow-hidden">
             <div className="flex items-center gap-1.5">
@@ -236,7 +235,7 @@ export function Sidebar() {
                 <NavLink
                   key={item.name}
                   to={item.href}
-                  end={item.href === "/"}
+                  end={item.href === "/" || item.href === "/dashboard"}
                   title={collapsed ? (t(item.name) || item.label) : undefined}
                   className={({ isActive }) =>
                     `group relative flex items-center rounded-xl text-[13px] font-medium transition-all duration-200 ${collapsed
@@ -398,7 +397,7 @@ export function Sidebar() {
         {/* Dropdown Popover (opens upward) */}
         {userMenuOpen && (
           <div
-            className={`absolute bottom-full mb-2 z-[100] rounded-xl bg-[#161a2b] border border-white/[0.08] shadow-2xl shadow-black/40 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200 ${collapsed ? "left-1/2 -translate-x-1/2 w-48" : "left-3 right-3"
+            className={`absolute bottom-full mb-2 z-[100] rounded-xl bg-[#161a2b] border border-white/[0.08] shadow-2xl shadow-black/40 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200 ${collapsed ? "left-0 w-52 origin-bottom-left" : "left-3 right-3"
               }`}
           >
             <div className="py-1.5">

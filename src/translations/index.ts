@@ -39,7 +39,7 @@ export const translations: Translation = {
   cancelled: { en: 'Cancelled' },
 
   // CapitaEdgeX
-  ai_assistant: { en: 'CapitaEdgeX' },
+  ai_assistant: { en: 'Capita' },
   suggestions: { en: 'Suggestions' },
 
   // Reports

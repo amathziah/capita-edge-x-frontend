@@ -1,5 +1,4 @@
-import React from 'react';
-import { CurrencyOption, INDIAN_STATES } from '../constants';
+import { CurrencyOption } from '../constants';
 import { BusinessType } from '../../../contexts/PersonaContext';
 import { numberToIndianWords } from '../utils';
 
@@ -11,18 +10,16 @@ interface TotalsSectionProps {
     taxRate: number;
     setTaxRate: (v: number) => void;
     taxLabel: string;
-    shipping: number;
-    setShipping: (v: number) => void;
+    shipping: number | undefined;
+    setShipping: (v: number | undefined) => void;
+    discountAmount: number | undefined;
+    setDiscountAmount: (v: number | undefined) => void;
     total: number;
     // Solopreneur
     isGstRegistered: boolean;
     tdsEnabled?: boolean;
     tdsAmount?: number;
     tdsRate?: number;
-    netReceivable?: number;
-    totalCgst?: number;
-    totalSgst?: number;
-    totalIgst?: number;
     resolvedGstType?: 'cgst_sgst' | 'igst' | 'not_applicable' | 'exempt';
     // CA
     reverseCharge: boolean;
@@ -32,10 +29,9 @@ interface TotalsSectionProps {
 
 export default function TotalsSection({
     businessType, currency, subtotal, taxAmount, taxRate, setTaxRate, taxLabel,
-    shipping, setShipping, total,
+    shipping, setShipping, discountAmount, setDiscountAmount, total,
     isGstRegistered, tdsEnabled, tdsAmount, tdsRate,
-    netReceivable, totalCgst, totalSgst, totalIgst, resolvedGstType,
-    reverseCharge, placeOfSupply,
+    resolvedGstType, reverseCharge, placeOfSupply,
 }: TotalsSectionProps) {
 
     /** Shared CGST/SGST display */
@@ -84,11 +80,12 @@ export default function TotalsSection({
 
                 {/* ─── Tax Breakdown by Persona ─── */}
                 {businessType === 'solopreneur' && !isGstRegistered ? (
-                    <div className="flex justify-between items-center text-sm text-text-muted font-medium">
-                        <span>{taxLabel}</span>
-                        <span className="text-xs font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-lg">Not Applicable (Turnover &lt; ₹20L)</span>
-                    </div>
-
+                    taxAmount > 0 ? (
+                        <div className="flex justify-between items-center text-sm text-text-muted font-medium">
+                            <span>{taxLabel}</span>
+                            <span className="font-semibold text-text-main">{currency.symbol}{taxAmount.toFixed(2)}</span>
+                        </div>
+                    ) : null
                 ) : businessType === 'ca' ? (
                     <>
                         <div className="flex justify-between text-sm text-text-muted font-medium">
@@ -163,12 +160,22 @@ export default function TotalsSection({
                     </>
                 )}
 
+                {/* Discount */}
+                <div className="flex justify-between items-center text-sm text-text-muted gap-4 font-medium">
+                    <span>Discount</span>
+                    <div className="relative w-28">
+                        <span className="absolute left-3 top-2 text-xs text-text-light font-medium">{currency.symbol}</span>
+                        <input type="number" value={discountAmount ?? ''} onChange={(e) => setDiscountAmount(e.target.value === '' ? undefined : Number(e.target.value))}
+                            className="w-full bg-gray-50/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 pl-7 text-right text-xs font-semibold focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all shadow-sm" />
+                    </div>
+                </div>
+
                 {/* Shipping */}
                 <div className="flex justify-between items-center text-sm text-text-muted gap-4 font-medium">
                     <span>Shipping</span>
                     <div className="relative w-28">
                         <span className="absolute left-3 top-2 text-xs text-text-light font-medium">{currency.symbol}</span>
-                        <input type="number" value={shipping} onChange={(e) => setShipping(Number(e.target.value))}
+                        <input type="number" value={shipping ?? ''} onChange={(e) => setShipping(e.target.value === '' ? undefined : Number(e.target.value))}
                             className="w-full bg-gray-50/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 pl-7 text-right text-xs font-semibold focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all shadow-sm" />
                     </div>
                 </div>

@@ -475,10 +475,24 @@ export function Invoices() {
             <tbody className="divide-y divide-gray-50">
               {paged.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-text-muted">
-                    <div className="flex flex-col items-center gap-2">
-                      <FileText className="w-8 h-8 opacity-20" />
-                      <p>No invoices found matching your criteria.</p>
+                  <td colSpan={8} className="p-16 text-center text-text-muted bg-gray-50/20">
+                    <div className="flex flex-col items-center gap-4 max-w-sm mx-auto">
+                      <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-2">
+                        <FileText className="w-8 h-8 text-gray-200" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-base font-semibold text-text-main">No invoices found</p>
+                        <p className="text-sm text-text-light px-4">We couldn't find any invoices matching your current filters or search terms.</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSearchTerm("");
+                          setFilterStatus("All");
+                        }}
+                        className="mt-2 text-primary font-bold text-xs uppercase tracking-widest hover:underline"
+                      >
+                        Clear All Filters
+                      </button>
                     </div>
                   </td>
                 </tr>

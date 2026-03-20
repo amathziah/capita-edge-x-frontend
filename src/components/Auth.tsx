@@ -4,6 +4,7 @@ import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, Github, CheckCircle, Aler
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
+import { Logo } from './common/Logo';
 
 type AuthView = 'signin' | 'signup' | 'forgot_password';
 
@@ -148,9 +149,9 @@ export default function AuthComponent() {
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ delay: 0.2 }}
-                            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30 mb-6 text-white"
+                            className="inline-flex items-center justify-center mb-6"
                         >
-                            <ShieldCheck className="w-8 h-8" strokeWidth={2} />
+                            <Logo size={64} />
                         </motion.div>
                         <h1 className="text-2xl font-bold text-slate-800 mb-2 font-display">
                             {showOtpInput ? 'Verify Email' : view === 'signin' ? 'Welcome Back' : view === 'signup' ? 'Create Account' : 'Reset Password'}

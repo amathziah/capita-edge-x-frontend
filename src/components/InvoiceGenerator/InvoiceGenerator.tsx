@@ -52,17 +52,16 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         projectName, setProjectName, shippingAddress, setShippingAddress,
         orderNumber, setOrderNumber,
         isGstRegistered, setIsGstRegistered,
-        isInterState, setIsInterState,
         authorizedSignatory, setAuthorizedSignatory,
         placeOfSupply, setPlaceOfSupply, reverseCharge, setReverseCharge,
-        deliveryState, setDeliveryState, dispatchDate, setDispatchDate,
+        dispatchDate, setDispatchDate,
         courierTracking, setCourierTracking,
-        items, setItems, taxRate, setTaxRate, shipping, setShipping,
+        items, setItems, taxRate, setTaxRate, shipping, setShipping, discountAmount, setDiscountAmount,
         tdsEnabled, tdsRate,
-        subtotal, taxAmount, total, tdsAmount, netReceivable, totalCgst, totalSgst, totalIgst, resolvedGstType,
+        subtotal, taxAmount, total, tdsAmount, resolvedGstType,
         activeAction, loading,
         isEmailModalOpen, setIsEmailModalOpen, emailTo, setEmailTo,
-        toast, setToast, showToast,
+        toast, setToast,
         sellerErrors, buyerErrors, headerErrors, itemErrors,
         clearErrors,
         products, focusedItemIndex, setFocusedItemIndex,
@@ -215,11 +214,11 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                 <TotalsSection
                     businessType={businessType} currency={currency}
                     subtotal={subtotal} taxAmount={taxAmount} taxRate={taxRate} setTaxRate={setTaxRate}
-                    taxLabel={taxLabel} shipping={shipping} setShipping={setShipping} total={total}
+                    taxLabel={taxLabel} shipping={shipping} setShipping={setShipping}
+                    discountAmount={discountAmount} setDiscountAmount={setDiscountAmount}
+                    total={total}
                     isGstRegistered={isGstRegistered}
                     tdsEnabled={tdsEnabled} tdsAmount={tdsAmount} tdsRate={tdsRate}
-                    netReceivable={netReceivable}
-                    totalCgst={totalCgst} totalSgst={totalSgst} totalIgst={totalIgst}
                     resolvedGstType={resolvedGstType}
                     reverseCharge={reverseCharge} placeOfSupply={placeOfSupply}
                 />

@@ -19,13 +19,13 @@ interface ItemsTableProps {
 
 export default function ItemsTable({
     businessType, items, setItems, currency,
-    products, focusedItemIndex, setFocusedItemIndex, taxRate,
+    products, focusedItemIndex, setFocusedItemIndex,
     itemErrors = {},
 }: ItemsTableProps) {
 
     const addItem = () => setItems([
         ...items,
-        { description: "", quantity: 1, unit: (businessType === 'services_firm' || businessType === 'solopreneur') ? 'Hours' : 'Qty', price: 0, discount: 0, sac_code: "", tax_rate: 18, is_exempt: false }
+        { description: "", quantity: 1, unit: (businessType === 'services_firm' || businessType === 'solopreneur') ? 'Hours' : 'Qty', price: undefined, discount: undefined, sac_code: "", tax_rate: 18, is_exempt: false }
     ]);
 
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
@@ -45,7 +45,7 @@ export default function ItemsTable({
         ca: 'grid-cols-[2fr_80px_80px_60px_100px_80px_80px_70px_70px_30px]',
     }[businessType] ?? 'grid-cols-[2fr_80px_60px_100px_80px_70px_30px]';
 
-    const lineTotal = (item: InvoiceItem) => item.quantity * item.price * (1 - (item.discount || 0) / 100);
+    const lineTotal = (item: InvoiceItem) => (item.quantity ?? 0) * (item.price ?? 0) * (1 - (item.discount || 0) / 100);
 
     return (
         <div className={`space-y-4 relative ${focusedItemIndex !== null ? 'z-[40]' : 'z-0'}`}>
@@ -232,12 +232,12 @@ export default function ItemsTable({
 
                                     {/* Price */}
                                     <div className="text-center group-hover:bg-gray-50/80 rounded-lg transition-all">
-                                        <input type="number" className="w-full text-center bg-transparent border-none p-2 text-xs font-black text-text-main focus:ring-0 outline-none" value={item.price} onChange={(e) => updateItem(idx, { price: Number(e.target.value) })} />
+                                        <input type="number" className="w-full text-center bg-transparent border-none p-2 text-xs font-black text-text-main focus:ring-0 outline-none" value={item.price ?? ''} onChange={(e) => updateItem(idx, { price: e.target.value === '' ? undefined : Number(e.target.value) })} />
                                     </div>
 
                                     {/* Discount */}
                                     <div>
-                                        <input type="number" className="w-full text-center bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 text-xs font-black focus:bg-white focus:border-primary transition-all" value={item.discount || 0} onChange={(e) => updateItem(idx, { discount: Number(e.target.value) })} />
+                                        <input type="number" className="w-full text-center bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 text-xs font-black focus:bg-white focus:border-primary transition-all" value={item.discount ?? ''} onChange={(e) => updateItem(idx, { discount: e.target.value === '' ? undefined : Number(e.target.value) })} />
                                     </div>
 
                                     {/* CA Tax breakdown */}
