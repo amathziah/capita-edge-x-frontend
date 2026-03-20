@@ -88,7 +88,7 @@ export function Invoices() {
     return invoices
       .filter((inv) => {
         const buyerName = inv.buyer?.name || "Unknown";
-        const amountStr = inv.total.toString();
+        const amountStr = (inv.total || 0).toString();
         const dateStr = inv.date || "";
         return buyerName.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
           inv.invoiceNumber.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
@@ -129,7 +129,7 @@ export function Invoices() {
   }, [sorted, page, pageSize]);
 
   // Totals
-  const totalVisible = useMemo(() => sorted.reduce((s, i) => s + i.total, 0), [sorted]);
+  const totalVisible = useMemo(() => sorted.reduce((s, i) => s + (i.total || 0), 0), [sorted]);
 
   // Helpers
   const toggleSelectAllOnPage = () => {
@@ -326,7 +326,7 @@ export function Invoices() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-text-main">Invoices</h2>
-          <p className="text-sm text-text-muted mt-1">Manage and track your business payments.</p>
+          <p className="text-sm text-text-muted mt-1">Manage and track your business paymentssss.</p>
         </div>
 
         <button
@@ -503,7 +503,7 @@ export function Invoices() {
                       })}
                     </td>
                     <td className="px-6 py-4 text-text-main">{inv.buyer?.name || "Unknown"}</td>
-                    <td className="px-6 py-4 text-right font-medium text-text-main">₹{inv.total.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-right font-medium text-text-main">₹{(inv.total || 0).toLocaleString('en-IN')}</td>
                     <td className="px-6 py-4 text-right text-sm">
                       {inv.netReceivable
                         ? <span className="font-medium text-green-600">
@@ -784,8 +784,8 @@ export function Invoices() {
                               )}
                               <td className="px-6 py-4 text-center text-text-muted">{item.unit || "Qty"}</td>
                               <td className="px-6 py-4 text-center text-text-main">{item.quantity}</td>
-                              <td className="px-6 py-4 text-right text-text-muted">₹{item.price.toLocaleString()}</td>
-                              <td className="px-6 py-4 text-right font-bold text-text-main">₹{(item.quantity * item.price).toLocaleString()}</td>
+                              <td className="px-6 py-4 text-right text-text-muted">₹{(item.price || 0).toLocaleString('en-IN')}</td>
+                              <td className="px-6 py-4 text-right font-bold text-text-main">₹{((item.quantity || 0) * (item.price || 0)).toLocaleString('en-IN')}</td>
                             </tr>
                           ))
                         ) : (
