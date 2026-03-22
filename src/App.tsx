@@ -15,13 +15,13 @@ import { LiquidityCalendar } from './components/features/LiquidityCalendar';
 import { Settings } from './pages/Settings';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PersonaProvider } from './contexts/PersonaContext';
-import { SubscriptionProvider } from './contexts/SubscriptionContext';
+
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { UpdatePassword } from './pages/UpdatePassword';
 import { SetupPage } from './pages/SetupPage';
-import PricingPage from './components/Pricing/PricingPage';
+
 import { Support } from './pages/Support';
 
 import { ControlRoom } from './pages/ControlRoom';
@@ -76,7 +76,6 @@ function App() {
     <LanguageProvider>
       <AuthProvider>
         <PersonaProvider>
-          <SubscriptionProvider>
             <NotificationProvider>
               <DataProvider>
                 <BrowserRouter>
@@ -101,7 +100,7 @@ function App() {
                         <Route path="calendar" element={<LiquidityCalendar />} />
                         <Route path="profile" element={<Profile />} />
                         <Route path="settings" element={<Settings />} />
-                        <Route path="pricing" element={<PricingPage />} />
+
                         <Route path="integrity" element={<Support />} />
                       </Route>
                     </Route>
@@ -112,7 +111,6 @@ function App() {
                 </BrowserRouter>
               </DataProvider>
             </NotificationProvider>
-          </SubscriptionProvider>
         </PersonaProvider>
       </AuthProvider>
     </LanguageProvider>
