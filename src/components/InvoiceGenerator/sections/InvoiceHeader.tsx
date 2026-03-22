@@ -76,7 +76,7 @@ export default function InvoiceHeader({
                     <InputField label="Due Date" type="date" optional value={meta.dueDate || ''} onChange={(e) => setMeta({ ...meta, dueDate: e.target.value })} />
 
                     {/* Place of Supply (CA) */}
-                    {businessType === 'ca' && (
+                    {businessType === 'ca_firm' && (
                         <div className="flex flex-col space-y-1.5">
                             <label className="text-xs font-semibold text-text-light uppercase tracking-wider flex items-center gap-1.5">
                                 Place of Supply
@@ -93,7 +93,7 @@ export default function InvoiceHeader({
                     )}
 
                     {/* Reverse Charge (CA) */}
-                    {businessType === 'ca' && (
+                    {businessType === 'ca_firm' && (
                         <div className="flex items-center justify-between bg-gray-50/80 rounded-xl px-4 py-3 border border-gray-200">
                             <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider leading-tight">Reverse Charge<br />Applicable (Y/N)</span>
                             <button

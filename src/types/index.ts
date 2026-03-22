@@ -300,7 +300,7 @@ export interface ProductPerformance {
 }
 
 // Adaptive UI / Business Personas
-export type BusinessType = 'solopreneur' | 'services_firm' | 'subscription' | 'ecommerce' | 'ca';
+export type BusinessType = 'solopreneur' | 'services_firm' | 'subscription' | 'ecommerce' | 'ca_firm';
 
 export interface UserProfile {
   id: string;

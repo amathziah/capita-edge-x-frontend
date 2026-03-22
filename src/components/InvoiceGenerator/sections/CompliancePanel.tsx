@@ -88,7 +88,7 @@ export function CompliancePanel(props: CompliancePanelProps) {
       );
     }
 
-    if (persona === 'ca' || persona === 'ca_firm') {
+    if (persona === 'ca_firm') {
       pills.push(
         <div key="ca" className="flex items-start gap-2 text-xs py-1.5 px-2.5 rounded-lg border-l-2 border-l-blue-300 bg-blue-50 text-blue-600">
           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1 bg-blue-300" />
@@ -173,11 +173,11 @@ export function CompliancePanel(props: CompliancePanelProps) {
   };
 
   const sec1 = renderSection1();
-  const sec2 = renderSection2();
+  const sec2 = persona === 'solopreneur' ? null : renderSection2();
   const sec3 = renderSection3();
 
   if (!sec1 && !sec2 && !sec3) {
-    return <div />;
+    return null;
   }
 
   return (

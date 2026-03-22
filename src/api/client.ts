@@ -15,25 +15,15 @@ export const API_URL = getBaseUrl();
 
 class ApiClient {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-        let token = localStorage.getItem('sb-access-token');
-        // Fallback: OAuth redirect may set the session before localStorage is written
-        if (!token) {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.access_token) {
-                token = session.access_token;
-                localStorage.setItem('sb-access-token', token);
-            }
-        }
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token ?? null;
         const organizationId = localStorage.getItem('sb-org-id');
 
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...options.headers,
         };
-
-        if (token) {
-            (headers as any)['Authorization'] = `Bearer ${token}`;
-        }
 
         if (organizationId) {
             (headers as any)['X-Organization-ID'] = organizationId;
@@ -117,24 +107,14 @@ class ApiClient {
     }
 
     async getBlob(endpoint: string, options?: RequestInit): Promise<Blob> {
-        let token = localStorage.getItem('sb-access-token');
-        // Fallback: same race-condition guard
-        if (!token) {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.access_token) {
-                token = session.access_token;
-                localStorage.setItem('sb-access-token', token);
-            }
-        }
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token ?? null;
         const organizationId = localStorage.getItem('sb-org-id');
 
         const headers: HeadersInit = {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...options?.headers,
         };
-
-        if (token) {
-            (headers as any)['Authorization'] = `Bearer ${token}`;
-        }
 
         if (organizationId) {
             (headers as any)['X-Organization-ID'] = organizationId;

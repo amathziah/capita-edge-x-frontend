@@ -2,18 +2,20 @@ import AuthComponent from '../components/Auth';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePersona } from '../contexts/PersonaContext';
 import { supabase } from '../supabaseClient';
 
 export function LoginPage() {
-    const { user, orgId } = useAuth();
+    const { user } = useAuth();
+    const { organizationId: organizationId, loading: personaLoading, refreshPersona } = usePersona();
     const navigate = useNavigate();
 
     // Redirect if already authenticated (context-driven)
     useEffect(() => {
         if (user) {
-            navigate(orgId ? '/dashboard' : '/setup', { replace: true });
+            navigate(organizationId ? '/dashboard' : '/setup', { replace: true });
         }
-    }, [user, orgId, navigate]);
+    }, [user, organizationId, navigate]);
 
     // Fallback: listen for auth state change directly (catches OAuth + email login immediately)
     useEffect(() => {

@@ -152,7 +152,7 @@ const PricingPage = () => {
 
     // Suggest a recommended tier based on businessType
     const getRecommended = (): PlanTier => {
-        if (businessType === 'ca') return 'ca_pro';
+        if (businessType === 'ca_firm') return 'ca_pro';
         if (businessType === 'services_firm' || businessType === 'subscription') return 'smb';
         return 'freelancer';
     };

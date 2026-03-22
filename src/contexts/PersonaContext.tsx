@@ -1,122 +1,143 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from './AuthContext';
+import { PERSONA_CONFIGS } from '../lib/config/persona.config';
+import type { PersonaConfig, Segment, PlanTier } from '../lib/config/persona.config';
 
-export type BusinessType = 'solopreneur' | 'services_firm' | 'subscription' | 'ecommerce' | 'ca';
+export type BusinessType = Segment;
+export type { Segment, PlanTier };
+
+type FeatureKey = keyof typeof PERSONA_CONFIGS['solopreneur']['features'];
 
 interface PersonaContextType {
-    businessType: BusinessType | null;
-    loading: boolean;
-    refreshPersona: () => Promise<void>;
-    updatePersona: (newType: BusinessType) => Promise<void>;
+  businessType: Segment | null;
+  organizationId: string | null;
+  planTier: PlanTier | null;
+  loading: boolean;
+  config: PersonaConfig | null;
+  form: PersonaConfig['invoiceForm'] | null;
+  nav: PersonaConfig['nav'] | null;
+  can: (feature: FeatureKey) => boolean;
+  tier: (minTier: PlanTier) => boolean;
+  refreshPersona: () => Promise<void>;
+  updatePersona: (newType: Segment) => Promise<void>;
 }
 
-const PersonaContext = createContext<PersonaContextType>({
-    businessType: null,
-    loading: true,
-    refreshPersona: async () => { },
-    updatePersona: async () => { },
-});
+const TIER_ORDER: PlanTier[] = ['free', 'pro', 'ca_firm', 'enterprise'];
+
+const PersonaContext = createContext<PersonaContextType | undefined>(undefined);
 
 export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user } = useAuth();
-    const [businessType, setBusinessType] = useState<BusinessType | null>(null);
-    const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const [businessType, setBusinessType] = useState<Segment | null>(null);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [planTier, setPlanTier] = useState<PlanTier | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    const fetchPersona = async (userId: string) => {
-        try {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('business_type')
-                .eq('id', userId)
-                .maybeSingle();
+  const fetchPersona = useCallback(async (userId: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('business_type, organization_id, organizations(plan_tier)')
+        .eq('id', userId)
+        .maybeSingle();
 
-            if (error) {
-                throw error;
-            } else if (data && data.business_type) {
-                const type = data.business_type as BusinessType;
-                setBusinessType(type);
-            } else {
-                setBusinessType(null);
-            }
-        } catch (err) {
-            console.error('Error fetching persona:', err);
-            setBusinessType(null);
-        } finally {
-            setLoading(false);
-        }
-    };
+      // Don't throw on join errors — extract what we can
+      if (error && !data) throw error;
 
-    useEffect(() => {
-        if (user) {
-            fetchPersona(user.id);
-        } else {
-            setLoading(false);
-        }
-    }, [user]);
+      const bType = (data?.business_type as Segment) ?? null;
+      const orgId = data?.organization_id ?? null;
 
-    const refreshPersona = async () => {
-        if (user) await fetchPersona(user.id);
-    };
+      // Handle both array and object return from Supabase join
+      const orgData = data?.organizations;
+      // @ts-ignore
+      const rawTier = Array.isArray(orgData)
+        ? orgData[0]?.plan_tier
+        : orgData?.plan_tier;
+      const resolvedTier = (rawTier as PlanTier) ?? 'free';
 
-    const updatePersona = async (newType: BusinessType) => {
-        if (!user) return;
+      setBusinessType(bType);
+      setOrganizationId(orgId);
+      setPlanTier(orgId ? resolvedTier : null);
+    } catch (err) {
+      console.error('[PersonaContext] fetchPersona error:', err);
+      setBusinessType(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-        try {
-            setLoading(true);
-            console.log('[PersonaContext] Updating to:', newType, 'for user:', user.id);
+  useEffect(() => {
+    if (user) fetchPersona(user.id);
+    else {
+      setBusinessType(null);
+      setOrganizationId(null);
+      setLoading(false);
+    }
+  }, [user, fetchPersona]);
 
-            // First try a normal update
-            const { data: updateData, error: updateError } = await supabase
-                .from('profiles')
-                .update({ business_type: newType })
-                .eq('id', user.id)
-                .select();
+  const config = businessType ? (PERSONA_CONFIGS[businessType] ?? null) : null;
 
-            if (updateError) {
-                console.warn('[PersonaContext] Update warning:', updateError);
-            }
+  const can = useCallback(
+    (feature: FeatureKey): boolean => config?.features[feature]?.enabled ?? false,
+    [config]
+  );
 
-            const updated = !!(updateData && updateData.length > 0);
+  const tier = useCallback(
+    (minTier: PlanTier): boolean => {
+      if (!planTier) return false;
+      return TIER_ORDER.indexOf(planTier) >= TIER_ORDER.indexOf(minTier);
+    },
+    [planTier]
+  );
 
-            // If update returned nothing, profile row doesn't exist yet — upsert it
-            if (!updated) {
-                console.log('[PersonaContext] Profile not found, upserting...');
-                const { error: upsertError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                        id: user.id,
-                        business_type: newType,
-                    }, { onConflict: 'id' });
+  const refreshPersona = useCallback(async () => {
+    if (user) {
+      // Force refresh session to get latest metadata (essential for OAuth users)
+      await supabase.auth.refreshSession();
+      await fetchPersona(user.id);
+    }
+  }, [user, fetchPersona]);
 
-                if (upsertError) {
-                    console.error('[PersonaContext] Upsert error:', upsertError);
-                    throw new Error(`Profile initialization failed: ${upsertError.message}`);
-                }
-            }
+  const updatePersona = useCallback(async (newType: Segment) => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('profiles')
+        .update({ business_type: newType })
+        .eq('id', user.id);
+      if (error) throw new Error(error.message);
+      setBusinessType(newType);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
-            console.log('[PersonaContext] Success.');
-            setBusinessType(newType);
-        } catch (err: any) {
-            console.error('[PersonaContext] Final Error:', err);
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <PersonaContext.Provider value={{ businessType, loading, refreshPersona, updatePersona }}>
-            {children}
-        </PersonaContext.Provider>
-    );
+  return (
+    <PersonaContext.Provider value={{
+      businessType,
+      organizationId,
+      planTier,
+      loading,
+      config,
+      form: config?.invoiceForm ?? null,
+      nav: config?.nav ?? null,
+      can,
+      tier,
+      refreshPersona,
+      updatePersona,
+    }}>
+      {children}
+    </PersonaContext.Provider>
+  );
 };
 
 export const usePersona = () => {
-    const context = useContext(PersonaContext);
-    if (context === undefined) {
-        throw new Error('usePersona must be used within a PersonaProvider');
-    }
-    return context;
+  const context = useContext(PersonaContext);
+  if (context === undefined) {
+    throw new Error('usePersona must be used within a PersonaProvider');
+  }
+  return context;
 };

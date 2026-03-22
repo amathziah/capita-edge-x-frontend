@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { usePersona } from './PersonaContext';
 import { api } from '../api/client';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  Types
 // ═══════════════════════════════════════════════════════════════════════
 
-export type PlanTier = 'starter' | 'freelancer' | 'smb' | 'ca_pro' | 'enterprise';
+export type SubscriptionTier = 'starter' | 'freelancer' | 'smb' | 'ca_pro' | 'enterprise';
 
 interface UsageStats {
     current: number;
@@ -25,7 +26,7 @@ interface PlanFeatures {
 }
 
 interface PlanStatus {
-    plan_tier: PlanTier;
+    plan_tier: SubscriptionTier;
     plan_name: string;
     plan_label: string;
     usage: {
@@ -60,12 +61,13 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
 // ═══════════════════════════════════════════════════════════════════════
 
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { session, orgId } = useAuth();
+    const { session } = useAuth();
+    const { organizationId: organizationId } = usePersona();
     const [planStatus, setPlanStatus] = useState<PlanStatus | null>(null);
     const [loading, setLoading] = useState(true);
 
     const fetchPlanStatus = useCallback(async () => {
-        if (!session || !orgId) {
+        if (!session || !organizationId) {
             setLoading(false);
             return;
         }
@@ -79,7 +81,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         } finally {
             setLoading(false);
         }
-    }, [session, orgId]);
+    }, [session, organizationId]);
 
     useEffect(() => {
         fetchPlanStatus();

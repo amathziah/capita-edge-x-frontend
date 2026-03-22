@@ -4,17 +4,18 @@ import { usePersona } from '../contexts/PersonaContext';
 import { Loader2 } from 'lucide-react';
 
 export const ProtectedRoute = () => {
-    const { user, loading, orgId, checkingOrg } = useAuth();
-    const { businessType, loading: loadingPersona } = usePersona();
+    const { user, loading } = useAuth();
+    const { organizationId, businessType, loading: loadingPersona } = usePersona();
+    const personaLoading = loadingPersona;
     const isSetupPage = window.location.pathname === '/setup';
 
     // OPTIMISTIC RENDERING: If we have a cached persona and org, don't block with onboarding UI
-    const hasCachedState = !!(orgId && businessType);
-    const hasToken = !!localStorage.getItem('sb-access-token');
+    const hasCachedState = !!(organizationId && businessType);
+    const hasToken = !!user;
 
     // RULE 1: If we have ANY session markers, stay in neutral entry mode while hydrating
     // This prevents seeing "Syncing..." or "Build your space" flashes
-    if ((loading || loadingPersona || checkingOrg) && (hasToken || hasCachedState)) {
+    if ((loading || loadingPersona || personaLoading) && (hasToken || hasCachedState)) {
         return (
             <div className="flex items-center justify-center h-screen bg-[#040608]">
                 <div className="w-12 h-12 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
@@ -33,18 +34,18 @@ export const ProtectedRoute = () => {
     }
 
     // Only redirect to login AFTER hydration is fully proven invalid
-    if (!loading && !user && !hasToken) {
+    if (!loading && !user) {
         return <Navigate to="/login" replace />;
     }
 
     // Redirect to setup ONLY after hydration confirms missing identity
-    const isFullyLoaded = !loading && !checkingOrg && !loadingPersona;
-    if (user && isFullyLoaded && (!orgId || !businessType) && !isSetupPage) {
+    const isFullyLoaded = !loading && !loadingPersona;
+    if (user && isFullyLoaded && !organizationId && !isSetupPage) {
         return <Navigate to="/setup" replace />;
     }
 
     // Prevent access to /setup if already has BOTH organization and persona
-    if (orgId && businessType && isSetupPage) {
+    if (organizationId && businessType && isSetupPage) {
         return <Navigate to="/" replace />;
     }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usePersona, BusinessType } from '../contexts/PersonaContext';
@@ -18,20 +18,19 @@ import {
     Globe,
     Database,
     Terminal,
-    Activity,
-    Scale
+    Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Step = 'calibrate' | 'identity' | 'persona' | 'processing' | 'done';
 
 export function SetupPage() {
-    const { user, refreshOrgContext, orgId, loading: authLoading, checkingOrg } = useAuth();
-    const { updatePersona } = usePersona();
+    const { user, loading: authLoading } = useAuth();
+    const { refreshPersona, businessType, organizationId: organizationId, loading: personaLoading } = usePersona();
     const navigate = useNavigate();
 
     const [step, setStep] = useState<Step>('calibrate');
-    const { businessType, loading: loadingPersona } = usePersona();
+    const isProvisioningRef = useRef(false);
 
     // Guard: redirect to login if not authenticated
     useEffect(() => {
@@ -43,12 +42,21 @@ export function SetupPage() {
     // Guard: hydration check - stay in neutral theme until status is 100% stable
     // (Actual early return logic moved below hooks to comply with React rules)
 
-    // Guard: redirect out of setup if already provisioned
+    // Guard: redirect out of setup if already provisioned (Strict check)
     useEffect(() => {
-        if (!authLoading && !checkingOrg && !loadingPersona && orgId && businessType) {
+        if (
+            !authLoading &&
+            !personaLoading &&
+            organizationId &&
+            businessType &&
+            !isProvisioningRef.current &&
+            step !== 'processing' &&
+            step !== 'done'
+        ) {
             navigate('/dashboard', { replace: true });
         }
-    }, [authLoading, checkingOrg, loadingPersona, orgId, businessType, navigate]);
+    }, [authLoading, personaLoading, organizationId, businessType, step, navigate]);
+
     const [companyName, setCompanyName] = useState(user?.user_metadata?.company_name || '');
     const [selectedPersona, setSelectedPersona] = useState<BusinessType>('solopreneur');
     const [error, setError] = useState<string | null>(null);
@@ -84,6 +92,13 @@ export function SetupPage() {
     }, [user, companyName]);
 
     const handleProvisioning = async () => {
+        if (!companyName.trim()) {
+            setError('Please enter your business name.');
+            setStep('identity');
+            return;
+        }
+
+        isProvisioningRef.current = true;
         setStep('processing');
         setError(null);
         try {
@@ -100,38 +115,81 @@ export function SetupPage() {
             if (!session?.access_token) {
                 throw new Error('Authentication session not ready. Please refresh and try again.');
             }
-            localStorage.setItem('sb-access-token', session.access_token);
 
-            // 1. Call backend to provision organization (only if not already set)
-            if (!orgId) {
-                await api.post(ENDPOINTS.AUTH_PROVISION, { companyName });
+            // 1. Call backend to provision organization
+            if (!organizationId) {
+                try {
+                    await api.post(ENDPOINTS.AUTH_PROVISION, { 
+                        companyName: companyName.trim(),
+                        businessType: selectedPersona
+                    });
+                } catch (provisionErr: any) {
+                    const msg = (provisionErr?.message ?? '').toLowerCase();
+                    // Already provisioned is fine — org exists, just continue
+                    if (!msg.includes('already belongs') && !msg.includes('already provisioned')) {
+                        throw provisionErr; // real error — rethrow
+                    }
+                }
             }
 
-            // 2. Update persona
-            await updatePersona(selectedPersona);
+            // 2. Always refresh persona after provisioning attempt
+            await refreshPersona();
 
-            // 3. Refresh context and redirect
-            await refreshOrgContext();
+            // 3. Redirect
             setStep('done');
-            setTimeout(() => navigate('/'), 2500);
+            setTimeout(() => navigate('/dashboard'), 2500);
         } catch (err: any) {
-            console.error('Setup error:', err);
-            setError(err.message);
-            setStep('identity');
+            console.error('[SetupPage] provisioning error:', err);
+            const msg = (err?.message ?? '').toLowerCase();
+            let friendlyError = 'Something went wrong. Please try again.';
+            
+            if (msg.includes('failed to fetch')) {
+                friendlyError = 'Backend server unreachable. Please ensure the server is running on port 3000.';
+            } else if (msg.includes('already belongs') || msg.includes('already provisioned')) {
+                friendlyError = 'Your account is already set up. Redirecting...';
+            } else if (msg.includes('session not ready') || msg.includes('authentication')) {
+                friendlyError = 'Sign-in timed out. Please refresh and try again.';
+            } else if (msg.includes('company name') || msg.includes('required')) {
+                friendlyError = 'Please enter your business name.';
+            }
+            
+            setError(friendlyError);
+            setStep(organizationId ? 'persona' : 'identity');
+        } finally {
+            isProvisioningRef.current = false;
         }
     };
 
     const personas = [
-        { id: 'solopreneur', label: 'Solopreneur', desc: 'Sovereign individual managing holistic operations.', icon: <Activity className="w-6 h-6" /> },
-        { id: 'subscription', label: 'SaaS Founder', desc: 'Scalable subscription architecture & MRR tracking.', icon: <Zap className="w-6 h-6" /> },
-        { id: 'services_firm', label: 'Agency Owner', desc: 'Multi-client coordination & project-based billing.', icon: <Globe className="w-6 h-6" /> },
-        { id: 'ca', label: 'CA / Accountant', desc: 'Practice management, SAC codes & compliance-first billing.', icon: <Scale className="w-6 h-6" /> },
-        { id: 'ecommerce', label: 'E-commerce', desc: 'Universal product ledger & automated order flows.', icon: <Database className="w-6 h-6" /> },
+        {
+            id: 'solopreneur',
+            label: 'Freelancer / Consultant',
+            desc: 'Invoice clients, auto GST + TDS, payment reminders — 90 seconds.',
+            icon: <Activity className="w-6 h-6" />
+        },
+        {
+            id: 'services_firm',
+            label: 'Service firm',
+            desc: 'Multi-client invoicing, team approvals, smart collections.',
+            icon: <Globe className="w-6 h-6" />
+        },
+        {
+            id: 'ecommerce',
+            label: 'Ecommerce seller',
+            desc: 'Amazon + Flipkart auto-invoicing, HSN GST, marketplace reconciliation.',
+            icon: <Database className="w-6 h-6" />
+        },
+        {
+            id: 'subscription',
+            label: 'SaaS / Subscription',
+            desc: 'MRR tracking, recurring billing, OIDAR rules for foreign buyers.',
+            icon: <Zap className="w-6 h-6" />
+        },
     ];
 
     // Guard: hydration check - stay in neutral theme until status is 100% stable
     // MOVED here to comply with Rules of Hooks (must be after all top-level hooks)
-    const isHydratingStatus = authLoading || checkingOrg || loadingPersona;
+    const isHydratingStatus = authLoading || personaLoading;
     if (isHydratingStatus) {
         return (
             <div className="flex items-center justify-center h-screen bg-[#040608]">
@@ -212,13 +270,13 @@ export function SetupPage() {
 
                                 <div className="space-y-6">
                                     <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 ml-1">Universal Identity String</label>
+                                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 ml-1">Your business name</label>
                                         <div className="relative group">
                                             <input
                                                 type="text"
                                                 value={companyName}
                                                 onChange={(e) => setCompanyName(e.target.value)}
-                                                placeholder="e.g. Capita Nexus"
+                                                placeholder="e.g. Rahul Mehta Designs"
                                                 className="w-full px-6 py-4 bg-white/[0.04] border-2 border-white/[0.08] rounded-2xl text-white text-base font-bold focus:bg-white/[0.06] focus:border-teal-500/40 focus:ring-8 focus:ring-teal-500/5 outline-none transition-all placeholder:text-gray-700"
                                             />
                                             <div className="absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-focus-within:opacity-100 transition-opacity">

@@ -15,6 +15,7 @@ import {
   User,
   LogOut,
   ChevronUp,
+  Globe
 } from "lucide-react";
 import { useLanguage } from "../LanguageProvider";
 import { useAuth } from "../../contexts/AuthContext";
@@ -22,67 +23,72 @@ import { usePersona } from "../../contexts/PersonaContext";
 import { useSubscription } from "../../contexts/SubscriptionContext";
 import { Logo } from "../common/Logo";
 
-// ── Types ────────────────────────────────────────────────────────────────
-type NavItem = {
-  name: string;
-  label: string;
-  href: string;
-  icon: React.ElementType;
-  badge?: string;
-  highlight?: string;
-  statusDot?: string;
+
+
+
+// ── Icon & Path Mappings ────────────────────────────────────────────────
+const ICON_MAP: Record<string, React.ElementType> = {
+  'control-room': LayoutDashboard,
+  'calendar': CalendarClock,
+  'invoices': FileText,
+  'payments': CreditCard,
+  'customers': Users,
+  'projects': LayoutDashboard,
+  'expenses': Receipt,
+  'inventory': Package,
+  'marketplace': Globe,
+  'compliance': ShieldCheck,
+  'reports': BarChart3,
+  'team': Users,
+  'sku-pl': BarChart3,
+  'subscribers': Users,
+  'mrr': Zap,
+  'clients': Users,
+  'integrity': ShieldCheck,
 };
 
-type NavGroup = {
-  title: string;
-  items: NavItem[];
+const PATH_MAP: Record<string, string> = {
+  'control-room': '/dashboard',
+  'calendar': '/dashboard/calendar',
+  'invoices': '/dashboard/invoices',
+  'payments': '/dashboard/payments',
+  'customers': '/dashboard/customers',
+  'projects': '/dashboard/projects',
+  'expenses': '/dashboard/expenses',
+  'inventory': '/dashboard/inventory',
+  'marketplace': '/dashboard/marketplace',
+  'compliance': '/dashboard/compliance',
+  'reports': '/dashboard/reports',
+  'team': '/dashboard/team',
+  'sku-pl': '/dashboard/sku-pl',
+  'subscribers': '/dashboard/subscribers',
+  'mrr': '/dashboard/mrr',
+  'clients': '/dashboard/clients',
+  'integrity': '/dashboard/integrity',
 };
-
-// ── Navigation Groups ────────────────────────────────────────────────────
-const groups: NavGroup[] = [
-  {
-    title: "HEADQUARTERS",
-    items: [
-      { name: "control_room", label: "Control Room", href: "/dashboard", icon: LayoutDashboard },
-      { name: "calendar", label: "Calendar", href: "/dashboard/calendar", icon: CalendarClock, highlight: "Liquidity" },
-    ],
-  },
-  {
-    title: "REVENUE OPS",
-    items: [
-      { name: "invoices", label: "Invoices", href: "/dashboard/invoices", icon: FileText },
-      { name: "payments", label: "Payments", href: "/dashboard/payments", icon: CreditCard },
-      { name: "customers", label: "Customers", href: "/dashboard/customers", icon: Users },
-    ],
-  },
-  {
-    title: "SPEND & ASSETS",
-    items: [
-      { name: "expenses", label: "Expenses", href: "/dashboard/expenses", icon: Receipt },
-      { name: "inventory", label: "Inventory", href: "/dashboard/inventory", icon: Package },
-      { name: "compliance", label: "Compliance", href: "/dashboard/compliance", icon: ShieldCheck, statusDot: "bg-emerald-500" },
-    ],
-  },
-  {
-    title: "ANALYTICS",
-    items: [
-      { name: "reports", label: "Reports", href: "/dashboard/reports", icon: BarChart3 },
-    ],
-  },
-  {
-    title: "OPERATIONAL",
-    items: [
-      { name: "integrity", label: "Integrity", href: "/dashboard/integrity", icon: ShieldCheck, highlight: "Report" },
-    ],
-  },
-];
 
 // ── Component ────────────────────────────────────────────────────────────
 export function Sidebar() {
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
-  const { businessType } = usePersona();
+  const { nav, config, planTier } = usePersona();
   const { planStatus } = useSubscription();
+
+  const SECTION_LABELS: Record<string, string> = {
+    'headquarters': 'Headquarters',
+    'revenue-ops': 'Revenue Ops',
+    'spend-assets': 'Spend & Assets',
+    'analytics': 'Analytics',
+  };
+
+  const SECTIONS = ['headquarters', 'revenue-ops', 'spend-assets', 'analytics'] as const;
+
+  const groupedNav = useMemo(() => {
+    return SECTIONS.reduce((acc, section) => {
+      acc[section] = (nav ?? []).filter(item => item.section === section);
+      return acc;
+    }, {} as Record<string, typeof nav>);
+  }, [nav]);
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -123,64 +129,6 @@ export function Sidebar() {
     navigate("/login");
   };
 
-  // Filter groups based on persona
-  const navGroups = useMemo(() => {
-    return groups
-      .map(group => {
-        // Filter items first
-        const filteredItems = group.items.filter(item => {
-          // --- Solopreneur Mapping ---
-          if (businessType === 'solopreneur') {
-            // Solopreneurs don't need compliance
-            if (item.name === 'compliance') return false;
-          }
-          return true;
-        });
-
-        // Transform remaining items
-        const displayName = getDisplayName();
-        const transformedItems = filteredItems.map(item => {
-          // --- Solopreneur Granular Labeling ---
-          if (businessType === 'solopreneur') {
-            if (item.name === 'inventory') return { ...item, label: `${displayName}'s Offerings` };
-            if (item.name === 'control_room') return { ...item, label: `${displayName}'s Dashboard` };
-          }
-
-          // --- services_firm Granular Labeling ---
-          if (businessType === 'services_firm') {
-            if (item.name === 'inventory') return { ...item, label: `${displayName}'s Services` };
-          }
-
-          // --- subscription Granular Labeling ---
-          if (businessType === 'subscription') {
-            if (item.name === 'inventory') return { ...item, label: `${displayName}'s Products` };
-          }
-
-          // --- E-commerce / Default Granular Labeling ---
-          if (item.name === 'inventory') {
-            return { ...item, label: `${displayName}'s Inventory` };
-          }
-
-          return item;
-        });
-
-        // Dynamic Group Title Renaming
-        let groupTitle = group.title;
-        if (group.title === "SPEND & ASSETS") {
-          if (businessType === 'solopreneur') groupTitle = "MY BUSINESS";
-          else if (businessType === 'services_firm') groupTitle = "SERVICE OPS";
-          else if (businessType === 'subscription') groupTitle = "PRODUCT OPS";
-          else if (['services_firm', 'subscription'].includes(businessType as string)) groupTitle = "OFFERINGS & SPEND"; // Fallback
-        }
-
-        return {
-          ...group,
-          title: groupTitle,
-          items: transformedItems
-        };
-      })
-      .filter(group => group.items.length > 0);
-  }, [businessType]);
 
   return (
     <aside
@@ -206,111 +154,100 @@ export function Sidebar() {
                 <span className="px-1 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-[8px] font-black text-teal-400/80 uppercase tracking-tighter">v2.5</span>
               )}
             </div>
-            <span className="block text-[10px] text-gray-500 font-medium tracking-wide">Protocol Architecture</span>
+            <span className="block text-[10px] text-gray-500 font-medium tracking-wide">
+              {config?.label ?? ''}
+            </span>
           </div>
         )}
       </button>
 
       {/* ── Navigation Groups ─────────────────────────────────── */}
       <nav className={`flex-1 overflow-y-auto pt-5 pb-4 space-y-6 scrollbar-hide ${collapsed ? "px-1.5" : "px-3"}`}>
-        {navGroups.map((group) => (
-          <div key={group.title}>
-            {/* Group Header */}
-            {!collapsed ? (
-              <div className="flex items-center gap-2 px-3 mb-2">
-                <span className="text-[10px] font-bold tracking-[0.12em] text-gray-500 uppercase whitespace-nowrap">
-                  {group.title}
-                </span>
-                <div className="flex-1 h-px bg-white/[0.04]" />
-              </div>
-            ) : (
-              <div className="flex justify-center mb-2">
-                <div className="w-5 h-px bg-white/[0.08]" />
-              </div>
-            )}
+        {SECTIONS.map((section) => {
+          const sectionItems = groupedNav[section];
+          if (!sectionItems?.length) return null;
 
-            {/* Group Items */}
-            <div className="space-y-0.5">
-              {group.items.map((item) => (
-                <NavLink
-                  key={item.name}
-                  to={item.href}
-                  end={item.href === "/" || item.href === "/dashboard"}
-                  title={collapsed ? (t(item.name) || item.label) : undefined}
-                  className={({ isActive }) =>
-                    `group relative flex items-center rounded-xl text-[13px] font-medium transition-all duration-200 ${collapsed
-                      ? `justify-center px-0 py-2.5 ${isActive
-                        ? "bg-gradient-to-r from-teal-500/15 to-cyan-500/10 text-white"
-                        : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]"
-                      }`
-                      : `gap-2.5 px-3 py-2.5 ${isActive
-                        ? "bg-gradient-to-r from-teal-500/15 to-cyan-500/10 text-white"
-                        : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]"
-                      }`
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      {/* Active indicator bar */}
-                      {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-gradient-to-b from-teal-400 to-cyan-400" />
-                      )}
+          return (
+            <div key={section}>
+              {/* Group Header */}
+              {!collapsed ? (
+                <div className="flex items-center gap-2 px-3 mb-2">
+                  <span className="text-[10px] font-bold tracking-[0.12em] text-gray-400 uppercase whitespace-nowrap">
+                    {SECTION_LABELS[section]}
+                  </span>
+                  <div className="flex-1 h-px bg-white/[0.04]" />
+                </div>
+              ) : (
+                <div className="flex justify-center mb-2">
+                  <div className="w-5 h-px bg-white/[0.08]" />
+                </div>
+              )}
 
-                      <div className="relative flex-shrink-0">
-                        <item.icon
-                          className={`w-[18px] h-[18px] transition-colors duration-200 ${isActive ? "text-teal-400" : "text-gray-500 group-hover:text-gray-400"
-                            }`}
-                          strokeWidth={isActive ? 2.2 : 1.8}
-                        />
+              {/* Group Items */}
+              <div className="space-y-0.5">
+                {sectionItems.map((item) => {
+                  const Icon = ICON_MAP[item.id] || LayoutDashboard;
+                  const href = PATH_MAP[item.id] || '/dashboard';
 
-                        {/* Badge on icon when collapsed */}
-                        {collapsed && item.badge && (
-                          <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] flex items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white px-0.5 shadow-sm">
-                            {item.badge}
-                          </span>
-                        )}
-
-                        {/* Status dot on icon when collapsed */}
-                        {collapsed && item.statusDot && (
-                          <span className={`absolute -top-0.5 -right-0.5 w-[7px] h-[7px] rounded-full ${item.statusDot} ring-2 ring-[#0c0f1a]`} />
-                        )}
-                      </div>
-
-                      {/* Expanded: show labels and indicators */}
-                      {!collapsed && (
+                  return (
+                    <NavLink
+                      key={item.id}
+                      to={href}
+                      end={href === "/" || href === "/dashboard"}
+                      title={collapsed ? (t(item.id) || item.label) : undefined}
+                      className={({ isActive }) =>
+                        `group relative flex items-center rounded-xl text-[13px] font-medium transition-all duration-200 ${collapsed
+                          ? `justify-center px-0 py-2.5 ${isActive
+                            ? "bg-gradient-to-r from-teal-500/15 to-cyan-500/10 text-white"
+                            : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]"
+                          }`
+                          : `gap-2.5 px-3 py-2.5 ${isActive
+                            ? "bg-gradient-to-r from-teal-500/15 to-cyan-500/10 text-white"
+                            : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]"
+                          }`
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
                         <>
-                          <span className="flex-1 truncate">
-                            {t(item.name) || item.label}
-                          </span>
-
-                          {item.badge && (
-                            <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full bg-rose-500/90 text-[10px] font-bold text-white px-1.5 shadow-sm shadow-rose-500/30">
-                              {item.badge}
-                            </span>
+                          {isActive && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-gradient-to-b from-teal-400 to-cyan-400" />
                           )}
 
-                          {item.highlight && (
-                            <span className="text-[8px] font-bold tracking-wider uppercase text-teal-400/90 bg-teal-500/10 px-1.5 py-0.5 rounded-md flex-shrink-0">
-                              {item.highlight}
-                            </span>
-                          )}
+                          <div className="relative flex-shrink-0">
+                            <Icon
+                              className={`w-[18px] h-[18px] transition-colors duration-200 ${isActive ? "text-teal-400" : "text-gray-500 group-hover:text-gray-400"
+                                }`}
+                              strokeWidth={isActive ? 2.2 : 1.8}
+                            />
+                            {collapsed && item.badge && (
+                              <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] flex items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white px-0.5 shadow-sm">
+                                {item.badge}
+                              </span>
+                            )}
+                          </div>
 
-                          {item.statusDot && (
-                            <span className="relative flex items-center justify-center w-4 h-4">
-                              <span className={`absolute w-2 h-2 rounded-full ${item.statusDot} animate-pulse opacity-40`} />
-                              <span className={`w-[7px] h-[7px] rounded-full ${item.statusDot}`} />
-                            </span>
+                          {!collapsed && (
+                            <>
+                              <span className="flex-1 truncate">
+                                {t(item.id) || item.label}
+                              </span>
+                              {item.badge && (
+                                <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full bg-rose-500/90 text-[10px] font-bold text-white px-1.5 shadow-sm shadow-rose-500/30">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </>
                           )}
                         </>
                       )}
-                    </>
-                  )}
-                </NavLink>
-              ))}
+                    </NavLink>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* ── Plan Usage / Upgrade Section ──────────────────────── */}
         {!collapsed && (
@@ -328,7 +265,10 @@ export function Sidebar() {
                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
                       : 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
                       }`}>
-                      {planStatus?.plan_name || 'starter'}
+                      {planTier === 'pro' ? 'PRO'
+                        : planTier === 'enterprise' ? 'ENTERPRISE'
+                        : planTier === 'ca_firm' ? 'CA'
+                        : 'FREE'}
                     </span>
                   </div>
                 </div>

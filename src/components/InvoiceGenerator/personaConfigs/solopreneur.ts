@@ -5,7 +5,7 @@ const solopreneurConfig: PersonaConfig = {
 
     // // Defaults
     defaultUnit: 'Hours',
-    defaultTaxRate: 0,
+    defaultTaxRate: 18,
 
     // // Header fields
     showPlaceOfSupply: false,

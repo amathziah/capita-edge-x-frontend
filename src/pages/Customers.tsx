@@ -10,6 +10,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { dataService } from '../services/dataService';
 import { Customer, Invoice, CustomerInsights } from '../types';
 import { useData } from "../contexts/DataContext";
+import { usePersona } from "../contexts/PersonaContext";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+const formatLTV = (val: number) => {
+  if (!val) return null;
+  if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
+  if (val >= 1000) return `₹${(val / 1000).toFixed(1)}K`;
+  return `₹${val}`;
+};
 
 // ---------------------------------------------------------------------------
 // Sort options
@@ -23,6 +34,8 @@ type ViewMode = 'grid' | 'list';
 // ---------------------------------------------------------------------------
 export function Customers() {
   const { customers, loading, refreshData, setData } = useData();
+  const { businessType } = usePersona();
+  const isSolopreneur = businessType === 'solopreneur';
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerInsights, setCustomerInsights] = useState<CustomerInsights | null>(null);
   const [customerInvoices, setCustomerInvoices] = useState<Invoice[]>([]);
@@ -649,42 +662,73 @@ export function Customers() {
               ) : viewMode === 'grid' ? (
                 <div className={`grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5`}>
                   {filteredCustomers.map(cust => (
-                    <div
-                      key={cust.id}
-                      className={`group bg-white/80 backdrop-blur-xl border border-teal-100/60 rounded-2xl shadow-sm hover:shadow-md hover:border-teal-300 transition-all cursor-pointer flex flex-col overflow-hidden ${settings.compactCards ? 'p-4' : ''}`}
-                      onClick={() => setSelectedCustomer(cust)}
-                    >
-                      {!settings.compactCards && (
-                        <div className="p-5 pb-0 flex items-center justify-between">
-                          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-teal-50 text-teal-500 group-hover:bg-teal-100 group-hover:scale-110 transition-all border border-teal-100">
-                            <User className="w-5 h-5" />
+                      <div
+                        key={cust.id}
+                        className={`group bg-white/80 backdrop-blur-xl border border-teal-100/60 rounded-2xl shadow-sm hover:shadow-md hover:border-teal-300 transition-all cursor-pointer flex flex-col overflow-hidden relative ${settings.compactCards ? 'p-4' : ''}`}
+                        onClick={() => setSelectedCustomer(cust)}
+                      >
+                        {/* Solopreneur Intelligence: Risk Dot */}
+                        {isSolopreneur && (cust as any).risk_score && (
+                          <div 
+                            className={`absolute top-3 right-3 w-2.5 h-2.5 rounded-full z-10 ${
+                              (cust as any).risk_score === 'green' ? 'bg-green-500' : 
+                              (cust as any).risk_score === 'yellow' ? 'bg-amber-500' : 'bg-red-500'
+                            }`}
+                            title={
+                              (cust as any).risk_score === 'green' ? 'Pays on time' : 
+                              (cust as any).risk_score === 'yellow' ? 'Sometimes late' : 'Chronic late payer'
+                            }
+                          />
+                        )}
+
+                        {!settings.compactCards && (
+                          <div className="p-5 pb-0 flex items-center justify-between">
+                            <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-teal-50 text-teal-500 group-hover:bg-teal-100 group-hover:scale-110 transition-all border border-teal-100">
+                              <User className="w-5 h-5" />
+                            </div>
                           </div>
+                        )}
+                        <div className={settings.compactCards ? '' : 'px-5 py-3 flex-1'}>
+                          <h3 className="text-base font-bold text-gray-900 mb-0.5 group-hover:text-teal-700 transition truncate" style={{ fontFamily: 'Sora, sans-serif' }}>{cust.name}</h3>
+                          
+                          {/* Solopreneur Intelligence: Stats */}
+                          {isSolopreneur && (
+                            <div className="flex flex-col gap-0.5 mb-2">
+                              {(cust as any).avg_payment_days > 0 && (
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+                                  Pays in ~{(cust as any).avg_payment_days} days avg
+                                </p>
+                              )}
+                              {(cust as any).total_invoiced_lifetime > 0 && (
+                                <p className="text-[10px] text-teal-600/70 font-black uppercase tracking-tight">
+                                  {formatLTV((cust as any).total_invoiced_lifetime)} lifetime
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          {settings.showEmail && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-2 truncate">
+                              <Mail className="w-3 h-3 shrink-0" /> <span className="truncate">{cust.email}</span>
+                            </div>
+                          )}
+                          {settings.showAddress && cust.address && (
+                            <p className="text-xs text-gray-400 line-clamp-1">{cust.address}</p>
+                          )}
+                          {settings.showTags && cust.tags && cust.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-3">
+                              {cust.tags.map((tag, i) => (
+                                <span key={i} className="px-2 py-0.5 bg-teal-50 border border-teal-100 text-teal-600 rounded-md text-[10px] font-semibold uppercase tracking-wide">{tag}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <div className={settings.compactCards ? '' : 'px-5 py-3 flex-1'}>
-                        <h3 className="text-base font-bold text-gray-900 mb-0.5 group-hover:text-teal-700 transition truncate" style={{ fontFamily: 'Sora, sans-serif' }}>{cust.name}</h3>
-                        {settings.showEmail && (
-                          <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-2 truncate">
-                            <Mail className="w-3 h-3 shrink-0" /> <span className="truncate">{cust.email}</span>
-                          </div>
-                        )}
-                        {settings.showAddress && cust.address && (
-                          <p className="text-xs text-gray-400 line-clamp-1">{cust.address}</p>
-                        )}
-                        {settings.showTags && cust.tags && cust.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-3">
-                            {cust.tags.map((tag, i) => (
-                              <span key={i} className="px-2 py-0.5 bg-teal-50 border border-teal-100 text-teal-600 rounded-md text-[10px] font-semibold uppercase tracking-wide">{tag}</span>
-                            ))}
+                        {!settings.compactCards && (
+                          <div className="px-5 py-2.5 border-t border-teal-50 bg-teal-50/20 flex items-center text-xs text-teal-600 font-medium group-hover:bg-teal-50/40 transition">
+                            View Profile <ArrowRight size={12} className="ml-1 group-hover:translate-x-1 transition-transform" />
                           </div>
                         )}
                       </div>
-                      {!settings.compactCards && (
-                        <div className="px-5 py-2.5 border-t border-teal-50 bg-teal-50/20 flex items-center text-xs text-teal-600 font-medium group-hover:bg-teal-50/40 transition">
-                          View Profile <ArrowRight size={12} className="ml-1 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      )}
-                    </div>
                   ))}
                 </div>
               ) : (
@@ -710,10 +754,33 @@ export function Customers() {
                           >
                             <td className="px-6 py-3.5">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center text-teal-500 border border-teal-100 group-hover:scale-110 transition-transform">
-                                  <User size={14} />
+                                <div className="relative">
+                                  <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center text-teal-500 border border-teal-100 group-hover:scale-110 transition-transform">
+                                    <User size={14} />
+                                  </div>
+                                  {/* Solopreneur Intelligence: Risk Dot */}
+                                  {isSolopreneur && (cust as any).risk_score && (
+                                    <div 
+                                      className={`absolute -top-1 -right-1 w-2 h-2 rounded-full border border-white ${
+                                        (cust as any).risk_score === 'green' ? 'bg-green-500' : 
+                                        (cust as any).risk_score === 'yellow' ? 'bg-amber-500' : 'bg-red-500'
+                                      }`}
+                                    />
+                                  )}
                                 </div>
-                                <span className="font-semibold text-gray-900 group-hover:text-teal-700 transition">{cust.name}</span>
+                                <div>
+                                  <div className="font-semibold text-gray-900 group-hover:text-teal-700 transition">{cust.name}</div>
+                                  {isSolopreneur && (
+                                    <div className="flex gap-2 text-[10px] text-gray-400 font-medium">
+                                      {(cust as any).avg_payment_days > 0 && (
+                                        <span>~{(cust as any).avg_payment_days} days</span>
+                                      )}
+                                      {(cust as any).total_invoiced_lifetime > 0 && (
+                                        <span className="text-teal-600/60 font-bold">{formatLTV((cust as any).total_invoiced_lifetime)} lifetime</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </td>
                             <td className="px-6 py-3.5 text-gray-500">{cust.email}</td>

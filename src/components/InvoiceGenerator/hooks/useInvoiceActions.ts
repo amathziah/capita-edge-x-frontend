@@ -42,6 +42,9 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
             discount: 0,
             discountAmount: state.discountAmount || 0,
             shipping,
+            subtotal: state.subtotal,
+            taxAmount: state.taxAmount,
+            total: state.total,
             status: 'draft' as const,
             notes: notes || '',
             // Persona

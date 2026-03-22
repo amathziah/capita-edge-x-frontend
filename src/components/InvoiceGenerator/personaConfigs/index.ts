@@ -4,7 +4,7 @@ import solopreneurConfig from './solopreneur';
 import servicesFirmConfig from './services_firm';
 import subscriptionConfig from './subscription';
 import ecommerceConfig from './ecommerce';
-import caConfig from './ca';
+import caFirmConfig from './ca_firm';
 
 /**
  * Registry of all available persona configurations.
@@ -15,7 +15,7 @@ const configMap: Record<BusinessType, PersonaConfig> = {
     services_firm: servicesFirmConfig,
     subscription: subscriptionConfig,
     ecommerce: ecommerceConfig,
-    ca: caConfig,
+    ca_firm: caFirmConfig,
 };
 
 /**

@@ -1,7 +1,7 @@
 import { PersonaConfig } from './types';
 
-const caConfig: PersonaConfig = {
-    type: 'ca',
+const caFirmConfig: PersonaConfig = {
+    type: 'ca_firm',
 
     // // Defaults
     defaultUnit: 'Qty',
@@ -55,4 +55,4 @@ const caConfig: PersonaConfig = {
     placeOfSupplyLabel: 'Place of Supply',
 };
 
-export default caConfig;
+export default caFirmConfig;

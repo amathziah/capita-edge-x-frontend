@@ -326,7 +326,7 @@ export function Invoices() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-text-main">Invoices</h2>
-          <p className="text-sm text-text-muted mt-1">Manage and track your business paymentssss.</p>
+          <p className="text-sm text-text-muted mt-1">Manage and track your business payments.</p>
         </div>
 
         <button

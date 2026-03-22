@@ -30,12 +30,12 @@ import { Loader2 } from 'lucide-react';
 import { usePersona } from './contexts/PersonaContext';
 
 const HomeLoader = () => {
-  const { user, loading: loadingAuth, orgId, checkingOrg } = useAuth();
-  const { businessType, loading: loadingPersona } = usePersona();
+  const { user, loading: loadingAuth } = useAuth();
+  const { organizationId, businessType, loading: loadingPersona } = usePersona();
 
-  // The Smoking Gun: Check for hints of a returning user
-  const hasToken = !!localStorage.getItem('sb-access-token');
-  const isHydrating = loadingAuth || checkingOrg || loadingPersona;
+  // 1. Check for established user session directly
+  const hasToken = !!user;
+  const isHydrating = loadingAuth || loadingPersona;
 
   // RULE 1: If we have ANY hint of a session (token), stay in NEUTRAL mode.
   // This removes the "Syncing Security Protocol" text and flashes for established users.
@@ -62,7 +62,7 @@ const HomeLoader = () => {
 
   // RULE 3: Routing Decisions (Only after isHydrating is false)
   if (user) {
-    if (orgId && businessType) {
+    if (organizationId && businessType) {
       return <Navigate to="/dashboard" replace />;
     }
     return <Navigate to="/setup" replace />;

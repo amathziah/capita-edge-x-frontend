@@ -9,7 +9,7 @@ import { BusinessType } from '../../../contexts/PersonaContext';
  * Each type has unique invoicing requirements and UI layouts.
  */
 // Note: BusinessType is imported from PersonaContext, but we should reflect the changes here if it was partially redefined or for documentation.
-// The user asked to change BusinessType to: 'solopreneur' | 'services_firm' | 'subscription' | 'ecommerce' | 'ca'
+// The user asked to change BusinessType to: 'solopreneur' | 'services_firm' | 'subscription' | 'ecommerce' | 'ca_firm'
 
 /**
  * PersonaConfig defines the feature flags and default values for each business persona.
@@ -82,7 +82,7 @@ export interface PersonaConfig {
      * How inter-state transactions are determined:
      * - 'none': No inter-state logic (solopreneur, subscription)
      * - 'manual': User toggles intra/inter-state (services_firm)
-     * - 'auto-place-of-supply': Determined by Place of Supply vs Seller GSTIN (ca)
+     * - 'auto-place-of-supply': Determined by Place of Supply vs Seller GSTIN (ca_firm)
      * - 'auto-delivery-state': Determined by Delivery State vs Seller GSTIN (ecommerce)
      */
     interStateMode: 'none' | 'manual' | 'auto-place-of-supply' | 'auto-delivery-state';

@@ -1,10 +1,11 @@
 import { User, Building2, Shield, Mail, Hash } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePersona } from '../contexts/PersonaContext';
 
 export function Profile() {
     const { user } = useAuth();
-    // Safe access to organizationId and role from the enriched user object
-    const orgId = (user as any)?.organizationId || 'Not assigned';
+    const { organizationId, loading: personaLoading, refreshPersona } = usePersona();
+    // Safe access to role from the enriched user object
     const role = (user as any)?.role || 'User';
 
     return (
@@ -70,7 +71,7 @@ export function Profile() {
                                 Organization ID
                             </label>
                             <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-sm text-text-muted font-mono truncate">
-                                {orgId}
+                                {organizationId}
                             </div>
                         </div>
 

@@ -34,7 +34,7 @@ export default function BuyerSection({
                 <InputField
                     label={(businessType as string) === 'ca_firm' ? "Client's Legal Business Name" : "Client Name"}
                     required
-                    placeholder={businessType === 'ca' ? "Client's Legal Business Name" : 'Client Business Name'}
+                    placeholder={businessType === 'ca_firm' ? "Client's Legal Business Name" : 'Client Business Name'}
                     value={buyer.name || ''}
                     onChange={(e) => setBuyer({ ...buyer, name: e.target.value })}
                     onFocus={() => setIsBuyerFocused(true)}
@@ -86,7 +86,7 @@ export default function BuyerSection({
                 </label>
                 <textarea
                     className="w-full bg-gray-50/80 backdrop-blur-sm border-0 border-b-2 border-gray-200 rounded-t-xl px-4 py-3 text-sm font-medium focus:border-primary focus:bg-white outline-none resize-none transition-all duration-200 shadow-sm"
-                    placeholder={businessType === 'ca' ? 'Registered Business Address' : 'Client Address'}
+                    placeholder={businessType === 'ca_firm' ? 'Registered Business Address' : 'Client Address'}
                     rows={3}
                     value={buyer.address || ''}
                     onChange={(e) => setBuyer({ ...buyer, address: e.target.value })}
@@ -100,7 +100,7 @@ export default function BuyerSection({
 
             <InputField
                 label={(businessType as string) === 'ca_firm' ? "Client's GSTIN" : 'Client GSTIN'}
-                placeholder={businessType === 'ca' ? 'e.g. 27ABCDE1234F1Z5' : businessType === 'ecommerce' ? 'e.g. 27ABCDE1234F1Z5' : seller.taxId ? 'e.g. 29ABCDE1234F1Z5' : 'Client tax identifier'}
+                placeholder={businessType === 'ca_firm' ? 'e.g. 27ABCDE1234F1Z5' : businessType === 'ecommerce' ? 'e.g. 27ABCDE1234F1Z5' : seller.taxId ? 'e.g. 29ABCDE1234F1Z5' : 'Client tax identifier'}
                 value={buyer.taxId || ''}
                 onChange={(e) => {
                     const raw = e.target.value.toUpperCase().replace(/\s/g, '');

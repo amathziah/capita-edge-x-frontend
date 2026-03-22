@@ -177,7 +177,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
     const [tdsEnabled, setTdsEnabled] = useState(
         businessType === 'solopreneur' ||
         businessType === 'services_firm' ||
-        businessType === 'ca'
+        businessType === 'ca_firm'
     );
     const [tdsRate, setTdsRate] = useState(10);
     // CA
@@ -350,7 +350,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         // Seller
         if (!seller.name.trim()) { sErr.name = 'Business name is required'; errorCount++; }
         if (config.taxIdRequired && !seller.taxId.trim()) {
-            sErr.taxId = `${taxLabel} ID is required for ${businessType === 'ca' ? 'CA' : 'services_firm'} invoices`;
+            sErr.taxId = `${taxLabel} ID is required for ${businessType === 'ca_firm' ? 'CA' : 'services_firm'} invoices`;
             errorCount++;
         }
 

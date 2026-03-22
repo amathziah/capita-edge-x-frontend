@@ -201,8 +201,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                     is44ADA={
                         state.businessType === 'solopreneur' ||
                         state.businessType === 'services_firm' ||
-                        (state.businessType as string) === 'ca_firm' ||
-                        state.businessType === 'ca'
+                        (state.businessType as string) === 'ca_firm'
                     }
                     hasNilRatedItems={state.items.some(i => i.is_exempt === true)}
                     persona={state.businessType}
@@ -221,6 +220,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                     tdsEnabled={tdsEnabled} tdsAmount={tdsAmount} tdsRate={tdsRate}
                     resolvedGstType={resolvedGstType}
                     reverseCharge={reverseCharge} placeOfSupply={placeOfSupply}
+                    netReceivable={state.netReceivable}
                 />
 
                 <div ref={bottomRef as React.RefObject<HTMLDivElement>} />

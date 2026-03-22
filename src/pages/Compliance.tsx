@@ -216,7 +216,10 @@ export function Compliance() {
           <p className="text-gray-600 mt-1.5">⚖️ Tracking regulatory deadlines & financial compliance tasks.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="bg-white/80 backdrop-blur rounded-xl border border-emerald-200/50 shadow-sm px-4 py-2 text-center">
+          <div 
+            className="bg-white/80 backdrop-blur rounded-xl border border-emerald-200/50 shadow-sm px-4 py-2 text-center"
+            title="Compliance health — based on GST filing status and advance tax payments"
+          >
             <div className="text-[10px] text-emerald-600 font-bold uppercase">Health Score</div>
             <div className="text-lg font-black text-gray-900">{completionRate}%</div>
           </div>
@@ -328,16 +331,16 @@ export function Compliance() {
           <table className="min-w-full text-sm text-left relative border-separate border-spacing-0">
             <thead className="bg-gray-50/50 backdrop-blur sticky top-0 z-10">
               <tr>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Audit Node</th>
-                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Task Scope</th>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Task</th>
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">Category</th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 cursor-pointer group" onClick={() => setSortAsc(!sortAsc)}>
                   <div className="flex items-center gap-2">
-                    Maturity <ArrowUpDown className={`w-3 h-3 transition-colors ${sortAsc ? 'text-emerald-500' : 'text-gray-400'}`} />
+                    Due Date <ArrowUpDown className={`w-3 h-3 transition-colors ${sortAsc ? 'text-emerald-500' : 'text-gray-400'}`} />
                   </div>
                 </th>
                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Priority</th>
-                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Verification</th>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-right">Directives</th>
+                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-center">Status</th>
+                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-800">
@@ -348,8 +351,8 @@ export function Compliance() {
                       <div className="p-4 bg-emerald-50 rounded-3xl mb-4">
                         <Activity className="w-10 h-10 text-emerald-400" />
                       </div>
-                      <p className="font-bold text-gray-900 text-lg">System Baseline Clear</p>
-                      <p className="text-sm mt-1 max-w-[240px]">No compliance risks or tasks detected in this sector.</p>
+                      <p className="font-bold text-gray-900 text-lg">All clear</p>
+                      <p className="text-sm mt-1 max-w-[240px]">No pending compliance tasks. GST filing deadlines and advance tax reminders will appear here automatically.</p>
                     </div>
                   </td>
                 </tr>

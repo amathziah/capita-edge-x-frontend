@@ -39,8 +39,8 @@ export default function SellerSection({
                 error={errors.name}
             />
 
-            {/* Tagline for solopreneur */}
-            {businessType === 'solopreneur' && (
+            {/* Tagline for solopreneur - Hidden as per Issue 3 */}
+            {businessType === 'solopreneur' && false && (
                 <InputField
                     placeholder="e.g. UI/UX Designer & Developer"
                     label="Tagline"
@@ -94,16 +94,16 @@ export default function SellerSection({
                     placeholder={`e.g. ${taxLabel}123456`}
                     value={seller.taxId || ''}
                     onChange={(e) => setSeller({ ...seller, taxId: e.target.value })}
-                    required={businessType === 'ca' || businessType === 'services_firm'}
+                    required={businessType === 'ca_firm' || businessType === 'services_firm'}
                     optional={businessType === 'solopreneur' || businessType === 'ecommerce' || businessType === 'subscription'}
                     error={errors.taxId}
                 />
             )}
 
-            {/* PAN */}
-            {(businessType === 'solopreneur' || businessType === 'services_firm' || businessType === 'ca') && (
+            {/* PAN - Hidden for solopreneur as per Issue 3 */}
+            {(businessType === 'services_firm' || businessType === 'ca_firm') && (
                 <InputField
-                    label={businessType === 'solopreneur' ? 'PAN (for client TDS)' : 'PAN'}
+                    label="PAN"
                     placeholder="ABCDE1234F"
                     optional
                     value={seller.panNumber || ''}
@@ -112,7 +112,7 @@ export default function SellerSection({
             )}
 
             {/* FRN for CA */}
-            {businessType === 'ca' && (
+            {businessType === 'ca_firm' && (
                 <InputField
                     label="FRN (ICAI)"
                     placeholder="123456W"

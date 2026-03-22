@@ -20,6 +20,7 @@ interface TotalsSectionProps {
     tdsEnabled?: boolean;
     tdsAmount?: number;
     tdsRate?: number;
+    netReceivable?: number;
     resolvedGstType?: 'cgst_sgst' | 'igst' | 'not_applicable' | 'exempt';
     // CA
     reverseCharge: boolean;
@@ -30,7 +31,7 @@ interface TotalsSectionProps {
 export default function TotalsSection({
     businessType, currency, subtotal, taxAmount, taxRate, setTaxRate, taxLabel,
     shipping, setShipping, discountAmount, setDiscountAmount, total,
-    isGstRegistered, tdsEnabled, tdsAmount, tdsRate,
+    isGstRegistered, tdsEnabled, tdsAmount, tdsRate, netReceivable,
     resolvedGstType, reverseCharge, placeOfSupply,
 }: TotalsSectionProps) {
 
@@ -86,7 +87,7 @@ export default function TotalsSection({
                             <span className="font-semibold text-text-main">{currency.symbol}{taxAmount.toFixed(2)}</span>
                         </div>
                     ) : null
-                ) : businessType === 'ca' ? (
+                ) : businessType === 'ca_firm' ? (
                     <>
                         <div className="flex justify-between text-sm text-text-muted font-medium">
                             <span>Taxable Value</span>
@@ -148,16 +149,25 @@ export default function TotalsSection({
 
                 {/* TDS Deduction (Solopreneur) */}
                 {tdsEnabled && tdsAmount && tdsAmount > 0 && (
-                    <>
-                        <div className="flex justify-between items-center text-sm text-text-muted font-medium">
-                            <span>TDS @{tdsRate || 10}% (Sec. 194J)</span>
-                            <span className="font-semibold text-red-500">-{currency.symbol}{tdsAmount.toFixed(2)}</span>
+                    <div className="mt-4 p-4 bg-green-50 border-2 border-green-200 rounded-xl">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">
+                                    You will receive
+                                </p>
+                                <p className="text-[10px] text-green-600 mt-0.5">
+                                    After TDS {tdsRate}% deduction under Sec 194J
+                                </p>
+                            </div>
+                            <p className="text-3xl font-black text-green-700">
+                                ₹{netReceivable?.toFixed(2)}
+                            </p>
                         </div>
-                        <div className="flex justify-between items-center text-sm font-semibold">
-                            <span>Net receivable</span>
-                            <span className="text-emerald-600">{currency.symbol}{(subtotal - tdsAmount).toFixed(2)}</span>
-                        </div>
-                    </>
+                        <p className="text-[10px] text-green-600 mt-2 border-t border-green-200 pt-2">
+                            Client deducts ₹{tdsAmount?.toFixed(2)} TDS and pays you the remainder.
+                            Request Form 16A from client by 15 Jun {new Date().getFullYear()}.
+                        </p>
+                    </div>
                 )}
 
                 {/* Discount */}

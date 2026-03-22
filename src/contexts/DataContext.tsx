@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
 import { Invoice, Payment, Customer, Expense, Product, ProductPerformance, ComplianceTask, DashboardStats } from '../types';
 import { dataService } from '../services/dataService';
-import { useAuth } from './AuthContext';
 import { usePersona } from './PersonaContext';
 
 interface DataState {
@@ -14,7 +13,6 @@ interface DataState {
     complianceTasks: ComplianceTask[];
     stats: DashboardStats;
     reports: any[];
-    lastFetched: number | null;
 }
 
 interface DataContextType extends DataState {
@@ -39,15 +37,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         complianceTasks: [],
         stats: { total_customers: 0 } as DashboardStats,
         reports: [],
-        lastFetched: null,
     });
+    const lastFetchedRef = useRef<number | null>(null);
     const [loading, setLoading] = useState(false);
-    const { orgId } = useAuth();
+    const { organizationId: organizationId } = usePersona();
     const { businessType } = usePersona();
 
     // Clear state when user logs out or switches org
     useEffect(() => {
-        if (!orgId) {
+        if (!organizationId) {
+            lastFetchedRef.current = null;
             setState({
                 invoices: [],
                 payments: [],
@@ -58,14 +57,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 complianceTasks: [],
                 stats: { total_customers: 0 } as DashboardStats,
                 reports: [],
-                lastFetched: null,
             });
         }
-    }, [orgId]);
+    }, [organizationId]);
 
     const refreshData = useCallback(async (force = false) => {
         const now = Date.now();
-        if (!force && state.lastFetched && (now - state.lastFetched < CACHE_TTL)) {
+        if (!force && lastFetchedRef.current && (now - lastFetchedRef.current < CACHE_TTL)) {
             return;
         }
 
@@ -93,14 +91,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 performance: fetchedPerformance || [],
                 complianceTasks: fetchedCompliance || [],
                 reports: fetchedReports || [],
-                lastFetched: now,
             });
+            lastFetchedRef.current = now;
         } catch (error) {
             console.error("Error refreshing global data:", error);
         } finally {
             setLoading(false);
         }
-    }, [state.lastFetched]);
+    }, [organizationId]);
 
     const setData = useCallback((newData: Partial<DataState>) => {
         setState(prev => ({ ...prev, ...newData }));
@@ -113,6 +111,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const value = {
         ...state,
+        lastFetched: lastFetchedRef.current,
         loading,
         refreshData,
         setData,

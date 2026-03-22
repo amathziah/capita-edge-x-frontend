@@ -25,7 +25,16 @@ export default function ItemsTable({
 
     const addItem = () => setItems([
         ...items,
-        { description: "", quantity: 1, unit: (businessType === 'services_firm' || businessType === 'solopreneur') ? 'Hours' : 'Qty', price: undefined, discount: undefined, sac_code: "", tax_rate: 18, is_exempt: false }
+        { 
+            description: "", 
+            quantity: 1, 
+            unit: businessType === 'solopreneur' ? 'Service' : (businessType === 'services_firm' ? 'Hours' : 'Qty'), 
+            price: undefined, 
+            discount: businessType === 'solopreneur' ? 0 : undefined, 
+            sac_code: "", 
+            tax_rate: 18, 
+            is_exempt: false 
+        }
     ]);
 
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
@@ -38,11 +47,11 @@ export default function ItemsTable({
 
     // ─── FIX 1: Dynamic grid class per businessType ────────────────────
     const gridClass = {
-        solopreneur: 'grid-cols-[2fr_80px_60px_100px_80px_70px_30px]',
+        solopreneur: 'grid-cols-[2fr_80px_100px_80px_30px]',
         services_firm: 'grid-cols-[2fr_80px_3fr_80px_60px_100px_80px_70px_30px]',
         subscription: 'grid-cols-[2fr_3fr_80px_60px_100px_80px_70px_30px]',
         ecommerce: 'grid-cols-[2fr_80px_80px_80px_60px_100px_80px_70px_30px]',
-        ca: 'grid-cols-[2fr_80px_80px_60px_100px_80px_80px_70px_70px_30px]',
+        ca_firm: 'grid-cols-[2fr_80px_80px_60px_100px_80px_80px_70px_70px_30px]',
     }[businessType] ?? 'grid-cols-[2fr_80px_60px_100px_80px_70px_30px]';
 
     const lineTotal = (item: InvoiceItem) => (item.quantity ?? 0) * (item.price ?? 0) * (1 - (item.discount || 0) / 100);
@@ -50,20 +59,59 @@ export default function ItemsTable({
     return (
         <div className={`space-y-4 relative ${focusedItemIndex !== null ? 'z-[40]' : 'z-0'}`}>
             <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-gray-200/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)] overflow-visible">
+                    {/* ═══ SERVICE TYPE SELECTOR (SOLOPRENEUR) ═══ */}
+                    {businessType === 'solopreneur' && (
+                        <div className="px-6 py-4 bg-primary/5 border-b border-gray-100 flex items-center justify-between gap-4">
+                            <div className="flex-1">
+                                <label className="text-[10px] font-black text-primary uppercase tracking-widest mb-1.5 block">Select Primary Service</label>
+                                <select
+                                    className="w-full sm:w-64 bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-text-main cursor-pointer hover:border-primary transition-all outline-none shadow-sm"
+                                    value=""
+                                    onChange={(e) => {
+                                        const sacCode = e.target.value;
+                                        if (sacCode) {
+                                            const info = getSacInfo(sacCode);
+                                            // Set on first item as per requirements
+                                            updateItem(0, {
+                                                description: items[0]?.description || info.label,
+                                                sac_code: sacCode,
+                                                tax_rate: 18,
+                                                is_exempt: info.isExempt,
+                                            });
+                                        }
+                                    }}
+                                >
+                                    <option value="" disabled>Choose a service category...</option>
+                                    <option value="998314">IT / Software Development</option>
+                                    <option value="998313">IT Consulting / Retainer</option>
+                                    <option value="998390">Content / Design / Creative</option>
+                                    <option value="998363">Marketing / Digital Marketing</option>
+                                    <option value="998212">Legal Services</option>
+                                    <option value="999293">Coaching / Training</option>
+                                    <option value="998232">Accounting / Finance</option>
+                                    <option value="998222">GST / Tax Filing</option>
+                                </select>
+                            </div>
+                            <div className="hidden sm:block text-right">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Automated Compliance</p>
+                                <p className="text-[9px] text-gray-400">SAC & 18% GST auto-mapped</p>
+                            </div>
+                        </div>
+                    )}
 
                 {/* ═══ DESKTOP HEADER (STICKY) ═══ */}
                 <div className={`hidden sm:grid ${gridClass} gap-3 px-6 py-4 text-[10px] font-black text-gray-400 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-30 uppercase tracking-widest rounded-t-3xl`}>
                     <div>Description</div>
-                    {(businessType === 'services_firm' || businessType === 'ca') && <div className="text-center">SAC</div>}
+                    {(businessType === 'services_firm' || businessType === 'ca_firm') && <div className="text-center">SAC</div>}
                     {businessType === 'ecommerce' && <div className="text-center">HSN</div>}
                     {businessType === 'ecommerce' && <div className="text-center">SKU / Code</div>}
                     {(businessType === 'subscription' || businessType === 'services_firm') && <div className="text-center">Service Period</div>}
-                    <div className="text-center">Unit</div>
+                    {businessType !== 'solopreneur' && <div className="text-center">Unit</div>}
                     <div className="text-center">Qty</div>
                     <div className="text-center">Price</div>
-                    <div className="text-center">Disc (%)</div>
-                    {businessType === 'ca' && <div className="text-center text-[9px]">Taxable</div>}
-                    {businessType === 'ca' && <div className="text-center text-[9px]">GST</div>}
+                    {businessType !== 'solopreneur' && <div className="text-center">Disc (%)</div>}
+                    {businessType === 'ca_firm' && <div className="text-center text-[9px]">Taxable</div>}
+                    {businessType === 'ca_firm' && <div className="text-center text-[9px]">GST</div>}
                     <div className="text-right">Amount</div>
                     <div></div>
                 </div>
@@ -89,27 +137,29 @@ export default function ItemsTable({
                                     
                                     {/* Description + Autocomplete */}
                                     <div className="relative">
-                                        <input
-                                            className={`w-full bg-transparent border-none p-0 text-sm font-semibold text-text-main placeholder-gray-300 focus:ring-0 outline-none transition-all ${itemErrors[idx] ? 'text-red-500 placeholder-red-200' : ''}`}
-                                            placeholder="Item name / search..."
-                                            value={item.description}
-                                            onChange={(e) => {
-                                                const newValue = e.target.value;
-                                                const suggestion = autoSuggestSac(newValue);
-                                                if (suggestion && !item.sac_code) {
-                                                    updateItem(idx, {
-                                                        description: newValue,
-                                                        sac_code: suggestion.sacCode,
-                                                        tax_rate: suggestion.entry.gstRate,
-                                                        is_exempt: suggestion.entry.isExempt,
-                                                    });
-                                                } else {
-                                                    updateItem(idx, { description: newValue });
-                                                }
-                                            }}
-                                            onFocus={() => (businessType === 'ecommerce' || businessType === 'solopreneur') && setFocusedItemIndex(idx)}
-                                            onBlur={() => setTimeout(() => setFocusedItemIndex(null), 200)}
-                                        />
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                className={`flex-1 bg-transparent border-none p-0 text-sm font-semibold text-text-main placeholder-gray-300 focus:ring-0 outline-none transition-all ${itemErrors[idx] ? 'text-red-500 placeholder-red-200' : ''}`}
+                                                placeholder={businessType === 'solopreneur' ? "Service description..." : "Item name / search..."}
+                                                value={item.description}
+                                                onChange={(e) => {
+                                                    const newValue = e.target.value;
+                                                    const suggestion = autoSuggestSac(newValue);
+                                                    if (suggestion && !item.sac_code) {
+                                                        updateItem(idx, {
+                                                            description: newValue,
+                                                            sac_code: suggestion.sacCode,
+                                                            tax_rate: suggestion.entry.gstRate,
+                                                            is_exempt: suggestion.entry.isExempt,
+                                                        });
+                                                    } else {
+                                                        updateItem(idx, { description: newValue });
+                                                    }
+                                                }}
+                                                onFocus={() => businessType === 'ecommerce' && setFocusedItemIndex(idx)}
+                                                onBlur={() => setTimeout(() => setFocusedItemIndex(null), 200)}
+                                            />
+                                        </div>
                                         {itemErrors[idx] && <p className="text-[9px] text-red-500 mt-0.5 font-bold uppercase tracking-tighter">{itemErrors[idx]}</p>}
                                         
                                         {item.sac_code && (
@@ -179,7 +229,7 @@ export default function ItemsTable({
                                     </div>
 
                                     {/* SAC/HSN */}
-                                    {(businessType === 'services_firm' || businessType === 'ca') && (
+                                    {(businessType === 'services_firm' || businessType === 'ca_firm') && (
                                         <div className="text-center">
                                             <input
                                                 className="w-full bg-gray-50/50 border border-gray-100 rounded-lg px-2 py-1.5 text-[10px] font-mono focus:border-primary focus:bg-white outline-none text-center transition-all"
@@ -219,11 +269,13 @@ export default function ItemsTable({
                                     )}
 
                                     {/* Unit */}
-                                    <div>
-                                        <select className="w-full bg-transparent border-none text-[10px] font-bold p-0 focus:ring-0 outline-none text-center cursor-pointer" value={item.unit} onChange={(e) => updateItem(idx, { unit: e.target.value })}>
-                                            {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                                        </select>
-                                    </div>
+                                    {businessType !== 'solopreneur' && (
+                                        <div>
+                                            <select className="w-full bg-transparent border-none text-[10px] font-bold p-0 focus:ring-0 outline-none text-center cursor-pointer" value={item.unit} onChange={(e) => updateItem(idx, { unit: e.target.value })}>
+                                                {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
 
                                     {/* Qty */}
                                     <div>
@@ -236,13 +288,15 @@ export default function ItemsTable({
                                     </div>
 
                                     {/* Discount */}
-                                    <div>
-                                        <input type="number" className="w-full text-center bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 text-xs font-black focus:bg-white focus:border-primary transition-all" value={item.discount ?? ''} onChange={(e) => updateItem(idx, { discount: e.target.value === '' ? undefined : Number(e.target.value) })} />
-                                    </div>
+                                    {businessType !== 'solopreneur' && (
+                                        <div>
+                                            <input type="number" className="w-full text-center bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 text-xs font-black focus:bg-white focus:border-primary transition-all" value={item.discount ?? ''} onChange={(e) => updateItem(idx, { discount: e.target.value === '' ? undefined : Number(e.target.value) })} />
+                                        </div>
+                                    )}
 
                                     {/* CA Tax breakdown */}
-                                    {businessType === 'ca' && <div className="text-center text-[10px] font-bold text-gray-500">{currency.symbol}{taxableValue.toLocaleString()}</div>}
-                                    {businessType === 'ca' && (
+                                    {businessType === 'ca_firm' && <div className="text-center text-[10px] font-bold text-gray-500">{currency.symbol}{taxableValue.toLocaleString()}</div>}
+                                    {businessType === 'ca_firm' && (
                                         <div className="text-center group-hover:bg-gray-50/80 rounded-lg transition-all relative">
                                             <input
                                                 type="number"
