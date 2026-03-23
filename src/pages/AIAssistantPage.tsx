@@ -340,12 +340,7 @@ export function AIAssistantPage() {
     fetchConfig();
   }, [businessType]);
 
-  if (!dynamicConfig) return null; // Or a loader
-
-  const { meta, actions } = dynamicConfig;
-  const C = meta.color;
-
-  const getGreeting = () => meta.greeting;
+  const getGreeting = () => dynamicConfig?.meta.greeting || '';
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -421,6 +416,11 @@ export function AIAssistantPage() {
     r.onresult = (e: any) => { const t = e.results[0][0].transcript; setQuery(t); handleSend(t); };
     r.start();
   };
+
+  if (!dynamicConfig) return null; // Or a loader
+
+  const { meta, actions } = dynamicConfig;
+  const C = meta.color;
 
 
   return (
