@@ -3,6 +3,7 @@ import { ENDPOINTS } from '../api/endpoints';
 
 export const aiService = {
   chat: (query: string, persona?: string) => api.post(ENDPOINTS.AI_CHAT, { query, persona }),
+  getConfig: (persona?: string) => api.get(persona ? `${ENDPOINTS.AI_CONFIG}?persona=${persona}` : ENDPOINTS.AI_CONFIG),
 
   processQuery: (query: string, agentId?: string, persona?: string) => api.post<any>(ENDPOINTS.AI_CHAT, { query, agentId, persona }),
 

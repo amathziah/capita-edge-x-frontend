@@ -73,6 +73,7 @@ export const ENDPOINTS = {
 
     // ─── AI ────────────────────────────────────────────────────────────
     AI_CHAT: '/ai/chat',
+    AI_CONFIG: '/ai/config',
     AI_MAGIC_FILL: '/ai/magic-fill',
     AI_INSIGHTS: '/ai/insights',
     AI_PREDICT_REVENUE: '/ai/predict-revenue',

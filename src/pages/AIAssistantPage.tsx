@@ -1,15 +1,26 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Send, Mic, MicOff, Zap, FileText, TrendingUp, Users,
-  RotateCcw, Copy, Check, AlertTriangle, CreditCard,
-  Activity, Clock, ChevronDown,
+  Send, Mic, MicOff, Zap, RotateCcw, Copy, Check, ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService } from '../services/aiService';
 import { usePersona } from '../contexts/PersonaContext';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
+import * as LucideIcons from 'lucide-react';
+
+const IconMap: Record<string, any> = {
+  TrendingUp: LucideIcons.TrendingUp,
+  CreditCard: LucideIcons.CreditCard,
+  FileText: LucideIcons.FileText,
+  Zap: LucideIcons.Zap,
+  Users: LucideIcons.Users,
+  Activity: LucideIcons.Activity,
+  Clock: LucideIcons.Clock,
+  AlertTriangle: LucideIcons.AlertTriangle,
+  RotateCcw: LucideIcons.RotateCcw,
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -21,75 +32,6 @@ interface Message {
   status?: 'sending' | 'sent' | 'error';
 }
 
-// ─── Persona config ───────────────────────────────────────────────────────────
-const PERSONA_META: Record<string, {
-  label: string; color: string; colorDim: string;
-  colorBg: string; colorBorder: string; colorGlow: string;
-  robotColor: string; robotEye: string; robotBg: string;
-}> = {
-  solopreneur: {
-    label: 'SOLO',       color: '#34d399', colorDim: '#34d39960',
-    colorBg: '#34d39912', colorBorder: '#34d39935', colorGlow: '#34d39930',
-    robotColor: '#34d399', robotEye: '#ecfdf5', robotBg: '#064e3b',
-  },
-  subscription: {
-    label: 'SaaS',       color: '#818cf8', colorDim: '#818cf860',
-    colorBg: '#818cf812', colorBorder: '#818cf835', colorGlow: '#818cf830',
-    robotColor: '#818cf8', robotEye: '#eef2ff', robotBg: '#1e1b4b',
-  },
-  services_firm: {
-    label: 'AGENCY',     color: '#fbbf24', colorDim: '#fbbf2460',
-    colorBg: '#fbbf2412', colorBorder: '#fbbf2435', colorGlow: '#fbbf2430',
-    robotColor: '#fbbf24', robotEye: '#fefce8', robotBg: '#451a03',
-  },
-  ecommerce: {
-    label: 'COMMERCE',   color: '#f472b6', colorDim: '#f472b660',
-    colorBg: '#f472b612', colorBorder: '#f472b635', colorGlow: '#f472b630',
-    robotColor: '#f472b6', robotEye: '#fdf2f8', robotBg: '#500724',
-  },
-};
-const DEFAULT_META = {
-  label: 'AI',         color: '#34d399', colorDim: '#34d39960',
-  colorBg: '#34d39912', colorBorder: '#34d39935', colorGlow: '#34d39930',
-  robotColor: '#34d399', robotEye: '#ecfdf5', robotBg: '#064e3b',
-};
-
-// ─── Actions ──────────────────────────────────────────────────────────────────
-const defaultActions = [
-  { label: 'Revenue today',   icon: TrendingUp,  query: 'What is my total revenue?',              tag: 'FINANCE'  },
-  { label: 'Recent expenses', icon: CreditCard,  query: 'Show me my last 5 expenses',             tag: 'SPEND'    },
-  { label: 'Draft invoice',   icon: FileText,    query: 'Help me create a new invoice',           tag: 'ACTION'   },
-  { label: 'Business health', icon: Zap,         query: 'Give me a business health summary',      tag: 'OVERVIEW' },
-  { label: 'Top customers',   icon: Users,       query: 'Who are my top customers?',              tag: 'CRM'      },
-  { label: 'Net cash flow',   icon: Activity,    query: 'What is my current net cash flow?',     tag: 'CASH'     },
-];
-
-const personaActions: Record<string, typeof defaultActions> = {
-  solopreneur: [
-    { label: 'Tax estimate',     icon: Zap,           query: 'Estimate my taxes for this quarter',       tag: 'TAX'   },
-    { label: 'Expense check',    icon: CreditCard,    query: 'Show me my expenses for this month',       tag: 'SPEND' },
-    { label: 'Cash available',   icon: Activity,      query: 'How much cash is safe to spend?',          tag: 'CASH'  },
-    { label: 'Personal vs Biz',  icon: Users,         query: 'Analyze my business spending habits',      tag: 'SPLIT' },
-  ],
-  subscription: [
-    { label: 'Check MRR',    icon: TrendingUp,  query: 'What is my current Monthly Recurring Revenue?', tag: 'MRR'    },
-    { label: 'Churn report', icon: Users,       query: 'Analyze my customer churn',                     tag: 'CHURN'  },
-    { label: 'Growth rate',  icon: Activity,    query: 'What is my revenue growth month-over-month?',   tag: 'GROWTH' },
-    { label: 'LTV analysis', icon: Zap,         query: 'What is the average customer lifetime value?',  tag: 'LTV'    },
-  ],
-  services_firm: [
-    { label: 'Project profit',  icon: TrendingUp,    query: 'Which projects are most profitable?',       tag: 'P&L'   },
-    { label: 'Unbilled work',   icon: Clock,         query: 'Show me all unbilled hours',                tag: 'HOURS' },
-    { label: 'Retainer risks',  icon: AlertTriangle, query: 'Are any client retainers nearly empty?',    tag: 'RISK'  },
-    { label: 'Burn rate',       icon: Activity,      query: 'What is our current monthly burn rate?',    tag: 'BURN'  },
-  ],
-  ecommerce: [
-    { label: 'Stock risks',    icon: AlertTriangle, query: 'Which products are at risk of stockout?',    tag: 'RISK'     },
-    { label: 'Dead stock',     icon: Zap,           query: 'How much capital is locked in dead stock?',  tag: 'LOCK'     },
-    { label: 'Refund rate',    icon: RotateCcw,     query: 'What is my current refund rate?',            tag: 'REFUND'   },
-    { label: 'Sales velocity', icon: TrendingUp,    query: 'Which items are selling fastest today?',     tag: 'VELOCITY' },
-  ],
-};
 
 const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -150,7 +92,7 @@ function RobotSVG({ color, eyeColor, size = 56, animate = false }: { color: stri
 
 // ─── Hero banner ──────────────────────────────────────────────────────────────
 function HeroBanner({ meta, greeting, onCopy, copied }: {
-  meta: typeof DEFAULT_META; greeting: string;
+  meta: any; greeting: string;
   onCopy: () => void; copied: boolean;
 }) {
   const C = meta.color;
@@ -222,22 +164,7 @@ function HeroBanner({ meta, greeting, onCopy, copied }: {
           </button>
         </div>
 
-        {/* Right robot (mirrored pose) */}
-        <motion.div
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
-          style={{ flexShrink: 0 }}
-        >
-          <div style={{
-            width: 72, height: 72, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: `linear-gradient(135deg, rgba(0,0,0,0.2), ${meta.colorBg})`,
-            border: `1.5px solid ${meta.colorBorder}`,
-            boxShadow: `0 0 30px ${meta.colorGlow}`,
-            transform: 'scaleX(-1)',
-          }}>
-            <RobotSVG color={C} eyeColor={meta.robotEye} size={52} animate />
-          </div>
-        </motion.div>
+        
       </div>
 
       {/* Bottom bar: status */}
@@ -259,8 +186,9 @@ function HeroBanner({ meta, greeting, onCopy, copied }: {
 }
 
 // ─── Quick action card ────────────────────────────────────────────────────────
-function ActionCard({ action, meta, onClick }: { action: typeof defaultActions[0]; meta: typeof DEFAULT_META; onClick: () => void }) {
+function ActionCard({ action, meta, onClick }: { action: any; meta: any; onClick: () => void }) {
   const C = meta.color;
+  const Icon = typeof action.icon === 'string' ? IconMap[action.icon] || Zap : action.icon;
   return (
     <motion.button
       whileHover={{ scale: 1.03, y: -3 }}
@@ -280,7 +208,7 @@ function ActionCard({ action, meta, onClick }: { action: typeof defaultActions[0
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${C}60, transparent)` }} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 10 }}>
         <div style={{ padding: 7, borderRadius: 9, background: meta.colorBg, border: `1px solid ${meta.colorBorder}` }}>
-          <action.icon size={13} color={C} />
+          <Icon size={13} color={C} />
         </div>
         <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.12em', color: C, opacity: 0.6, fontFamily: 'monospace' }}>{action.tag}</span>
       </div>
@@ -292,7 +220,7 @@ function ActionCard({ action, meta, onClick }: { action: typeof defaultActions[0
 
 // ─── Chat bubble ──────────────────────────────────────────────────────────────
 function ChatBubble({ msg, meta, copiedId, onCopy }: {
-  msg: Message; meta: typeof DEFAULT_META;
+  msg: Message; meta: any;
   copiedId: string | null; onCopy: (text: string, id: string) => void;
 }) {
   const C = meta.color;
@@ -377,35 +305,47 @@ function ChatBubble({ msg, meta, copiedId, onCopy }: {
 export function AIAssistantPage() {
   const { businessType } = usePersona();
   const navigate = useNavigate();
-  const meta = PERSONA_META[businessType || ''] || DEFAULT_META;
-  const C = meta.color;
 
-  const getGreeting = () => {
-    switch (businessType) {
-      case 'solopreneur':   return "Hey! I'm **Capita**. I'll keep your personal finances organized and your cash flow crystal clear. What's on your mind?";
-      case 'subscription':  return "Systems nominal. **Capita** online — tracking MRR, churn, and subscription health in real time. Ready for your metrics?";
-      case 'services_firm': return "Hello! **Capita** here — monitoring retainers, billable hours, and project margins. How can I help today?";
-      case 'ecommerce':     return "Inventory secure. **Capita** active — watching replenishment risks and store performance. What do you need?";
-      default:              return "Hey! I'm **Capita**, your financial copilot. Ask about revenue, invoices, cash flow, or anything about your business. I'm ready.";
-    }
-  };
-
-  const [messages, setMessages]       = useState<Message[]>([{ id: '1', sender: 'bot', text: getGreeting(), timestamp: new Date() }]);
-  const [query, setQuery]             = useState('');
-  const [isTyping, setIsTyping]       = useState(false);
+  const [dynamicConfig, setDynamicConfig] = useState<{ meta: any, actions: any[] } | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [query, setQuery] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [copiedId, setCopiedId]       = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [inputFocused, setInputFocused] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [greetingCopied, setGreetingCopied] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef  = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (messages.length === 1 && messages[0].sender === 'bot')
-      setMessages([{ id: '1', sender: 'bot', text: getGreeting(), timestamp: new Date() }]);
+    const fetchConfig = async () => {
+      try {
+        const persona = businessType as string || undefined;
+        const config = await aiService.getConfig(persona) as any;
+        setDynamicConfig(config);
+        
+        // Use the initial greeting from config
+        setMessages([{
+          id: '1',
+          sender: 'bot',
+          text: config.meta.greeting,
+          timestamp: new Date()
+        }]);
+      } catch (err) {
+        console.error('Failed to fetch AI config:', err);
+      }
+    };
+    fetchConfig();
   }, [businessType]);
+
+  if (!dynamicConfig) return null; // Or a loader
+
+  const { meta, actions } = dynamicConfig;
+  const C = meta.color;
+
+  const getGreeting = () => meta.greeting;
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -482,7 +422,6 @@ export function AIAssistantPage() {
     r.start();
   };
 
-  const actions = personaActions[businessType || ''] || defaultActions;
 
   return (
     <div style={{
@@ -550,7 +489,7 @@ export function AIAssistantPage() {
               boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04)`,
             }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
-                {actions.map((action, i) => (
+                {actions.map((action: any, i: number) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.06, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
                     <ActionCard action={action} meta={meta} onClick={() => handleSend(action.query)} />
                   </motion.div>
