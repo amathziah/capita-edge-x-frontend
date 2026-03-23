@@ -1,5 +1,4 @@
 import React from 'react';
-import { Info } from 'lucide-react';
 
 interface InputFieldProps {
     label?: string;
@@ -36,12 +35,11 @@ const InputField: React.FC<InputFieldProps> = ({
 }) => (
     <div className={`flex flex-col space-y-1.5 ${className}`}>
         {label && (
-            <label className="text-xs font-semibold text-text-light uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5 px-1">
                 {label}
                 {required && <span className="text-red-400 text-[10px]">*</span>}
                 {optional && (
-                    <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-gray-400 normal-case tracking-normal bg-gray-100/80 px-1.5 py-0.5 rounded-md">
-                        <Info size={9} strokeWidth={2.5} className="opacity-60" />
+                    <span className="inline-flex items-center gap-0.5 text-[8px] font-bold text-gray-400 normal-case tracking-normal bg-gray-100/80 px-1.5 py-0.5 rounded-md">
                         optional
                     </span>
                 )}
@@ -55,12 +53,12 @@ const InputField: React.FC<InputFieldProps> = ({
             onBlur={onBlur}
             readOnly={readOnly}
             placeholder={placeholder}
-            className={`bg-gray-50/80 backdrop-blur-sm border-0 border-b-2 rounded-t-xl px-4 py-3 text-sm font-medium outline-none transition-all duration-200 text-text-main placeholder-gray-400 shadow-sm ${error
+            className={`bg-gray-50/50 backdrop-blur-sm border-0 border-b-2 rounded-t-xl px-4 py-3 text-sm font-semibold outline-none transition-all duration-200 text-gray-800 placeholder-gray-300 shadow-sm ${error
                     ? 'border-red-400 bg-red-50/30 focus:border-red-500'
-                    : 'border-gray-200'
+                    : 'border-gray-100'
                 } ${readOnly
-                    ? 'cursor-not-allowed text-text-muted bg-gray-100/50'
-                    : 'focus:border-primary focus:bg-white hover:bg-gray-100/60'
+                    ? 'cursor-not-allowed text-gray-400 bg-gray-100/30 border-gray-200'
+                    : 'focus:border-primary focus:bg-white hover:bg-gray-100/40'
                 }`}
         />
         {error && (

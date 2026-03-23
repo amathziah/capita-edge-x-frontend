@@ -5,16 +5,20 @@ export interface Customer {
   name: string;
   email?: string;
   phone?: string;
-  address?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+  status?: 'Active' | 'Inactive';
+  currency?: string;
+  paymentTerms?: number; // terms in days
   taxId?: string;
   tags?: string[];
   // Indian compliance
   gstin?: string;
   pan?: string;
-  state?: string;
-  city?: string;
-  pincode?: string;
-  country?: string;
   // Capita intelligence (computed)
   avgPaymentDays?: number;
   avg_payment_days?: number;

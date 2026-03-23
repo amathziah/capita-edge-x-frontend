@@ -1,12 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Send, Mic, MicOff, Zap, FileText, TrendingUp, Users, RotateCcw, Copy, Check, ChevronDown, AlertTriangle, CreditCard, Activity, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Send, Mic, MicOff, Zap, FileText, TrendingUp, Users,
+  RotateCcw, Copy, Check, AlertTriangle, CreditCard,
+  Activity, Clock, ChevronDown,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService } from '../services/aiService';
 import { usePersona } from '../contexts/PersonaContext';
 import ReactMarkdown from 'react-markdown';
-import { Logo } from '../components/common/Logo';
+import type { Components } from 'react-markdown';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
   id: string;
   sender: 'user' | 'bot';
@@ -16,433 +21,714 @@ interface Message {
   status?: 'sending' | 'sent' | 'error';
 }
 
+// ─── Persona config ───────────────────────────────────────────────────────────
+const PERSONA_META: Record<string, {
+  label: string; color: string; colorDim: string;
+  colorBg: string; colorBorder: string; colorGlow: string;
+  robotColor: string; robotEye: string; robotBg: string;
+}> = {
+  solopreneur: {
+    label: 'SOLO',       color: '#34d399', colorDim: '#34d39960',
+    colorBg: '#34d39912', colorBorder: '#34d39935', colorGlow: '#34d39930',
+    robotColor: '#34d399', robotEye: '#ecfdf5', robotBg: '#064e3b',
+  },
+  subscription: {
+    label: 'SaaS',       color: '#818cf8', colorDim: '#818cf860',
+    colorBg: '#818cf812', colorBorder: '#818cf835', colorGlow: '#818cf830',
+    robotColor: '#818cf8', robotEye: '#eef2ff', robotBg: '#1e1b4b',
+  },
+  services_firm: {
+    label: 'AGENCY',     color: '#fbbf24', colorDim: '#fbbf2460',
+    colorBg: '#fbbf2412', colorBorder: '#fbbf2435', colorGlow: '#fbbf2430',
+    robotColor: '#fbbf24', robotEye: '#fefce8', robotBg: '#451a03',
+  },
+  ecommerce: {
+    label: 'COMMERCE',   color: '#f472b6', colorDim: '#f472b660',
+    colorBg: '#f472b612', colorBorder: '#f472b635', colorGlow: '#f472b630',
+    robotColor: '#f472b6', robotEye: '#fdf2f8', robotBg: '#500724',
+  },
+};
+const DEFAULT_META = {
+  label: 'AI',         color: '#34d399', colorDim: '#34d39960',
+  colorBg: '#34d39912', colorBorder: '#34d39935', colorGlow: '#34d39930',
+  robotColor: '#34d399', robotEye: '#ecfdf5', robotBg: '#064e3b',
+};
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
 const defaultActions = [
-  { label: 'Revenue today', icon: TrendingUp, query: 'What is my total revenue?' },
-  { label: 'Recent expenses', icon: CreditCard, query: 'Show me my last 5 expenses' },
-  { label: 'Draft invoice', icon: FileText, query: 'Help me create a new invoice' },
-  { label: 'Business health', icon: Zap, query: 'Give me a business health summary' },
-  { label: 'Top customers', icon: Users, query: 'Who are my top customers?' },
-  { label: 'Net cash flow', icon: Activity, query: 'What is my current net cash flow?' },
+  { label: 'Revenue today',   icon: TrendingUp,  query: 'What is my total revenue?',              tag: 'FINANCE'  },
+  { label: 'Recent expenses', icon: CreditCard,  query: 'Show me my last 5 expenses',             tag: 'SPEND'    },
+  { label: 'Draft invoice',   icon: FileText,    query: 'Help me create a new invoice',           tag: 'ACTION'   },
+  { label: 'Business health', icon: Zap,         query: 'Give me a business health summary',      tag: 'OVERVIEW' },
+  { label: 'Top customers',   icon: Users,       query: 'Who are my top customers?',              tag: 'CRM'      },
+  { label: 'Net cash flow',   icon: Activity,    query: 'What is my current net cash flow?',     tag: 'CASH'     },
 ];
 
-const routeActions: Record<string, typeof defaultActions> = {};
-
 const personaActions: Record<string, typeof defaultActions> = {
-  'solopreneur': [
-    { label: 'Tax estimate', icon: Zap, query: 'Estimate my taxes for this quarter' },
-    { label: 'Expense check', icon: CreditCard, query: 'Show me my expenses for this month' },
-    { label: 'Cash availability', icon: Activity, query: 'How much cash is safe to spend?' },
-    { label: 'Personal vs Biz', icon: Users, query: 'Analyze my business spending habits' },
+  solopreneur: [
+    { label: 'Tax estimate',     icon: Zap,           query: 'Estimate my taxes for this quarter',       tag: 'TAX'   },
+    { label: 'Expense check',    icon: CreditCard,    query: 'Show me my expenses for this month',       tag: 'SPEND' },
+    { label: 'Cash available',   icon: Activity,      query: 'How much cash is safe to spend?',          tag: 'CASH'  },
+    { label: 'Personal vs Biz',  icon: Users,         query: 'Analyze my business spending habits',      tag: 'SPLIT' },
   ],
-  'subscription': [
-    { label: 'Check MRR', icon: TrendingUp, query: 'What is my current Monthly Recurring Revenue?' },
-    { label: 'Churn report', icon: Users, query: 'Analyze my customer churn' },
-    { label: 'Growth rate', icon: Activity, query: 'What is my revenue growth month-over-month?' },
-    { label: 'LTV analysis', icon: Zap, query: 'What is the average customer lifetime value?' },
+  subscription: [
+    { label: 'Check MRR',    icon: TrendingUp,  query: 'What is my current Monthly Recurring Revenue?', tag: 'MRR'    },
+    { label: 'Churn report', icon: Users,       query: 'Analyze my customer churn',                     tag: 'CHURN'  },
+    { label: 'Growth rate',  icon: Activity,    query: 'What is my revenue growth month-over-month?',   tag: 'GROWTH' },
+    { label: 'LTV analysis', icon: Zap,         query: 'What is the average customer lifetime value?',  tag: 'LTV'    },
   ],
-  'services_firm': [
-    { label: 'Project profit', icon: TrendingUp, query: 'Which projects are most profitable?' },
-    { label: 'Unbilled work', icon: Clock, query: 'Show me all unbilled hours' },
-    { label: 'Retainer risks', icon: AlertTriangle, query: 'Are any client retainers nearly empty?' },
-    { label: 'Team burn rate', icon: Activity, query: 'What is our current monthly burn rate?' },
+  services_firm: [
+    { label: 'Project profit',  icon: TrendingUp,    query: 'Which projects are most profitable?',       tag: 'P&L'   },
+    { label: 'Unbilled work',   icon: Clock,         query: 'Show me all unbilled hours',                tag: 'HOURS' },
+    { label: 'Retainer risks',  icon: AlertTriangle, query: 'Are any client retainers nearly empty?',    tag: 'RISK'  },
+    { label: 'Burn rate',       icon: Activity,      query: 'What is our current monthly burn rate?',    tag: 'BURN'  },
   ],
-  'ecommerce': [
-    { label: 'Stock risks', icon: AlertTriangle, query: 'Which products are at risk of stockout?' },
-    { label: 'Dead stock ₹', icon: Zap, query: 'How much capital is locked in dead stock?' },
-    { label: 'Refund rate', icon: RotateCcw, query: 'What is my current refund rate?' },
-    { label: 'Sales velocity', icon: TrendingUp, query: 'Which items are selling fastest today?' },
-  ]
+  ecommerce: [
+    { label: 'Stock risks',    icon: AlertTriangle, query: 'Which products are at risk of stockout?',    tag: 'RISK'     },
+    { label: 'Dead stock',     icon: Zap,           query: 'How much capital is locked in dead stock?',  tag: 'LOCK'     },
+    { label: 'Refund rate',    icon: RotateCcw,     query: 'What is my current refund rate?',            tag: 'REFUND'   },
+    { label: 'Sales velocity', icon: TrendingUp,    query: 'Which items are selling fastest today?',     tag: 'VELOCITY' },
+  ],
 };
 
-const formatTime = (date: Date) => {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+// ─── Markdown components ──────────────────────────────────────────────────────
+const makeMd = (color: string): Components => ({
+  p:      ({ children }) => <p style={{ margin: '0 0 6px', lineHeight: 1.72 }}>{children}</p>,
+  ul:     ({ children }) => <ul style={{ paddingLeft: 18, margin: '6px 0' }}>{children}</ul>,
+  ol:     ({ children }) => <ol style={{ paddingLeft: 18, margin: '6px 0' }}>{children}</ol>,
+  li:     ({ children }) => <li style={{ marginBottom: 3, color: '#9ca3af' }}>{children}</li>,
+  strong: ({ children }) => <strong style={{ color, fontWeight: 700 }}>{children}</strong>,
+  em:     ({ children }) => <em style={{ color: '#d1d5db', fontStyle: 'italic' }}>{children}</em>,
+  a:      ({ href, children }) => <a href={href} style={{ color, textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer">{children}</a>,
+  code: ({ className, children }) => /language-/.test(className || '') ? (
+    <pre style={{ background: 'rgba(0,0,0,0.45)', borderRadius: 8, padding: '10px 14px', overflowX: 'auto', margin: '8px 0', border: '1px solid rgba(255,255,255,0.07)' }}>
+      <code style={{ fontFamily: 'monospace', fontSize: 12, color: '#a3e635' }}>{children}</code>
+    </pre>
+  ) : (
+    <code style={{ background: 'rgba(0,0,0,0.35)', padding: '1px 6px', borderRadius: 4, fontFamily: 'monospace', fontSize: 12, color }}>{children}</code>
+  ),
+});
+const userMd: Components = {
+  p:      ({ children }) => <p style={{ margin: '0 0 4px', lineHeight: 1.65 }}>{children}</p>,
+  strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
 };
 
+// ─── Robot SVG ────────────────────────────────────────────────────────────────
+function RobotSVG({ color, eyeColor, size = 56, animate = false }: { color: string; eyeColor: string; size?: number; animate?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={animate ? { animation: 'robot-float 3s ease-in-out infinite' } : {}}>
+      {/* Antenna */}
+      <line x1="28" y1="2" x2="28" y2="10" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="28" cy="2" r="2.5" fill={color}/>
+      {/* Head */}
+      <rect x="10" y="10" width="36" height="28" rx="8" fill="rgba(255,255,255,0.06)" stroke={color} strokeWidth="1.5"/>
+      {/* Eyes */}
+      <circle cx="21" cy="24" r="5" fill="rgba(0,0,0,0.4)" stroke={color} strokeWidth="1"/>
+      <circle cx="35" cy="24" r="5" fill="rgba(0,0,0,0.4)" stroke={color} strokeWidth="1"/>
+      {/* Pupils (animated glow) */}
+      <circle cx="21" cy="24" r="2.5" fill={eyeColor} style={animate ? { animation: 'eye-glow 2s ease-in-out infinite' } : {}}/>
+      <circle cx="35" cy="24" r="2.5" fill={eyeColor} style={animate ? { animation: 'eye-glow 2s ease-in-out infinite 0.3s' } : {}}/>
+      {/* Mouth */}
+      <rect x="20" y="33" width="16" height="3" rx="1.5" fill={color} opacity="0.7"/>
+      {/* Neck */}
+      <rect x="24" y="38" width="8" height="4" rx="2" fill={color} opacity="0.5"/>
+      {/* Body */}
+      <rect x="8" y="42" width="40" height="12" rx="6" fill="rgba(255,255,255,0.05)" stroke={color} strokeWidth="1.5"/>
+      {/* Body dots */}
+      <circle cx="20" cy="48" r="2" fill={color} opacity="0.6"/>
+      <circle cx="28" cy="48" r="2" fill={color} opacity="0.8"/>
+      <circle cx="36" cy="48" r="2" fill={color} opacity="0.6"/>
+      {/* Ear ports */}
+      <rect x="5" y="18" width="5" height="8" rx="2" fill={color} opacity="0.4"/>
+      <rect x="46" y="18" width="5" height="8" rx="2" fill={color} opacity="0.4"/>
+    </svg>
+  );
+}
+
+// ─── Hero banner ──────────────────────────────────────────────────────────────
+function HeroBanner({ meta, greeting, onCopy, copied }: {
+  meta: typeof DEFAULT_META; greeting: string;
+  onCopy: () => void; copied: boolean;
+}) {
+  const C = meta.color;
+  return (
+    <div style={{
+      position: 'relative', borderRadius: 24,
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+      border: `1.5px solid ${meta.colorBorder}`,
+      overflow: 'hidden', marginBottom: 24,
+      boxShadow: `0 0 60px ${meta.colorGlow}, inset 0 1px 0 rgba(255,255,255,0.06)`,
+    }}>
+      {/* Top accent stripe */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${C}, transparent)`, opacity: 0.8 }} />
+
+      {/* Background grid pattern */}
+      <div style={{
+        position: 'absolute', inset: 0, opacity: 0.04,
+        backgroundImage: `linear-gradient(${C} 1px, transparent 1px), linear-gradient(90deg, ${C} 1px, transparent 1px)`,
+        backgroundSize: '32px 32px',
+      }} />
+
+      {/* Glow orbs */}
+      <div style={{ position: 'absolute', top: -40, left: -40, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${meta.colorGlow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: `radial-gradient(circle, ${meta.colorGlow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
+
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '24px 28px', gap: 24 }}>
+        {/* Left robot */}
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ flexShrink: 0 }}
+        >
+          <div style={{
+            width: 72, height: 72, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `linear-gradient(135deg, ${meta.colorBg}, rgba(0,0,0,0.2))`,
+            border: `1.5px solid ${meta.colorBorder}`,
+            boxShadow: `0 0 30px ${meta.colorGlow}`,
+          }}>
+            <RobotSVG color={C} eyeColor={meta.robotEye} size={52} animate />
+          </div>
+        </motion.div>
+
+        {/* Center: greeting text */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <span style={{ fontFamily: "'Sora','DM Sans',sans-serif", fontWeight: 800, fontSize: 20, color: '#f0fdf4', letterSpacing: '-0.025em' }}>
+              Capita
+            </span>
+            <span style={{
+              fontSize: 9, fontWeight: 800, letterSpacing: '0.13em',
+              color: C, background: meta.colorBg, border: `1px solid ${meta.colorBorder}`,
+              padding: '2px 7px', borderRadius: 5, fontFamily: 'monospace',
+            }}>
+              {meta.label}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: C, display: 'inline-block', boxShadow: `0 0 8px ${C}`, animation: 'cp-pulse 2.5s ease-in-out infinite' }} />
+              <span style={{ fontSize: 9, color: '#374151', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.07em' }}>ONLINE</span>
+            </div>
+          </div>
+          <div style={{ color: '#d1fae5', fontSize: 14, lineHeight: 1.72 }}>
+            <ReactMarkdown components={makeMd(C)}>{greeting}</ReactMarkdown>
+          </div>
+          <button
+            onClick={onCopy}
+            style={{ marginTop: 10, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: '#374151', fontSize: 11, fontWeight: 600, fontFamily: 'monospace' }}
+          >
+            {copied ? <><Check size={11} color={C} /><span style={{ color: C }}>Copied</span></> : <><Copy size={11} />Copy</>}
+          </button>
+        </div>
+
+        {/* Right robot (mirrored pose) */}
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+          style={{ flexShrink: 0 }}
+        >
+          <div style={{
+            width: 72, height: 72, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `linear-gradient(135deg, rgba(0,0,0,0.2), ${meta.colorBg})`,
+            border: `1.5px solid ${meta.colorBorder}`,
+            boxShadow: `0 0 30px ${meta.colorGlow}`,
+            transform: 'scaleX(-1)',
+          }}>
+            <RobotSVG color={C} eyeColor={meta.robotEye} size={52} animate />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Bottom bar: status */}
+      <div style={{
+        borderTop: `1px solid ${meta.colorBorder}`,
+        padding: '10px 28px',
+        display: 'flex', alignItems: 'center', gap: 16,
+        background: 'rgba(0,0,0,0.15)',
+      }}>
+        {['SECURE CHANNEL', 'ENCRYPTED', 'FINANCE ENGINE v2.1'].map((s, i) => (
+          <span key={i} style={{ fontSize: 9, fontWeight: 800, color: '#1f2937', fontFamily: 'monospace', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 5 }}>
+            {i === 0 && <span style={{ width: 5, height: 5, borderRadius: '50%', background: C, display: 'inline-block', boxShadow: `0 0 6px ${C}` }} />}
+            {s}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Quick action card ────────────────────────────────────────────────────────
+function ActionCard({ action, meta, onClick }: { action: typeof defaultActions[0]; meta: typeof DEFAULT_META; onClick: () => void }) {
+  const C = meta.color;
+  return (
+    <motion.button
+      whileHover={{ scale: 1.03, y: -3 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+        padding: '14px 14px 12px', borderRadius: 16, cursor: 'pointer',
+        background: 'rgba(255,255,255,0.03)',
+        border: `1px solid rgba(255,255,255,0.07)`,
+        transition: 'all 0.18s', textAlign: 'left', position: 'relative', overflow: 'hidden',
+      }}
+      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = meta.colorBg; el.style.borderColor = meta.colorBorder; el.style.boxShadow = `0 8px 32px ${meta.colorGlow}`; }}
+      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.03)'; el.style.borderColor = 'rgba(255,255,255,0.07)'; el.style.boxShadow = 'none'; }}
+    >
+      {/* Top curved accent */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${C}60, transparent)` }} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 10 }}>
+        <div style={{ padding: 7, borderRadius: 9, background: meta.colorBg, border: `1px solid ${meta.colorBorder}` }}>
+          <action.icon size={13} color={C} />
+        </div>
+        <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.12em', color: C, opacity: 0.6, fontFamily: 'monospace' }}>{action.tag}</span>
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 700, color: '#d1fae5', lineHeight: 1.35 }}>{action.label}</span>
+      <span style={{ fontSize: 10, color: '#374151', marginTop: 4 }}>Ask Capita →</span>
+    </motion.button>
+  );
+}
+
+// ─── Chat bubble ──────────────────────────────────────────────────────────────
+function ChatBubble({ msg, meta, copiedId, onCopy }: {
+  msg: Message; meta: typeof DEFAULT_META;
+  copiedId: string | null; onCopy: (text: string, id: string) => void;
+}) {
+  const C = meta.color;
+  const isBot = msg.sender === 'bot';
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexDirection: isBot ? 'row' : 'row-reverse' }}
+    >
+      {/* Avatar */}
+      {isBot ? (
+        <div style={{
+          width: 36, height: 36, borderRadius: 11, flexShrink: 0,
+          background: `linear-gradient(135deg, ${meta.colorBg}, rgba(0,0,0,0.3))`,
+          border: `1.5px solid ${meta.colorBorder}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: `0 0 14px ${meta.colorGlow}`,
+        }}>
+          <RobotSVG color={C} eyeColor={meta.robotEye} size={26} />
+        </div>
+      ) : (
+        <div style={{
+          width: 36, height: 36, borderRadius: 11, flexShrink: 0,
+          background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span style={{ fontSize: 12, color: '#d1fae5', fontWeight: 800, fontFamily: 'monospace' }}>U</span>
+        </div>
+      )}
+
+      <div style={{ maxWidth: 560 }}>
+        {/* Bubble */}
+        <div style={isBot ? {
+          background: 'rgba(255,255,255,0.045)',
+          border: `1px solid ${meta.colorBorder}`,
+          borderRadius: '6px 20px 20px 20px',
+          padding: '14px 18px',
+          boxShadow: `0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)`,
+          backdropFilter: 'blur(12px)',
+          position: 'relative' as const,
+          overflow: 'hidden' as const,
+        } : {
+          background: `linear-gradient(135deg, ${C} 0%, ${C}cc 100%)`,
+          borderRadius: '20px 6px 20px 20px',
+          padding: '13px 18px',
+          boxShadow: `0 6px 32px ${meta.colorGlow}, 0 2px 8px rgba(0,0,0,0.4)`,
+        }}>
+          {/* Bot bubble accent stripe */}
+          {isBot && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${C}80, transparent)` }} />}
+
+          <div style={{ fontSize: 14, lineHeight: 1.68, color: isBot ? '#e5e7eb' : '#fff' }}>
+            <ReactMarkdown components={isBot ? makeMd(C) : userMd}>{msg.text}</ReactMarkdown>
+          </div>
+
+          {msg.data?.type === 'stat' && (
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.15 }}
+              style={{ marginTop: 12, display: 'inline-block', padding: '8px 16px', borderRadius: 10, background: 'rgba(0,0,0,0.35)', border: `1px solid ${meta.colorBorder}`, fontSize: 22, fontWeight: 900, color: C, fontFamily: 'monospace', boxShadow: `0 0 20px ${meta.colorGlow}` }}
+            >
+              ₹{msg.data.value.toLocaleString()}
+            </motion.div>
+          )}
+        </div>
+
+        {/* Meta row */}
+        <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 10, justifyContent: isBot ? 'flex-start' : 'flex-end', paddingLeft: isBot ? 4 : 0, paddingRight: isBot ? 0 : 4 }}>
+          {isBot && (
+            <button onClick={() => onCopy(msg.text, msg.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 700, color: '#374151', fontFamily: 'monospace' }}>
+              {copiedId === msg.id ? <><Check size={11} color={C} /><span style={{ color: C }}>COPIED</span></> : <><Copy size={11} />COPY</>}
+            </button>
+          )}
+          <span style={{ fontSize: 10, color: '#1f2937', fontFamily: 'monospace', fontWeight: 700 }}>{formatTime(msg.timestamp)}</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export function AIAssistantPage() {
   const { businessType } = usePersona();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [query, setQuery] = useState('');
+  const meta = PERSONA_META[businessType || ''] || DEFAULT_META;
+  const C = meta.color;
 
   const getGreeting = () => {
     switch (businessType) {
-      case 'solopreneur': return "Hey! I'm **Capita**. I'll keep your personal finances organized and your cash flow clear. What's on your mind?";
-      case 'subscription': return "Systems Nominal. **Capita** here. I'm tracking your MRR, churn, and subscriptions. Ready for growth metrics?";
-      case 'services_firm': return "Hello! **Capita** here. I'm monitoring your client retainers and billable hours. How can I help you today?";
-      case 'ecommerce': return "Inventory secure. **Capita** active. I'm tracking your replenishment risks and store health. What do you need?";
-      default: return "Hey! 👋 I'm **Capita**, your financial copilot. I can help you check revenue, find invoices, analyze trends, or create new ones. What would you like to do?";
+      case 'solopreneur':   return "Hey! I'm **Capita**. I'll keep your personal finances organized and your cash flow crystal clear. What's on your mind?";
+      case 'subscription':  return "Systems nominal. **Capita** online — tracking MRR, churn, and subscription health in real time. Ready for your metrics?";
+      case 'services_firm': return "Hello! **Capita** here — monitoring retainers, billable hours, and project margins. How can I help today?";
+      case 'ecommerce':     return "Inventory secure. **Capita** active — watching replenishment risks and store performance. What do you need?";
+      default:              return "Hey! I'm **Capita**, your financial copilot. Ask about revenue, invoices, cash flow, or anything about your business. I'm ready.";
     }
   };
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      sender: 'bot',
-      text: getGreeting(),
-      timestamp: new Date(),
-    }
-  ]);
+  const [messages, setMessages]       = useState<Message[]>([{ id: '1', sender: 'bot', text: getGreeting(), timestamp: new Date() }]);
+  const [query, setQuery]             = useState('');
+  const [isTyping, setIsTyping]       = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [copiedId, setCopiedId]       = useState<string | null>(null);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [greetingCopied, setGreetingCopied] = useState(false);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (messages.length === 1 && messages[0].sender === 'bot') {
-      setMessages([{
-        id: '1',
-        sender: 'bot',
-        text: getGreeting(),
-        timestamp: new Date(),
-      }]);
-    }
+    if (messages.length === 1 && messages[0].sender === 'bot')
+      setMessages([{ id: '1', sender: 'bot', text: getGreeting(), timestamp: new Date() }]);
   }, [businessType]);
 
-  const [isTyping, setIsTyping] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
-    if (scrollRef.current) {
-      const el = scrollRef.current;
-      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-      if (isNearBottom) {
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-      }
-    }
+    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 140)
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  useEffect(() => { inputRef.current?.focus(); }, []);
 
   const handleScroll = useCallback(() => {
-    if (scrollRef.current) {
-      const el = scrollRef.current;
-      setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 150);
-    }
+    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 200);
   }, []);
 
-  const scrollToBottom = () => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  };
+  const scrollToBottom = () => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
 
-  const copyToClipboard = (text: string, msgId: string) => {
+  const handleCopy = (text: string, id?: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedId(msgId);
+    if (id) setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleSend = async (textOverride?: string) => {
-    const textToSend = textOverride || query;
-    if (!textToSend.trim()) return;
+  const copyGreeting = () => {
+    navigator.clipboard.writeText(getGreeting());
+    setGreetingCopied(true);
+    setTimeout(() => setGreetingCopied(false), 2000);
+  };
 
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      sender: 'user',
-      text: textToSend,
-      timestamp: new Date(),
-      status: 'sent'
-    };
+  const handleSend = async (textOverride?: string) => {
+    const text = (textOverride || query).trim();
+    if (!text) return;
+    const userMsg: Message = { id: Date.now().toString(), sender: 'user', text, timestamp: new Date(), status: 'sent' };
     setMessages(prev => [...prev, userMsg]);
     setQuery('');
     setIsTyping(true);
-
     try {
-      let response = await aiService.processQuery(userMsg.text, undefined, businessType || undefined);
-
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: 'bot',
-        text: response.text,
-        data: response.data,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, botMsg]);
-
-      const action = response.action;
-      if (action) {
-        if (action.type === 'open_invoice_modal' || action.type === 'EXECUTE_ACTION') {
-          const initialData = action.data && action.type === 'EXECUTE_ACTION' ? {
-            buyer: { name: action.data.customer, phone: '' },
-            items: [{ description: action.data.description || 'Service', quantity: 1, price: action.data.amount, unit: 'Qty', discount: 0 }]
-          } : (action.initialData || action.data);
-
-          window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail: initialData }));
-        } else if (action.type === 'navigate' && action.data?.to) {
+      const res = await aiService.processQuery(text, undefined, businessType || undefined);
+      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: 'bot', text: res.text, data: res.data, timestamp: new Date() }]);
+      if (res.action) {
+        const { type, data, initialData } = res.action;
+        if (type === 'open_invoice_modal' || type === 'EXECUTE_ACTION') {
+          const detail = data && type === 'EXECUTE_ACTION'
+            ? { buyer: { name: data.customer, phone: '' }, items: [{ description: data.description || 'Service', quantity: 1, price: data.amount, unit: 'Qty', discount: 0 }] }
+            : (initialData || data);
+          window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail }));
+        } else if (type === 'navigate' && data?.to) {
           setTimeout(() => {
-            let targetPath = action.data.to;
-            if (targetPath.startsWith('/') && !targetPath.startsWith('/dashboard') && !['/login', '/setup', '/pricing'].includes(targetPath)) {
-              targetPath = `/dashboard${targetPath === '/' ? '' : targetPath}`;
-            }
-            navigate(targetPath);
+            let p = data.to;
+            if (p.startsWith('/') && !p.startsWith('/dashboard') && !['/login', '/setup', '/pricing'].includes(p))
+              p = `/dashboard${p === '/' ? '' : p}`;
+            navigate(p);
           }, 1200);
         }
       }
-
-    } catch (error) {
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        sender: 'bot',
-        text: "⚠️ Sorry, I encountered an error. Please try again.",
-        timestamp: new Date(),
-        status: 'error'
-      }]);
+    } catch {
+      setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: '⚠️ Something went wrong. Please try again.', timestamp: new Date(), status: 'error' }]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  const clearChat = () => {
-    setMessages([{
-      id: Date.now().toString(),
-      sender: 'bot',
-      text: "Chat cleared! 🧹 How can I help you?",
-      timestamp: new Date(),
-    }]);
-  };
+  const clearChat = () => setMessages([{ id: Date.now().toString(), sender: 'bot', text: getGreeting(), timestamp: new Date() }]);
 
   const startListening = () => {
-    const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Voice input is not supported in this browser.');
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = (event: any) => {
-      console.error('Speech recognition error', event.error);
-      setIsListening(false);
-    };
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setQuery(transcript);
-      handleSend(transcript);
-    };
-
-    recognition.start();
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { alert('Voice not supported.'); return; }
+    const r = new SR(); r.lang = 'en-US'; r.interimResults = false;
+    r.onstart  = () => setIsListening(true);
+    r.onend    = () => setIsListening(false);
+    r.onerror  = () => setIsListening(false);
+    r.onresult = (e: any) => { const t = e.results[0][0].transcript; setQuery(t); handleSend(t); };
+    r.start();
   };
 
+  const actions = personaActions[businessType || ''] || defaultActions;
+
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] w-full max-w-5xl mx-auto rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-[#0c0f1a]">
-      {/* Header */}
-      <div className="relative px-6 py-5 border-b border-white/[0.06] bg-[#161a2b]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(20,184,166,0.08),_transparent_60%)]" />
-        <div className="relative flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Logo size={48} />
-              {/* Online dot */}
-              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#161a2b] shadow-sm">
-                <div className="w-full h-full rounded-full bg-emerald-400 animate-ping [animation-duration:2s]" />
-              </div>
-            </div>
-            <div>
-              <h2 className="font-bold text-lg text-white tracking-tight">Capita AI</h2>
-              <p className="text-xs text-teal-400 font-semibold flex items-center gap-1.5 mt-0.5">
-                Online · Copilot Mode
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={clearChat}
-              className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-gray-400 hover:text-white hover:bg-white/[0.04] rounded-xl transition"
-              title="Clear chat"
-            >
-              <RotateCcw size={16} />
-              Reset Conversation
-            </button>
-          </div>
-        </div>
+    <div style={{
+      display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
+      background: 'linear-gradient(160deg, #070c0a 0%, #090e0d 55%, #07090f 100%)',
+      fontFamily: "'DM Sans', 'Manrope', system-ui, sans-serif",
+    }}>
+      {/* Ambient glows */}
+      <div style={{ pointerEvents: 'none', position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-25%', right: '-15%', width: 700, height: 700, borderRadius: '50%', background: `radial-gradient(circle, ${meta.colorGlow} 0%, transparent 60%)` }} />
+        <div style={{ position: 'absolute', bottom: '-25%', left: '-12%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, #10b98108 0%, transparent 60%)' }} />
       </div>
 
-      {/* Messages */}
+      {/* ── HEADER ── */}
+      <header style={{ position: 'relative', zIndex: 50, flexShrink: 0, borderBottom: `1px solid ${meta.colorBorder}`, background: 'rgba(7,12,10,0.9)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 11, background: `linear-gradient(135deg, ${meta.colorBg}, rgba(0,0,0,0.3))`, border: `1.5px solid ${meta.colorBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px ${meta.colorGlow}` }}>
+              <RobotSVG color={C} eyeColor={meta.robotEye} size={28} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontFamily: "'Sora','DM Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#f0fdf4', letterSpacing: '-0.02em' }}>Capita</span>
+                <span style={{ fontSize: 9, fontWeight: 800, color: C, background: meta.colorBg, border: `1px solid ${meta.colorBorder}`, padding: '2px 6px', borderRadius: 4, fontFamily: 'monospace', letterSpacing: '0.1em' }}>{meta.label}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: C, display: 'inline-block', boxShadow: `0 0 6px ${C}`, animation: 'cp-pulse 2.5s ease-in-out infinite' }} />
+                <span style={{ fontSize: 9, color: '#374151', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.08em' }}>ONLINE · SECURE</span>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={clearChat}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 10, border: `1px solid ${meta.colorBorder}`, background: meta.colorBg, color: C, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', letterSpacing: '0.05em' }}
+          >
+            <RotateCcw size={12} /> RESET
+          </button>
+        </div>
+      </header>
+
+      {/* ── MESSAGES SCROLL ── */}
       <div
-        className="flex-1 overflow-y-auto px-6 py-6 space-y-6 bg-[#0c0f1a] custom-scrollbar relative"
         ref={scrollRef}
         onScroll={handleScroll}
+        style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1, scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.07) transparent' }}
       >
-        {messages.map((msg, idx) => (
-          <motion.div
-            key={msg.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: idx === messages.length - 1 ? 0.05 : 0 }}
-            className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div className={`group max-w-[85%] lg:max-w-[75%] flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-              {msg.sender === 'bot' && (
-                <div className="flex-shrink-0 mt-1">
-                  <Logo size={32} showBackground={true} showBorder={false} />
-                </div>
-              )}
-              <div
-                className={`relative p-4 rounded-3xl text-[14px] leading-relaxed shadow-sm ${msg.sender === 'user'
-                  ? 'bg-gradient-to-br from-teal-500 to-cyan-600 text-white rounded-tr-md'
-                  : 'bg-white/[0.03] text-gray-200 border border-white/[0.06] rounded-tl-md'
-                  }`}
-              >
-                <div className={`prose prose-sm max-w-none ${msg.sender === 'user' ? 'prose-invert' : 'text-gray-200'} [&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_ul]:mt-1.5 [&_li]:text-[14px]`}>
-                  <ReactMarkdown>{msg.text}</ReactMarkdown>
-                </div>
-                {msg.data && msg.data.type === 'stat' && (
-                  <div className="mt-3 text-2xl font-extrabold bg-white/10 px-4 py-2.5 rounded-xl inline-block">
-                    ₹{msg.data.value.toLocaleString()}
-                  </div>
-                )}
-                {/* Copy for bot messages */}
-                {msg.sender === 'bot' && msg.text.length > 30 && (
-                  <button
-                    onClick={() => copyToClipboard(msg.text, msg.id)}
-                    className="absolute -bottom-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-[#161a2b] border border-white/[0.08] rounded-xl shadow-lg text-gray-400 hover:text-gray-200"
-                    title="Copy response"
-                  >
-                    {copiedId === msg.id ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                  </button>
-                )}
+        <div style={{ maxWidth: 980, margin: '0 auto', padding: '24px 20px 16px' }}>
+
+          {/* Hero banner with robots */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}>
+            <HeroBanner meta={meta} greeting={getGreeting()} onCopy={copyGreeting} copied={greetingCopied} />
+          </motion.div>
+
+          {/* Quick actions */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.15, ease: [0.22, 1, 0.36, 1] }} style={{ marginBottom: 24 }}>
+            {/* Section header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <span style={{ fontSize: 9, fontWeight: 800, color: '#374151', letterSpacing: '0.14em', fontFamily: 'monospace' }}>QUICK ACTIONS</span>
+              <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${meta.colorBorder}, transparent)` }} />
+            </div>
+            {/* Container with curved border */}
+            <div style={{
+              borderRadius: 20, border: `1px solid ${meta.colorBorder}`,
+              background: 'rgba(255,255,255,0.015)', padding: 14,
+              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04)`,
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+                {actions.map((action, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.06, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+                    <ActionCard action={action} meta={meta} onClick={() => handleSend(action.query)} />
+                  </motion.div>
+                ))}
               </div>
-              {/* Timestamp */}
-              <p className={`text-[10px] font-medium mt-1.5 px-1 flex-shrink-0 ${msg.sender === 'user' ? 'text-right text-gray-500' : 'text-gray-500'}`}>
-                {formatTime(msg.timestamp)}
-              </p>
             </div>
           </motion.div>
-        ))}
 
-        {/* Typing indicator */}
-        <AnimatePresence>
-          {isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              className="flex justify-start gap-3"
-            >
-              <div className="flex-shrink-0 mt-1">
-                <Logo size={32} showBackground={true} showBorder={false} />
+          {/* Conversation */}
+          {messages.length > 1 && (
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <span style={{ fontSize: 9, fontWeight: 800, color: '#374151', letterSpacing: '0.14em', fontFamily: 'monospace' }}>CONVERSATION</span>
+                <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${meta.colorBorder}, transparent)` }} />
               </div>
-              <div className="bg-white/[0.03] px-4 py-3.5 rounded-3xl rounded-tl-md shadow-sm border border-white/[0.06] flex gap-2 items-center h-[52px]">
-                <div className="flex gap-1.5">
-                  <span className="w-2 h-2 bg-teal-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <span className="w-2 h-2 bg-teal-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <span className="w-2 h-2 bg-teal-400 rounded-full animate-bounce" />
-                </div>
-                <span className="text-[12px] text-gray-400 font-medium ml-2">Capita is analyzing...</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {/* Curved conversation container */}
+              <div style={{
+                borderRadius: 22, border: `1px solid ${meta.colorBorder}`,
+                background: 'rgba(255,255,255,0.01)', padding: '20px 18px',
+                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03), 0 4px 40px rgba(0,0,0,0.2)`,
+                display: 'flex', flexDirection: 'column', gap: 18,
+              }}>
+                <AnimatePresence initial={false}>
+                  {messages.slice(1).map(msg => (
+                    <ChatBubble key={msg.id} msg={msg} meta={meta} copiedId={copiedId} onCopy={handleCopy} />
+                  ))}
+                </AnimatePresence>
 
-        {/* Voice listening indicator */}
-        <AnimatePresence>
-          {isListening && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex justify-center my-4"
-            >
-              <span className="flex items-center gap-3 text-sm text-red-500 font-bold bg-red-500/10 px-6 py-3 rounded-full border border-red-500/20">
-                <div className="relative">
-                  <Mic size={16} />
-                  <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-30" />
-                </div>
-                Listening to your command...
-              </span>
-            </motion.div>
+                {/* Typing indicator */}
+                <AnimatePresence>
+                  {isTyping && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 11, flexShrink: 0, background: meta.colorBg, border: `1.5px solid ${meta.colorBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 14px ${meta.colorGlow}` }}>
+                        <RobotSVG color={C} eyeColor={meta.robotEye} size={26} animate />
+                      </div>
+                      <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${meta.colorBorder}`, borderRadius: '6px 18px 18px 18px', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ display: 'flex', gap: 5 }}>
+                          {[0, 1, 2].map(i => (
+                            <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: C, animation: 'cp-bounce 1.1s ease-in-out infinite', animationDelay: `${i * 0.18}s`, boxShadow: `0 0 8px ${meta.colorDim}` }} />
+                          ))}
+                        </div>
+                        <span style={{ fontSize: 10, color: '#4b5563', fontFamily: 'monospace', fontWeight: 800, letterSpacing: '0.1em' }}>ANALYZING...</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           )}
-        </AnimatePresence>
+
+          {/* Voice indicator */}
+          <AnimatePresence>
+            {isListening && (
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 22px', borderRadius: 50, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                  <Mic size={14} color="#ef4444" />
+                  <span style={{ fontSize: 11, fontWeight: 800, color: '#ef4444', letterSpacing: '0.11em', fontFamily: 'monospace' }}>LISTENING...</span>
+                  <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                    {[3, 5, 4, 7, 3].map((h, i) => (
+                      <div key={i} style={{ width: 3, background: '#ef4444', borderRadius: 2, height: h * 3, animation: `cp-bar ${0.4 + i * 0.08}s ease-in-out infinite alternate`, opacity: 0.75 }} />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div style={{ height: 12 }} />
+        </div>
       </div>
 
       {/* Scroll to bottom */}
       <AnimatePresence>
         {showScrollBtn && (
           <motion.button
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
             onClick={scrollToBottom}
-            className="absolute bottom-[160px] left-1/2 -translate-x-1/2 p-2 bg-[#161a2b] border border-white/[0.08] rounded-full shadow-xl text-gray-400 hover:text-white transition z-10 hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#161a2b]/50"
+            style={{ position: 'fixed', bottom: 108, right: 26, zIndex: 60, width: 38, height: 38, borderRadius: '50%', background: meta.colorBg, border: `1.5px solid ${meta.colorBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: `0 4px 20px ${meta.colorGlow}` }}
           >
-            <ChevronDown size={18} />
+            <ChevronDown size={18} color={C} />
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Quick Suggestions - Horizontal Scroll */}
-      {!isTyping && (
-        <div className="px-6 py-4 border-t border-white/[0.06] bg-[#0c0f1a]">
-          <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar-hide -mx-2 px-2">
-            {([...(personaActions[businessType as any] || []), ...(routeActions[location.pathname] || []), ...defaultActions]
-              .filter((v, i, a) => a.findIndex(t => t.label === v.label) === i) // Unique actions
-              .slice(0, 8) // Limit to 8
-            ).map((action: any) => (
-              <button
-                key={action.label}
-                type="button"
-                onClick={(e) => { e.preventDefault(); handleSend(action.query); }}
-                className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-white/[0.03] hover:bg-teal-500/10 border border-white/[0.06] hover:border-teal-500/30 rounded-full text-[13px] font-medium text-gray-300 hover:text-teal-400 transition-all group whitespace-nowrap"
-              >
-                <action.icon size={15} className="text-gray-500 group-hover:text-teal-500 transition-colors" />
-                {action.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* ── INPUT BAR ── */}
+      <div style={{ position: 'relative', zIndex: 50, flexShrink: 0, borderTop: `1px solid ${meta.colorBorder}`, background: 'rgba(7,12,10,0.93)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', padding: '14px 20px 18px' }}>
+        <div style={{ maxWidth: 980, margin: '0 auto' }}>
+          {/* Curved input container */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: inputFocused ? 'rgba(255,255,255,0.065)' : 'rgba(255,255,255,0.038)',
+            border: `1.5px solid ${inputFocused ? meta.colorBorder : 'rgba(255,255,255,0.08)'}`,
+            borderRadius: 20, padding: '5px 6px 5px 18px',
+            transition: 'all 0.2s',
+            boxShadow: inputFocused ? `0 0 0 3px ${meta.colorBg}, 0 8px 40px rgba(0,0,0,0.4)` : '0 4px 24px rgba(0,0,0,0.3)',
+          }}>
+            {/* Mini robot in input */}
+            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 7, paddingRight: 12, borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+              <RobotSVG color={C} eyeColor={meta.robotEye} size={22} />
+              <span style={{ fontSize: 10, fontWeight: 800, color: C, fontFamily: 'monospace', letterSpacing: '0.07em' }}>CAPITA</span>
+            </div>
 
-      {/* Input */}
-      <div className="px-6 py-5 bg-[#161a2b] border-t border-white/[0.06]">
-        <div className="flex gap-3 items-center">
-          <button
-            onClick={startListening}
-            className={`p-3 rounded-2xl transition-all flex-shrink-0 ${isListening
-              ? 'bg-red-500/10 text-red-500 ring-2 ring-red-500/20 animate-pulse'
-              : 'bg-white/[0.03] text-gray-400 hover:bg-white/[0.06] hover:text-gray-200 border border-white/[0.06]'}`}
-            title="Voice Command"
-          >
-            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-          </button>
-
-          <div className="relative flex-1">
             <input
               ref={inputRef}
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder="Ask Capita to generate reports, check balances, or guide you..."
-              className="w-full pl-5 pr-5 py-4 bg-white/[0.03] border border-white/[0.08] rounded-2xl text-[15px] focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500/30 focus:bg-white/[0.05] transition-all placeholder-gray-500 text-white shadow-inner"
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              placeholder="Ask about revenue, invoices, cash flow, forecasts..."
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#e5e7eb', fontSize: 14, fontFamily: "'DM Sans','Manrope',sans-serif", padding: '11px 0', caretColor: C }}
             />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <motion.button
+                whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
+                onClick={startListening}
+                style={{ width: 40, height: 40, borderRadius: 12, border: 'none', background: isListening ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)', color: isListening ? '#ef4444' : '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', outline: isListening ? '2px solid rgba(239,68,68,0.35)' : 'none', outlineOffset: 1 }}
+              >
+                {isListening ? <MicOff size={17} /> : <Mic size={17} />}
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: query.trim() && !isTyping ? 1.06 : 1 }}
+                whileTap={{ scale: query.trim() && !isTyping ? 0.94 : 1 }}
+                onClick={() => handleSend()}
+                disabled={!query.trim() || isTyping}
+                style={{ width: 40, height: 40, borderRadius: 12, border: 'none', background: query.trim() && !isTyping ? `linear-gradient(135deg, ${C} 0%, ${C}cc 100%)` : 'rgba(255,255,255,0.05)', color: query.trim() && !isTyping ? '#fff' : '#374151', cursor: query.trim() && !isTyping ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', boxShadow: query.trim() && !isTyping ? `0 4px 20px ${meta.colorGlow}` : 'none' }}
+              >
+                <Send size={16} />
+              </motion.button>
+            </div>
           </div>
 
-          <motion.button
-            type="button"
-            onClick={(e) => { e.preventDefault(); handleSend(); }}
-            disabled={!query.trim() || isTyping}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-4 bg-gradient-to-br from-teal-500 to-cyan-600 text-white rounded-2xl shadow-xl shadow-teal-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all flex-shrink-0"
-          >
-            <Send size={20} />
-          </motion.button>
+          {/* Footer */}
+          <div style={{ marginTop: 9, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: C, display: 'inline-block', boxShadow: `0 0 7px ${C}`, animation: 'cp-pulse 3s ease-in-out infinite' }} />
+              <span style={{ fontSize: 9, color: '#1f2937', fontFamily: 'monospace', fontWeight: 800, letterSpacing: '0.1em' }}>END-TO-END ENCRYPTED · FINANCE ENGINE v2.1</span>
+            </div>
+            {isListening && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', display: 'inline-block', animation: 'cp-pulse 1s ease-in-out infinite' }} />
+                <span style={{ fontSize: 9, fontWeight: 800, color: '#ef4444', fontFamily: 'monospace', letterSpacing: '0.1em' }}>REC</span>
+              </div>
+            )}
+          </div>
         </div>
-        <p className="text-center mt-3 text-[11px] text-gray-500 font-medium">
-          Capita AI analyzes your financial data using secure edge models. Always verify important numbers.
-        </p>
       </div>
+
+      {/* Keyframes */}
+      <style>{`
+        @keyframes cp-bounce {
+          0%,100% { transform:translateY(0); opacity:0.5; }
+          50%      { transform:translateY(-6px); opacity:1; }
+        }
+        @keyframes cp-pulse {
+          0%,100% { opacity:1; }
+          50%      { opacity:0.35; }
+        }
+        @keyframes cp-bar {
+          from { transform:scaleY(0.35); opacity:0.5; }
+          to   { transform:scaleY(1);    opacity:1; }
+        }
+        @keyframes robot-float {
+          0%,100% { transform:translateY(0); }
+          50%     { transform:translateY(-4px); }
+        }
+        @keyframes eye-glow {
+          0%,100% { opacity:0.7; }
+          50%     { opacity:1; filter:brightness(1.3); }
+        }
+        ::-webkit-scrollbar       { width:3px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.07); border-radius:2px; }
+        ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.13); }
+      `}</style>
     </div>
   );
 }

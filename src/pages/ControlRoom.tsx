@@ -132,7 +132,7 @@ export const ControlRoom = () => {
 
         // 4. Net Receivable (Sent + Overdue)
         const pendingInvoices = invoices.filter(i => ['sent', 'overdue'].includes(i.status));
-        const netReceivableTotal = pendingInvoices.reduce((sum, i) => sum + (i.net_receivable ?? i.total ?? 0), 0);
+        const netReceivableTotal = pendingInvoices.reduce((sum, i) => sum + (Number(i.netReceivable) || i.total || 0), 0);
 
         // Who Owes Me
         const whoOwesMe = [...overdueList]
@@ -221,7 +221,7 @@ export const ControlRoom = () => {
                         </div>
 
                         <button
-                            onClick={() => navigate('/invoices/create')}
+                            onClick={() => navigate('/dashboard/invoices/new')}
                             className="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
                         >
                             Quick Action
@@ -704,7 +704,7 @@ export const ControlRoom = () => {
                                                     <div>
                                                         <h3 className="text-sm font-bold text-gray-900">Payment Received</h3>
                                                         <p className="text-sm text-gray-500 mt-0.5">₹{pay.amount.toLocaleString()} via {pay.method}</p>
-                                                        <span className="text-xs text-emerald-500 mt-2 block">{new Date(pay.createdAt).toLocaleTimeString()}</span>
+                                                        <span className="text-xs text-emerald-500 mt-2 block">{new Date(pay.createdAt || 0).toLocaleTimeString()}</span>
                                                     </div>
                                                 </div>
                                             ))}

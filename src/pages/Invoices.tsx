@@ -1,11 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { FileText, Download, Mail, Loader2, Eye, Printer, X, Plus, Search, Filter, Edit2, Trash2, DollarSign, CheckCircle, Share2 } from "lucide-react";
 import { pdf } from '@react-pdf/renderer';
 import InvoicePDF from '../components/PDF/InvoicePDF';
 import { dataService } from '../services/dataService';
 import { Invoice } from '../types';
-import InvoiceGenerator from '../components/InvoiceGenerator/InvoiceGenerator';
 import { Toast, ToastType } from '../components/Toast';
 import RecordPaymentModal from '../components/Invoice/RecordPaymentModal';
 import { useData } from "../contexts/DataContext";
@@ -24,6 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function Invoices() {
+  const navigate = useNavigate();
   const { filteredInvoices: invoices, loading, refreshData, setData } = useData();
   const { businessType } = usePersona();
 
@@ -41,11 +42,9 @@ export function Invoices() {
   const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
 
   const [viewLoading, setViewLoading] = useState(false);
-  const [showCreate, setShowCreate] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [emailSending, setEmailSending] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
-  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [recordingPaymentFor, setRecordingPaymentFor] = useState<Invoice | null>(null);
 
 
@@ -334,7 +333,7 @@ export function Invoices() {
         </div>
 
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={() => navigate('new')}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-primary-dark text-white text-sm font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300"
         >
           <Plus className="w-5 h-5" /> New Invoice
@@ -546,7 +545,7 @@ export function Invoices() {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => setEditingInvoice(inv)}
+                          onClick={() => navigate(`${inv.id}/edit`)}
                           className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition"
                           title="Edit Invoice"
                         >
@@ -1064,8 +1063,10 @@ export function Invoices() {
 
               <button
                 onClick={() => {
-                  setEditingInvoice(viewInvoice);
-                  setViewInvoiceId(null);
+                  if (viewInvoice) {
+                    navigate(`${viewInvoice.id}/edit`);
+                    setViewInvoiceId(null);
+                  }
                 }}
                 className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 shadow-soft hover:shadow-lg transition"
               >
@@ -1079,40 +1080,6 @@ export function Invoices() {
       )
       }
 
-      {/* Create Invoice Modal */}
-      {
-        showCreate && createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 text-left">
-            <div className="bg-white w-full max-w-[98vw] h-[98vh] rounded-2xl overflow-hidden shadow-2xl relative">
-              <InvoiceGenerator
-                onClose={() => {
-                  setShowCreate(false);
-                  refreshData(true);
-                }}
-              />
-            </div>
-          </div>,
-          document.body
-        )
-      }
-
-      {/* Edit Invoice Modal */}
-      {
-        editingInvoice && createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-2 text-left">
-            <div className="bg-white w-full max-w-[98vw] h-[98vh] rounded-2xl overflow-hidden shadow-2xl relative">
-              <InvoiceGenerator
-                editingInvoice={editingInvoice}
-                onClose={async () => {
-                  setEditingInvoice(null);
-                  refreshData(true);
-                }}
-              />
-            </div>
-          </div>,
-          document.body
-        )
-      }
 
 
       {/* Record Payment Modal */}

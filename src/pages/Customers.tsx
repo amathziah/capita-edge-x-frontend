@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { createPortal } from "react-dom";
 import {
   ArrowLeft, User, AlertCircle, Calendar, Activity, CheckCircle, Loader2,
   Search, Filter, Plus, Phone, Mail, MapPin, X, Edit, Trash2,
@@ -11,6 +10,7 @@ import { dataService } from '../services/dataService';
 import { Customer, Invoice, CustomerInsights } from '../types';
 import { useData } from "../contexts/DataContext";
 import { usePersona } from "../contexts/PersonaContext";
+import { RegionDropdown } from 'react-country-region-selector';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -21,6 +21,66 @@ const formatLTV = (val: number) => {
   if (val >= 1000) return `₹${(val / 1000).toFixed(1)}K`;
   return `₹${val}`;
 };
+
+// ---------------------------------------------------------------------------
+// SearchableSelect Component
+// ---------------------------------------------------------------------------
+const SearchableSelect: React.FC<{
+  label: string;
+  options: { value: any; label: string; icon?: React.ReactNode }[];
+  value: any;
+  onChange: (val: any) => void;
+  placeholder?: string;
+  className?: string;
+}> = ({ label, options, value, onChange, placeholder = "Search...", className }) => {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
+  const activeLabel = options.find(o => o.value === value)?.label || placeholder;
+
+  return (
+    <div className="relative space-y-1.5 w-full">
+      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">{label}</label>
+      <div 
+        onClick={() => setOpen(!open)}
+        className={`flex items-center justify-between px-3.5 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-[13px] font-bold text-gray-800 cursor-pointer hover:bg-white hover:border-teal-200 transition-all ${className}`}
+      >
+        <span className="truncate">{activeLabel}</span>
+        <span className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
+      </div>
+      
+      {open && (
+        <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-teal-100 rounded-xl shadow-xl z-[150] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="p-1 border-b border-gray-50">
+            <input 
+              autoFocus
+              type="text" 
+              placeholder={placeholder}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-50 text-xs font-semibold rounded-lg border-none focus:ring-0 placeholder:text-gray-300"
+            />
+          </div>
+          <div className="max-h-48 overflow-y-auto custom-scrollbar">
+            {filtered.length > 0 ? filtered.map(o => (
+              <div 
+                key={o.value}
+                onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
+                className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold cursor-pointer transition-colors ${value === o.value ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                {o.icon}
+                {o.label}
+              </div>
+            )) : (
+              <div className="px-4 py-3 text-[10px] text-gray-400 font-bold uppercase text-center">No results</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 // ---------------------------------------------------------------------------
 // Sort options
@@ -43,8 +103,54 @@ export function Customers() {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [customerForm, setCustomerForm] = useState({
-    name: '', email: '', phone: '', address: '', gstin: '', tags: '' as string
+    name: '',
+    email: '',
+    phone: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    pincode: '',
+    country: 'IN', // Default to India
+    gstin: '',
+    tags: '',
+    status: 'Active' as 'Active' | 'Inactive',
+    currency: 'INR', // Default currency
+    paymentTerms: 0
   });
+
+  // Add country change handler
+  const handleCountryChange = (country: string) => {
+    setCustomerForm(prev => ({ 
+      ...prev, 
+      country, 
+      state: '', 
+      currency: country === 'IN' ? 'INR' : 'USD' 
+    }));
+  };
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+
+  const fetchLocationByPincode = async (pincode: string) => {
+    if (!/^\d{6}$/.test(pincode)) return;
+    setPincodeLoading(true);
+    try {
+      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await response.json();
+      if (data && data[0] && data[0].Status === "Success") {
+        const postOffice = data[0].PostOffice[0];
+        setCustomerForm(prev => ({ 
+          ...prev, 
+          city: postOffice.District, 
+          state: postOffice.State 
+        }));
+      }
+    } catch (err) {
+      console.error("Pincode lookup error:", err);
+    } finally {
+      setPincodeLoading(false);
+    }
+  };
+
   const [savingCustomer, setSavingCustomer] = useState(false);
 
   // Advanced settings
@@ -58,6 +164,38 @@ export function Customers() {
     showAddress: true,
     compactCards: false,
   });
+
+  // Options for SearchableSelect
+  const countryOptions = [
+    { value: 'IN', label: 'India (🇮🇳)' },
+    { value: 'US', label: 'United States (🇺🇸)' },
+    { value: 'GB', label: 'United Kingdom (🇬🇧)' },
+    { value: 'AE', label: 'United Arab Emirates (🇦🇪)' },
+    { value: 'SG', label: 'Singapore (🇸🇬)' },
+    { value: 'AU', label: 'Australia (🇦🇺)' },
+    { value: 'CA', label: 'Canada (🇨🇦)' },
+    { value: 'DE', label: 'Germany (🇩🇪)' },
+    { value: 'FR', label: 'France (🇫🇷)' },
+  ];
+
+  const currencyOptions = [
+    { value: 'INR', label: 'INR - Indian Rupee (₹)' },
+    { value: 'USD', label: 'USD - US Dollar ($)' },
+    { value: 'GBP', label: 'GBP - British Pound (£)' },
+    { value: 'EUR', label: 'EUR - Euro (€)' },
+    { value: 'AED', label: 'AED - UAE Dirham' },
+    { value: 'SGD', label: 'SGD - Singapore Dollar' },
+  ];
+
+  const paymentTermsOptions = [
+    { value: 0, label: 'Due on Receipt' },
+    { value: 7, label: 'Net 7 Days' },
+    { value: 14, label: 'Net 14 Days' },
+    { value: 30, label: 'Net 30 Days' },
+    { value: 45, label: 'Net 45 Days' },
+    { value: 60, label: 'Net 60 Days' },
+    { value: -1, label: 'Custom Days...' },
+  ];
 
   // ── Fetch customers ────────────────────────────────────────────────────
   useEffect(() => {
@@ -119,9 +257,17 @@ export function Customers() {
       name: selectedCustomer.name,
       email: selectedCustomer.email || '',
       phone: selectedCustomer.phone || '',
-      address: selectedCustomer.address || '',
+      addressLine1: selectedCustomer.addressLine1 || '',
+      addressLine2: selectedCustomer.addressLine2 || '',
+      city: selectedCustomer.city || '',
+      state: selectedCustomer.state || '',
+      pincode: selectedCustomer.pincode || '',
+      country: selectedCustomer.country || '',
       gstin: selectedCustomer.taxId || '',
-      tags: selectedCustomer.tags?.join(', ') || ''
+      tags: selectedCustomer.tags?.join(', ') || '',
+      status: selectedCustomer.status || 'Active',
+      currency: selectedCustomer.currency || 'INR',
+      paymentTerms: selectedCustomer.paymentTerms || 0
     });
     setIsEditing(true);
     setShowCustomerModal(true);
@@ -153,6 +299,21 @@ export function Customers() {
       return;
     }
 
+    // Global postcode validation
+    const postcodeRegex = customerForm.country === 'IN' ? /^[1-9][0-9]{5}$/ :
+                          customerForm.country === 'US' ? /^\d{5}(-\d{4})?$/ :
+                          /^[A-Za-z0-9\s]{3,10}$/; // Generic
+    if (!postcodeRegex.test(customerForm.pincode || '')) {
+      alert(`Invalid ${customerForm.country === 'IN' ? 'Pincode' : customerForm.country === 'US' ? 'ZIP Code' : 'Postcode'}`);
+      return;
+    }
+
+    // India GSTIN validation (basic regex)
+    if (customerForm.country === 'IN' && customerForm.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(customerForm.gstin)) {
+      alert('Invalid GSTIN format');
+      return;
+    }
+
     setSavingCustomer(true);
     const tagsArray = customerForm.tags
       ? customerForm.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t)
@@ -165,7 +326,15 @@ export function Customers() {
           name: customerForm.name,
           email: customerForm.email,
           phone: customerForm.phone,
-          address: customerForm.address,
+          addressLine1: customerForm.addressLine1,
+          addressLine2: customerForm.addressLine2,
+          city: customerForm.city,
+          state: customerForm.state,
+          pincode: customerForm.pincode,
+          country: customerForm.country,
+          status: customerForm.status,
+          currency: customerForm.currency,
+          paymentTerms: customerForm.paymentTerms,
           taxId: customerForm.gstin,
           tags: tagsArray,
           updatedAt: new Date().toISOString() as any
@@ -180,7 +349,15 @@ export function Customers() {
           name: customerForm.name,
           email: customerForm.email,
           phone: customerForm.phone,
-          address: customerForm.address,
+          addressLine1: customerForm.addressLine1,
+          addressLine2: customerForm.addressLine2,
+          city: customerForm.city,
+          state: customerForm.state,
+          pincode: customerForm.pincode,
+          country: customerForm.country,
+          status: customerForm.status,
+          currency: customerForm.currency,
+          paymentTerms: customerForm.paymentTerms,
           taxId: customerForm.gstin,
           tags: tagsArray,
         };
@@ -192,7 +369,7 @@ export function Customers() {
         setShowCustomerModal(false);
         setIsEditing(false);
       }
-      setCustomerForm({ name: '', email: '', phone: '', address: '', gstin: '', tags: '' });
+      setCustomerForm({ name: '', email: '', phone: '', addressLine1: '', addressLine2: '', city: '', state: '', pincode: '', country: '', gstin: '', tags: '', status: 'Active', currency: 'INR', paymentTerms: 0 });
     } catch (error: any) {
       console.error("Failed to save customer", error);
       const errorMsg = error.message || "Failed to save customer. Please try again.";
@@ -242,6 +419,266 @@ export function Customers() {
       <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-teal-200/30 blur-[110px] -z-10" />
 
       <div className="p-6 lg:p-10">
+
+        {/* ─── ADD/EDIT DRAWER (RIGHT SLIDE OVER) ─────────────────── */}
+        <AnimatePresence>
+          {showCustomerModal && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => { setShowCustomerModal(false); setIsEditing(false); }}
+                className="fixed inset-0 z-[110] bg-slate-900/10 backdrop-blur-[2px]"
+              />
+              {/* Drawer Content */}
+              <motion.div
+                initial={{ x: '100%', opacity: 1 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '100%', opacity: 1 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white shadow-2xl z-[120] flex flex-col border-l border-teal-100/50"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => { setShowCustomerModal(false); setIsEditing(false); }}
+                      className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-white hover:text-teal-600 transition shadow-sm"
+                    >
+                      <ArrowLeft size={16} />
+                    </button>
+                    <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>
+                      {isEditing ? 'Edit Client' : 'Add New Client'}
+                    </h1>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${customerForm.status === 'Active' ? 'bg-teal-500 shadow-teal-500/20' : 'bg-gray-300'}`} />
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">{customerForm.status}</span>
+                  </div>
+                </div>
+
+                {/* Body - Scrollable */}
+                <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar space-y-8">
+                  {/* Client Details */}
+                  <div className="bg-white border border-teal-50 rounded-2xl p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                        <User size={18} className="text-teal-500" /> Client Details
+                      </h2>
+                      <button className="text-sm font-semibold text-teal-600 hover:text-teal-700 transition">
+                        Auto-Fill from GSTIN
+                      </button>
+                    </div>
+                    <div className="space-y-5">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
+                          Client Billing Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={customerForm.name}
+                          onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })}
+                          placeholder="Legal Business Name"
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 placeholder-gray-400 focus:bg-white focus:border-teal-400 outline-none transition-all"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Contact Name</label>
+                          <input type="text" placeholder="POC Name" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email <span className="text-red-500">*</span></label>
+                          <input
+                            type="email"
+                            value={customerForm.email}
+                            onChange={e => setCustomerForm({ ...customerForm, email: e.target.value })}
+                            placeholder="billing@email.com"
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Phone Number</label>
+                        <div className="flex">
+                          <div className="flex items-center gap-1.5 px-3.5 border border-r-0 border-gray-100 rounded-l-xl bg-gray-50 text-sm font-bold text-gray-600 cursor-pointer">
+                            <span>🇮🇳</span>
+                            <span className="text-gray-400 text-[10px]">⇅</span>
+                          </div>
+                          <input
+                            type="tel"
+                            value={customerForm.phone}
+                            onChange={e => setCustomerForm({ ...customerForm, phone: e.target.value })}
+                            className="flex-1 px-4 py-3 border border-gray-100 rounded-r-xl bg-gray-50 text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Billing Address */}
+                  <div className="bg-white border border-teal-50 rounded-2xl p-6 shadow-sm">
+                    <h2 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
+                      <MapPin size={18} className="text-teal-500" /> Billing Address
+                    </h2>
+                    <div className="space-y-5">
+                      <div className="space-y-1.5">
+                      <SearchableSelect 
+                        label="Country"
+                        options={countryOptions}
+                        value={customerForm.country}
+                        onChange={handleCountryChange}
+                        placeholder="Search country..."
+                      />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Address <span className="text-red-500">*</span></label>
+                        <textarea
+                          value={customerForm.addressLine1}
+                          onChange={e => setCustomerForm({ ...customerForm, addressLine1: e.target.value })}
+                          placeholder="Street, Building, Area..."
+                          rows={3}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all resize-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">State</label>
+                          {customerForm.country === 'IN' ? (
+                            <div className="relative">
+                              <RegionDropdown
+                                country={customerForm.country}
+                                value={customerForm.state}
+                                onChange={val => setCustomerForm({ ...customerForm, state: val })}
+                                countryValueType="short"
+                                showDefaultOption={true}
+                                defaultOptionLabel="Select"
+                                disableWhenEmpty={true}
+                                className="w-full px-2.5 py-2.5 border border-gray-100 rounded-xl text-[13px] font-bold text-gray-800 bg-gray-50 focus:bg-white appearance-none pr-6"
+                              />
+                              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">⌄</span>
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              value={customerForm.state}
+                              onChange={e => setCustomerForm({ ...customerForm, state: e.target.value })}
+                              className="w-full px-3 py-2.5 border border-gray-100 bg-gray-50 rounded-xl text-[13px] font-semibold focus:bg-white outline-none"
+                            />
+                          )}
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">City</label>
+                          <input
+                            type="text"
+                            value={customerForm.city}
+                            onChange={e => setCustomerForm({ ...customerForm, city: e.target.value })}
+                            className="w-full px-3 py-2.5 border border-gray-100 bg-gray-50 rounded-xl text-[13px] font-semibold focus:bg-white outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1.5 flex-1">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">{customerForm.country === 'IN' ? 'Pin' : 'Zip'}</label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={customerForm.pincode}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setCustomerForm({ ...customerForm, pincode: val });
+                                if (customerForm.country === 'IN' && val.length === 6) {
+                                  fetchLocationByPincode(val);
+                                }
+                              }}
+                              placeholder={customerForm.country === 'IN' ? '6 digits' : 'ZIP'}
+                              className="w-full px-3 py-2.5 border border-gray-100 bg-gray-50 rounded-xl text-[13px] font-semibold focus:bg-white focus:border-teal-400 outline-none pr-8"
+                            />
+                            {pincodeLoading && (
+                              <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                                <Loader2 className="w-3.5 h-3.5 text-teal-500 animate-spin" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Billing Options */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white border border-teal-50 rounded-2xl p-5 shadow-sm space-y-4">
+                      <SearchableSelect 
+                        label="Currency"
+                        options={currencyOptions}
+                        value={customerForm.currency}
+                        onChange={val => setCustomerForm({ ...customerForm, currency: val })}
+                        placeholder="Search currency..."
+                      />
+                    </div>
+                    <div className="bg-white border border-teal-50 rounded-2xl p-5 shadow-sm space-y-3">
+                      <SearchableSelect 
+                        label="Terms"
+                        options={paymentTermsOptions}
+                        value={paymentTermsOptions.some(o => o.value === customerForm.paymentTerms && o.value !== -1) ? customerForm.paymentTerms : -1}
+                        onChange={val => {
+                          if (val === -1) {
+                            setCustomerForm({ ...customerForm, paymentTerms: 30 }); // Default for custom
+                          } else {
+                            setCustomerForm({ ...customerForm, paymentTerms: val });
+                          }
+                        }}
+                        placeholder="Search terms..."
+                      />
+                      {(customerForm.paymentTerms !== 0 && !paymentTermsOptions.some(o => o.value === customerForm.paymentTerms && o.value !== -1)) || (customerForm.paymentTerms !== 0 && paymentTermsOptions.some(o => o.value === -1 && customerForm.paymentTerms !== 0)) ? (
+                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                          <input 
+                            type="number" 
+                            value={customerForm.paymentTerms}
+                            onChange={e => setCustomerForm({ ...customerForm, paymentTerms: parseInt(e.target.value) || 0 })}
+                            className="w-full px-3 py-2 bg-teal-50/50 border border-teal-100 rounded-lg text-xs font-bold text-teal-700 outline-none focus:border-teal-300"
+                            placeholder="Days"
+                          />
+                          <span className="text-[10px] font-bold text-teal-600 uppercase">Days</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="bg-white border border-teal-50 rounded-2xl p-6 shadow-sm">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Tags</h3>
+                    <input
+                      type="text"
+                      value={customerForm.tags}
+                      onChange={e => setCustomerForm({ ...customerForm, tags: e.target.value })}
+                      placeholder="VIP, Regular..."
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all placeholder:text-gray-300"
+                    />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-100 px-8 py-5 flex items-center justify-end gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-10">
+                  <button
+                    onClick={() => { setShowCustomerModal(false); setIsEditing(false); }}
+                    className="px-6 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 transition"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    onClick={handleSaveCustomer}
+                    disabled={savingCustomer}
+                    className="px-8 py-3 rounded-xl bg-teal-600 text-white text-sm font-bold shadow-lg shadow-teal-600/20 hover:bg-teal-700 disabled:opacity-50 transition flex items-center gap-2"
+                  >
+                    {savingCustomer && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isEditing ? 'Update Client' : 'Save Client'}
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* ─── DETAIL VIEW ──────────────────────────────────────────── */}
         {selectedCustomer ? (
@@ -312,7 +749,7 @@ export function Customers() {
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <MapPin className="w-4 h-4 text-teal-500" />
-                    <span>{selectedCustomer.address || 'Not provided'}</span>
+                    <span>{[selectedCustomer.addressLine1, selectedCustomer.addressLine2, selectedCustomer.city, selectedCustomer.state, selectedCustomer.pincode, selectedCustomer.country].filter(Boolean).join(', ') || 'Not provided'}</span>
                   </div>
                 </div>
                 {settings.showTags && selectedCustomer.tags && selectedCustomer.tags.length > 0 && (
@@ -463,7 +900,7 @@ export function Customers() {
                 <button
                   onClick={() => {
                     setIsEditing(false);
-                    setCustomerForm({ name: '', email: '', phone: '', address: '', gstin: '', tags: '' });
+                    setCustomerForm({ name: '', email: '', phone: '', addressLine1: '', addressLine2: '', city: '', state: '', pincode: '', country: '', gstin: '', tags: '', status: 'Active', currency: 'INR', paymentTerms: 0 });
                     setShowCustomerModal(true);
                   }}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-teal-200 bg-teal-50 text-sm font-semibold text-teal-700 hover:bg-teal-100 transition"
@@ -604,7 +1041,7 @@ export function Customers() {
                   <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>No customers yet</h3>
                   <p className="text-gray-400 mt-2 text-sm">Add your first client to get started.</p>
                   <button
-                    onClick={() => { setIsEditing(false); setCustomerForm({ name: '', email: '', phone: '', address: '', gstin: '', tags: '' }); setShowCustomerModal(true); }}
+                    onClick={() => { setIsEditing(false); setCustomerForm({ name: '', email: '', phone: '', addressLine1: '', addressLine2: '', city: '', state: '', pincode: '', country: '', gstin: '', tags: '', status: 'Active', currency: 'INR', paymentTerms: 0 }); setShowCustomerModal(true); }}
                     className="mt-4 px-4 py-2.5 rounded-xl bg-teal-50 border border-teal-200 text-sm font-semibold text-teal-700 hover:bg-teal-100 transition"
                   >
                     <Plus size={14} className="inline mr-1" /> Add Customer
@@ -663,8 +1100,8 @@ export function Customers() {
                               <Mail className="w-3 h-3 shrink-0" /> <span className="truncate">{cust.email}</span>
                             </div>
                           )}
-                          {settings.showAddress && cust.address && (
-                            <p className="text-xs text-gray-400 line-clamp-1">{cust.address}</p>
+                          {settings.showAddress && (
+                            <p className="text-xs text-gray-400 line-clamp-1">{[cust.addressLine1, cust.city].filter(Boolean).join(', ')}</p>
                           )}
                           {settings.showTags && cust.tags && cust.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-3">
@@ -757,62 +1194,6 @@ export function Customers() {
         )}
       </div>
 
-      {/* MODAL: ADD/EDIT CUSTOMER */}
-      <AnimatePresence>
-        {showCustomerModal && createPortal(
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCustomerModal(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-teal-100/50"
-            >
-              <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
-                <h3 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>{isEditing ? 'Edit Customer' : 'Add New Customer'}</h3>
-                <button onClick={() => setShowCustomerModal(false)} className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-400"><X size={20} /></button>
-              </div>
-              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Full Name</label>
-                    <input type="text" value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-semibold text-gray-800" placeholder="John Doe" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email Address</label>
-                    <input type="email" value={customerForm.email} onChange={e => setCustomerForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-semibold text-gray-800" placeholder="john@example.com" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Phone</label>
-                      <input type="text" value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-semibold text-gray-800" placeholder="+91 98765 43210" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Tax ID / GSTIN</label>
-                      <input type="text" value={customerForm.gstin} onChange={e => setCustomerForm(f => ({ ...f, gstin: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-semibold text-gray-800" placeholder="Optional" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Billing Address</label>
-                    <textarea value={customerForm.address} onChange={e => setCustomerForm(f => ({ ...f, address: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-medium text-gray-700 resize-none h-20" placeholder="Street, City, Zip Code" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Tags (comma separated)</label>
-                    <input type="text" value={customerForm.tags} onChange={e => setCustomerForm(f => ({ ...f, tags: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-semibold text-gray-800" placeholder="VIP, Wholesale, Regular" />
-                  </div>
-                </div>
-              </div>
-              <div className="p-6 bg-gray-50/50 border-t border-gray-50 flex gap-3">
-                <button onClick={() => setShowCustomerModal(false)} className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-white transition">Cancel</button>
-                <button onClick={handleSaveCustomer} disabled={savingCustomer} className="flex-2 px-8 py-3 rounded-xl bg-teal-600 text-white text-sm font-bold shadow-lg shadow-teal-600/20 hover:bg-teal-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
-                  {savingCustomer ? <Loader2 className="w-4 h-4 animate-spin" /> : (isEditing ? 'Update Customer' : 'Save Customer')}
-                </button>
-              </div>
-            </motion.div>
-          </div>,
-          document.body
-        )}
-      </AnimatePresence>
     </div>
   );
 }

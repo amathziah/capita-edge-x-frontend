@@ -91,7 +91,8 @@ function App() {
                       <Route path="/dashboard" element={<Layout />}>
                         <Route index element={<ControlRoom />} />
                         <Route path="invoices" element={<Invoices />} />
-                        <Route path="invoices/create" element={<InvoiceGenerator />} />
+                        <Route path="invoices/new" element={<InvoiceGenerator />} />
+                        <Route path="invoices/:id/edit" element={<InvoiceGenerator />} />
                         <Route path="customers" element={<Customers />} />
                         <Route path="payments" element={<Payments />} />
                         <Route path="expenses" element={<Expenses />} />
