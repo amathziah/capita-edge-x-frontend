@@ -6,6 +6,7 @@ export interface NavItem {
   label: string;
   section: 'headquarters' | 'revenue-ops' | 'spend-assets' | 'analytics';
   badge?: string | null;
+  comingSoon?: boolean;
 }
 
 export interface InvoiceFormConfig {
@@ -63,11 +64,11 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
     collectionsModel: 'rules',
     nav: [
       { id: 'control-room', label: 'Control Room', section: 'headquarters' },
-      { id: 'calendar',     label: 'Calendar',     section: 'headquarters', badge: 'due dates' },
+      { id: 'calendar',     label: 'Calendar',     section: 'headquarters', comingSoon: true },
       { id: 'invoices',     label: 'Invoices',     section: 'revenue-ops' },
       { id: 'payments',     label: 'Payments',     section: 'revenue-ops' },
       { id: 'customers',    label: 'Customers',    section: 'revenue-ops' },
-      { id: 'compliance',   label: 'Compliance',   section: 'spend-assets', badge: 'GST' },
+      { id: 'compliance',   label: 'Compliance',   section: 'spend-assets', comingSoon: true },
       { id: 'reports',      label: 'Reports',      section: 'analytics' },
     ],
   },
@@ -107,11 +108,11 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
       { id: 'invoices',     label: 'Invoices',     section: 'revenue-ops' },
       { id: 'payments',     label: 'Payments',     section: 'revenue-ops' },
       { id: 'customers',    label: 'Customers',    section: 'revenue-ops' },
-      { id: 'projects',     label: 'Projects',     section: 'revenue-ops' },
+      { id: 'projects',     label: 'Projects',     section: 'revenue-ops', comingSoon: true },
       { id: 'expenses',     label: 'Expenses',     section: 'spend-assets' },
       { id: 'compliance',   label: 'Compliance',   section: 'spend-assets' },
       { id: 'reports',      label: 'Reports',      section: 'analytics' },
-      { id: 'team',         label: 'Team',         section: 'analytics' },
+      { id: 'team',         label: 'Team',         section: 'analytics', comingSoon: true },
     ],
   },
 
@@ -150,12 +151,12 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
       { id: 'invoices',     label: 'Invoices',     section: 'revenue-ops' },
       { id: 'payments',     label: 'Payments',     section: 'revenue-ops' },
       { id: 'customers',    label: 'Customers',    section: 'revenue-ops' },
-      { id: 'marketplace',  label: 'Marketplace',  section: 'revenue-ops' },
+      { id: 'marketplace',  label: 'Marketplace',  section: 'revenue-ops', comingSoon: true },
       { id: 'expenses',     label: 'Expenses',     section: 'spend-assets' },
       { id: 'inventory',    label: 'Inventory',    section: 'spend-assets' },
       { id: 'compliance',   label: 'Compliance',   section: 'spend-assets' },
       { id: 'reports',      label: 'Reports',      section: 'analytics' },
-      { id: 'sku-pl',       label: 'SKU P&L',      section: 'analytics' },
+      { id: 'sku-pl',       label: 'SKU P&L',      section: 'analytics', comingSoon: true },
     ],
   },
 
@@ -194,10 +195,10 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
       { id: 'invoices',     label: 'Invoices',     section: 'revenue-ops' },
       { id: 'payments',     label: 'Payments',     section: 'revenue-ops' },
       { id: 'customers',    label: 'Customers',    section: 'revenue-ops' },
-      { id: 'subscribers',  label: 'Subscribers',  section: 'revenue-ops' },
+      { id: 'subscribers',  label: 'Subscribers',  section: 'revenue-ops', comingSoon: true },
       { id: 'compliance',   label: 'Compliance',   section: 'spend-assets' },
       { id: 'reports',      label: 'Reports',      section: 'analytics' },
-      { id: 'mrr',          label: 'MRR',          section: 'analytics' },
+      { id: 'mrr',          label: 'MRR',          section: 'analytics', comingSoon: true },
     ],
   },
 

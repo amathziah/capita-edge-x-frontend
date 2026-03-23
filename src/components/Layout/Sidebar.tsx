@@ -198,6 +198,42 @@ export function Sidebar() {
                   const Icon = ICON_MAP[item.id] || LayoutDashboard;
                   const href = PATH_MAP[item.id] || '/dashboard';
 
+                  // ── Coming Soon (disabled) item ──
+                  if (item.comingSoon) {
+                    return (
+                      <div
+                        key={item.id}
+                        title={collapsed ? 'Coming Soon' : undefined}
+                        className={`group relative flex items-center rounded-xl text-[13px] font-medium cursor-not-allowed opacity-40 select-none ${
+                          collapsed
+                            ? 'justify-center px-0 py-2.5'
+                            : 'gap-2.5 px-3 py-2.5'
+                        }`}
+                      >
+                        <div className="relative flex-shrink-0">
+                          <Icon
+                            className="w-[18px] h-[18px] text-gray-600"
+                            strokeWidth={1.8}
+                          />
+                        </div>
+
+                        {!collapsed && (
+                          <>
+                            <span className="flex-1 truncate text-gray-600">
+                              {t(item.id) || item.label}
+                            </span>
+                            {!transitioning && (
+                              <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-600 border border-gray-700 rounded-md px-1.5 py-0.5 whitespace-nowrap">
+                                Soon
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // ── Active nav item ──
                   return (
                     <NavLink
                       key={item.id}
