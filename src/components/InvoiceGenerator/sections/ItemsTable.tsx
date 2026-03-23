@@ -326,11 +326,11 @@ export default function ItemsTable({
                                 {/* ─── Mobile Row ─── */}
                                 <div className="sm:hidden grid grid-cols-[2fr_60px_80px_70px_30px] gap-2 p-4 items-center relative">
                                     <div className="relative">
-                                        <input className="w-full bg-transparent border-none p-0 text-sm font-semibold text-text-main outline-none" placeholder="Item name..." value={item.description} onChange={(e) => updateItem(idx, { description: e.target.value })} />
+                                        <input className="w-full bg-transparent border-none p-0 text-sm font-semibold text-text-main outline-none" placeholder="Item name..." value={item.description || ''} onChange={(e) => updateItem(idx, { description: e.target.value })} />
                                     </div>
-                                    <div><input type="number" className="w-full text-center bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 text-xs font-black" value={item.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} /></div>
-                                    <div className="text-center"><span className="text-[10px] text-gray-400 font-bold mr-1">{currency.symbol}</span><input type="number" className="w-14 text-center bg-transparent border-none p-0 text-xs font-black outline-none" value={item.price} onChange={(e) => updateItem(idx, { price: Number(e.target.value) })} /></div>
-                                    <div className="text-right text-xs font-black text-primary">{currency.symbol}{taxableValue.toLocaleString()}</div>
+                                    <div><input type="number" className="w-full text-center bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 text-xs font-black" value={item.quantity || 0} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} /></div>
+                                    <div className="text-center"><span className="text-[10px] text-gray-400 font-bold mr-1">{currency.symbol}</span><input type="number" className="w-14 text-center bg-transparent border-none p-0 text-xs font-black outline-none" value={item.price || 0} onChange={(e) => updateItem(idx, { price: Number(e.target.value) })} /></div>
+                                    <div className="text-right text-xs font-black text-primary">{currency.symbol}{(taxableValue || 0).toLocaleString()}</div>
                                     <div className="flex justify-end"><button onClick={() => removeItem(idx)} className="text-red-400 p-1.5"><Trash2 size={14} /></button></div>
                                 </div>
                             </Fragment>

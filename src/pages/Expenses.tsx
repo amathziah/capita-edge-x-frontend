@@ -28,7 +28,7 @@ export function Expenses() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    refreshData();
+    refreshData(['expenses']);
   }, [refreshData]);
 
 
@@ -45,10 +45,10 @@ export function Expenses() {
         id: expenseForm.id || '',
         description: expenseForm.description,
         amount: Number(expenseForm.amount),
-        category: expenseForm.category,
-        date: new Date(expenseForm.date),
+        category: expenseForm.category || 'Other',
+        date: expenseForm.date,
         gstAmount: expenseForm.gstAmount ? Number(expenseForm.gstAmount) : 0,
-        createdAt: new Date()
+        createdAt: new Date().toISOString()
       });
 
       // Reset form and close modal
@@ -63,7 +63,7 @@ export function Expenses() {
       setShowModal(false);
 
       // Refresh expenses list
-      refreshData(true);
+      refreshData(['expenses'], true);
     } catch (error) {
       console.error("Failed to save expense", error);
       alert("Failed to save expense. Please try again.");
@@ -79,7 +79,7 @@ export function Expenses() {
       id: expense.id,
       description: expense.description,
       amount: expense.amount.toString(),
-      category: expense.category,
+      category: expense.category || 'Other',
       date: new Date(expense.date).toISOString().split('T')[0],
       gstAmount: expense.gstAmount ? expense.gstAmount.toString() : ''
     });
@@ -96,8 +96,8 @@ export function Expenses() {
 
     try {
       setIsDeleting(true);
-      await dataService.deleteExpense(deleteId);
-      refreshData(true);
+      await dataService.deleteExpense(deleteId); // Reverted to original logic for Expenses.tsx
+      refreshData(['expenses'], true); // Reverted to original logic for Expenses.tsx
       setDeleteId(null);
     } catch (error) {
       console.error("Failed to delete expense", error);
@@ -147,7 +147,8 @@ export function Expenses() {
 
     const categoryTotals: Record<string, number> = {};
     expenses.forEach(e => {
-      categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount;
+      const cat = e.category || 'Other';
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + e.amount;
     });
     const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
 
@@ -415,7 +416,7 @@ export function Expenses() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredExpenses.map((expense, idx) => {
-                const theme = categoryThemes[expense.category] || categoryThemes.Other;
+                const theme = categoryThemes[expense.category || 'Other'] || categoryThemes.Other;
                 const pct = stats.total > 0 ? Math.round((expense.amount / stats.total) * 100) : 0;
                 const expDate = new Date(expense.date);
 
@@ -469,7 +470,7 @@ export function Expenses() {
                         <span className="text-[22px] font-extrabold text-gray-900 tracking-tight">
                           ₹{expense.amount.toLocaleString()}
                         </span>
-                        {expense.gstAmount > 0 && (
+                        {expense.gstAmount !== undefined && expense.gstAmount > 0 && (
                           <span className={`text-[10px] font-bold ${theme.accent} bg-white/70 backdrop-blur px-1.5 py-0.5 rounded-md flex items-center gap-0.5`}>
                             <Shield size={9} />
                             +₹{expense.gstAmount} GST

@@ -15,9 +15,11 @@ interface DataState {
     reports: any[];
 }
 
+type DataEntity = keyof DataState;
+
 interface DataContextType extends DataState {
     loading: boolean;
-    refreshData: (force?: boolean) => Promise<void>;
+    refreshData: (entities?: DataEntity[] | boolean, force?: boolean) => Promise<void>;
     setData: (data: Partial<DataState>) => void;
     filteredInvoices: Invoice[];
 }
@@ -27,6 +29,8 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { organizationId, businessType } = usePersona();
+    const [loading, setLoading] = useState(false);
     const [state, setState] = useState<DataState>({
         invoices: [],
         payments: [],
@@ -38,15 +42,94 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         stats: { total_customers: 0 } as DashboardStats,
         reports: [],
     });
-    const lastFetchedRef = useRef<number | null>(null);
-    const [loading, setLoading] = useState(false);
-    const { organizationId: organizationId } = usePersona();
-    const { businessType } = usePersona();
+    
+    const lastFetchedRef = useRef<Record<string, number>>({});
+    const inFlightRequests = useRef<Record<string, Promise<any> | null>>({});
 
-    // Clear state when user logs out or switches org
+    const refreshData = useCallback(async (entitiesOrForce: DataEntity[] | boolean = false, force = false) => {
+        if (!organizationId) return;
+        
+        const now = Date.now();
+        const forceFetch = typeof entitiesOrForce === 'boolean' ? entitiesOrForce : force;
+        const allEntities: DataEntity[] = ['invoices', 'stats', 'payments', 'customers', 'expenses', 'products', 'performance', 'complianceTasks', 'reports'];
+        const requestedEntities = Array.isArray(entitiesOrForce) 
+            ? entitiesOrForce 
+            : allEntities;
+
+        const entitiesToFetch = requestedEntities.filter(entity => {
+            if (forceFetch) return true;
+            const lastFetched = lastFetchedRef.current[entity];
+            return !lastFetched || (now - lastFetched > CACHE_TTL);
+        });
+
+        if (entitiesToFetch.length === 0) return;
+
+        // Prevent redundant in-flight requests for the same entities
+        const actualEntitiesToFetch = entitiesToFetch.filter(entity => !inFlightRequests.current[entity]);
+        if (actualEntitiesToFetch.length === 0) return;
+
+        try {
+            setLoading(true);
+            
+            const fetchPromises: Record<string, Promise<any>> = {};
+            
+            actualEntitiesToFetch.forEach(entity => {
+                let promise: Promise<any>;
+                switch(entity) {
+                    case 'invoices': promise = dataService.getInvoices({ limit: 1000 }); break;
+                    case 'stats': promise = dataService.getDashboardStats(); break;
+                    case 'payments': promise = dataService.getPayments({ limit: 1000 }); break;
+                    case 'customers': promise = dataService.getCustomers(); break;
+                    case 'expenses': promise = dataService.getExpenses(); break;
+                    case 'products': promise = dataService.getProducts(); break;
+                    case 'performance': promise = dataService.getProductPerformance().catch(() => []); break;
+                    case 'complianceTasks': promise = dataService.getComplianceTasks(); break;
+                    case 'reports': promise = dataService.getReports(); break;
+                    default: return;
+                }
+                
+                const wrappedPromise = promise.then(data => {
+                    lastFetchedRef.current[entity] = Date.now();
+                    inFlightRequests.current[entity] = null;
+                    return data;
+                }).catch(err => {
+                    inFlightRequests.current[entity] = null;
+                    throw err;
+                });
+                
+                inFlightRequests.current[entity] = wrappedPromise;
+                fetchPromises[entity] = wrappedPromise;
+            });
+
+            const results = await Promise.all(Object.values(fetchPromises));
+            const entityKeys = Object.keys(fetchPromises);
+            
+            setState(prev => {
+                const newState = { ...prev };
+                entityKeys.forEach((key, index) => {
+                    // @ts-ignore
+                    newState[key] = results[index] || (key === 'stats' ? { total_customers: 0 } : []);
+                });
+                return newState;
+            });
+
+        } catch (error) {
+            console.error("Error refreshing global data:", error);
+        } finally {
+            // Check if any requests are still in flight
+            const stillInFlight = Object.values(inFlightRequests.current).some(p => p !== null);
+            if (!stillInFlight) setLoading(false);
+        }
+    }, [organizationId]);
+
+    // Fetch initial data when organizationId changes
     useEffect(() => {
-        if (!organizationId) {
-            lastFetchedRef.current = null;
+        if (organizationId) {
+            refreshData();
+        } else {
+            // Clear state when user logs out or switches org
+            lastFetchedRef.current = {};
+            inFlightRequests.current = {};
             setState({
                 invoices: [],
                 payments: [],
@@ -59,46 +142,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 reports: [],
             });
         }
-    }, [organizationId]);
-
-    const refreshData = useCallback(async (force = false) => {
-        const now = Date.now();
-        if (!force && lastFetchedRef.current && (now - lastFetchedRef.current < CACHE_TTL)) {
-            return;
-        }
-
-        try {
-            setLoading(true);
-            const [fetchedInvoices, fetchedStats, fetchedPayments, fetchedCustomers, fetchedExpenses, fetchedProducts, fetchedPerformance, fetchedCompliance, fetchedReports] = await Promise.all([
-                dataService.getInvoices({ limit: 1000 }) as Promise<Invoice[]>,
-                dataService.getDashboardStats() as Promise<DashboardStats>,
-                dataService.getPayments({ limit: 1000 }) as Promise<Payment[]>,
-                dataService.getCustomers() as Promise<Customer[]>,
-                dataService.getExpenses() as Promise<Expense[]>,
-                dataService.getProducts() as Promise<Product[]>,
-                dataService.getProductPerformance().catch(() => []) as Promise<ProductPerformance[]>,
-                dataService.getComplianceTasks() as Promise<ComplianceTask[]>,
-                dataService.getReports() as Promise<any[]>
-            ]);
-
-            setState({
-                invoices: fetchedInvoices || [],
-                stats: fetchedStats || { total_customers: 0 },
-                payments: fetchedPayments || [],
-                customers: fetchedCustomers || [],
-                expenses: fetchedExpenses || [],
-                products: fetchedProducts || [],
-                performance: fetchedPerformance || [],
-                complianceTasks: fetchedCompliance || [],
-                reports: fetchedReports || [],
-            });
-            lastFetchedRef.current = now;
-        } catch (error) {
-            console.error("Error refreshing global data:", error);
-        } finally {
-            setLoading(false);
-        }
-    }, [organizationId]);
+    }, [organizationId, refreshData]);
 
     const setData = useCallback((newData: Partial<DataState>) => {
         setState(prev => ({ ...prev, ...newData }));
@@ -111,7 +155,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const value = {
         ...state,
-        lastFetched: lastFetchedRef.current,
         loading,
         refreshData,
         setData,

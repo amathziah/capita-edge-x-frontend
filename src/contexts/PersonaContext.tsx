@@ -77,6 +77,15 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [user, fetchPersona]);
 
+  // Sync organizationId with localStorage for API client
+  useEffect(() => {
+    if (organizationId) {
+      localStorage.setItem('sb-org-id', organizationId);
+    } else {
+      localStorage.removeItem('sb-org-id');
+    }
+  }, [organizationId]);
+
   const config = businessType ? (PERSONA_CONFIGS[businessType] ?? null) : null;
 
   const can = useCallback(

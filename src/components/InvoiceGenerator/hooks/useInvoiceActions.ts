@@ -18,12 +18,13 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
         setActiveAction,
         setIsEmailModalOpen, emailTo, setEmailTo,
         showToast, validateForm,
+        invoiceId,
     } = state;
 
     // ─── Build Invoice Data ────────────────────────────────────────────
     const buildInvoiceData = () => {
         return {
-            id: undefined as string | undefined,
+            id: invoiceId,
             invoiceNumber: meta.number,
             date: meta.date,
             dueDate: meta.dueDate,

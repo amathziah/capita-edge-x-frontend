@@ -12,6 +12,7 @@ import { Reports } from './pages/Reports';
 import { Compliance } from './pages/Compliance';
 import { Profile } from './pages/Profile';
 import { LiquidityCalendar } from './components/features/LiquidityCalendar';
+import { AIAssistantPage } from './pages/AIAssistantPage';
 import { Settings } from './pages/Settings';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PersonaProvider } from './contexts/PersonaContext';
@@ -98,6 +99,7 @@ function App() {
                         <Route path="reports" element={<Reports />} />
                         <Route path="compliance" element={<Compliance />} />
                         <Route path="calendar" element={<LiquidityCalendar />} />
+                        <Route path="ai" element={<AIAssistantPage />} />
                         <Route path="profile" element={<Profile />} />
                         <Route path="settings" element={<Settings />} />
 

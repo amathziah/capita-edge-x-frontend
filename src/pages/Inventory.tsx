@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Box, TrendingUp, AlertCircle, X, Bot, Edit2, Settings2, Filter, Search, Trash2, AlertTriangle, Package, Zap, Tag, Activity, Scale, CheckCircle } from "lucide-react";
+import { Box, TrendingUp, AlertCircle, X, Bot, Edit2, Filter, Search, Trash2, AlertTriangle, Package, Zap, Tag, Activity, Scale, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService } from '../services/dataService';
 import { Product, ProductPerformance } from '../types';
 import { InventoryInsights, VelocityBadge } from '../components/Inventory/InventoryInsights';
-import { InventorySettings, InventorySettingsData } from '../components/Inventory/InventorySettings';
+import { type InventorySettingsData } from '../components/Inventory/InventorySettings';
 import { CustomSelect } from '../components/ui/CustomSelect';
 
 import { useData } from '../contexts/DataContext';
@@ -24,7 +24,7 @@ export function Inventory() {
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [invSettings, setInvSettings] = useState<InventorySettingsData>({
@@ -395,12 +395,7 @@ export function Inventory() {
                 {businessType === 'services_firm' ? 'Add Item' : 'Add Product'}
               </div>
             </button>
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="p-3 bg-white text-gray-400 rounded-2xl shadow-sm border border-gray-100 hover:text-primary hover:border-primary/30 hover:shadow-md transition-all duration-300"
-            >
-              <Settings2 className="w-5 h-5" />
-            </button>
+
           </div>
         </div >
       </div >
@@ -576,12 +571,6 @@ export function Inventory() {
         businessType={businessType}
       />
 
-      {/* Advanced Settings Panel */}
-      < InventorySettings
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        onSettingsChange={(newSettings) => setInvSettings(newSettings)}
-      />
 
       {/* Insights Modal */}
       {

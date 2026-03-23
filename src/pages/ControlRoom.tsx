@@ -30,8 +30,8 @@ export const ControlRoom = () => {
     const [invSummary, setInvSummary] = useState<{ risks: number; outOfStock: number }>({ risks: 0, outOfStock: 0 });
 
     useEffect(() => {
-        if (user) refreshData();
-    }, [user, refreshData]);
+        refreshData(['invoices', 'stats', 'payments', 'customers', 'expenses']);
+    }, [refreshData]);
 
     const isSolopreneur = businessType === 'solopreneur';
 

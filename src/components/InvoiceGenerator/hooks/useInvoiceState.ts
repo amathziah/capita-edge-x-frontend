@@ -46,6 +46,7 @@ export interface InvoiceState {
     setNotes: (v: string) => void;
     meta: InvoiceMeta;
     setMeta: (m: InvoiceMeta) => void;
+    invoiceId: string | undefined;
 
     // Persona-Specific State
     projectName: string;
@@ -161,6 +162,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         date: new Date().toISOString().split("T")[0],
         dueDate: new Date().toISOString().split("T")[0],
     });
+    const [invoiceId, setInvoiceId] = useState<string | undefined>(editingInvoice?.id);
 
     // ─── Persona-Specific State ────────────────────────────────────────
     const [projectName, setProjectName] = useState("");
@@ -304,6 +306,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
             if (editingInvoice.discountAmount) setDiscountAmount(editingInvoice.discountAmount);
             if (editingInvoice.dispatchDate) setDispatchDate(editingInvoice.dispatchDate);
             if (editingInvoice.courierTracking) setCourierTracking(editingInvoice.courierTracking);
+            setInvoiceId(editingInvoice.id);
         } else {
             dataService.generateInvoiceNumber().then(num => {
                 setMeta((prev: InvoiceMeta) => ({ ...prev, number: num }));
@@ -398,6 +401,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         buyer, setBuyer,
         notes, setNotes,
         meta, setMeta,
+        invoiceId,
         projectName, setProjectName,
         shippingAddress, setShippingAddress,
         orderNumber, setOrderNumber,

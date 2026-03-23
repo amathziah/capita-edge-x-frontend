@@ -91,7 +91,16 @@ export function Sidebar() {
   }, [nav]);
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setTransitioning(true);
+    setCollapsed(c => !c);
+    setTimeout(() => {
+      setTransitioning(false);
+    }, 150); // Matches transition duration + small buffer
+  };
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Close user menu when clicking outside
@@ -132,13 +141,13 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`hidden lg:flex flex-col h-screen bg-[#0c0f1a] text-gray-300 select-none transition-all duration-300 ease-in-out overflow-visible ${collapsed ? "w-[68px]" : "w-[220px]"
+      className={`hidden lg:flex flex-col h-screen bg-[#0c0f1a] text-gray-300 select-none transition-all duration-75 overflow-visible ${collapsed ? "w-[68px]" : "w-[220px]"
         }`}
     >
 
       {/* ── Brand (click to toggle) ───────────────────────────── */}
       <button
-        onClick={() => setCollapsed((c) => !c)}
+        onClick={toggleSidebar}
         className={`flex items-center gap-3 h-[72px] border-b border-white/[0.06] hover:bg-white/[0.03] transition-colors duration-200 cursor-pointer ${collapsed ? "px-0 justify-center" : "px-6"
           }`}
         title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -220,11 +229,6 @@ export function Sidebar() {
                                 }`}
                               strokeWidth={isActive ? 2.2 : 1.8}
                             />
-                            {collapsed && item.badge && (
-                              <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] flex items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white px-0.5 shadow-sm">
-                                {item.badge}
-                              </span>
-                            )}
                           </div>
 
                           {!collapsed && (
@@ -232,7 +236,7 @@ export function Sidebar() {
                               <span className="flex-1 truncate">
                                 {t(item.id) || item.label}
                               </span>
-                              {item.badge && (
+                              {!transitioning && item.badge && (
                                 <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full bg-rose-500/90 text-[10px] font-bold text-white px-1.5 shadow-sm shadow-rose-500/30">
                                   {item.badge}
                                 </span>

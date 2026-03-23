@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   ArrowLeft, User, AlertCircle, Calendar, Activity, CheckCircle, Loader2,
   Search, Filter, Plus, Phone, Mail, MapPin, X, Edit, Trash2,
-  Users, Settings2, Eye, LayoutGrid, List, ArrowRight,
+  Users, LayoutGrid, List, ArrowRight,
   TrendingUp, CreditCard, FileText, SortAsc, SortDesc,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,11 +48,11 @@ export function Customers() {
   const [savingCustomer, setSavingCustomer] = useState(false);
 
   // Advanced settings
-  const [showSettings, setShowSettings] = useState(false);
+
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [settings, setSettings] = useState({
+  const [settings] = useState({
     showTags: true,
     showEmail: true,
     showAddress: true,
@@ -60,7 +60,9 @@ export function Customers() {
   });
 
   // ── Fetch customers ────────────────────────────────────────────────────
-  useEffect(() => { refreshData(); }, [refreshData]);
+  useEffect(() => {
+    refreshData(['customers', 'invoices']);
+  }, [refreshData]);
 
 
   // ── Fetch selected customer data ───────────────────────────────────────
@@ -86,7 +88,7 @@ export function Customers() {
     const total = customers.length;
     const withTags = customers.filter(c => c.tags && c.tags.length > 0).length;
     const recentCount = customers.filter(c => {
-      const date = new Date(c.createdAt);
+      const date = new Date(c.createdAt as any);
       return (Date.now() - date.getTime()) < 30 * 24 * 60 * 60 * 1000;
     }).length;
     return { total, withTags, recentCount };
@@ -103,8 +105,8 @@ export function Customers() {
     result.sort((a, b) => {
       let cmp = 0;
       if (sortField === 'name') cmp = a.name.localeCompare(b.name);
-      else if (sortField === 'email') cmp = a.email.localeCompare(b.email);
-      else cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      else if (sortField === 'email') cmp = (a.email || '').localeCompare(b.email || '');
+      else cmp = new Date(a.createdAt as any).getTime() - new Date(b.createdAt as any).getTime();
       return sortDir === 'desc' ? -cmp : cmp;
     });
     return result;
@@ -115,9 +117,9 @@ export function Customers() {
     if (!selectedCustomer) return;
     setCustomerForm({
       name: selectedCustomer.name,
-      email: selectedCustomer.email,
-      phone: selectedCustomer.phone,
-      address: selectedCustomer.address,
+      email: selectedCustomer.email || '',
+      phone: selectedCustomer.phone || '',
+      address: selectedCustomer.address || '',
       gstin: selectedCustomer.taxId || '',
       tags: selectedCustomer.tags?.join(', ') || ''
     });
@@ -140,7 +142,7 @@ export function Customers() {
     } catch (error) {
       console.error("Failed to delete customer", error);
       alert("Failed to delete customer");
-      refreshData(true);
+      refreshData(['customers'], true);
       setSelectedCustomer(toDelete);
     }
   };
@@ -166,7 +168,7 @@ export function Customers() {
           address: customerForm.address,
           taxId: customerForm.gstin,
           tags: tagsArray,
-          updatedAt: new Date()
+          updatedAt: new Date().toISOString() as any
         };
         setData({ customers: customers.map(c => c.id === selectedCustomer.id ? updated : c) });
         setSelectedCustomer(updated);
@@ -183,9 +185,9 @@ export function Customers() {
           tags: tagsArray,
         };
         const { id } = await dataService.saveCustomer({
-          ...temp, id: '', createdAt: new Date(), updatedAt: new Date()
-        } as Customer);
-        const newCust: Customer = { ...temp, id, createdAt: new Date(), updatedAt: new Date() };
+          ...temp, id: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+        } as any);
+        const newCust: Customer = { ...temp, id, createdAt: new Date().toISOString() as any, updatedAt: new Date().toISOString() as any };
         setData({ customers: [newCust, ...customers] });
         setShowCustomerModal(false);
         setIsEditing(false);
@@ -196,7 +198,7 @@ export function Customers() {
       const errorMsg = error.message || "Failed to save customer. Please try again.";
       alert(errorMsg);
       if (isEditing) {
-        refreshData(true);
+        refreshData(['customers'], true);
         setShowCustomerModal(true);
       }
     } finally {
@@ -205,7 +207,7 @@ export function Customers() {
   };
 
   // ── Loading ────────────────────────────────────────────────────────────
-  if (loading) {
+  if (loading && customers.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-gray-50/50">
         <div className="relative mb-8">
@@ -374,7 +376,7 @@ export function Customers() {
                   </>
                 ) : (
                   <div className="animate-pulse flex flex-col gap-4">
-                    <div className="h-6 w-32 bg-gray-100 rounded" />
+                    <div className="h-6 w-38 bg-gray-100 rounded" />
                     <div className="grid sm:grid-cols-3 gap-4">
                       {[1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-50 rounded-2xl border border-gray-100" />)}
                     </div>
@@ -411,7 +413,7 @@ export function Customers() {
                           <td className="px-6 py-3.5">
                             <span className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize ${invoice.status === 'paid' ? 'bg-teal-50 text-teal-700 border border-teal-200' :
                               invoice.status === 'overdue' ? 'bg-red-50 text-red-700 border border-red-200' :
-                                invoice.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                (invoice.status === 'sent' || invoice.status === 'viewed' || invoice.status === 'partially_paid') ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                                   'bg-gray-50 text-gray-600 border border-gray-200'
                               }`}>{invoice.status}</span>
                           </td>
@@ -458,13 +460,6 @@ export function Customers() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowSettings(!showSettings)}
-                  className={`p-2.5 rounded-xl border transition-all ${showSettings ? 'bg-teal-50 border-teal-200 text-teal-600' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'}`}
-                  title="Advanced Settings"
-                >
-                  <Settings2 size={18} />
-                </button>
                 <button
                   onClick={() => {
                     setIsEditing(false);
@@ -520,50 +515,6 @@ export function Customers() {
               </div>
             </motion.div>
 
-            {/* ─── Advanced Settings ──────────────────────────────── */}
-            <AnimatePresence>
-              {showSettings && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className="overflow-hidden"
-                >
-                  <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-teal-100/60 shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-5">
-                      <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                        <Settings2 size={15} className="text-teal-500" /> Advanced Settings
-                      </h3>
-                      <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-gray-100 rounded-lg transition text-gray-400"><X size={16} /></button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {[
-                        { key: 'showTags' as const, label: 'Show Tags', desc: 'Display tags on cards', icon: Filter },
-                        { key: 'showEmail' as const, label: 'Show Email', desc: 'Show email on cards', icon: Mail },
-                        { key: 'showAddress' as const, label: 'Show Address', desc: 'Show address on cards', icon: MapPin },
-                        { key: 'compactCards' as const, label: 'Compact View', desc: 'Smaller card padding', icon: Eye },
-                      ].map(({ key, label, desc, icon: Icon }) => (
-                        <label key={key} className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-teal-200 hover:bg-teal-50/30 transition cursor-pointer group">
-                          <div className="pt-0.5">
-                            <div className={`w-9 h-5 rounded-full transition-colors relative ${settings[key] ? 'bg-teal-500' : 'bg-gray-200'}`}>
-                              <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform shadow-sm ${settings[key] ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                            </div>
-                            <input type="checkbox" className="sr-only" checked={settings[key]} onChange={() => setSettings(s => ({ ...s, [key]: !s[key] }))} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
-                              <Icon size={13} className="text-gray-400 group-hover:text-teal-500 transition" /> {label}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* ─── Search & Controls ──────────────────────────────── */}
             <motion.div
@@ -793,7 +744,7 @@ export function Customers() {
                                 {(cust.tags?.length ?? 0) > 2 && <span className="text-xs text-gray-400">+{(cust.tags?.length ?? 0) - 2}</span>}
                               </div>
                             </td>
-                            <td className="px-6 py-3.5 text-gray-400 text-xs">{new Date(cust.createdAt).toLocaleDateString()}</td>
+                            <td className="px-6 py-3.5 text-gray-400 text-xs">{new Date(cust.createdAt as any).toLocaleDateString()}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -806,110 +757,62 @@ export function Customers() {
         )}
       </div>
 
-      {/* ─── Create/Edit Modal ────────────────────────────────────── */}
-      {
-        showCustomerModal && createPortal(
-          <AnimatePresence>
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-gray-900/30 backdrop-blur-sm"
-                onClick={() => setShowCustomerModal(false)}
-              />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
-                className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-2xl border border-teal-100/60 overflow-hidden"
-              >
-                {/* Header */}
-                <div className="relative bg-gradient-to-r from-white via-teal-50/60 to-white px-6 py-5 border-b border-teal-100/60 overflow-hidden">
-                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-teal-100/30 rounded-full blur-2xl" />
-                  <div className="relative flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>
-                        {isEditing ? 'Edit Customer' : 'Add Customer'}
-                      </h3>
-                      <p className="text-xs text-gray-400 mt-1 font-medium">{isEditing ? 'Update customer details' : 'Enter customer details below'}</p>
-                    </div>
-                    <button onClick={() => setShowCustomerModal(false)} className="p-1.5 hover:bg-gray-100 rounded-xl transition text-gray-400 hover:text-gray-600">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Form */}
-                <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Name <span className="text-teal-500">*</span></label>
-                      <input type="text" value={customerForm.name} onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
-                        placeholder="John Doe" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Email <span className="text-teal-500">*</span></label>
-                      <input type="email" value={customerForm.email} onChange={e => setCustomerForm({ ...customerForm, email: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
-                        placeholder="john@acme.com" />
-                    </div>
+      {/* MODAL: ADD/EDIT CUSTOMER */}
+      <AnimatePresence>
+        {showCustomerModal && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCustomerModal(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-teal-100/50"
+            >
+              <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                <h3 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>{isEditing ? 'Edit Customer' : 'Add New Customer'}</h3>
+                <button onClick={() => setShowCustomerModal(false)} className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-400"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Full Name</label>
+                    <input type="text" value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-semibold text-gray-800" placeholder="John Doe" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Phone</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                      <input type="tel" value={customerForm.phone} onChange={e => setCustomerForm({ ...customerForm, phone: e.target.value })}
-                        className="w-full pl-9 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
-                        placeholder="+91 98765 43210" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Address</label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 w-3.5 h-3.5 text-gray-400" />
-                      <textarea value={customerForm.address} onChange={e => setCustomerForm({ ...customerForm, address: e.target.value })}
-                        className="w-full pl-9 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium resize-none min-h-[60px] placeholder:text-gray-300"
-                        placeholder="Full street address..." />
-                    </div>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email Address</label>
+                    <input type="email" value={customerForm.email} onChange={e => setCustomerForm(f => ({ ...f, email: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-semibold text-gray-800" placeholder="john@example.com" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Tax ID</label>
-                      <input type="text" value={customerForm.gstin} onChange={e => setCustomerForm({ ...customerForm, gstin: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
-                        placeholder="GSTIN" />
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Phone</label>
+                      <input type="text" value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-semibold text-gray-800" placeholder="+91 98765 43210" />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 ml-0.5">Tags</label>
-                      <input type="text" value={customerForm.tags} onChange={e => setCustomerForm({ ...customerForm, tags: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition font-medium placeholder:text-gray-300"
-                        placeholder="VIP, Retail" />
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Tax ID / GSTIN</label>
+                      <input type="text" value={customerForm.gstin} onChange={e => setCustomerForm(f => ({ ...f, gstin: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-semibold text-gray-800" placeholder="Optional" />
                     </div>
                   </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Billing Address</label>
+                    <textarea value={customerForm.address} onChange={e => setCustomerForm(f => ({ ...f, address: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-medium text-gray-700 resize-none h-20" placeholder="Street, City, Zip Code" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Tags (comma separated)</label>
+                    <input type="text" value={customerForm.tags} onChange={e => setCustomerForm(f => ({ ...f, tags: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-teal-400 outline-none transition-all text-sm font-semibold text-gray-800" placeholder="VIP, Wholesale, Regular" />
+                  </div>
                 </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 border-t border-teal-100/60 flex gap-3 bg-white">
-                  <button onClick={() => setShowCustomerModal(false)}
-                    className="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition font-semibold text-sm">
-                    Cancel
-                  </button>
-                  <button onClick={handleSaveCustomer} disabled={savingCustomer}
-                    className="flex-[2] px-4 py-2.5 text-white rounded-xl font-semibold text-sm transition shadow-md disabled:opacity-60 flex items-center justify-center gap-2"
-                    style={{ backgroundColor: '#0d9488', boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)' }}
-                  >
-                    {savingCustomer ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...</> : (isEditing ? 'Update Customer' : 'Create Customer')}
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          </AnimatePresence>,
+              </div>
+              <div className="p-6 bg-gray-50/50 border-t border-gray-50 flex gap-3">
+                <button onClick={() => setShowCustomerModal(false)} className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-white transition">Cancel</button>
+                <button onClick={handleSaveCustomer} disabled={savingCustomer} className="flex-2 px-8 py-3 rounded-xl bg-teal-600 text-white text-sm font-bold shadow-lg shadow-teal-600/20 hover:bg-teal-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
+                  {savingCustomer ? <Loader2 className="w-4 h-4 animate-spin" /> : (isEditing ? 'Update Customer' : 'Save Customer')}
+                </button>
+              </div>
+            </motion.div>
+          </div>,
           document.body
-        )
-      }
-    </div >
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

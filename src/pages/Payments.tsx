@@ -1,13 +1,12 @@
 import { useMemo, useState, useEffect } from "react";
 import {
   CreditCard, Smartphone, DollarSign, CheckCircle, Download, TrendingUp,
-  X, Search, Settings2, Eye, LayoutGrid, List,
+  X, Search, Eye, LayoutGrid, List,
   SortAsc, SortDesc, Banknote, Clock, Filter, Plus, User, Hash, ChevronDown, Calendar, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService } from '../services/dataService';
 import { useData } from "../contexts/DataContext";
-import { Invoice, Payment } from "../types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -74,11 +73,10 @@ export function Payments() {
   const [viewDate, setViewDate] = useState(new Date());
 
   // Advanced settings
-  const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [settings, setSettings] = useState({
+  const [settings] = useState({
     showMethodIcon: true,
     showDate: true,
     showAIAlerts: true,
@@ -91,16 +89,16 @@ export function Payments() {
       return {
         id: p.id,
         invoice: inv ? inv.invoiceNumber : "Unknown",
-        method: p.method,
+        method: p.method || "Other",
         amount: p.amount,
-        date: new Date(p.date || p.createdAt).toISOString().split('T')[0],
+        date: new Date(p.date || p.createdAt || new Date()).toISOString().split('T')[0],
         reconciled: p.status === 'completed'
       };
     });
   }, [apiPayments, allInvoices]);
 
   useEffect(() => {
-    refreshData();
+    refreshData(['payments', 'invoices']);
   }, [refreshData]);
 
   // ── Derived data ───────────────────────────────────────────────────
@@ -173,7 +171,7 @@ export function Payments() {
     try {
       setSaving(true);
       await dataService.reconcilePayment(paymentId);
-      refreshData(true);
+      refreshData(['payments'], true);
     } catch (err: any) {
       alert(`Error reconciling payment: ${err.message}`);
     } finally {
@@ -220,7 +218,7 @@ export function Payments() {
         notes: '',
         date: new Date().toISOString().split('T')[0]
       });
-      refreshData(true);
+      refreshData(['payments', 'invoices'], true);
     } catch (err: any) {
       alert(`Error saving payment: ${err.message}`);
     } finally {
@@ -320,14 +318,6 @@ export function Payments() {
               <Plus size={16} /> Record Payment
             </button>
             <button
-              onClick={() => setShowSettings(!showSettings)}
-              className={`p-2.5 rounded-xl border transition-all ${showSettings ? 'bg-teal-50 border-teal-200 text-teal-600' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'}`}
-              title="Advanced Settings"
-            >
-              <Settings2 size={18} />
-            </button>
-
-            <button
               onClick={() => exportCSV(filtered)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-teal-200 bg-teal-50 text-sm font-semibold text-teal-700 hover:bg-teal-100 transition"
             >
@@ -368,49 +358,6 @@ export function Payments() {
           ))}
         </motion.div>
 
-        {/* ─── Advanced Settings ───────────────────────────────────── */}
-        <AnimatePresence>
-          {showSettings && (
-            <motion.div
-              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden"
-            >
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-teal-100/60 shadow-sm p-6">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                    <Settings2 size={15} className="text-teal-500" /> Advanced Settings
-                  </h3>
-                  <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-gray-100 rounded-lg transition text-gray-400"><X size={16} /></button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { key: 'showMethodIcon' as const, label: 'Method Icons', desc: 'Show payment method icons', icon: CreditCard },
-                    { key: 'showDate' as const, label: 'Show Date', desc: 'Display date on cards', icon: Clock },
-                    { key: 'compactCards' as const, label: 'Compact View', desc: 'Reduce card padding', icon: Eye },
-                  ].map(({ key, label, desc, icon: Icon }) => (
-                    <label key={key} className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-teal-200 hover:bg-teal-50/30 transition cursor-pointer group">
-                      <div className="pt-0.5">
-                        <div className={`w-9 h-5 rounded-full transition-colors relative ${settings[key] ? 'bg-teal-500' : 'bg-gray-200'}`}>
-                          <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform shadow-sm ${settings[key] ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                        </div>
-                        <input type="checkbox" className="sr-only" checked={settings[key]} onChange={() => setSettings(s => ({ ...s, [key]: !s[key] }))} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
-                          <Icon size={13} className="text-gray-400 group-hover:text-teal-500 transition" /> {label}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* ─── Search & Controls ──────────────────────────────────── */}
         <motion.div
@@ -775,7 +722,7 @@ export function Payments() {
                                   setShowInvoiceDropdown(false);
                                   setSearchInvoice("");
                                 }}
-                                className="px-4 py-3 hover:bg-teal-50/50 cursor-pointer transition border-b border-gray-50 last:border-0 flex justify-between items-center group"
+                                className="px-4 py-3 hover:bg-teal-50/50 cursor-pointer transition flex justify-between items-center group"
                               >
                                 <div>
                                   <p className="text-sm font-bold text-gray-900 group-hover:text-teal-700 transition">{i.invoiceNumber}</p>

@@ -59,7 +59,7 @@ export function Compliance() {
   const { addNotification } = useNotifications();
 
   useEffect(() => {
-    refreshData();
+    refreshData(['complianceTasks']);
   }, [refreshData]);
 
   // Filter + Search + Sort
@@ -99,7 +99,7 @@ export function Compliance() {
   const handleMarkComplete = async (id: string) => {
     try {
       await dataService.updateComplianceTask(id, { status: "completed" });
-      refreshData(true);
+      refreshData(['complianceTasks'], true);
       addNotification("Task marked as completed", "success");
     } catch (error) {
       console.error("Failed to update task:", error);
@@ -118,7 +118,7 @@ export function Compliance() {
     if (!confirm("Are you sure you want to delete this compliance task?")) return;
     try {
       await dataService.deleteComplianceTask(id);
-      refreshData(true);
+      refreshData(['complianceTasks'], true);
       addNotification("Task deleted successfully", "success");
     } catch (error) {
       console.error("Failed to delete task:", error);
@@ -161,7 +161,7 @@ export function Compliance() {
           notes: taskData.notes
         });
       }
-      refreshData(true);
+      refreshData(['complianceTasks'], true);
       setCreateModalOpen(false);
       setSelectedTask(undefined);
       addNotification(

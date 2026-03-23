@@ -2,7 +2,6 @@ import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { BottomNavigation } from './BottomNavigation';
-import { AIAssistant } from '../AIAssistant/AIAssistant';
 
 export function Layout() {
   return (
@@ -20,7 +19,6 @@ export function Layout() {
       </div>
 
       <BottomNavigation />
-      <AIAssistant />
     </div>
   );
 }

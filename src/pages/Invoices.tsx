@@ -56,9 +56,13 @@ export function Invoices() {
   const showToast = (message: string, type: ToastType = 'info') => {
     setToast({ message, type });
   };
+
+
+  // Fetch initial data
   useEffect(() => {
-    refreshData();
+    refreshData(['invoices', 'stats']);
   }, [refreshData]);
+
 
   // Fetch full invoice details when ID changes
   useEffect(() => {

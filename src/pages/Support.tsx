@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Bug, Lightbulb, MessageSquare, CheckCircle2, History, ArrowRight, Loader2 } from 'lucide-react';
 import { dataService } from '../services/dataService';
+import { useData } from '../contexts/DataContext';
 
 type ReportType = 'bug' | 'feature_request' | 'feedback' | 'ui_issue';
 
@@ -9,10 +10,9 @@ export function Support() {
     const [type, setType] = useState<ReportType>('feedback');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const { reports, loading: loadingReports, refreshData } = useData();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [reports, setReports] = useState<any[]>([]);
-    const [loadingReports, setLoadingReports] = useState(true);
 
     const categories = [
         { id: 'bug', label: 'Report Bug', icon: Bug, color: 'text-rose-500', bg: 'bg-rose-50' },
@@ -22,20 +22,8 @@ export function Support() {
     ];
 
     useEffect(() => {
-        fetchReports();
-    }, []);
-
-    const fetchReports = async () => {
-        try {
-            setLoadingReports(true);
-            const data = await dataService.getReports();
-            setReports(data || []);
-        } catch (error) {
-            console.error('Failed to fetch reports:', error);
-        } finally {
-            setLoadingReports(false);
-        }
-    };
+        refreshData(['reports']);
+    }, [refreshData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,7 +47,7 @@ export function Support() {
             setSubmitted(true);
             setTitle('');
             setDescription('');
-            fetchReports();
+            refreshData(['reports'], true);
             setTimeout(() => setSubmitted(false), 5000);
         } catch (error) {
             console.error('Submission failed:', error);
@@ -196,7 +184,7 @@ export function Support() {
                                 <p className="text-gray-400 text-[12px] font-bold uppercase tracking-widest">No reports found</p>
                             </div>
                         ) : (
-                            reports.map((report) => (
+                            reports.map((report: any) => (
                                 <div
                                     key={report.id}
                                     className="p-4 rounded-2xl border border-gray-50 hover:bg-gray-50/50 transition-all group"

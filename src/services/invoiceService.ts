@@ -17,7 +17,12 @@ export const invoiceService = {
 
     getInvoice: (id: string) => api.get<Invoice>(ENDPOINTS.INVOICE(id)),
 
-    saveInvoice: (invoice: Invoice) => api.post<Invoice>(ENDPOINTS.INVOICES, invoice),
+    saveInvoice: (invoice: Invoice) => {
+        if (invoice.id) {
+            return api.put<Invoice>(ENDPOINTS.INVOICE(invoice.id), invoice);
+        }
+        return api.post<Invoice>(ENDPOINTS.INVOICES, invoice);
+    },
 
     deleteInvoice: (id: string) => api.delete<void>(ENDPOINTS.INVOICE(id)),
 
