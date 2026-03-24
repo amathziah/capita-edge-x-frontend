@@ -97,86 +97,64 @@ function HeroBanner({ meta, greeting, onCopy, copied }: {
 }) {
   const C = meta.color;
   return (
-    <div style={{
-      position: 'relative', borderRadius: 24,
-      background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-      border: `1.5px solid ${meta.colorBorder}`,
-      overflow: 'hidden', marginBottom: 24,
-      boxShadow: `0 0 60px ${meta.colorGlow}, inset 0 1px 0 rgba(255,255,255,0.06)`,
-    }}>
+    <div className="relative rounded-[24px] bg-white border border-gray-200 overflow-hidden mb-6 shadow-sm">
       {/* Top accent stripe */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${C}, transparent)`, opacity: 0.8 }} />
 
-      {/* Background grid pattern */}
-      <div style={{
-        position: 'absolute', inset: 0, opacity: 0.04,
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-[0.02]" style={{
         backgroundImage: `linear-gradient(${C} 1px, transparent 1px), linear-gradient(90deg, ${C} 1px, transparent 1px)`,
         backgroundSize: '32px 32px',
       }} />
 
-      {/* Glow orbs */}
-      <div style={{ position: 'absolute', top: -40, left: -40, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${meta.colorGlow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: `radial-gradient(circle, ${meta.colorGlow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
+      {/* Light Glow orbs */}
+      <div style={{ position: 'absolute', top: -40, left: -40, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${C}20 0%, transparent 70%)`, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: `radial-gradient(circle, ${C}10 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '24px 28px', gap: 24 }}>
+      <div className="relative flex items-center p-6 md:p-8 gap-6 justify-center md:justify-start">
         {/* Left robot */}
         <motion.div
-          animate={{ y: [0, -6, 0] }}
+          animate={{ y: [0, -4, 0] }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          style={{ flexShrink: 0 }}
+          className="shrink-0"
         >
-          <div style={{
-            width: 72, height: 72, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: `linear-gradient(135deg, ${meta.colorBg}, rgba(0,0,0,0.2))`,
-            border: `1.5px solid ${meta.colorBorder}`,
-            boxShadow: `0 0 30px ${meta.colorGlow}`,
-          }}>
-            <RobotSVG color={C} eyeColor={meta.robotEye} size={52} animate />
+          <div className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center bg-gray-50 border border-gray-100 shadow-sm relative overflow-hidden">
+             <div className="absolute inset-0 opacity-[0.05]" style={{ background: C }} />
+             <RobotSVG color={C} eyeColor={meta.robotEye} size={52} />
           </div>
         </motion.div>
 
         {/* Center: greeting text */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <span style={{ fontFamily: "'Sora','DM Sans',sans-serif", fontWeight: 800, fontSize: 20, color: '#f0fdf4', letterSpacing: '-0.025em' }}>
-              Capita
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="font-sans font-bold text-xl text-gray-900 tracking-tight">
+              Capita AI
             </span>
-            <span style={{
-              fontSize: 9, fontWeight: 800, letterSpacing: '0.13em',
-              color: C, background: meta.colorBg, border: `1px solid ${meta.colorBorder}`,
-              padding: '2px 7px', borderRadius: 5, fontFamily: 'monospace',
-            }}>
+            <span className="text-[9px] font-black tracking-widest px-2 py-0.5 rounded border uppercase" style={{ color: C, background: `${C}10`, borderColor: `${C}30` }}>
               {meta.label}
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: C, display: 'inline-block', boxShadow: `0 0 8px ${C}`, animation: 'cp-pulse 2.5s ease-in-out infinite' }} />
-              <span style={{ fontSize: 9, color: '#374151', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.07em' }}>ONLINE</span>
+            <div className="flex items-center gap-1.5 ml-2">
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse shadow-sm" style={{ background: C }} />
+              <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">ONLINE</span>
             </div>
           </div>
-          <div style={{ color: '#d1fae5', fontSize: 14, lineHeight: 1.72 }}>
+          <div className="text-gray-600 text-[13px] leading-relaxed">
             <ReactMarkdown components={makeMd(C)}>{greeting}</ReactMarkdown>
           </div>
           <button
             onClick={onCopy}
-            style={{ marginTop: 10, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: '#374151', fontSize: 11, fontWeight: 600, fontFamily: 'monospace' }}
+            className="mt-3 flex items-center gap-1.5 text-[10px] font-bold text-gray-400 hover:text-gray-700 transition-colors uppercase tracking-widest font-mono cursor-pointer bg-transparent border-none"
           >
             {copied ? <><Check size={11} color={C} /><span style={{ color: C }}>Copied</span></> : <><Copy size={11} />Copy</>}
           </button>
         </div>
-
-        
       </div>
 
       {/* Bottom bar: status */}
-      <div style={{
-        borderTop: `1px solid ${meta.colorBorder}`,
-        padding: '10px 28px',
-        display: 'flex', alignItems: 'center', gap: 16,
-        background: 'rgba(0,0,0,0.15)',
-      }}>
+      <div className="border-t border-gray-100 px-6 py-2.5 flex flex-wrap items-center gap-4 bg-gray-50/50">
         {['SECURE CHANNEL', 'ENCRYPTED', 'FINANCE ENGINE v2.1'].map((s, i) => (
-          <span key={i} style={{ fontSize: 9, fontWeight: 800, color: '#1f2937', fontFamily: 'monospace', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 5 }}>
-            {i === 0 && <span style={{ width: 5, height: 5, borderRadius: '50%', background: C, display: 'inline-block', boxShadow: `0 0 6px ${C}` }} />}
+          <span key={i} className="text-[9px] font-bold text-gray-400 font-mono tracking-widest flex items-center gap-1.5">
+            {i === 0 && <span className="w-1.5 h-1.5 rounded-full shadow-sm" style={{ background: C }} />}
             {s}
           </span>
         ))}
@@ -191,29 +169,21 @@ function ActionCard({ action, meta, onClick }: { action: any; meta: any; onClick
   const Icon = typeof action.icon === 'string' ? IconMap[action.icon] || Zap : action.icon;
   return (
     <motion.button
-      whileHover={{ scale: 1.03, y: -3 }}
-      whileTap={{ scale: 0.97 }}
+      whileHover={{ scale: 1.02, y: -2 }}
+      whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-        padding: '14px 14px 12px', borderRadius: 16, cursor: 'pointer',
-        background: 'rgba(255,255,255,0.03)',
-        border: `1px solid rgba(255,255,255,0.07)`,
-        transition: 'all 0.18s', textAlign: 'left', position: 'relative', overflow: 'hidden',
-      }}
-      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = meta.colorBg; el.style.borderColor = meta.colorBorder; el.style.boxShadow = `0 8px 32px ${meta.colorGlow}`; }}
-      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.03)'; el.style.borderColor = 'rgba(255,255,255,0.07)'; el.style.boxShadow = 'none'; }}
+      className="flex flex-col items-start p-3.5 rounded-2xl cursor-pointer bg-white border border-gray-200 transition-all text-left relative overflow-hidden group hover:shadow-md hover:border-gray-300 w-full"
     >
-      {/* Top curved accent */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${C}60, transparent)` }} />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 10 }}>
-        <div style={{ padding: 7, borderRadius: 9, background: meta.colorBg, border: `1px solid ${meta.colorBorder}` }}>
-          <Icon size={13} color={C} />
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-[0.03] transition-opacity" style={{ background: C }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${C}60, transparent)` }} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="flex items-center justify-between w-full mb-2.5 relative z-10">
+        <div className="p-1.5 rounded-lg border bg-gray-50 group-hover:bg-white transition-colors" style={{ borderColor: `${C}30` }}>
+          <Icon size={14} color={C} />
         </div>
-        <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '0.12em', color: C, opacity: 0.6, fontFamily: 'monospace' }}>{action.tag}</span>
+        <span className="text-[8px] font-black tracking-widest uppercase opacity-60 flex-1 text-right ml-2 truncate" style={{ color: C }}>{action.tag}</span>
       </div>
-      <span style={{ fontSize: 12, fontWeight: 700, color: '#d1fae5', lineHeight: 1.35 }}>{action.label}</span>
-      <span style={{ fontSize: 10, color: '#374151', marginTop: 4 }}>Ask Capita →</span>
+      <span className="text-[13px] font-semibold text-gray-800 leading-snug relative z-10">{action.label}</span>
+      <span className="text-[10px] text-gray-400 mt-1.5 transition-colors group-hover:text-gray-600 font-black tracking-wide relative z-10">Ask Capita →</span>
     </motion.button>
   );
 }
@@ -227,60 +197,42 @@ function ChatBubble({ msg, meta, copiedId, onCopy }: {
   const isBot = msg.sender === 'bot';
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+      initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-      style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexDirection: isBot ? 'row' : 'row-reverse' }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className={`flex items-end gap-3 w-full ${isBot ? 'flex-row' : 'flex-row-reverse'}`}
     >
       {/* Avatar */}
       {isBot ? (
-        <div style={{
-          width: 36, height: 36, borderRadius: 11, flexShrink: 0,
-          background: `linear-gradient(135deg, ${meta.colorBg}, rgba(0,0,0,0.3))`,
-          border: `1.5px solid ${meta.colorBorder}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: `0 0 14px ${meta.colorGlow}`,
-        }}>
-          <RobotSVG color={C} eyeColor={meta.robotEye} size={26} />
+        <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center bg-gray-50 border border-gray-200 shadow-sm relative overflow-hidden">
+          <div className="absolute inset-0 opacity-[0.08]" style={{ background: C }} />
+          <RobotSVG color={C} eyeColor={meta.robotEye} size={24} />
         </div>
       ) : (
-        <div style={{
-          width: 36, height: 36, borderRadius: 11, flexShrink: 0,
-          background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <span style={{ fontSize: 12, color: '#d1fae5', fontWeight: 800, fontFamily: 'monospace' }}>U</span>
+        <div className="w-9 h-9 rounded-xl shrink-0 bg-gray-100 border border-gray-200 flex items-center justify-center shadow-sm">
+          <span className="text-xs text-gray-600 font-black font-mono">U</span>
         </div>
       )}
 
-      <div style={{ maxWidth: 560 }}>
+      <div className="max-w-[85%] md:max-w-[70%] lg:max-w-[560px]">
         {/* Bubble */}
-        <div style={isBot ? {
-          background: 'rgba(255,255,255,0.045)',
-          border: `1px solid ${meta.colorBorder}`,
-          borderRadius: '6px 20px 20px 20px',
-          padding: '14px 18px',
-          boxShadow: `0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)`,
-          backdropFilter: 'blur(12px)',
-          position: 'relative' as const,
-          overflow: 'hidden' as const,
-        } : {
-          background: `linear-gradient(135deg, ${C} 0%, ${C}cc 100%)`,
-          borderRadius: '20px 6px 20px 20px',
-          padding: '13px 18px',
-          boxShadow: `0 6px 32px ${meta.colorGlow}, 0 2px 8px rgba(0,0,0,0.4)`,
-        }}>
-          {/* Bot bubble accent stripe */}
-          {isBot && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${C}80, transparent)` }} />}
+        <div className={`relative px-4 py-3 shadow-sm ${
+          isBot ? 'bg-white border border-gray-200 rounded-tr-2xl rounded-tl-sm rounded-b-2xl' 
+                : 'rounded-tl-2xl rounded-tr-sm rounded-b-2xl'
+        }`}
+        style={!isBot ? { background: `linear-gradient(135deg, ${C} 0%, ${C}ee 100%)`, color: '#fff' } : {}}
+        >
+          {isBot && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${C}40, transparent)` }} />}
 
-          <div style={{ fontSize: 14, lineHeight: 1.68, color: isBot ? '#e5e7eb' : '#fff' }}>
+          <div className={`text-[13px] leading-relaxed ${isBot ? 'text-gray-700' : 'text-white'}`}>
             <ReactMarkdown components={isBot ? makeMd(C) : userMd}>{msg.text}</ReactMarkdown>
           </div>
 
           {msg.data?.type === 'stat' && (
             <motion.div
               initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.15 }}
-              style={{ marginTop: 12, display: 'inline-block', padding: '8px 16px', borderRadius: 10, background: 'rgba(0,0,0,0.35)', border: `1px solid ${meta.colorBorder}`, fontSize: 22, fontWeight: 900, color: C, fontFamily: 'monospace', boxShadow: `0 0 20px ${meta.colorGlow}` }}
+              className="mt-3 inline-block px-4 py-2 rounded-lg bg-gray-50 border border-gray-200 shadow-sm font-mono text-xl font-black"
+              style={{ color: C }}
             >
               ₹{msg.data.value.toLocaleString()}
             </motion.div>
@@ -288,13 +240,13 @@ function ChatBubble({ msg, meta, copiedId, onCopy }: {
         </div>
 
         {/* Meta row */}
-        <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 10, justifyContent: isBot ? 'flex-start' : 'flex-end', paddingLeft: isBot ? 4 : 0, paddingRight: isBot ? 0 : 4 }}>
+        <div className={`mt-1.5 flex items-center gap-2 flex-wrap ${isBot ? 'justify-start pl-1' : 'justify-end pr-1'}`}>
           {isBot && (
-            <button onClick={() => onCopy(msg.text, msg.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 700, color: '#374151', fontFamily: 'monospace' }}>
-              {copiedId === msg.id ? <><Check size={11} color={C} /><span style={{ color: C }}>COPIED</span></> : <><Copy size={11} />COPY</>}
+            <button onClick={() => onCopy(msg.text, msg.id)} className="flex items-center gap-1 bg-transparent border-none cursor-pointer text-[9px] font-bold text-gray-400 hover:text-gray-600 transition-colors uppercase font-mono tracking-widest">
+              {copiedId === msg.id ? <><Check size={10} color={C} /><span style={{ color: C }}>COPIED</span></> : <><Copy size={10} />COPY</>}
             </button>
           )}
-          <span style={{ fontSize: 10, color: '#1f2937', fontFamily: 'monospace', fontWeight: 700 }}>{formatTime(msg.timestamp)}</span>
+          <span className="text-[9px] text-gray-400 font-bold font-mono tracking-widest uppercase">{formatTime(msg.timestamp)}</span>
         </div>
       </div>
     </motion.div>
@@ -398,7 +350,7 @@ export function AIAssistantPage() {
         }
       }
     } catch {
-      setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: '⚠️ Something went wrong. Please try again.', timestamp: new Date(), status: 'error' }]);
+      setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: '⚠️ Something went wrong. Please try again.', timestamp: new Date(), status: 'error' as const }]);
     } finally {
       setIsTyping(false);
     }
@@ -422,40 +374,37 @@ export function AIAssistantPage() {
   const { meta, actions } = dynamicConfig;
   const C = meta.color;
 
-
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden',
-      background: 'linear-gradient(160deg, #070c0a 0%, #090e0d 55%, #07090f 100%)',
-      fontFamily: "'DM Sans', 'Manrope', system-ui, sans-serif",
-    }}>
-      {/* Ambient glows */}
-      <div style={{ pointerEvents: 'none', position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '-25%', right: '-15%', width: 700, height: 700, borderRadius: '50%', background: `radial-gradient(circle, ${meta.colorGlow} 0%, transparent 60%)` }} />
-        <div style={{ position: 'absolute', bottom: '-25%', left: '-12%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, #10b98108 0%, transparent 60%)' }} />
+    <div className="flex flex-col h-[100dvh] bg-gray-50/50 relative font-sans text-gray-900 border-x border-gray-100 max-w-[1440px] mx-auto shadow-xl overflow-hidden w-full lg:max-w-none">
+      {/* Ambient backgrounds */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden mix-blend-multiply opacity-[0.03]">
+        <div className="absolute -top-1/4 -right-1/4 w-[700px] h-[700px] rounded-full blur-[100px]" style={{ background: `radial-gradient(circle, ${C} 0%, transparent 60%)` }} />
+        <div className="absolute -bottom-1/4 -left-[12%] w-[600px] h-[600px] rounded-full blur-[100px]" style={{ background: `radial-gradient(circle, ${C} 0%, transparent 60%)` }} />
       </div>
 
       {/* ── HEADER ── */}
-      <header style={{ position: 'relative', zIndex: 50, flexShrink: 0, borderBottom: `1px solid ${meta.colorBorder}`, background: 'rgba(7,12,10,0.9)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 11, background: `linear-gradient(135deg, ${meta.colorBg}, rgba(0,0,0,0.3))`, border: `1.5px solid ${meta.colorBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px ${meta.colorGlow}` }}>
-              <RobotSVG color={C} eyeColor={meta.robotEye} size={28} />
+      <header className="relative z-50 shrink-0 border-b border-gray-200 bg-white/80 backdrop-blur-xl">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 h-[60px] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-50 border border-gray-200 shadow-sm relative overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.05]" style={{ background: C }} />
+              <RobotSVG color={C} eyeColor={meta.robotEye} size={24} />
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: "'Sora','DM Sans',sans-serif", fontWeight: 800, fontSize: 17, color: '#f0fdf4', letterSpacing: '-0.02em' }}>Capita</span>
-                <span style={{ fontSize: 9, fontWeight: 800, color: C, background: meta.colorBg, border: `1px solid ${meta.colorBorder}`, padding: '2px 6px', borderRadius: 4, fontFamily: 'monospace', letterSpacing: '0.1em' }}>{meta.label}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-sans font-bold text-base text-gray-900 tracking-tight">Capita AI</span>
+                <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border" style={{ color: C, background: `${C}10`, borderColor: `${C}30` }}>{meta.label}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1 }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: C, display: 'inline-block', boxShadow: `0 0 6px ${C}`, animation: 'cp-pulse 2.5s ease-in-out infinite' }} />
-                <span style={{ fontSize: 9, color: '#374151', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.08em' }}>ONLINE · SECURE</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse shadow-sm" style={{ background: C }} />
+                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">ONLINE</span>
               </div>
             </div>
           </div>
           <button
             onClick={clearChat}
-            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 10, border: `1px solid ${meta.colorBorder}`, background: meta.colorBg, color: C, fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', letterSpacing: '0.05em' }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-gray-50"
+            style={{ color: C, borderColor: `${C}40`, backgroundColor: `${C}05` }}
           >
             <RotateCcw size={12} /> RESET
           </button>
@@ -466,32 +415,26 @@ export function AIAssistantPage() {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1, scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.07) transparent' }}
+        className="flex-1 overflow-y-auto relative z-10 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent bg-gray-50/30"
       >
-        <div style={{ maxWidth: 980, margin: '0 auto', padding: '24px 20px 16px' }}>
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24">
 
           {/* Hero banner with robots */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}>
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
             <HeroBanner meta={meta} greeting={getGreeting()} onCopy={copyGreeting} copied={greetingCopied} />
           </motion.div>
 
           {/* Quick actions */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.15, ease: [0.22, 1, 0.36, 1] }} style={{ marginBottom: 24 }}>
-            {/* Section header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <span style={{ fontSize: 9, fontWeight: 800, color: '#374151', letterSpacing: '0.14em', fontFamily: 'monospace' }}>QUICK ACTIONS</span>
-              <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${meta.colorBorder}, transparent)` }} />
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1, ease: [0.22, 1, 0.36, 1] }} className="mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-[9px] font-black text-gray-400 tracking-widest uppercase">QUICK ACTIONS</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent" />
             </div>
-            {/* Container with curved border */}
-            <div style={{
-              borderRadius: 20, border: `1px solid ${meta.colorBorder}`,
-              background: 'rgba(255,255,255,0.015)', padding: 14,
-              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04)`,
-            }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+            <div className="bg-white rounded-[22px] border border-gray-200 p-2.5 shadow-sm">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
                 {actions.map((action: any, i: number) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.06, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-                    <ActionCard action={action} meta={meta} onClick={() => handleSend(action.query)} />
+                  <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.05, duration: 0.3 }}>
+                     <ActionCard action={action} meta={meta} onClick={() => handleSend(action.query)} />
                   </motion.div>
                 ))}
               </div>
@@ -500,18 +443,13 @@ export function AIAssistantPage() {
 
           {/* Conversation */}
           {messages.length > 1 && (
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                <span style={{ fontSize: 9, fontWeight: 800, color: '#374151', letterSpacing: '0.14em', fontFamily: 'monospace' }}>CONVERSATION</span>
-                <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${meta.colorBorder}, transparent)` }} />
+            <div className="mb-4">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-[9px] font-black text-gray-400 tracking-widest uppercase">CONVERSATION</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent" />
               </div>
-              {/* Curved conversation container */}
-              <div style={{
-                borderRadius: 22, border: `1px solid ${meta.colorBorder}`,
-                background: 'rgba(255,255,255,0.01)', padding: '20px 18px',
-                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03), 0 4px 40px rgba(0,0,0,0.2)`,
-                display: 'flex', flexDirection: 'column', gap: 18,
-              }}>
+              
+              <div className="flex flex-col gap-6 bg-white/70 rounded-[24px] border border-gray-100 p-4 sm:p-6 shadow-sm backdrop-blur-md">
                 <AnimatePresence initial={false}>
                   {messages.slice(1).map(msg => (
                     <ChatBubble key={msg.id} msg={msg} meta={meta} copiedId={copiedId} onCopy={handleCopy} />
@@ -521,17 +459,18 @@ export function AIAssistantPage() {
                 {/* Typing indicator */}
                 <AnimatePresence>
                   {isTyping && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 11, flexShrink: 0, background: meta.colorBg, border: `1.5px solid ${meta.colorBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 14px ${meta.colorGlow}` }}>
-                        <RobotSVG color={C} eyeColor={meta.robotEye} size={26} animate />
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-end gap-3">
+                      <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center bg-gray-50 border border-gray-200 shadow-sm relative overflow-hidden">
+                         <div className="absolute inset-0 opacity-[0.08]" style={{ background: C }} />
+                         <RobotSVG color={C} eyeColor={meta.robotEye} size={24} animate />
                       </div>
-                      <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${meta.colorBorder}`, borderRadius: '6px 18px 18px 18px', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ display: 'flex', gap: 5 }}>
+                      <div className="bg-white border border-gray-200 rounded-tr-xl rounded-tl-sm rounded-b-xl px-4 py-3 flex items-center gap-3 shadow-sm">
+                        <div className="flex gap-1.5">
                           {[0, 1, 2].map(i => (
-                            <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: C, animation: 'cp-bounce 1.1s ease-in-out infinite', animationDelay: `${i * 0.18}s`, boxShadow: `0 0 8px ${meta.colorDim}` }} />
+                            <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: C, animationDelay: `${i * 0.15}s` }} />
                           ))}
                         </div>
-                        <span style={{ fontSize: 10, color: '#4b5563', fontFamily: 'monospace', fontWeight: 800, letterSpacing: '0.1em' }}>ANALYZING...</span>
+                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest ml-1.5">ANALYZING</span>
                       </div>
                     </motion.div>
                   )}
@@ -543,13 +482,13 @@ export function AIAssistantPage() {
           {/* Voice indicator */}
           <AnimatePresence>
             {isListening && (
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 22px', borderRadius: 50, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
-                  <Mic size={14} color="#ef4444" />
-                  <span style={{ fontSize: 11, fontWeight: 800, color: '#ef4444', letterSpacing: '0.11em', fontFamily: 'monospace' }}>LISTENING...</span>
-                  <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="flex justify-center py-2">
+                <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-red-50 border border-red-100 text-red-500 shadow-sm">
+                  <Mic size={14} className="animate-pulse" />
+                  <span className="text-[10px] font-black tracking-widest uppercase">LISTENING...</span>
+                  <div className="flex gap-1 items-center h-3 ml-1">
                     {[3, 5, 4, 7, 3].map((h, i) => (
-                      <div key={i} style={{ width: 3, background: '#ef4444', borderRadius: 2, height: h * 3, animation: `cp-bar ${0.4 + i * 0.08}s ease-in-out infinite alternate`, opacity: 0.75 }} />
+                      <div key={i} className="w-0.5 rounded-full bg-red-400 animate-pulse" style={{ height: h * 2, animationDuration: `${0.4 + i * 0.1}s` }} />
                     ))}
                   </div>
                 </div>
@@ -557,7 +496,7 @@ export function AIAssistantPage() {
             )}
           </AnimatePresence>
 
-          <div style={{ height: 12 }} />
+          <div className="h-4" />
         </div>
       </div>
 
@@ -567,29 +506,25 @@ export function AIAssistantPage() {
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
             onClick={scrollToBottom}
-            style={{ position: 'fixed', bottom: 108, right: 26, zIndex: 60, width: 38, height: 38, borderRadius: '50%', background: meta.colorBg, border: `1.5px solid ${meta.colorBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: `0 4px 20px ${meta.colorGlow}` }}
+            className="fixed bottom-[90px] right-6 z-50 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center cursor-pointer shadow-lg hover:bg-gray-50 transition-colors"
           >
-            <ChevronDown size={18} color={C} />
+            <ChevronDown size={18} className="text-gray-500" />
           </motion.button>
         )}
       </AnimatePresence>
 
       {/* ── INPUT BAR ── */}
-      <div style={{ position: 'relative', zIndex: 50, flexShrink: 0, borderTop: `1px solid ${meta.colorBorder}`, background: 'rgba(7,12,10,0.93)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', padding: '14px 20px 18px' }}>
-        <div style={{ maxWidth: 980, margin: '0 auto' }}>
-          {/* Curved input container */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            background: inputFocused ? 'rgba(255,255,255,0.065)' : 'rgba(255,255,255,0.038)',
-            border: `1.5px solid ${inputFocused ? meta.colorBorder : 'rgba(255,255,255,0.08)'}`,
-            borderRadius: 20, padding: '5px 6px 5px 18px',
-            transition: 'all 0.2s',
-            boxShadow: inputFocused ? `0 0 0 3px ${meta.colorBg}, 0 8px 40px rgba(0,0,0,0.4)` : '0 4px 24px rgba(0,0,0,0.3)',
-          }}>
-            {/* Mini robot in input */}
-            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 7, paddingRight: 12, borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-              <RobotSVG color={C} eyeColor={meta.robotEye} size={22} />
-              <span style={{ fontSize: 10, fontWeight: 800, color: C, fontFamily: 'monospace', letterSpacing: '0.07em' }}>CAPITA</span>
+      <div className="relative z-50 shrink-0 border-t border-gray-200 bg-white/90 backdrop-blur-xl px-4 sm:px-6 py-4 pb-safe lg:pb-4">
+        <div className="w-full max-w-4xl mx-auto">
+          {/* Input container */}
+          <div className={`flex items-center gap-2 bg-gray-50 border transition-all rounded-[20px] px-2 py-1.5 shadow-sm ${
+            inputFocused ? 'border-primary shadow-md ring-2 ring-primary/10 bg-white' : 'border-gray-200 hover:border-gray-300'
+          }`} style={inputFocused ? { borderColor: C, boxShadow: `0 0 0 3px ${C}15`, background: '#fff' } : {}}>
+            
+            {/* Input icon */}
+            <div className="shrink-0 flex items-center gap-1.5 pl-3 pr-2 border-r border-gray-200 font-mono text-[9px] font-black uppercase" style={{ color: C }}>
+              <Zap size={16} />
+              <span className="hidden sm:inline">Capita</span>
             </div>
 
             <input
@@ -601,73 +536,50 @@ export function AIAssistantPage() {
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
               placeholder="Ask about revenue, invoices, cash flow, forecasts..."
-              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#e5e7eb', fontSize: 14, fontFamily: "'DM Sans','Manrope',sans-serif", padding: '11px 0', caretColor: C }}
+              className="flex-1 bg-transparent border-none outline-none text-gray-800 text-[15px] py-2 px-1 placeholder-gray-400 font-sans"
             />
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <div className="flex items-center gap-1 shrink-0 pr-1">
               <motion.button
-                whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                 onClick={startListening}
-                style={{ width: 40, height: 40, borderRadius: 12, border: 'none', background: isListening ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)', color: isListening ? '#ef4444' : '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', outline: isListening ? '2px solid rgba(239,68,68,0.35)' : 'none', outlineOffset: 1 }}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+                  isListening ? 'bg-red-50 text-red-500 border border-red-200' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                }`}
               >
-                {isListening ? <MicOff size={17} /> : <Mic size={17} />}
+                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
               </motion.button>
 
               <motion.button
-                whileHover={{ scale: query.trim() && !isTyping ? 1.06 : 1 }}
-                whileTap={{ scale: query.trim() && !isTyping ? 0.94 : 1 }}
+                whileHover={{ scale: query.trim() && !isTyping ? 1.05 : 1 }}
+                whileTap={{ scale: query.trim() && !isTyping ? 0.95 : 1 }}
                 onClick={() => handleSend()}
                 disabled={!query.trim() || isTyping}
-                style={{ width: 40, height: 40, borderRadius: 12, border: 'none', background: query.trim() && !isTyping ? `linear-gradient(135deg, ${C} 0%, ${C}cc 100%)` : 'rgba(255,255,255,0.05)', color: query.trim() && !isTyping ? '#fff' : '#374151', cursor: query.trim() && !isTyping ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', boxShadow: query.trim() && !isTyping ? `0 4px 20px ${meta.colorGlow}` : 'none' }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-sm"
+                style={query.trim() && !isTyping 
+                  ? { background: `linear-gradient(135deg, ${C} 0%, ${C}ee 100%)`, color: '#fff' } 
+                  : { background: '#f3f4f6', color: '#9ca3af', cursor: 'not-allowed' }}
               >
-                <Send size={16} />
+                <Send size={15} />
               </motion.button>
             </div>
           </div>
 
           {/* Footer */}
-          <div style={{ marginTop: 9, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: C, display: 'inline-block', boxShadow: `0 0 7px ${C}`, animation: 'cp-pulse 3s ease-in-out infinite' }} />
-              <span style={{ fontSize: 9, color: '#1f2937', fontFamily: 'monospace', fontWeight: 800, letterSpacing: '0.1em' }}>END-TO-END ENCRYPTED · FINANCE ENGINE v2.1</span>
+          <div className="mt-2.5 flex flex-wrap items-center justify-between px-1 gap-2">
+            <div className="flex items-center gap-1.5">
+               <span className="w-1.5 h-1.5 rounded-full" style={{ background: C, animation: 'pulse 2s infinite' }} />
+               <span className="text-[8px] font-black text-gray-400 tracking-widest uppercase">END-TO-END ENCRYPTED · FINANCE ENGINE v2.1</span>
             </div>
             {isListening && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', display: 'inline-block', animation: 'cp-pulse 1s ease-in-out infinite' }} />
-                <span style={{ fontSize: 9, fontWeight: 800, color: '#ef4444', fontFamily: 'monospace', letterSpacing: '0.1em' }}>REC</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[8px] font-black text-red-500 tracking-widest uppercase">REC</span>
               </div>
             )}
           </div>
         </div>
       </div>
-
-      {/* Keyframes */}
-      <style>{`
-        @keyframes cp-bounce {
-          0%,100% { transform:translateY(0); opacity:0.5; }
-          50%      { transform:translateY(-6px); opacity:1; }
-        }
-        @keyframes cp-pulse {
-          0%,100% { opacity:1; }
-          50%      { opacity:0.35; }
-        }
-        @keyframes cp-bar {
-          from { transform:scaleY(0.35); opacity:0.5; }
-          to   { transform:scaleY(1);    opacity:1; }
-        }
-        @keyframes robot-float {
-          0%,100% { transform:translateY(0); }
-          50%     { transform:translateY(-4px); }
-        }
-        @keyframes eye-glow {
-          0%,100% { opacity:0.7; }
-          50%     { opacity:1; filter:brightness(1.3); }
-        }
-        ::-webkit-scrollbar       { width:3px; }
-        ::-webkit-scrollbar-track { background:transparent; }
-        ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.07); border-radius:2px; }
-        ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.13); }
-      `}</style>
     </div>
   );
 }
