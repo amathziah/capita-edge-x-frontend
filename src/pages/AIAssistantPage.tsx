@@ -91,73 +91,51 @@ function RobotSVG({ color, eyeColor, size = 56, animate = false }: { color: stri
 }
 
 // ─── Hero banner ──────────────────────────────────────────────────────────────
-function HeroBanner({ meta, greeting, onCopy, copied, isTyping }: {
-  meta: any; greeting: string;
-  onCopy: () => void; copied: boolean; isTyping: boolean;
-}) {
+function HeroBanner({ greeting, onCopy, copied, isTyping, clearChat }: { greeting: string; onCopy: () => void; copied: boolean; isTyping: boolean; clearChat: () => void }) {
   const C = '#2dd4bf'; // Force teal-400 for theme consistency
   return (
-    <div className="relative rounded-[24px] bg-white/[0.02] border border-white/[0.06] overflow-hidden mb-6 shadow-xl">
-      {/* Top accent stripe */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, transparent, ${C}, transparent)`, opacity: 0.8 }} />
-
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: `linear-gradient(${C} 1px, transparent 1px), linear-gradient(90deg, ${C} 1px, transparent 1px)`,
-        backgroundSize: '32px 32px',
-      }} />
-
-      {/* Light Glow orbs */}
-      <div style={{ position: 'absolute', top: -40, left: -40, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${C}20 0%, transparent 70%)`, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: `radial-gradient(circle, ${C}10 0%, transparent 70%)`, pointerEvents: 'none' }} />
-
-      <div className="relative flex items-center p-4 md:p-5 gap-4 justify-center md:justify-start">
-        {/* Left robot */}
-        <motion.div
-          animate={{ y: [0, -3, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          className="shrink-0"
-        >
-          <div className="w-[56px] h-[56px] rounded-xl flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shadow-sm relative overflow-hidden">
-            <RobotSVG color={C} eyeColor="#fff" size={40} />
+    <div className="relative group bg-white/[0.01] border-b border-white/[0.04] overflow-hidden">
+      <div className="relative flex items-center px-4 py-2.5 gap-3 justify-between">
+        <div className="flex items-center gap-3">
+          {/* Small robot icon */}
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shadow-sm relative overflow-hidden">
+            <RobotSVG color={C} eyeColor="#fff" size={20} />
           </div>
-        </motion.div>
 
-        {/* Center: greeting text */}
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="font-sans font-bold text-lg text-white tracking-tight">
-              Capita AI
-            </span>
-            <span className="text-[9px] font-black tracking-widest px-2 py-0.5 rounded-md border uppercase text-teal-400 bg-teal-500/10 border-teal-500/20">
-              {meta.label}
-            </span>
-            <div className="flex items-center gap-1.5 ml-2">
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse shadow-sm" style={{ background: C }} />
-              <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">ONLINE</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-sans font-bold text-sm text-white tracking-tight">Capita AI</span>
+              <span className="text-[7px] font-black tracking-widest px-1 py-0.5 rounded border uppercase text-teal-400 bg-teal-500/10 border-teal-500/20">Active</span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <div className="w-1 h-1 rounded-full bg-teal-500 animate-pulse" />
+              <span className="text-[7px] text-gray-500 font-bold uppercase tracking-widest">SYSTEM ONLINE</span>
             </div>
           </div>
-          <div className="text-gray-300 text-[12px] leading-snug">
-            <ReactMarkdown components={makeMd(C)}>{greeting}</ReactMarkdown>
-          </div>
+        </div>
+
+        <div className="flex-1 max-w-sm px-6 truncate hidden md:block opacity-60 text-gray-300 text-[11px] italic">
+          <ReactMarkdown components={makeMd(C)}>{greeting}</ReactMarkdown>
+        </div>
+
+        <div className="flex items-center gap-2">
           <button
             onClick={onCopy}
             disabled={isTyping}
-            className={`mt-3 flex items-center gap-1.5 text-[10px] font-bold transition-colors uppercase tracking-widest font-mono bg-transparent border-none ${isTyping ? 'opacity-40 cursor-not-allowed text-gray-500' : 'text-gray-500 hover:text-gray-300 cursor-pointer'}`}
+            className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-bold transition-all uppercase tracking-widest ${isTyping ? 'opacity-30 cursor-not-allowed text-gray-500 border-white/5' : 'text-gray-400 hover:text-white border-white/10 hover:border-white/20'}`}
           >
-            {copied ? <><Check size={11} color={C} /><span style={{ color: C }}>Copied</span></> : <><Copy size={11} />Copy</>}
+            {copied ? <Check size={10} color={C} /> : <Copy size={10} />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+          
+          <button
+            onClick={clearChat}
+            disabled={isTyping}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-colors ${isTyping ? 'opacity-40 cursor-not-allowed text-gray-500 border-gray-500/20 bg-gray-500/10' : 'hover:bg-white/[0.04] text-teal-400 border-teal-500/20 bg-teal-500/10'}`}
+          >
+            <RotateCcw size={10} /> RESET
           </button>
         </div>
-      </div>
-
-      {/* Bottom bar: status */}
-      <div className="border-t border-white/[0.06] px-6 py-2.5 flex flex-wrap items-center gap-4 bg-black/20">
-        {['SECURE CHANNEL', 'ENCRYPTED', 'FINANCE ENGINE v2.1'].map((s, i) => (
-          <span key={i} className="text-[9px] font-bold text-gray-500 font-mono tracking-widest flex items-center gap-1.5">
-            {i === 0 && <span className="w-1.5 h-1.5 rounded-full shadow-sm" style={{ background: C }} />}
-            {s}
-          </span>
-        ))}
       </div>
     </div>
   );
@@ -420,12 +398,10 @@ export function AIAssistantPage() {
     max-w-[1400px]
     mx-auto
 
-    h-full
+    h-[calc(100vh-160px)]
     overflow-hidden
 
     shadow-2xl
-
-    px-4 sm:px-6 lg:px-8
 
     rounded-xl sm:rounded-2xl lg:rounded-3xl
   "
@@ -435,33 +411,10 @@ export function AIAssistantPage() {
         <div className="absolute -bottom-1/4 -left-[12%] w-[600px] h-[600px] rounded-full blur-[100px]" style={{ background: `radial-gradient(circle, ${C} 0%, transparent 60%)` }} />
       </div>
 
-      {/* ── HEADER ── */}
-      <header className="relative z-50 shrink-0 border-b border-white/[0.06] bg-[#0c0f1a]/80 backdrop-blur-xl">
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 h-[60px] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shadow-sm relative overflow-hidden">
-              <RobotSVG color={C} eyeColor="#fff" size={24} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-sans font-bold text-base text-white tracking-tight">Capita AI</span>
-                <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md border text-teal-400 bg-teal-500/10 border-teal-500/20">{meta.label}</span>
-              </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse shadow-sm" style={{ background: C }} />
-                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">ONLINE</span>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={clearChat}
-            disabled={isTyping}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-colors ${isTyping ? 'opacity-40 cursor-not-allowed text-gray-500 border-gray-500/20 bg-gray-500/10' : 'hover:bg-white/[0.04] text-teal-400 border-teal-500/20 bg-teal-500/10'}`}
-          >
-            <RotateCcw size={12} /> RESET
-          </button>
-        </div>
-      </header>
+      {/* Header / Hero */}
+      <div className="relative z-20 shrink-0">
+        <HeroBanner greeting={getGreeting()} onCopy={copyGreeting} copied={greetingCopied} isTyping={isTyping} clearChat={clearChat} />
+      </div>
 
       {/* ── MESSAGES SCROLL ── */}
       <div
@@ -472,11 +425,6 @@ export function AIAssistantPage() {
       >
 
         <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24">
-
-          {/* Hero banner with robots */}
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-            <HeroBanner meta={meta} greeting={getGreeting()} onCopy={copyGreeting} copied={greetingCopied} isTyping={isTyping} />
-          </motion.div>
 
           {/* Quick actions */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1, ease: [0.22, 1, 0.36, 1] }} className="mb-8">
