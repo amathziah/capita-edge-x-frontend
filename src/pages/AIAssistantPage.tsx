@@ -91,9 +91,9 @@ function RobotSVG({ color, eyeColor, size = 56, animate = false }: { color: stri
 }
 
 // ─── Hero banner ──────────────────────────────────────────────────────────────
-function HeroBanner({ meta, greeting, onCopy, copied }: {
+function HeroBanner({ meta, greeting, onCopy, copied, isTyping }: {
   meta: any; greeting: string;
-  onCopy: () => void; copied: boolean;
+  onCopy: () => void; copied: boolean; isTyping: boolean;
 }) {
   const C = '#2dd4bf'; // Force teal-400 for theme consistency
   return (
@@ -111,22 +111,22 @@ function HeroBanner({ meta, greeting, onCopy, copied }: {
       <div style={{ position: 'absolute', top: -40, left: -40, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${C}20 0%, transparent 70%)`, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: -30, right: -30, width: 160, height: 160, borderRadius: '50%', background: `radial-gradient(circle, ${C}10 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
-      <div className="relative flex items-center p-6 md:p-8 gap-6 justify-center md:justify-start">
+      <div className="relative flex items-center p-4 md:p-5 gap-4 justify-center md:justify-start">
         {/* Left robot */}
         <motion.div
-          animate={{ y: [0, -4, 0] }}
+          animate={{ y: [0, -3, 0] }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           className="shrink-0"
         >
-          <div className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shadow-sm relative overflow-hidden">
-            <RobotSVG color={C} eyeColor="#fff" size={52} />
+          <div className="w-[56px] h-[56px] rounded-xl flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shadow-sm relative overflow-hidden">
+            <RobotSVG color={C} eyeColor="#fff" size={40} />
           </div>
         </motion.div>
 
         {/* Center: greeting text */}
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="font-sans font-bold text-xl text-white tracking-tight">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className="font-sans font-bold text-lg text-white tracking-tight">
               Capita AI
             </span>
             <span className="text-[9px] font-black tracking-widest px-2 py-0.5 rounded-md border uppercase text-teal-400 bg-teal-500/10 border-teal-500/20">
@@ -137,12 +137,13 @@ function HeroBanner({ meta, greeting, onCopy, copied }: {
               <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">ONLINE</span>
             </div>
           </div>
-          <div className="text-gray-300 text-[13px] leading-relaxed">
+          <div className="text-gray-300 text-[12px] leading-snug">
             <ReactMarkdown components={makeMd(C)}>{greeting}</ReactMarkdown>
           </div>
           <button
             onClick={onCopy}
-            className="mt-3 flex items-center gap-1.5 text-[10px] font-bold text-gray-500 hover:text-gray-300 transition-colors uppercase tracking-widest font-mono cursor-pointer bg-transparent border-none"
+            disabled={isTyping}
+            className={`mt-3 flex items-center gap-1.5 text-[10px] font-bold transition-colors uppercase tracking-widest font-mono bg-transparent border-none ${isTyping ? 'opacity-40 cursor-not-allowed text-gray-500' : 'text-gray-500 hover:text-gray-300 cursor-pointer'}`}
           >
             {copied ? <><Check size={11} color={C} /><span style={{ color: C }}>Copied</span></> : <><Copy size={11} />Copy</>}
           </button>
@@ -163,26 +164,27 @@ function HeroBanner({ meta, greeting, onCopy, copied }: {
 }
 
 // ─── Quick action card ────────────────────────────────────────────────────────
-function ActionCard({ action, onClick }: { action: any; onClick: () => void }) {
+function ActionCard({ action, onClick, disabled }: { action: any; onClick: () => void; disabled?: boolean }) {
   const C = '#2dd4bf'; // teal-400
   const Icon = typeof action.icon === 'string' ? IconMap[action.icon] || Zap : action.icon;
   return (
     <motion.button
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={!disabled ? { scale: 1.02, y: -2 } : {}}
+      whileTap={!disabled ? { scale: 0.98 } : {}}
       onClick={onClick}
-      className="flex flex-col items-start p-3.5 rounded-2xl cursor-pointer bg-white/[0.02] border border-white/[0.05] transition-all text-left relative overflow-hidden group hover:bg-white/[0.04] hover:border-teal-500/20 w-full"
+      disabled={disabled}
+      className={`flex flex-col items-start p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] transition-all text-left relative overflow-hidden group w-full ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:bg-white/[0.04] hover:border-teal-500/20'}`}
     >
       <div className="absolute inset-0 opacity-0 group-hover:opacity-[0.05] transition-opacity" style={{ background: C }} />
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${C}60, transparent)` }} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="flex items-center justify-between w-full mb-2.5 relative z-10">
+      <div className="flex items-center justify-between w-full mb-2 relative z-10">
         <div className="p-1.5 rounded-lg border bg-teal-500/10 border-teal-500/20 group-hover:bg-teal-500/20 transition-colors">
-          <Icon size={14} className="text-teal-400" />
+          <Icon size={12} className="text-teal-400" />
         </div>
-        <span className="text-[8px] font-black tracking-widest uppercase opacity-60 flex-1 text-right ml-2 truncate text-teal-400">{action.tag}</span>
+        <span className="text-[7px] font-black tracking-widest uppercase opacity-60 flex-1 text-right ml-2 truncate text-teal-400">{action.tag}</span>
       </div>
-      <span className="text-[13px] font-semibold text-gray-200 leading-snug relative z-10">{action.label}</span>
-      <span className="text-[10px] text-gray-500 mt-1.5 transition-colors group-hover:text-teal-400 font-black tracking-wide relative z-10">Ask Capita →</span>
+      <span className="text-[12px] font-semibold text-gray-200 leading-tight relative z-10">{action.label}</span>
+      {!disabled && <span className="text-[9px] text-gray-500 mt-1 transition-colors group-hover:text-teal-400 font-black tracking-wide relative z-10">Ask Capita →</span>}
     </motion.button>
   );
 }
@@ -354,6 +356,7 @@ export function AIAssistantPage() {
   };
 
   const handleSend = async (textOverride?: string) => {
+    if (isTyping) return;
     const text = (textOverride || query).trim();
     if (!text) return;
     const userMsg: Message = { id: Date.now().toString(), sender: 'user', text, timestamp: new Date(), status: 'sent' };
@@ -403,7 +406,7 @@ export function AIAssistantPage() {
   const C = meta.color || '#2dd4bf';
 
   return (
-   <div
+    <div
   className="
     flex flex-col
     bg-[#0c0f1a]
@@ -417,11 +420,8 @@ export function AIAssistantPage() {
     max-w-[1400px]
     mx-auto
 
-    min-h-screen
-    h-[100dvh]
-
-    overflow-y-auto
-    overflow-x-hidden
+    h-full
+    overflow-hidden
 
     shadow-2xl
 
@@ -455,7 +455,8 @@ export function AIAssistantPage() {
           </div>
           <button
             onClick={clearChat}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-colors hover:bg-white/[0.04] text-teal-400 border-teal-500/20 bg-teal-500/10"
+            disabled={isTyping}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-colors ${isTyping ? 'opacity-40 cursor-not-allowed text-gray-500 border-gray-500/20 bg-gray-500/10' : 'hover:bg-white/[0.04] text-teal-400 border-teal-500/20 bg-teal-500/10'}`}
           >
             <RotateCcw size={12} /> RESET
           </button>
@@ -474,7 +475,7 @@ export function AIAssistantPage() {
 
           {/* Hero banner with robots */}
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-            <HeroBanner meta={meta} greeting={getGreeting()} onCopy={copyGreeting} copied={greetingCopied} />
+            <HeroBanner meta={meta} greeting={getGreeting()} onCopy={copyGreeting} copied={greetingCopied} isTyping={isTyping} />
           </motion.div>
 
           {/* Quick actions */}
@@ -487,7 +488,7 @@ export function AIAssistantPage() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
                 {actions.map((action: any, i: number) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.05, duration: 0.3 }}>
-                    <ActionCard action={action} onClick={() => handleSend(action.query)} />
+                    <ActionCard action={action} onClick={() => handleSend(action.query)} disabled={isTyping} />
                   </motion.div>
                 ))}
               </div>
@@ -593,9 +594,11 @@ export function AIAssistantPage() {
 
             <div className="flex items-center gap-1 shrink-0 pr-1">
               <motion.button
-                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                whileHover={!isTyping ? { scale: 1.05 } : {}} 
+                whileTap={!isTyping ? { scale: 0.95 } : {}}
                 onClick={startListening}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${isListening ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'text-gray-400 hover:bg-white/[0.06] hover:text-white'
+                disabled={isTyping}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${isListening ? 'bg-red-500/10 text-red-400 border border-red-500/20' : isTyping ? 'opacity-40 cursor-not-allowed text-gray-600' : 'text-gray-400 hover:bg-white/[0.06] hover:text-white'
                   }`}
               >
                 {isListening ? <MicOff size={16} /> : <Mic size={16} />}
