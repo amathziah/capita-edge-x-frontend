@@ -91,6 +91,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const wrappedPromise = promise.then(data => {
                     lastFetchedRef.current[entity] = Date.now();
                     inFlightRequests.current[entity] = null;
+                    
+                    // Update state immediately upon resolution
+                    setState(prev => ({
+                        ...prev,
+                        [entity]: data || (entity === 'stats' ? { total_customers: 0 } : [])
+                    }));
+                    
                     return data;
                 }).catch(err => {
                     inFlightRequests.current[entity] = null;
@@ -101,17 +108,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 fetchPromises[entity] = wrappedPromise;
             });
 
-            const results = await Promise.all(Object.values(fetchPromises));
-            const entityKeys = Object.keys(fetchPromises);
-            
-            setState(prev => {
-                const newState = { ...prev };
-                entityKeys.forEach((key, index) => {
-                    // @ts-ignore
-                    newState[key] = results[index] || (key === 'stats' ? { total_customers: 0 } : []);
-                });
-                return newState;
-            });
+            // We wait for all to finish only to stop the global loading spinner
+            await Promise.allSettled(Object.values(fetchPromises));
 
         } catch (error) {
             console.error("Error refreshing global data:", error);

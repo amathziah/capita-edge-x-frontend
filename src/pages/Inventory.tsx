@@ -162,7 +162,7 @@ export function Inventory() {
   const lowStockCount = inventory.filter((i) => i.stock > 0 && i.stock < (i.minStock || defaultReorder)).length;
   const outOfStockCount = inventory.filter((i) => i.stock === 0).length;
 
-  if (loading || personaLoading) {
+  if ((loading || personaLoading) && inventory.length === 0) {
     return (
       <div className="p-6 space-y-8 bg-gray-50 min-h-screen animate-pulse">
         {/* Header Skeleton */}

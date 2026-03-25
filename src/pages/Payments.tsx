@@ -255,7 +255,7 @@ export function Payments() {
   };
 
   // ── Loading ────────────────────────────────────────────────────────
-  if (loading) {
+  if (loading && apiPayments.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-gray-50/50">
         <div className="relative mb-8">

@@ -284,7 +284,7 @@ export function Invoices() {
     }
   };
 
-  if (loading) {
+  if (loading && invoices.length === 0) {
     return (
       <div className="p-4 lg:p-8 min-h-screen bg-transparent space-y-6">
         {/* Header Skeleton */}

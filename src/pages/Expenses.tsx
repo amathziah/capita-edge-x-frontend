@@ -180,7 +180,7 @@ export function Expenses() {
     return date.toLocaleDateString();
   };
 
-  if (loading) {
+  if (loading && expenses.length === 0) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-gray-50/50">
         <div className="relative mb-8">
