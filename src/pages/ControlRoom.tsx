@@ -748,7 +748,7 @@ export const ControlRoom = () => {
                                         )}
                                     </h2>
 
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                         {isSolopreneur && solopreneurMetrics && solopreneurMetrics.whoOwesMe.length > 0 ? (
                                             solopreneurMetrics.whoOwesMe.map((inv) => {
                                                 const dueDate = new Date(inv.dueDate);
