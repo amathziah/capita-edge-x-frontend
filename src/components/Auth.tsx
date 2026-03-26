@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, Github, CheckCircle, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
@@ -303,10 +303,10 @@ export default function AuthComponent() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="flex flex-col gap-3">
                                 <button
                                     onClick={() => handleOAuthLogin('google')}
-                                    className="flex items-center justify-center gap-2 py-3 px-4 bg-white border border-slate-100 rounded-2xl text-[11px] font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all shadow-sm uppercase tracking-tight"
+                                    className="flex items-center justify-center gap-2 py-3.5 px-4 bg-white border border-slate-100 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all shadow-sm uppercase tracking-tight w-full"
                                 >
                                     <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
                                         <path
@@ -327,13 +327,6 @@ export default function AuthComponent() {
                                         />
                                     </svg>
                                     Continue with Google
-                                </button>
-                                <button
-                                    onClick={() => handleOAuthLogin('github')}
-                                    className="flex items-center justify-center gap-2 py-3 px-4 bg-white border border-slate-100 rounded-2xl text-[11px] font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all shadow-sm uppercase tracking-tight"
-                                >
-                                    <Github className="w-5 h-5 text-slate-800 flex-shrink-0" />
-                                    Continue with Github
                                 </button>
                             </div>
                         </>
