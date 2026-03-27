@@ -384,32 +384,62 @@ export function AIAssistantPage() {
   const C = meta.color || '#2dd4bf';
 
   return (
-    <div
-  className="
-    flex flex-col
-    bg-[#0c0f1a]
-    relative
-    font-sans
-    text-gray-300
+    <div className="flex flex-col w-full max-w-[1400px] mx-auto h-full px-4 pb-4 pt-4 lg:pt-8 overflow-hidden">
+      {/* Header Message */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-6 text-center shrink-0"
+      >
+        <h1 className="text-3xl lg:text-4xl font-display font-black text-slate-900 tracking-tight mb-2">
+          Capita <span className="text-teal-500">Intelligent</span> Assistant
+        </h1>
+        <p className="text-slate-500 font-medium max-w-2xl mx-auto text-base lg:text-lg leading-relaxed">
+          Ask questions about your finances, analyze trends, or automate business workflows in real-time.
+        </p>
+      </motion.div>
 
-    border border-white/[0.06]
+      {/* Main AI Container */}
+      <div
+        className="
+          flex flex-col
+          bg-[#0c0f1a]
+          relative
+          font-sans
+          text-gray-300
 
-    w-full
-    max-w-[1400px]
-    mx-auto
+          border border-white/[0.08]
 
-    h-[calc(100vh-160px)]
-    overflow-hidden
+          w-full
+          flex-1
+          min-h-0
+          overflow-hidden
 
-    shadow-2xl
+          shadow-[0_0_50px_-12px_rgba(45,212,191,0.25)]
 
-    rounded-xl sm:rounded-2xl lg:rounded-3xl
-  "
->
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden mix-blend-screen opacity-[0.15]">
-        <div className="absolute -top-1/4 -right-1/4 w-[700px] h-[700px] rounded-full blur-[100px]" style={{ background: `radial-gradient(circle, ${C} 0%, transparent 60%)` }} />
-        <div className="absolute -bottom-1/4 -left-[12%] w-[600px] h-[600px] rounded-full blur-[100px]" style={{ background: `radial-gradient(circle, ${C} 0%, transparent 60%)` }} />
+          rounded-xl sm:rounded-2xl lg:rounded-3xl
+          backdrop-blur-sm
+          z-10
+        "
+      >
+      {/* Background Breathing Glows */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden mix-blend-screen">
+        <div className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full animate-[breathing-glow_8s_infinite]" style={{ background: `radial-gradient(circle, ${C}33 0%, transparent 70%)` }} />
+        <div className="absolute -bottom-1/4 -left-[12%] w-[700px] h-[700px] rounded-full animate-[breathing-glow_10s_infinite_2s]" style={{ background: `radial-gradient(circle, ${C}22 0%, transparent 70%)` }} />
+        
+        {/* Additional accent glows */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-20" 
+             style={{ background: `radial-gradient(circle at center, ${C}11 0%, transparent 60%)` }} />
       </div>
+
+      {/* Scanline Effect */}
+      <div className="pointer-events-none absolute inset-0 z-10 opacity-[0.03] overflow-hidden">
+        <div className="absolute inset-0 w-full h-[100%] bg-gradient-to-b from-transparent via-white to-transparent animate-[scanline-anim_10s_linear_infinite]" style={{ height: '2px' }} />
+      </div>
+
+      {/* Hero Header Glow */}
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-teal-500/10 to-transparent pointer-events-none z-10" />
 
       {/* Header / Hero */}
       <div className="relative z-20 shrink-0">
@@ -583,5 +613,6 @@ export function AIAssistantPage() {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

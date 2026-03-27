@@ -66,3 +66,23 @@
 .backface-hidden { backface-visibility: hidden; }
 .transform-style-3d { transform-style: preserve-3d; }
 .perspective-1000 { perspective: 1000px; }
+
+@keyframes pulse-teal {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+@keyframes shimmer-slow {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes scanline-anim {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes breathing-glow {
+  0%, 100% { opacity: 0.15; filter: blur(80px); }
+  50% { opacity: 0.25; filter: blur(100px); }
+}
