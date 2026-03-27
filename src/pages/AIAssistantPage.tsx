@@ -22,7 +22,7 @@ const IconMap: Record<string, any> = {
   RotateCcw: LucideIcons.RotateCcw,
 };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 interface Message {
   id: string;
   sender: 'user' | 'bot';
@@ -32,218 +32,243 @@ interface Message {
   status?: 'sending' | 'sent' | 'error';
 }
 
-
+const TEAL = '#2dd4bf';
 const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-// ─── Markdown components ──────────────────────────────────────────────────────
-const makeMd = (color: string): Components => ({
-  p: ({ children }) => <p style={{ margin: '0 0 6px', lineHeight: 1.72 }}>{children}</p>,
+// ─── Markdown renderers ────────────────────────────────────────────────────────
+const botMd: Components = {
+  p: ({ children }) => <p style={{ margin: '0 0 6px', lineHeight: 1.72, color: '#d1d5db' }}>{children}</p>,
   ul: ({ children }) => <ul style={{ paddingLeft: 18, margin: '6px 0' }}>{children}</ul>,
   ol: ({ children }) => <ol style={{ paddingLeft: 18, margin: '6px 0' }}>{children}</ol>,
   li: ({ children }) => <li style={{ marginBottom: 3, color: '#9ca3af' }}>{children}</li>,
-  strong: ({ children }) => <strong style={{ color, fontWeight: 700 }}>{children}</strong>,
+  strong: ({ children }) => <strong style={{ color: TEAL, fontWeight: 700 }}>{children}</strong>,
   em: ({ children }) => <em style={{ color: '#d1d5db', fontStyle: 'italic' }}>{children}</em>,
-  a: ({ href, children }) => <a href={href} style={{ color, textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer">{children}</a>,
-  code: ({ className, children }) => /language-/.test(className || '') ? (
-    <pre style={{ background: 'rgba(0,0,0,0.45)', borderRadius: 8, padding: '10px 14px', overflowX: 'auto', margin: '8px 0', border: '1px solid rgba(255,255,255,0.07)' }}>
-      <code style={{ fontFamily: 'monospace', fontSize: 12, color: '#a3e635' }}>{children}</code>
-    </pre>
-  ) : (
-    <code style={{ background: 'rgba(0,0,0,0.35)', padding: '1px 6px', borderRadius: 4, fontFamily: 'monospace', fontSize: 12, color }}>{children}</code>
+  a: ({ href, children }) => (
+    <a href={href} style={{ color: TEAL, textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
   ),
-});
+  code: ({ className, children }) =>
+    /language-/.test(className || '') ? (
+      <pre style={{ background: 'rgba(0,0,0,0.45)', borderRadius: 8, padding: '10px 14px', overflowX: 'auto', margin: '8px 0', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <code style={{ fontFamily: 'monospace', fontSize: 12, color: '#a3e635' }}>{children}</code>
+      </pre>
+    ) : (
+      <code style={{ background: 'rgba(0,0,0,0.35)', padding: '1px 6px', borderRadius: 4, fontFamily: 'monospace', fontSize: 12, color: TEAL }}>
+        {children}
+      </code>
+    ),
+};
+
 const userMd: Components = {
   p: ({ children }) => <p style={{ margin: '0 0 4px', lineHeight: 1.65 }}>{children}</p>,
   strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
 };
 
-// ─── Robot SVG ────────────────────────────────────────────────────────────────
-function RobotSVG({ color, eyeColor, size = 56, animate = false }: { color: string; eyeColor: string; size?: number; animate?: boolean }) {
+// ─── Robot SVG ─────────────────────────────────────────────────────────────────
+function RobotSVG({ size = 56, animate = false }: { size?: number; animate?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg"
+    <svg width={size} height={size} viewBox="0 0 56 56" fill="none"
       style={animate ? { animation: 'robot-float 3s ease-in-out infinite' } : {}}>
-      {/* Antenna */}
-      <line x1="28" y1="2" x2="28" y2="10" stroke={color} strokeWidth="2" strokeLinecap="round" />
-      <circle cx="28" cy="2" r="2.5" fill={color} />
-      {/* Head */}
-      <rect x="10" y="10" width="36" height="28" rx="8" fill="rgba(255,255,255,0.06)" stroke={color} strokeWidth="1.5" />
-      {/* Eyes */}
-      <circle cx="21" cy="24" r="5" fill="rgba(0,0,0,0.4)" stroke={color} strokeWidth="1" />
-      <circle cx="35" cy="24" r="5" fill="rgba(0,0,0,0.4)" stroke={color} strokeWidth="1" />
-      {/* Pupils (animated glow) */}
-      <circle cx="21" cy="24" r="2.5" fill={eyeColor} style={animate ? { animation: 'eye-glow 2s ease-in-out infinite' } : {}} />
-      <circle cx="35" cy="24" r="2.5" fill={eyeColor} style={animate ? { animation: 'eye-glow 2s ease-in-out infinite 0.3s' } : {}} />
-      {/* Mouth */}
-      <rect x="20" y="33" width="16" height="3" rx="1.5" fill={color} opacity="0.7" />
-      {/* Neck */}
-      <rect x="24" y="38" width="8" height="4" rx="2" fill={color} opacity="0.5" />
-      {/* Body */}
-      <rect x="8" y="42" width="40" height="12" rx="6" fill="rgba(255,255,255,0.05)" stroke={color} strokeWidth="1.5" />
-      {/* Body dots */}
-      <circle cx="20" cy="48" r="2" fill={color} opacity="0.6" />
-      <circle cx="28" cy="48" r="2" fill={color} opacity="0.8" />
-      <circle cx="36" cy="48" r="2" fill={color} opacity="0.6" />
-      {/* Ear ports */}
-      <rect x="5" y="18" width="5" height="8" rx="2" fill={color} opacity="0.4" />
-      <rect x="46" y="18" width="5" height="8" rx="2" fill={color} opacity="0.4" />
+      <line x1="28" y1="2" x2="28" y2="10" stroke={TEAL} strokeWidth="2" strokeLinecap="round" />
+      <circle cx="28" cy="2" r="2.5" fill={TEAL} />
+      <rect x="10" y="10" width="36" height="28" rx="8" fill="rgba(255,255,255,0.06)" stroke={TEAL} strokeWidth="1.5" />
+      <circle cx="21" cy="24" r="5" fill="rgba(0,0,0,0.4)" stroke={TEAL} strokeWidth="1" />
+      <circle cx="35" cy="24" r="5" fill="rgba(0,0,0,0.4)" stroke={TEAL} strokeWidth="1" />
+      <circle cx="21" cy="24" r="2.5" fill="#fff"
+        style={animate ? { animation: 'eye-glow 2s ease-in-out infinite' } : {}} />
+      <circle cx="35" cy="24" r="2.5" fill="#fff"
+        style={animate ? { animation: 'eye-glow 2s ease-in-out infinite 0.3s' } : {}} />
+      <rect x="20" y="33" width="16" height="3" rx="1.5" fill={TEAL} opacity="0.7" />
+      <rect x="24" y="38" width="8" height="4" rx="2" fill={TEAL} opacity="0.5" />
+      <rect x="8" y="42" width="40" height="12" rx="6" fill="rgba(255,255,255,0.05)" stroke={TEAL} strokeWidth="1.5" />
+      <circle cx="20" cy="48" r="2" fill={TEAL} opacity="0.6" />
+      <circle cx="28" cy="48" r="2" fill={TEAL} opacity="0.8" />
+      <circle cx="36" cy="48" r="2" fill={TEAL} opacity="0.6" />
+      <rect x="5" y="18" width="5" height="8" rx="2" fill={TEAL} opacity="0.4" />
+      <rect x="46" y="18" width="5" height="8" rx="2" fill={TEAL} opacity="0.4" />
     </svg>
   );
 }
 
-// ─── Hero banner ──────────────────────────────────────────────────────────────
-function HeroBanner({ greeting, onCopy, copied, isTyping, clearChat }: { greeting: string; onCopy: () => void; copied: boolean; isTyping: boolean; clearChat: () => void }) {
-  const C = '#2dd4bf'; // Force teal-400 for theme consistency
-  return (
-    <div className="relative group bg-white/[0.01] border-b border-white/[0.04] overflow-hidden">
-      <div className="relative flex items-center px-4 py-2.5 gap-3 justify-between">
-        <div className="flex items-center gap-3">
-          {/* Small robot icon */}
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shadow-sm relative overflow-hidden">
-            <RobotSVG color={C} eyeColor="#fff" size={20} />
-          </div>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-sans font-bold text-sm text-white tracking-tight">Capita AI</span>
-              <span className="text-[7px] font-black tracking-widest px-1 py-0.5 rounded border uppercase text-teal-400 bg-teal-500/10 border-teal-500/20">Active</span>
-            </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <div className="w-1 h-1 rounded-full bg-teal-500 animate-pulse" />
-              <span className="text-[7px] text-gray-500 font-bold uppercase tracking-widest">SYSTEM ONLINE</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 max-w-sm px-6 truncate hidden md:block opacity-60 text-gray-300 text-[11px] italic">
-          <ReactMarkdown components={makeMd(C)}>{greeting}</ReactMarkdown>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onCopy}
-            disabled={isTyping}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-bold transition-all uppercase tracking-widest ${isTyping ? 'opacity-30 cursor-not-allowed text-gray-500 border-white/5' : 'text-gray-400 hover:text-white border-white/10 hover:border-white/20'}`}
-          >
-            {copied ? <Check size={10} color={C} /> : <Copy size={10} />}
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-          
-          <button
-            onClick={clearChat}
-            disabled={isTyping}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-colors ${isTyping ? 'opacity-40 cursor-not-allowed text-gray-500 border-gray-500/20 bg-gray-500/10' : 'hover:bg-white/[0.04] text-teal-400 border-teal-500/20 bg-teal-500/10'}`}
-          >
-            <RotateCcw size={10} /> RESET
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Quick action card ────────────────────────────────────────────────────────
-function ActionCard({ action, onClick, disabled }: { action: any; onClick: () => void; disabled?: boolean }) {
-  const C = '#2dd4bf'; // teal-400
+// ─── Sidebar action card ───────────────────────────────────────────────────────
+function SidebarActionCard({
+  action,
+  onClick,
+  disabled,
+}: {
+  action: any;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   const Icon = typeof action.icon === 'string' ? IconMap[action.icon] || Zap : action.icon;
+
   return (
     <motion.button
-      whileHover={!disabled ? { scale: 1.02, y: -2 } : {}}
-      whileTap={!disabled ? { scale: 0.98 } : {}}
+      whileHover={!disabled ? { x: 2 } : {}}
+      whileTap={!disabled ? { scale: 0.97 } : {}}
       onClick={onClick}
       disabled={disabled}
-      className={`flex flex-col items-start p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] transition-all text-left relative overflow-hidden group w-full ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:bg-white/[0.04] hover:border-teal-500/20'}`}
+      className={`
+        w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left
+        border transition-all relative overflow-hidden group
+        ${disabled
+          ? 'opacity-40 cursor-not-allowed bg-white/[0.01] border-white/[0.04]'
+          : 'bg-white/[0.02] border-white/[0.06] hover:bg-teal-500/[0.06] hover:border-teal-500/25 cursor-pointer'
+        }
+      `}
     >
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-[0.05] transition-opacity" style={{ background: C }} />
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${C}60, transparent)` }} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="flex items-center justify-between w-full mb-2 relative z-10">
-        <div className="p-1.5 rounded-lg border bg-teal-500/10 border-teal-500/20 group-hover:bg-teal-500/20 transition-colors">
-          <Icon size={12} className="text-teal-400" />
-        </div>
-        <span className="text-[7px] font-black tracking-widest uppercase opacity-60 flex-1 text-right ml-2 truncate text-teal-400">{action.tag}</span>
+      {/* Left accent bar on hover */}
+      {!disabled && (
+        <div
+          className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r bg-teal-400 opacity-0 group-hover:opacity-100 transition-opacity"
+        />
+      )}
+
+      <div className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/15 group-hover:bg-teal-500/20 transition-colors shrink-0">
+        <Icon size={11} className="text-teal-400" />
       </div>
-      <span className="text-[12px] font-semibold text-gray-200 leading-tight relative z-10">{action.label}</span>
-      {!disabled && <span className="text-[9px] text-gray-500 mt-1 transition-colors group-hover:text-teal-400 font-black tracking-wide relative z-10">Ask Capita →</span>}
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-1 mb-0.5">
+          <span className="text-[11px] font-semibold text-gray-200 truncate leading-tight">{action.label}</span>
+          <span className="text-[7px] font-black tracking-widest uppercase text-teal-500/60 shrink-0">{action.tag}</span>
+        </div>
+        {!disabled && (
+          <span className="text-[9px] text-gray-600 group-hover:text-teal-500/70 transition-colors font-medium">
+            Ask Capita →
+          </span>
+        )}
+      </div>
     </motion.button>
   );
 }
 
-// ─── Chat bubble ──────────────────────────────────────────────────────────────
-function ChatBubble({ msg, copiedId, onCopy }: {
+// ─── Chat bubble ───────────────────────────────────────────────────────────────
+function ChatBubble({
+  msg,
+  copiedId,
+  onCopy,
+}: {
   msg: Message;
-  copiedId: string | null; onCopy: (text: string, id: string) => void;
+  copiedId: string | null;
+  onCopy: (text: string, id: string) => void;
 }) {
-  const C = '#2dd4bf'; // teal-400
   const isBot = msg.sender === 'bot';
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className={`flex items-end gap-3 w-full ${isBot ? 'flex-row' : 'flex-row-reverse'}`}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      className={`flex items-end gap-2.5 w-full ${isBot ? 'flex-row' : 'flex-row-reverse'}`}
     >
       {/* Avatar */}
       {isBot ? (
-        <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shadow-sm relative overflow-hidden">
-          <RobotSVG color={C} eyeColor="#fff" size={24} />
+        <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center bg-teal-500/10 border border-teal-500/20">
+          <RobotSVG size={20} />
         </div>
       ) : (
-        <div className="w-9 h-9 rounded-xl shrink-0 bg-white/[0.05] border border-white/[0.1] flex items-center justify-center shadow-sm">
-          <span className="text-xs text-gray-400 font-black font-mono">U</span>
+        <div className="w-8 h-8 rounded-xl shrink-0 bg-white/[0.05] border border-white/[0.1] flex items-center justify-center">
+          <span className="text-[10px] text-gray-400 font-black font-mono">U</span>
         </div>
       )}
 
-      <div className="max-w-[85%] md:max-w-[70%] lg:max-w-[560px]">
-        {/* Bubble */}
-        <div className={`relative px-4 py-3 shadow-sm ${isBot ? 'bg-white/[0.03] border border-white/[0.06] rounded-tr-2xl rounded-tl-sm rounded-b-2xl'
-            : 'bg-gradient-to-r from-teal-500/20 to-cyan-500/15 border border-teal-500/20 rounded-tl-2xl rounded-tr-sm rounded-b-2xl'
-          }`}
+      <div className="max-w-[80%]">
+        <div
+          className={`relative px-4 py-2.5 text-sm ${isBot
+            ? 'bg-white/[0.04] border border-white/[0.07] rounded-tr-2xl rounded-tl-sm rounded-b-2xl'
+            : 'border border-teal-500/20 rounded-tl-2xl rounded-tr-sm rounded-b-2xl'
+            }`}
+          style={!isBot ? { background: 'linear-gradient(135deg, rgba(45,212,191,0.15), rgba(6,182,212,0.1))' } : {}}
         >
-          {isBot && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, rgba(45,212,191,0.2), transparent)' }} />}
-
-          <div className={`text-[13px] leading-relaxed ${isBot ? 'text-gray-300' : 'text-gray-200'}`}>
-            <ReactMarkdown components={isBot ? makeMd(C) : userMd}>{msg.text}</ReactMarkdown>
+          {isBot && (
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+              background: 'linear-gradient(90deg, rgba(45,212,191,0.25), transparent)',
+            }} />
+          )}
+          <div className={isBot ? 'text-gray-300' : 'text-gray-200'}>
+            <ReactMarkdown components={isBot ? botMd : userMd}>{msg.text}</ReactMarkdown>
           </div>
-
           {msg.data?.type === 'stat' && (
             <motion.div
-              initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.15 }}
-              className="mt-3 inline-block px-4 py-2 rounded-lg bg-teal-500/10 border border-teal-500/20 shadow-sm font-mono text-xl font-black text-teal-400"
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.15 }}
+              className="mt-2 inline-block px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 font-mono text-lg font-black text-teal-400"
             >
               ₹{msg.data.value.toLocaleString()}
             </motion.div>
           )}
         </div>
 
-        {/* Meta row */}
-        <div className={`mt-1.5 flex items-center gap-2 flex-wrap ${isBot ? 'justify-start pl-1' : 'justify-end pr-1'}`}>
+        <div className={`mt-1 flex items-center gap-2 ${isBot ? 'pl-1' : 'pr-1 flex-row-reverse'}`}>
           {isBot && (
-            <button onClick={() => onCopy(msg.text, msg.id)} className="flex items-center gap-1 bg-transparent border-none cursor-pointer text-[9px] font-bold text-gray-500 hover:text-gray-400 transition-colors uppercase font-mono tracking-widest">
-              {copiedId === msg.id ? <><Check size={10} color={C} /><span className="text-teal-400">COPIED</span></> : <><Copy size={10} />COPY</>}
+            <button
+              onClick={() => onCopy(msg.text, msg.id)}
+              className="flex items-center gap-1 text-[8px] font-bold text-gray-600 hover:text-gray-400 transition-colors uppercase tracking-widest"
+            >
+              {copiedId === msg.id
+                ? <><Check size={9} color={TEAL} /><span style={{ color: TEAL }}>Copied</span></>
+                : <><Copy size={9} />Copy</>}
             </button>
           )}
-          <span className="text-[9px] text-gray-500 font-bold font-mono tracking-widest uppercase">{formatTime(msg.timestamp)}</span>
+          <span className="text-[8px] text-gray-600 font-mono">{formatTime(msg.timestamp)}</span>
         </div>
       </div>
     </motion.div>
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Empty state ───────────────────────────────────────────────────────────────
+function EmptyState({ greeting }: { greeting: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full py-16 px-8 text-center select-none">
+      <div className="relative mb-5">
+        <div
+          className="absolute inset-0 rounded-full pointer-events-none"
+          style={{
+            background: `radial-gradient(circle, ${TEAL}44 0%, transparent 70%)`,
+            transform: 'scale(2.2)',
+            filter: 'blur(16px)',
+          }}
+        />
+        <motion.div
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          className="relative w-16 h-16 rounded-2xl flex items-center justify-center bg-teal-500/10 border border-teal-500/20"
+        >
+          <RobotSVG size={44} />
+        </motion.div>
+      </div>
+
+      <h3 className="text-white font-bold text-[15px] mb-2 tracking-tight">Hey, I'm Capita</h3>
+      <p className="text-gray-500 text-[12px] leading-relaxed max-w-xs">
+        {greeting || 'Your AI finance assistant. Ask me anything about revenue, invoices, cash flow, or taxes.'}
+      </p>
+
+      <div className="mt-5 flex items-center gap-2">
+        <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
+        <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Ready to help</span>
+        <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" style={{ animationDelay: '0.5s' }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
 export function AIAssistantPage() {
   const { businessType } = usePersona();
   const navigate = useNavigate();
   const STORAGE_KEY = `capita_ai_config_${businessType || 'default'}`;
 
-  // 1. Initialize from localStorage or fallback
-  const [dynamicConfig, setDynamicConfig] = useState<{ meta: any, actions: any[] }>(() => {
+  const [dynamicConfig, setDynamicConfig] = useState<{ meta: any; actions: any[] }>(() => {
     try {
       const cached = localStorage.getItem(STORAGE_KEY);
       if (cached) return JSON.parse(cached);
     } catch (e) { console.error('Cache read error:', e); }
-    return {
-      meta: { greeting: 'Connecting to Capita AI...', label: 'FINANCE v2.1', color: '#2dd4bf', robotEye: '#fff' },
-      actions: []
-    };
+    return { meta: { greeting: '', label: 'Finance', color: TEAL }, actions: [] };
   });
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -254,56 +279,25 @@ export function AIAssistantPage() {
   const [inputFocused, setInputFocused] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [greetingCopied, setGreetingCopied] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 2. Fetch/Sync config in background
+  // Fetch config
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const persona = businessType as string || undefined;
-        const config = await aiService.getConfig(persona) as any;
-        
-        // Update state and cache
+        const config = await aiService.getConfig(businessType as string | undefined) as any;
         setDynamicConfig(config);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-        
-        // Update messages if the initial greeting was a placeholder
-        setMessages(prev => {
-          if (prev.length === 1 && prev[0].text === 'Connecting to Capita AI...') {
-            return [{
-              id: '1',
-              sender: 'bot',
-              text: config.meta.greeting,
-              timestamp: new Date()
-            }];
-          }
-          return prev;
-        });
       } catch (err) {
         console.error('Failed to fetch AI config:', err);
-      } finally {
-        setIsSyncing(false);
       }
     };
     fetchConfig();
   }, [businessType, STORAGE_KEY]);
 
-  // Initial greeting if no messages
-  useEffect(() => {
-    if (messages.length === 0 && dynamicConfig.meta.greeting) {
-      setMessages([{
-        id: '1',
-        sender: 'bot',
-        text: dynamicConfig.meta.greeting,
-        timestamp: new Date()
-      }]);
-    }
-  }, [dynamicConfig.meta.greeting, messages.length]); 
-  const getGreeting = () => dynamicConfig?.meta.greeting || '';
-
+  // Auto-scroll
   useEffect(() => {
     if (!scrollRef.current) return;
     const el = scrollRef.current;
@@ -319,7 +313,8 @@ export function AIAssistantPage() {
     setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 200);
   }, []);
 
-  const scrollToBottom = () => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  const scrollToBottom = () =>
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
 
   const handleCopy = (text: string, id?: string) => {
     navigator.clipboard.writeText(text);
@@ -328,7 +323,7 @@ export function AIAssistantPage() {
   };
 
   const copyGreeting = () => {
-    navigator.clipboard.writeText(getGreeting());
+    navigator.clipboard.writeText(dynamicConfig.meta.greeting || '');
     setGreetingCopied(true);
     setTimeout(() => setGreetingCopied(false), 2000);
   };
@@ -337,13 +332,19 @@ export function AIAssistantPage() {
     if (isTyping) return;
     const text = (textOverride || query).trim();
     if (!text) return;
+
     const userMsg: Message = { id: Date.now().toString(), sender: 'user', text, timestamp: new Date(), status: 'sent' };
     setMessages(prev => [...prev, userMsg]);
     setQuery('');
     setIsTyping(true);
+
     try {
       const res = await aiService.processQuery(text, undefined, businessType || undefined);
-      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), sender: 'bot', text: res.text, data: res.data, timestamp: new Date() }]);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(), sender: 'bot',
+        text: res.text, data: res.data, timestamp: new Date(),
+      }]);
+
       if (res.action) {
         const { type, data, initialData } = res.action;
         if (type === 'open_invoice_modal' || type === 'EXECUTE_ACTION') {
@@ -361,13 +362,17 @@ export function AIAssistantPage() {
         }
       }
     } catch {
-      setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: '⚠️ Something went wrong. Please try again.', timestamp: new Date(), status: 'error' as const }]);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(), sender: 'bot',
+        text: 'Something went wrong. Please try again.',
+        timestamp: new Date(), status: 'error',
+      }]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  const clearChat = () => setMessages([{ id: Date.now().toString(), sender: 'bot', text: getGreeting(), timestamp: new Date() }]);
+  const clearChat = () => setMessages([]);
 
   const startListening = () => {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -381,238 +386,309 @@ export function AIAssistantPage() {
   };
 
   const { meta, actions } = dynamicConfig;
-  const C = meta.color || '#2dd4bf';
+  const greeting = meta.greeting || '';
 
   return (
-    <div className="flex flex-col w-full max-w-[1400px] mx-auto h-full px-4 pb-4 pt-4 lg:pt-8 overflow-hidden">
-      {/* Header Message */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-6 text-center shrink-0"
-      >
-        <h1 className="text-3xl lg:text-4xl font-display font-black text-slate-900 tracking-tight mb-2">
-          Capita <span className="text-teal-500">Intelligent</span> Assistant
-        </h1>
-        <p className="text-slate-500 font-medium max-w-2xl mx-auto text-base lg:text-lg leading-relaxed">
-          Ask questions about your finances, analyze trends, or automate business workflows in real-time.
-        </p>
-      </motion.div>
+    <div className="flex flex-col w-full max-w-[1400px] mx-auto h-full px-4 pb-4 pt-4 lg:pt-6 overflow-hidden">
 
-      {/* Main AI Container */}
+      {/* ── Outer shell ── */}
       <div
         className="
-          flex flex-col
-          bg-[#0c0f1a]
-          relative
-          font-sans
-          text-gray-300
-
-          border border-white/[0.08]
-
-          w-full
-          flex-1
-          min-h-0
-          overflow-hidden
-
-          shadow-[0_0_50px_-12px_rgba(45,212,191,0.25)]
-
-          rounded-xl sm:rounded-2xl lg:rounded-3xl
-          backdrop-blur-sm
-          z-10
+          flex flex-col flex-1 min-h-0 overflow-hidden relative
+          bg-[#0c0f1a] rounded-2xl lg:rounded-3xl
+          border border-white/[0.07]
+          shadow-[0_0_60px_-15px_rgba(45,212,191,0.18)]
+          font-sans text-gray-300
         "
       >
-      {/* Background Breathing Glows */}
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden mix-blend-screen">
-        <div className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full animate-[breathing-glow_8s_infinite]" style={{ background: `radial-gradient(circle, ${C}33 0%, transparent 70%)` }} />
-        <div className="absolute -bottom-1/4 -left-[12%] w-[700px] h-[700px] rounded-full animate-[breathing-glow_10s_infinite_2s]" style={{ background: `radial-gradient(circle, ${C}22 0%, transparent 70%)` }} />
-        
-        {/* Additional accent glows */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-20" 
-             style={{ background: `radial-gradient(circle at center, ${C}11 0%, transparent 60%)` }} />
-      </div>
-
-      {/* Scanline Effect */}
-      <div className="pointer-events-none absolute inset-0 z-10 opacity-[0.03] overflow-hidden">
-        <div className="absolute inset-0 w-full h-[100%] bg-gradient-to-b from-transparent via-white to-transparent animate-[scanline-anim_10s_linear_infinite]" style={{ height: '2px' }} />
-      </div>
-
-      {/* Hero Header Glow */}
-      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-teal-500/10 to-transparent pointer-events-none z-10" />
-
-      {/* Header / Hero */}
-      <div className="relative z-20 shrink-0">
-        <HeroBanner greeting={getGreeting()} onCopy={copyGreeting} copied={greetingCopied} isTyping={isTyping} clearChat={clearChat} />
-      </div>
-
-      {/* ── MESSAGES SCROLL ── */}
-      <div
-        ref={scrollRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto relative z-10 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent bg-transparent"
-        style={{ minHeight: 0 }}
-      >
-
-        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24">
-
-          {/* Quick actions */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1, ease: [0.22, 1, 0.36, 1] }} className="mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-[9px] font-black text-gray-500 tracking-widest uppercase">QUICK ACTIONS</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-            </div>
-            <div className="bg-white/[0.01] rounded-[22px] border border-white/[0.05] p-2.5 shadow-sm">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-                {actions.map((action: any, i: number) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.05, duration: 0.3 }}>
-                    <ActionCard action={action} onClick={() => handleSend(action.query)} disabled={isTyping} />
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Conversation */}
-          {messages.length > 1 && (
-            <div className="mb-4">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-[9px] font-black text-gray-500 tracking-widest uppercase">CONVERSATION</span>
-                <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-              </div>
-
-              <div className="flex flex-col gap-6 bg-white/[0.01] rounded-[24px] border border-white/[0.05] p-4 sm:p-6 shadow-sm backdrop-blur-md">
-                <AnimatePresence initial={false}>
-                  {messages.slice(1).map(msg => (
-                    <ChatBubble key={msg.id} msg={msg} copiedId={copiedId} onCopy={handleCopy} />
-                  ))}
-                </AnimatePresence>
-
-                {/* Typing indicator */}
-                <AnimatePresence>
-                  {isTyping && (
-                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-end gap-3">
-                      <div className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shadow-sm relative overflow-hidden">
-                        <RobotSVG color={C} eyeColor="#fff" size={24} animate />
-                      </div>
-                      <div className="bg-white/[0.03] border border-white/[0.06] rounded-tr-xl rounded-tl-sm rounded-b-xl px-4 py-3 flex items-center gap-3 shadow-sm">
-                        <div className="flex gap-1.5">
-                          {[0, 1, 2].map(i => (
-                            <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: C, animationDelay: `${i * 0.15}s` }} />
-                          ))}
-                        </div>
-                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest ml-1.5">ANALYZING</span>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
-
-          {/* Voice indicator */}
-          <AnimatePresence>
-            {isListening && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="flex justify-center py-2">
-                <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 shadow-sm">
-                  <Mic size={14} className="animate-pulse" />
-                  <span className="text-[10px] font-black tracking-widest uppercase">LISTENING...</span>
-                  <div className="flex gap-1 items-center h-3 ml-1">
-                    {[3, 5, 4, 7, 3].map((h, i) => (
-                      <div key={i} className="w-0.5 rounded-full bg-red-400 animate-pulse" style={{ height: h * 2, animationDuration: `${0.4 + i * 0.1}s` }} />
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="h-4" />
+        {/* Background glows */}
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+          <div
+            className="absolute -top-1/3 right-0 w-[500px] h-[500px] rounded-full opacity-[0.18]"
+            style={{ background: `radial-gradient(circle, ${TEAL} 0%, transparent 65%)`, filter: 'blur(50px)' }}
+          />
+          <div
+            className="absolute -bottom-1/3 -left-1/4 w-[400px] h-[400px] rounded-full opacity-[0.12]"
+            style={{ background: `radial-gradient(circle, ${TEAL} 0%, transparent 65%)`, filter: 'blur(50px)' }}
+          />
         </div>
-      </div>
 
-      {/* Scroll to bottom */}
-      <AnimatePresence>
-        {showScrollBtn && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-            onClick={scrollToBottom}
-            className="fixed bottom-[90px] right-6 z-50 w-10 h-10 rounded-full bg-[#161a2b] border border-white/[0.08] flex items-center justify-center cursor-pointer shadow-2xl hover:bg-white/[0.08] transition-colors"
-          >
-            <ChevronDown size={18} className="text-gray-400" />
-          </motion.button>
-        )}
-      </AnimatePresence>
-
-      {/* ── INPUT BAR ── */}
-      <div className="relative z-50 shrink-0 border-t border-white/[0.06] bg-[#0c0f1a]/90 backdrop-blur-xl px-4 sm:px-6 py-4 pb-safe lg:pb-4">
-
-        <div className="w-full max-w-4xl mx-auto">
-          {/* Input container */}
-          <div className={`flex items-center gap-2 border transition-all rounded-[20px] px-2 py-1.5 shadow-sm ${inputFocused ? 'border-teal-400 shadow-lg ring-2 ring-teal-500/20 bg-[#161a2b]' : 'border-white/[0.06] hover:border-white/[0.1] bg-white/[0.02]'
-            }`}>
-
-            {/* Input icon */}
-            <div className="shrink-0 flex items-center gap-1.5 pl-3 pr-2 border-r border-white/[0.06] font-mono text-[9px] font-black uppercase text-teal-400">
-              <Zap size={16} />
-              <span className="hidden sm:inline">Capita</span>
+        {/* ── TOP BAR ── */}
+        <div className="relative z-20 shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#090c13]/80 backdrop-blur-sm">
+          {/* Identity */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shrink-0">
+              <RobotSVG size={20} />
             </div>
-
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              placeholder="Ask about revenue, invoices, cash flow, forecasts..."
-              className="flex-1 bg-transparent border-none outline-none text-white text-[15px] py-2 px-1 placeholder-gray-500 font-sans"
-            />
-
-            <div className="flex items-center gap-1 shrink-0 pr-1">
-              <motion.button
-                whileHover={!isTyping ? { scale: 1.05 } : {}} 
-                whileTap={!isTyping ? { scale: 0.95 } : {}}
-                onClick={startListening}
-                disabled={isTyping}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${isListening ? 'bg-red-500/10 text-red-400 border border-red-500/20' : isTyping ? 'opacity-40 cursor-not-allowed text-gray-600' : 'text-gray-400 hover:bg-white/[0.06] hover:text-white'
-                  }`}
-              >
-                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: query.trim() && !isTyping ? 1.05 : 1 }}
-                whileTap={{ scale: query.trim() && !isTyping ? 0.95 : 1 }}
-                onClick={() => handleSend()}
-                disabled={!query.trim() || isTyping}
-                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-sm"
-                style={query.trim() && !isTyping
-                  ? { background: `linear-gradient(135deg, ${C} 0%, ${C}ee 100%)`, color: '#fff' }
-                  : { background: 'rgba(255,255,255,0.03)', color: '#6b7280', cursor: 'not-allowed' }}
-              >
-                <Send size={15} />
-              </motion.button>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-bold text-white tracking-tight">Capita AI</span>
+                <span className="text-[7px] font-black tracking-widest px-1.5 py-0.5 rounded border uppercase text-teal-400 bg-teal-500/10 border-teal-500/20">
+                  {meta.label || 'Finance'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
+                <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Online</span>
+              </div>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="mt-2.5 flex flex-wrap items-center justify-between px-1 gap-2">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: C, animation: 'pulse 2s infinite' }} />
-              <span className="text-[8px] font-black text-gray-500 tracking-widest uppercase">END-TO-END ENCRYPTED · FINANCE ENGINE v2.1</span>
+          {/* Greeting preview — desktop only, centre */}
+          {greeting && (
+            <p className="hidden lg:block flex-1 max-w-md mx-8 truncate text-[11px] text-gray-500 italic">
+              {greeting}
+            </p>
+          )}
+
+          {/* Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={copyGreeting}
+              disabled={isTyping}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-widest transition-all
+                ${isTyping ? 'opacity-30 cursor-not-allowed text-gray-600 border-white/5' : 'text-gray-400 hover:text-white border-white/10 hover:border-white/20'}`}
+            >
+              {greetingCopied ? <Check size={9} color={TEAL} /> : <Copy size={9} />}
+              {greetingCopied ? 'Copied' : 'Copy'}
+            </button>
+            <button
+              onClick={clearChat}
+              disabled={isTyping}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-colors
+                ${isTyping
+                  ? 'opacity-40 cursor-not-allowed text-gray-600 border-gray-600/20 bg-gray-600/10'
+                  : 'text-teal-400 border-teal-500/20 bg-teal-500/10 hover:bg-teal-500/20'}`}
+            >
+              <RotateCcw size={9} /> Reset
+            </button>
+          </div>
+        </div>
+
+        {/* ── BODY: sidebar + chat ── */}
+        <div className="flex flex-1 min-h-0 relative z-10 overflow-hidden">
+
+          {/* ── LEFT SIDEBAR ── */}
+          <div className="w-48 lg:w-52 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#07090f]/70">
+
+            <div className="px-3 pt-3.5 pb-2.5 border-b border-white/[0.05]">
+              <span className="text-[8px] font-black text-gray-600 tracking-widest uppercase">Quick actions</span>
             </div>
-            {isListening && (
+
+            <div
+              className="flex-1 overflow-y-auto py-2 px-2 space-y-1"
+              style={{ scrollbarWidth: 'none' }}
+            >
+              <AnimatePresence>
+                {actions.length > 0
+                  ? actions.map((action: any, i: number) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.06, duration: 0.22 }}
+                    >
+                      <SidebarActionCard
+                        action={action}
+                        onClick={() => handleSend(action.query)}
+                        disabled={isTyping}
+                      />
+                    </motion.div>
+                  ))
+                  : Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-11 rounded-xl bg-white/[0.02] border border-white/[0.04] animate-pulse" />
+                  ))
+                }
+              </AnimatePresence>
+            </div>
+
+            <div className="px-3 py-2.5 border-t border-white/[0.05]">
               <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[8px] font-black text-red-500 tracking-widest uppercase">REC</span>
+                <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
+                <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Finance engine</span>
               </div>
-            )}
+            </div>
+          </div>
+
+          {/* ── MAIN CHAT AREA ── */}
+          <div className="flex flex-col flex-1 min-w-0 min-h-0 relative">
+
+            {/* Scrollable messages */}
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto"
+              style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+            >
+              {messages.length === 0 ? (
+                <EmptyState greeting={greeting} />
+              ) : (
+                <div className="max-w-3xl mx-auto px-5 py-5 space-y-5">
+                  <AnimatePresence initial={false}>
+                    {messages.map(msg => (
+                      <ChatBubble key={msg.id} msg={msg} copiedId={copiedId} onCopy={handleCopy} />
+                    ))}
+                  </AnimatePresence>
+
+                  {/* Typing indicator */}
+                  <AnimatePresence>
+                    {isTyping && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-end gap-2.5"
+                      >
+                        <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center bg-teal-500/10 border border-teal-500/20">
+                          <RobotSVG size={20} animate />
+                        </div>
+                        <div className="bg-white/[0.04] border border-white/[0.07] rounded-tr-2xl rounded-tl-sm rounded-b-2xl px-4 py-3 flex items-center gap-2.5">
+                          <div className="flex gap-1">
+                            {[0, 1, 2].map(i => (
+                              <div
+                                key={i}
+                                className="w-1.5 h-1.5 rounded-full animate-bounce"
+                                style={{ background: TEAL, animationDelay: `${i * 0.15}s` }}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Analyzing</span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Voice indicator */}
+                  <AnimatePresence>
+                    {isListening && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="flex justify-center"
+                      >
+                        <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
+                          <Mic size={12} className="animate-pulse" />
+                          <span className="text-[9px] font-black tracking-widest uppercase">Listening…</span>
+                          <div className="flex gap-1 items-center h-3">
+                            {[3, 5, 4, 7, 3].map((h, i) => (
+                              <div
+                                key={i}
+                                className="w-0.5 rounded-full bg-red-400 animate-pulse"
+                                style={{ height: h * 2, animationDuration: `${0.4 + i * 0.1}s` }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="h-2" />
+                </div>
+              )}
+            </div>
+
+            {/* Scroll-to-bottom button */}
+            <AnimatePresence>
+              {showScrollBtn && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  onClick={scrollToBottom}
+                  className="absolute bottom-20 right-4 z-50 w-8 h-8 rounded-full bg-[#161a2b] border border-white/[0.1] flex items-center justify-center cursor-pointer shadow-xl hover:bg-white/[0.08] transition-colors"
+                >
+                  <ChevronDown size={15} className="text-gray-400" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+
+            {/* ── INPUT BAR ── */}
+            <div className="shrink-0 border-t border-white/[0.06] bg-[#090c13]/80 backdrop-blur-sm px-4 py-3">
+              <div
+                className={`
+                  flex items-center gap-2 rounded-2xl px-3 py-2 border transition-all
+                  ${inputFocused
+                    ? 'border-teal-400/60 ring-2 ring-teal-500/15 bg-[#141820]'
+                    : 'border-white/[0.07] hover:border-white/[0.12] bg-white/[0.02]'
+                  }
+                `}
+              >
+                {/* Capita label */}
+                <div className="shrink-0 flex items-center gap-1.5 pr-2.5 border-r border-white/[0.07]">
+                  <Zap size={13} className="text-teal-400" />
+                  <span className="hidden sm:inline text-[9px] font-black uppercase text-teal-400 tracking-widest">Capita</span>
+                </div>
+
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+                  }}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  disabled={isTyping}
+                  placeholder="Ask about revenue, invoices, cash flow…"
+                  className="flex-1 bg-transparent border-none outline-none text-sm text-white py-1 px-1 placeholder-gray-600"
+                />
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <motion.button
+                    whileHover={!isTyping ? { scale: 1.08 } : {}}
+                    whileTap={!isTyping ? { scale: 0.92 } : {}}
+                    onClick={startListening}
+                    disabled={isTyping}
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors
+                      ${isListening
+                        ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                        : isTyping
+                          ? 'opacity-30 cursor-not-allowed text-gray-600'
+                          : 'text-gray-500 hover:bg-white/[0.06] hover:text-gray-300'
+                      }`}
+                  >
+                    {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: query.trim() && !isTyping ? 1.08 : 1 }}
+                    whileTap={{ scale: query.trim() && !isTyping ? 0.92 : 1 }}
+                    onClick={() => handleSend()}
+                    disabled={!query.trim() || isTyping}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+                    style={
+                      query.trim() && !isTyping
+                        ? { background: `linear-gradient(135deg, ${TEAL}, #06b6d4)`, color: '#0a0d15' }
+                        : { background: 'rgba(255,255,255,0.04)', color: '#374151', cursor: 'not-allowed' }
+                    }
+                  >
+                    <Send size={13} />
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Footer hint */}
+              <div className="mt-1.5 flex items-center justify-between px-1">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1 h-1 rounded-full bg-teal-500 animate-pulse" />
+                  <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">
+                    Finance engine · Encrypted
+                  </span>
+                </div>
+                {isListening && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-[8px] font-bold text-red-500 uppercase tracking-widest">Rec</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
