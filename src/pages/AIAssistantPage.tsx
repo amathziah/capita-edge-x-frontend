@@ -149,12 +149,17 @@ function ChatBubble({
   msg,
   copiedId,
   onCopy,
+  onConfirmAction,
+  onCancelAction,
 }: {
   msg: Message;
   copiedId: string | null;
   onCopy: (text: string, id: string) => void;
+  onConfirmAction?: () => void;
+  onCancelAction?: () => void;
 }) {
   const isBot = msg.sender === 'bot';
+  const isPendingAction = msg.data?.type === 'action_prompt';
 
   return (
     <motion.div
@@ -200,6 +205,23 @@ function ChatBubble({
             >
               ₹{msg.data.value.toLocaleString()}
             </motion.div>
+          )}
+
+          {isPendingAction && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={onConfirmAction}
+                className="flex-1 py-2 px-4 rounded-lg bg-teal-500 text-[#0c0f1a] font-bold text-xs hover:bg-teal-400 transition-colors"
+              >
+                Go ahead
+              </button>
+              <button
+                onClick={onCancelAction}
+                className="flex-1 py-2 px-4 rounded-lg bg-white/10 text-white font-bold text-xs hover:bg-white/20 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           )}
         </div>
 
@@ -279,6 +301,7 @@ export function AIAssistantPage() {
   const [inputFocused, setInputFocused] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [greetingCopied, setGreetingCopied] = useState(false);
+  const [pendingAction, setPendingAction] = useState<any>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -340,27 +363,23 @@ export function AIAssistantPage() {
 
     try {
       const res = await aiService.processQuery(text, undefined, businessType || undefined);
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(), sender: 'bot',
-        text: res.text, data: res.data, timestamp: new Date(),
-      }]);
+      
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(), 
+        sender: 'bot',
+        text: res.text, 
+        data: res.data, 
+        timestamp: new Date(),
+      };
 
       if (res.action) {
-        const { type, data, initialData } = res.action;
-        if (type === 'open_invoice_modal' || type === 'EXECUTE_ACTION') {
-          const detail = data && type === 'EXECUTE_ACTION'
-            ? { buyer: { name: data.customer, phone: '' }, items: [{ description: data.description || 'Service', quantity: 1, price: data.amount, unit: 'Qty', discount: 0 }] }
-            : (initialData || data);
-          window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail }));
-        } else if (type === 'navigate' && data?.to) {
-          setTimeout(() => {
-            let p = data.to;
-            if (p.startsWith('/') && !p.startsWith('/dashboard') && !['/login', '/setup', '/pricing'].includes(p))
-              p = `/dashboard${p === '/' ? '' : p}`;
-            navigate(p);
-          }, 1200);
-        }
+        // Intercept action and ask for confirmation
+        setPendingAction(res.action);
+        botMsg.data = { ...botMsg.data, type: 'action_prompt' };
       }
+
+      setMessages(prev => [...prev, botMsg]);
+
     } catch {
       setMessages(prev => [...prev, {
         id: Date.now().toString(), sender: 'bot',
@@ -370,6 +389,47 @@ export function AIAssistantPage() {
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const handleConfirmAction = () => {
+    if (!pendingAction) return;
+
+    const { type, data, initialData } = pendingAction;
+    
+    // Execute the action
+    if (type === 'open_invoice_modal' || type === 'EXECUTE_ACTION') {
+      const detail = data && type === 'EXECUTE_ACTION'
+        ? { buyer: { name: data.customer, phone: '' }, items: [{ description: data.description || 'Service', quantity: 1, price: data.amount, unit: 'Qty', discount: 0 }] }
+        : (initialData || data);
+      window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail }));
+    } else if (type === 'navigate' && data?.to) {
+      let p = data.to;
+      if (p.startsWith('/') && !p.startsWith('/dashboard') && !['/login', '/setup', '/pricing'].includes(p))
+        p = `/dashboard${p === '/' ? '' : p}`;
+      navigate(p);
+    }
+
+    // Clear and acknowledge
+    setPendingAction(null);
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      sender: 'bot',
+      text: 'Done! Executing the requested action now.',
+      timestamp: new Date()
+    }]);
+  };
+
+  const handleCancelAction = () => {
+    setPendingAction(null);
+    setMessages(prev => [
+      ...prev.filter(m => m.data?.type !== 'action_prompt'),
+      {
+        id: Date.now().toString(),
+        sender: 'bot',
+        text: 'No problem. I will stay on this page.',
+        timestamp: new Date()
+      }
+    ]);
   };
 
   const clearChat = () => setMessages([]);
@@ -526,7 +586,14 @@ export function AIAssistantPage() {
                 <div className="max-w-3xl mx-auto px-5 py-5 space-y-5">
                   <AnimatePresence initial={false}>
                     {messages.map(msg => (
-                      <ChatBubble key={msg.id} msg={msg} copiedId={copiedId} onCopy={handleCopy} />
+                      <ChatBubble 
+                        key={msg.id} 
+                        msg={msg} 
+                        copiedId={copiedId} 
+                        onCopy={handleCopy} 
+                        onConfirmAction={handleConfirmAction}
+                        onCancelAction={handleCancelAction}
+                      />
                     ))}
                   </AnimatePresence>
 
