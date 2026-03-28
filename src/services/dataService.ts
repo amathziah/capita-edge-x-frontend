@@ -130,13 +130,13 @@ class DataService {
   // AI
   getSafeToSpend = analyticsService.getSafeToSpend;
   generateSettlementOffer = aiService.generateSettlementOffer;
-  getAiInsights = async () => {
-    const cacheKey = 'ai_insights';
+  getAiInsights = async (persona?: string) => {
+    const cacheKey = `ai_insights_${persona || 'general'}`;
     const cached = this.cache[cacheKey];
     if (cached && (Date.now() - cached.timestamp < this.CACHE_TTL)) {
       return cached.data;
     }
-    const data = await aiService.getInsights();
+    const data = await aiService.getInsights(persona);
     this.cache[cacheKey] = { data, timestamp: Date.now() };
     return data;
   };

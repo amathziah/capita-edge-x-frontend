@@ -50,8 +50,8 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
       recurringInvoices: { enabled: false },
       mrrTracking:       { enabled: false },
       skuProfitability:  { enabled: false },
-      expenses:          { enabled: false },
-      inventory:         { enabled: false },
+      expenses:          { enabled: true },
+
     },
     invoiceForm: {
       sections:       ['header', 'line_items', 'totals'],
@@ -64,11 +64,12 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
     collectionsModel: 'rules',
     nav: [
       { id: 'control-room', label: 'Control Room', section: 'headquarters' },
-      { id: 'calendar',     label: 'Calendar',     section: 'headquarters', comingSoon: true },
+      { id: 'calendar',     label: 'Calendar',     section: 'headquarters' },
       { id: 'invoices',     label: 'Invoices',     section: 'revenue-ops' },
       { id: 'payments',     label: 'Payments',     section: 'revenue-ops' },
       { id: 'customers',    label: 'Customers',    section: 'revenue-ops' },
       { id: 'compliance',   label: 'Compliance',   section: 'spend-assets', comingSoon: true },
+      { id: 'expenses',     label: 'Expenses',     section: 'spend-assets' },
       { id: 'reports',      label: 'Reports',      section: 'analytics' },
     ],
   },
@@ -91,7 +92,7 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
       mrrTracking:       { enabled: false },
       skuProfitability:  { enabled: false },
       expenses:          { enabled: true },
-      inventory:         { enabled: false },
+
     },
     invoiceForm: {
       sections:       ['header', 'line_items', 'totals'],
@@ -134,7 +135,7 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
       mrrTracking:       { enabled: false },
       skuProfitability:  { enabled: true },
       expenses:          { enabled: true },
-      inventory:         { enabled: true },
+
     },
     invoiceForm: {
       sections:       ['header', 'shipment', 'line_items', 'totals'],
@@ -153,7 +154,7 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
       { id: 'customers',    label: 'Customers',    section: 'revenue-ops' },
       { id: 'marketplace',  label: 'Marketplace',  section: 'revenue-ops', comingSoon: true },
       { id: 'expenses',     label: 'Expenses',     section: 'spend-assets' },
-      { id: 'inventory',    label: 'Inventory',    section: 'spend-assets' },
+
       { id: 'compliance',   label: 'Compliance',   section: 'spend-assets' },
       { id: 'reports',      label: 'Reports',      section: 'analytics' },
       { id: 'sku-pl',       label: 'SKU P&L',      section: 'analytics', comingSoon: true },
@@ -178,7 +179,7 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
       mrrTracking:       { enabled: true },
       skuProfitability:  { enabled: false },
       expenses:          { enabled: false },
-      inventory:         { enabled: false },
+
     },
     invoiceForm: {
       sections:       ['header', 'line_items', 'totals'],
@@ -220,7 +221,7 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
       mrrTracking:       { enabled: false },
       skuProfitability:  { enabled: false },
       expenses:          { enabled: true },
-      inventory:         { enabled: false },
+
     },
     invoiceForm: {
       sections:       ['header', 'line_items', 'totals'],

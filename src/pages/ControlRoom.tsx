@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { usePersona } from '../contexts/PersonaContext';
 import {
@@ -8,7 +7,6 @@ import {
     TrendingUp,
     Clock,
     CheckCircle2,
-    ArrowRight,
     Activity,
     Users,
     FileText,
@@ -19,15 +17,14 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InvoiceLifecycleMap } from '../components/Visualizations/InvoiceLifecycleMap';
-import { InventoryService } from '../services/inventoryAnalysis';
+
 
 export const ControlRoom = () => {
-    const { user } = useAuth();
     const { businessType, loading: personaLoading } = usePersona();
     const navigate = useNavigate();
     const { invoices, payments, customers, expenses, stats, loading, refreshData } = useData();
     const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
-    const [invSummary, setInvSummary] = useState<{ risks: number; outOfStock: number }>({ risks: 0, outOfStock: 0 });
+
 
     useEffect(() => {
         refreshData(['invoices', 'stats', 'payments', 'customers', 'expenses']);
@@ -35,19 +32,7 @@ export const ControlRoom = () => {
 
     const isSolopreneur = businessType === 'solopreneur';
 
-    // Metrics Calculation
-    useEffect(() => {
-        const fetchInvHealth = async () => {
-            if (businessType === 'ecommerce' as any) {
-                const health = await InventoryService.analyzeInventoryHealth();
-                setInvSummary({
-                    risks: health.summary.stockout_risks,
-                    outOfStock: health.insights.filter((i: any) => i.current_stock === 0).length
-                });
-            }
-        };
-        fetchInvHealth();
-    }, [businessType]);
+
 
     const metrics = useMemo(() => {
         const overdue = Array.isArray(invoices) ? invoices.filter(i => i.status === 'overdue' || i.status === 'escalated') : [];
@@ -209,7 +194,6 @@ export const ControlRoom = () => {
                             >
                                 <LayoutGrid size={18} />
                             </button>
-                            {!isSolopreneur && (
                                 <button
                                     onClick={() => setViewMode('map')}
                                     className={`p-2 rounded-lg transition-all ${viewMode === 'map' ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
@@ -217,7 +201,6 @@ export const ControlRoom = () => {
                                 >
                                     <Network size={18} />
                                 </button>
-                            )}
                         </div>
 
                         <button
@@ -230,7 +213,7 @@ export const ControlRoom = () => {
                 </motion.div>
 
                 <AnimatePresence mode="wait">
-                    {viewMode === 'map' && !isSolopreneur ? (
+                    {viewMode === 'map' ? (
                         <motion.div
                             key="map"
                             initial={{ opacity: 0, scale: 0.98 }}
@@ -434,101 +417,6 @@ export const ControlRoom = () => {
                                                         {unbilledHours}h
                                                     </h3>
                                                     <p className="text-sm text-amber-600 mt-2 font-medium">Ready to invoice</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : businessType === ('ecommerce' as any) ? (
-                                    <>
-                                        {/* E-commerce Card 1: Replenishment Risks */}
-                                        <div
-                                            onClick={() => navigate('/inventory')}
-                                            className="relative bg-white p-6 rounded-2xl border border-primary/10 shadow-sm cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-300 group overflow-hidden"
-                                        >
-                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-primary/5 rounded-full blur-2xl transition-all group-hover:bg-primary/10" />
-                                            <div className="relative">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="p-3 bg-primary/10 text-primary rounded-xl group-hover:rotate-12 transition-transform duration-300">
-                                                        <AlertCircle size={20} strokeWidth={2.5} />
-                                                    </div>
-                                                    {invSummary.risks > 0 && (
-                                                        <div className="flex items-center text-[10px] font-black text-white bg-primary px-2 py-0.5 rounded-full animate-pulse uppercase tracking-tighter">
-                                                            High Risk
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Replenishment Risks</p>
-                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">{invSummary.risks} {invSummary.risks === 1 ? 'Node' : 'Nodes'}</h3>
-                                                    <p className="text-xs text-gray-500 mt-2 font-medium">Forecasted outages (7d)</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* E-commerce Card 2: Out of Stock */}
-                                        <div
-                                            onClick={() => navigate('/inventory')}
-                                            className="relative bg-white p-6 rounded-2xl border border-rose-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-rose-200 transition-all duration-300 group overflow-hidden"
-                                        >
-                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-rose-50 rounded-full blur-2xl" />
-                                            <div className="relative">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="p-3 bg-rose-50 text-rose-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                                                        <AlertTriangle size={20} strokeWidth={2.5} />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Out of Stock</p>
-                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">{invSummary.outOfStock} Products</h3>
-                                                    <p className="text-xs text-rose-600 mt-2 font-bold uppercase tracking-tighter">Immediate Action Required</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* E-commerce Card 3: Pending Revenue */}
-                                        <div
-                                            onClick={() => navigate('/invoices')}
-                                            className="relative bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group overflow-hidden"
-                                        >
-                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-indigo-50 rounded-full blur-2xl" />
-                                            <div className="relative">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                                                        <FileText size={20} strokeWidth={2.5} />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pending Revenue</p>
-                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">₹{(totalPending / 1000).toFixed(1)}k</h3>
-                                                    <p className="text-xs text-indigo-600 mt-2 font-medium">{pendingCount} active orders</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* E-commerce Card 4: Store Health */}
-                                        <div
-                                            onClick={() => navigate('/inventory')}
-                                            className="relative bg-primary p-6 rounded-2xl border border-primary-dark/20 shadow-lg shadow-primary/20 cursor-pointer hover:shadow-primary/40 transition-all duration-300 group overflow-hidden"
-                                        >
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-xl" />
-                                            <div className="relative h-full flex flex-col justify-between">
-                                                <div className="flex justify-between items-start">
-                                                    <div className="p-3 bg-white/20 text-white rounded-xl">
-                                                        <Activity size={20} strokeWidth={2.5} />
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                                                        <span className="text-[10px] font-black text-white uppercase tracking-wider">Live View</span>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-8">
-                                                    <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Operational Health</p>
-                                                    <h3 className="text-3xl font-black text-white tracking-tighter">
-                                                        {invSummary.risks > 3 ? 'Grade B' : invSummary.risks > 0 ? 'Grade A' : 'Grade A+'}
-                                                    </h3>
-                                                    <p className="text-xs text-white/90 mt-2 font-medium flex items-center gap-1">
-                                                        {invSummary.risks > 0 ? 'Efficiency Optimization Needed' : 'Optimized Capacity'} <ArrowRight size={12} />
-                                                    </p>
                                                 </div>
                                             </div>
                                         </div>

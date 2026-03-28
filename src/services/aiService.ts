@@ -9,7 +9,7 @@ export const aiService = {
 
   magicFill: (text: string) => api.post(ENDPOINTS.AI_MAGIC_FILL, { text }),
 
-  getInsights: () => api.get(ENDPOINTS.AI_INSIGHTS),
+  getInsights: (persona?: string) => api.get(persona ? `${ENDPOINTS.AI_INSIGHTS}?persona=${persona}` : ENDPOINTS.AI_INSIGHTS),
 
   predictRevenue: (historicalData: any[]) => api.post(ENDPOINTS.AI_PREDICT_REVENUE, { historicalData }),
 

@@ -6,7 +6,6 @@ import {
   Users,
   CreditCard,
   Receipt,
-  Package,
   BarChart3,
   ShieldCheck,
   CalendarClock,
@@ -35,7 +34,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   'customers': Users,
   'projects': LayoutDashboard,
   'expenses': Receipt,
-  'inventory': Package,
+
   'marketplace': Globe,
   'compliance': ShieldCheck,
   'reports': BarChart3,
@@ -55,7 +54,7 @@ const PATH_MAP: Record<string, string> = {
   'customers': '/dashboard/customers',
   'projects': '/dashboard/projects',
   'expenses': '/dashboard/expenses',
-  'inventory': '/dashboard/inventory',
+
   'marketplace': '/dashboard/marketplace',
   'compliance': '/dashboard/compliance',
   'reports': '/dashboard/reports',
