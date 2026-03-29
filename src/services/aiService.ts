@@ -1,7 +1,10 @@
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
 
+export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const aiService = {
+  stagger: () => delay(500),
   chat: (query: string, persona?: string) => api.post(ENDPOINTS.AI_CHAT, { query, persona }),
   getConfig: (persona?: string) => api.get(persona ? `${ENDPOINTS.AI_CONFIG}?persona=${persona}` : ENDPOINTS.AI_CONFIG),
 
@@ -10,6 +13,7 @@ export const aiService = {
   magicFill: (text: string) => api.post(ENDPOINTS.AI_MAGIC_FILL, { text }),
 
   getInsights: (persona?: string) => api.get(persona ? `${ENDPOINTS.AI_INSIGHTS}?persona=${persona}` : ENDPOINTS.AI_INSIGHTS),
+  getUsage: () => api.get(ENDPOINTS.AI_USAGE),
 
   predictRevenue: (historicalData: any[]) => api.post(ENDPOINTS.AI_PREDICT_REVENUE, { historicalData }),
 

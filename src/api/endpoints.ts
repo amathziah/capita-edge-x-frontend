@@ -80,6 +80,7 @@ export const ENDPOINTS = {
     AI_COMMAND: '/ai/command',
     AI_SETTLEMENT: '/ai/settlement',
     AI_AUDIT_INVOICE: '/ai/audit-invoice',
+    AI_USAGE: '/ai/usage',
 
     // ─── AI Collections ────────────────────────────────────────────────
     AI_COLLECTIONS_DRAFT: '/ai/collections/generate-draft',

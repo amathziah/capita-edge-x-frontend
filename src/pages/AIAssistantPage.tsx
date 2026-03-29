@@ -4,7 +4,7 @@ import {
   Send, Mic, MicOff, Zap, RotateCcw, Copy, Check, ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { aiService } from '../services/aiService';
+import { aiService, delay } from '../services/aiService';
 import { usePersona } from '../contexts/PersonaContext';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
@@ -30,6 +30,11 @@ interface Message {
   data?: any;
   timestamp: Date;
   status?: 'sending' | 'sent' | 'error';
+  usage?: {
+    promptTokenCount: number;
+    candidatesTokenCount: number;
+    totalTokenCount: number;
+  };
 }
 
 const TEAL = '#2dd4bf';
@@ -292,6 +297,8 @@ export function AIAssistantPage() {
     } catch (e) { console.error('Cache read error:', e); }
     return { meta: { greeting: '', label: 'Finance', color: TEAL }, actions: [] };
   });
+  
+  const [usageStats, setUsageStats] = useState({ usage: 0, limit: 0, percent: 0, remaining: 0 });
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
@@ -302,22 +309,31 @@ export function AIAssistantPage() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [greetingCopied, setGreetingCopied] = useState(false);
   const [pendingAction, setPendingAction] = useState<any>(null);
+  const [provider, setProvider] = useState<'cloud' | 'local_fallback'>('cloud');
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch config
+  // Fetch usage & config (Staggered to avoid RPM limits)
   useEffect(() => {
-    const fetchConfig = async () => {
+    const init = async () => {
       try {
-        const config = await aiService.getConfig(businessType as string | undefined) as any;
-        setDynamicConfig(config);
+        // 1. Priority: Load Persona Config
+        const config = await aiService.getConfig(businessType as string | undefined);
+        setDynamicConfig(config as any);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+        
+        // 2. Stagger: Give Google a breather
+        await delay(800);
+        
+        // 3. Load Usage Stats
+        const usage = await aiService.getUsage();
+        setUsageStats(usage as any);
       } catch (err) {
-        console.error('Failed to fetch AI config:', err);
+        console.error('Failed to init AI page:', err);
       }
     };
-    fetchConfig();
+    init();
   }, [businessType, STORAGE_KEY]);
 
   // Auto-scroll
@@ -364,11 +380,14 @@ export function AIAssistantPage() {
     try {
       const res = await aiService.processQuery(text, undefined, businessType || undefined);
       
+      if (res.provider) setProvider(res.provider);
+
       const botMsg: Message = {
         id: (Date.now() + 1).toString(), 
         sender: 'bot',
         text: res.text, 
         data: res.data, 
+        usage: res.usage,
         timestamp: new Date(),
       };
 
@@ -378,6 +397,10 @@ export function AIAssistantPage() {
         botMsg.data = { ...botMsg.data, type: 'action_prompt' };
       }
 
+      if (res.usage?.totalTokenCount) {
+        const updatedUsage = await aiService.getUsage();
+        setUsageStats(updatedUsage as any);
+      }
       setMessages(prev => [...prev, botMsg]);
 
     } catch {
@@ -432,7 +455,9 @@ export function AIAssistantPage() {
     ]);
   };
 
-  const clearChat = () => setMessages([]);
+  const clearChat = () => {
+    setMessages([]);
+  };
 
   const startListening = () => {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -481,11 +506,17 @@ export function AIAssistantPage() {
               <RobotSVG size={20} />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-white tracking-tight">Capita AI</span>
-                <span className="text-[7px] font-black tracking-widest px-1.5 py-0.5 rounded border uppercase text-teal-400 bg-teal-500/10 border-teal-500/20">
-                  {meta.label || 'Finance'}
-                </span>
+                {provider === 'local_fallback' && (
+                  <div className="group relative flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                    <div className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-[7px] font-black text-amber-500 uppercase tracking-tighter">Local Engine</span>
+                    <div className="absolute top-full left-0 mt-1 w-32 p-2 bg-black border border-white/10 rounded text-[9px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                      Running in offline/local mode due to connection limits.
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
@@ -562,10 +593,42 @@ export function AIAssistantPage() {
               </AnimatePresence>
             </div>
 
-            <div className="px-3 py-2.5 border-t border-white/[0.05]">
-              <div className="flex items-center gap-1.5">
-                <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
-                <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Finance engine</span>
+            <div className="px-3 py-3.5 border-t border-white/[0.05] bg-black/20">
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">AI Credits</span>
+                  <span className="text-[10px] font-mono font-bold text-teal-400">
+                    {usageStats.percent}%
+                  </span>
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="h-1.5 w-full bg-white/[0.03] rounded-full overflow-hidden border border-white/5">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${usageStats.percent}%` }}
+                    className={`h-full rounded-full ${
+                      usageStats.percent > 90 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
+                      usageStats.percent > 70 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' :
+                      'bg-teal-500 shadow-[0_0_8px_rgba(45,212,191,0.5)]'
+                    }`}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] text-gray-600 font-bold uppercase tracking-wider">
+                    {usageStats.usage.toLocaleString()} / {usageStats.limit === Infinity ? '∞' : usageStats.limit.toLocaleString()}
+                  </span>
+                  {usageStats.limit !== Infinity && usageStats.remaining < 5000 && (
+                    <span className="text-[7px] font-black text-amber-500/80 animate-pulse uppercase">Low Credits</span>
+                  )}
+                </div>
+
+                <div className="pt-1 mt-1 border-t border-white/[0.03]">
+                  <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest opacity-60 italic leading-none">
+                    Finance engine · Encrypted
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -724,15 +787,20 @@ export function AIAssistantPage() {
                     whileHover={{ scale: query.trim() && !isTyping ? 1.08 : 1 }}
                     whileTap={{ scale: query.trim() && !isTyping ? 0.92 : 1 }}
                     onClick={() => handleSend()}
-                    disabled={!query.trim() || isTyping}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+                    disabled={!query.trim() || isTyping || (usageStats.limit !== Infinity && usageStats.usage >= usageStats.limit)}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all relative overflow-hidden"
                     style={
-                      query.trim() && !isTyping
+                      query.trim() && !isTyping && (usageStats.limit === Infinity || usageStats.usage < usageStats.limit)
                         ? { background: `linear-gradient(135deg, ${TEAL}, #06b6d4)`, color: '#0a0d15' }
                         : { background: 'rgba(255,255,255,0.04)', color: '#374151', cursor: 'not-allowed' }
                     }
                   >
                     <Send size={13} />
+                    {(usageStats.limit !== Infinity && usageStats.usage >= usageStats.limit) && (
+                      <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center pointer-events-none">
+                        <div className="w-1 h-1 rounded-full bg-red-500 animate-ping" />
+                      </div>
+                    )}
                   </motion.button>
                 </div>
               </div>
@@ -740,7 +808,6 @@ export function AIAssistantPage() {
               {/* Footer hint */}
               <div className="mt-1.5 flex items-center justify-between px-1">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-1 h-1 rounded-full bg-teal-500 animate-pulse" />
                   <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">
                     Finance engine · Encrypted
                   </span>
