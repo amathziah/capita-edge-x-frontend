@@ -68,7 +68,7 @@ export const PERSONA_CONFIGS: Record<Segment, PersonaConfig> = {
       { id: 'invoices',     label: 'Invoices',     section: 'revenue-ops' },
       { id: 'payments',     label: 'Payments',     section: 'revenue-ops' },
       { id: 'customers',    label: 'Customers',    section: 'revenue-ops' },
-      { id: 'compliance',   label: 'Compliance',   section: 'spend-assets', comingSoon: true },
+      { id: 'compliance',   label: 'Compliance',   section: 'spend-assets' },
       { id: 'expenses',     label: 'Expenses',     section: 'spend-assets' },
       { id: 'reports',      label: 'Reports',      section: 'analytics' },
     ],

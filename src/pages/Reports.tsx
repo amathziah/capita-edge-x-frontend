@@ -5,6 +5,7 @@ import {
   CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, AreaChart, Area
 } from "recharts";
 import { dataService } from '../services/dataService';
+import { delay } from '../services/aiService';
 import { ReportInsights } from "../components/ReportInsights";
 import { usePersona } from "../contexts/PersonaContext";
 import { useData } from "../contexts/DataContext";
@@ -43,6 +44,8 @@ export function Reports() {
     const fetchAiInsights = async () => {
       try {
         setIsAiLoading(true);
+        // Stagger to avoid RPM limit - especially on initial burst
+        await delay(1500); 
         const insights = await dataService.getAiInsights(businessType || undefined);
         setAiInsights(insights as any[]);
       } catch (error) {
