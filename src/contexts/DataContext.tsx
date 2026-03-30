@@ -81,7 +81,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     case 'payments': promise = dataService.getPayments({ limit: 1000 }); break;
                     case 'customers': promise = dataService.getCustomers(); break;
                     case 'expenses': promise = dataService.getExpenses(); break;
-                    case 'products': promise = dataService.getProducts(); break;
+                    case 'products': promise = dataService.getProducts().catch(() => []); break;
                     case 'performance': promise = dataService.getProductPerformance().catch(() => []); break;
                     case 'complianceTasks': promise = dataService.getComplianceTasks(); break;
                     case 'reports': promise = dataService.getReports(); break;
