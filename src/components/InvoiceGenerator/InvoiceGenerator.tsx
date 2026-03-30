@@ -5,67 +5,95 @@ import { useInvoiceActions } from './hooks/useInvoiceActions';
 import { usePersona } from '../../contexts/PersonaContext';
 import { Invoice, InvoiceItem } from '../../types';
 import { dataService } from '../../services/dataService';
-import { CURRENCIES, TAX_LABELS, UNITS, INDIAN_STATES, InvoiceMeta, Buyer } from './constants';
+import { CURRENCIES, TAX_LABELS, UNITS } from './constants';
 import { numberToIndianWords } from './utils';
 import { autoSuggestSac } from '../../lib/sacDatabase';
-import { validateGstin, getStateFromGstin, getGstinStateDisplay } from '../../lib/gstUtils';
 import { Toast } from '../Toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    Plus, X, ChevronDown, User, Calendar, MapPin, 
+    CreditCard, FileText, Mail, Search, Trash2, 
+    Smartphone, Banknote
+} from 'lucide-react';
 
-/* ─── Shared Styles ──────────────────────────────────────────────────── */
+/* ─── Interfaces ───────────────────────────────────────────────────────── */
 
-const inputStyle: React.CSSProperties = {
-    width: '100%', border: '1px solid #e5e7eb', borderRadius: 8,
-    padding: '10px 12px', fontSize: 14, fontWeight: 500, color: '#111827',
-    outline: 'none', background: 'white', boxSizing: 'border-box',
-};
+interface InvoiceGeneratorProps {
+    onClose?: () => void;
+    editingInvoice?: Invoice;
+    initialData?: Partial<Invoice>;
+}
 
-const dateInputStyle: React.CSSProperties = {
-    ...inputStyle, cursor: 'pointer',
-};
+interface InputWrapperProps {
+    label: string;
+    children: React.ReactNode;
+    error?: string;
+    icon?: React.ElementType;
+    required?: boolean;
+}
 
-const sectionCard: React.CSSProperties = {
-    background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
-    padding: '20px 24px', marginBottom: 16,
-};
+interface SectionCardProps {
+    title: string;
+    children: React.ReactNode;
+    icon?: React.ElementType;
+    action?: React.ReactNode;
+}
 
-const sectionTitle: React.CSSProperties = {
-    fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 16px',
-};
+/* ─── Shared Components ────────────────────────────────────────────────── */
 
-const labelStyle: React.CSSProperties = {
-    fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6, display: 'block',
-};
-
-const toggleRow: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '16px 24px', background: 'white', borderRadius: 12,
-    border: '1px solid #e5e7eb', marginBottom: 16,
-};
-
-/* ─── Small Components ────────────────────────────────────────────────── */
-
-const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
-    <button type="button" onClick={() => onChange(!value)}
-        style={{ width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', background: value ? '#1D9E75' : '#d1d5db', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-        <span style={{ position: 'absolute', top: 3, left: value ? 22 : 3, width: 18, height: 18, borderRadius: '50%', background: 'white', transition: 'left 0.2s', display: 'block' }} />
-    </button>
+const Toggle = ({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label?: string }) => (
+    <div className="flex items-center gap-3">
+        {label && <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">{label}</span>}
+        <button
+            type="button"
+            onClick={() => onChange(!value)}
+            className={`w-10 h-5 rounded-full relative transition-colors duration-200 focus:outline-none ${value ? 'bg-teal-500' : 'bg-gray-200'}`}
+        >
+            <motion.span
+                animate={{ x: value ? 22 : 2 }}
+                className="absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm"
+            />
+        </button>
+    </div>
 );
 
 const ErrMsg = ({ children }: { children: React.ReactNode }) => (
-    <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 600, display: 'block', marginTop: 4 }}>{children}</span>
+    <span className="text-[10px] text-red-500 font-bold mt-1 block tracking-tight">{children}</span>
 );
 
-/* ─── Props ───────────────────────────────────────────────────────────── */
-export interface InvoiceGeneratorProps {
-    onClose?: () => void;
-    editingInvoice?: Invoice;
-    initialData?: {
-        invoice?: Partial<InvoiceMeta>;
-        buyer?: Partial<Buyer>;
-        items?: InvoiceItem[];
-        voiceDraft?: string;
-    };
-}
+const InputWrapper = ({ label, children, error, icon: Icon, required }: InputWrapperProps) => (
+    <div className="flex flex-col gap-1.5 w-full">
+        <div className="flex justify-between items-center px-0.5">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 text-left">
+                {Icon && <Icon size={12} className="text-teal-500/60" />}
+                {label} {required && <span className="text-red-400">*</span>}
+            </label>
+        </div>
+        <div className="relative group text-left">
+            {children}
+        </div>
+        {error && <ErrMsg>{error}</ErrMsg>}
+    </div>
+);
+
+const SectionCard = ({ title, children, icon: Icon, action }: SectionCardProps) => (
+    <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-teal-100/60 p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
+        <div className="flex justify-between items-center mb-5">
+            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
+                    {Icon && <Icon size={14} />}
+                </div>
+                {title}
+            </h3>
+            {action}
+        </div>
+        <div className="space-y-5 flex-1">
+            {children}
+        </div>
+    </div>
+);
+
+/* ─── Main Component ───────────────────────────────────────────────────── */
 
 export default function InvoiceGenerator({ onClose, initialData, editingInvoice }: InvoiceGeneratorProps) {
     const { id } = useParams();
@@ -76,7 +104,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
     const [fetchedInvoice, setFetchedInvoice] = React.useState<Invoice | undefined>(editingInvoice);
     const [showNotes, setShowNotes] = React.useState(false);
 
-    // ── Inline Add New Client (same drawer as Customers page) ──
+    // ── Inline Add New Client Drawer ──
     const [showNewClientModal, setShowNewClientModal] = React.useState(false);
     const [savingNewClient, setSavingNewClient] = React.useState(false);
     const [newClientForm, setNewClientForm] = React.useState({
@@ -85,10 +113,9 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         gstin: '', tags: '', currency: 'INR', paymentTerms: 0,
     });
     const [pincodeLoading, setPincodeLoading] = React.useState(false);
-    const [drawerAnimating, setDrawerAnimating] = React.useState(false);
 
-    const openDrawer = () => { setShowNewClientModal(true); requestAnimationFrame(() => setDrawerAnimating(true)); };
-    const closeDrawer = () => { setDrawerAnimating(false); setTimeout(() => setShowNewClientModal(false), 300); };
+    const openDrawer = () => setShowNewClientModal(true);
+    const closeDrawer = () => setShowNewClientModal(false);
 
     const fetchPincode = async (pin: string) => {
         if (!/^\d{6}$/.test(pin)) return;
@@ -100,7 +127,9 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                 const po = data[0].PostOffice[0];
                 setNewClientForm(prev => ({ ...prev, city: po.District, state: po.State }));
             }
-        } catch { } finally { setPincodeLoading(false); }
+        } catch (error) {
+            console.error("Pincode lookup failed", error);
+        } finally { setPincodeLoading(false); }
     };
 
     const COUNTRY_OPTIONS = [
@@ -110,9 +139,9 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         { code: 'CA', label: 'Canada 🇨🇦' }, { code: 'DE', label: 'Germany 🇩🇪' },
     ];
     const CURRENCY_OPTIONS = [
-        { code: 'INR', label: 'INR — Indian Rupee (₹)' }, { code: 'USD', label: 'USD — US Dollar ($)' },
-        { code: 'GBP', label: 'GBP — Pound (£)' }, { code: 'EUR', label: 'EUR — Euro (€)' },
-        { code: 'AED', label: 'AED — Dirham' }, { code: 'SGD', label: 'SGD — Singapore Dollar' },
+        { code: 'INR', label: 'INR (₹)' }, { code: 'USD', label: 'USD ($)' },
+        { code: 'GBP', label: 'GBP (£)' }, { code: 'EUR', label: 'EUR (€)' },
+        { code: 'AED', label: 'AED' }, { code: 'SGD', label: 'SGD' },
     ];
     const TERMS_OPTIONS = [
         { value: 0, label: 'Due on Receipt' }, { value: 7, label: 'Net 7 Days' },
@@ -142,24 +171,17 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         projectName, setProjectName,
         orderNumber, setOrderNumber,
         isGstRegistered, setIsGstRegistered,
-        authorizedSignatory, setAuthorizedSignatory,
-        placeOfSupply, setPlaceOfSupply, reverseCharge, setReverseCharge,
         dispatchDate, setDispatchDate,
-        courierTracking, setCourierTracking,
-        items, setItems, taxRate, setTaxRate, shipping, setShipping, discountAmount, setDiscountAmount,
-        tdsEnabled, tdsRate,
-        subtotal, taxAmount, total, tdsAmount, resolvedGstType,
+        items, setItems, taxRate, setTaxRate,
+        subtotal, taxAmount, total,
         activeAction, loading,
         isEmailModalOpen, setIsEmailModalOpen, emailTo, setEmailTo,
         toast, setToast,
         sellerErrors, buyerErrors, headerErrors, itemErrors,
         clearErrors,
-        products, focusedItemIndex, setFocusedItemIndex,
-        customers, isBuyerFocused, setIsBuyerFocused,
-        lutNumber,
+        isBuyerFocused, setIsBuyerFocused,
+        customers,
     } = state;
-
-    const { handleLogoUpload } = actions;
 
     const updateItem = (idx: number, updates: Partial<InvoiceItem>) => {
         const next = [...items];
@@ -208,785 +230,498 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
             closeDrawer();
             setNewClientForm({ name: '', contactName: '', email: '', phone: '', addressLine1: '', city: '', state: '', pincode: '', country: 'IN', gstin: '', tags: '', currency: 'INR', paymentTerms: 0 });
             setToast({ message: `Client "${savedName}" created & selected`, type: 'success' });
-        } catch (err: any) {
-            setToast({ message: err.message || 'Failed to save client', type: 'error' });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to save client';
+            setToast({ message, type: 'error' });
         } finally {
             setSavingNewClient(false);
         }
     };
 
-    // Drawer field styles
-    const dLabel: React.CSSProperties = { display: 'block', fontSize: 10, fontWeight: 700, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6, marginLeft: 2 };
-    const dInput: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#f9fafb', border: '1px solid #f3f4f6', borderRadius: 12, fontSize: 13, fontWeight: 600, color: '#1f2937', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' };
-    const dSelect: React.CSSProperties = { ...dInput, cursor: 'pointer', appearance: 'none' as const };
+    const commonInputClass = "w-full bg-white/50 border border-teal-100/60 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-900 outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500/40 transition-all placeholder:text-gray-400 placeholder:font-normal";
+    const selectClass = "w-full bg-white/50 border border-teal-100/60 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-900 outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500/40 transition-all appearance-none cursor-pointer";
 
     return (
-        <div style={{
-            display: 'grid', gridTemplateRows: 'auto 1fr',
-            height: '100%', overflow: 'hidden',
-            background: '#f9fafb', borderRadius: 12,
-        }}>
-
-            {/* Email Modal */}
-            {isEmailModalOpen && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-                    <div style={{ background: 'white', borderRadius: 20, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
-                        <h3 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 20px', color: '#111827' }}>Send Invoice</h3>
-                        <label style={labelStyle}>RECIPIENT EMAIL</label>
-                        <input value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="client@example.com" style={{ ...inputStyle, marginBottom: 20 }} />
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                            <button onClick={() => setIsEmailModalOpen(false)} style={{ padding: 12, borderRadius: 10, border: '1px solid #e5e7eb', background: 'transparent', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#6b7280' }}>Cancel</button>
-                            <button onClick={actions.handleSendEmail} disabled={loading} style={{ padding: 12, borderRadius: 10, border: 'none', background: '#1D9E75', color: 'white', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
-                                {activeAction === 'emailing' ? 'Sending...' : 'Send'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-
-            {/* ═══ ADD NEW CLIENT — Slide-in Drawer (same as Customers page) ═══ */}
-            {showNewClientModal && (<>
-                {/* Backdrop */}
-                <div onClick={closeDrawer} style={{
-                    position: 'fixed', inset: 0, zIndex: 110,
-                    background: drawerAnimating ? 'rgba(15,23,42,0.1)' : 'transparent',
-                    backdropFilter: drawerAnimating ? 'blur(2px)' : 'none',
-                    transition: 'all 0.3s ease',
-                }} />
-
-                {/* Drawer panel */}
-                <div style={{
-                    position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 560,
-                    background: 'white', zIndex: 120, display: 'flex', flexDirection: 'column',
-                    borderLeft: '1px solid rgba(20,184,166,0.08)',
-                    boxShadow: drawerAnimating ? '-20px 0 60px rgba(0,0,0,0.08)' : 'none',
-                    transform: drawerAnimating ? 'translateX(0)' : 'translateX(100%)',
-                    transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease',
-                }}>
-                    {/* Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid #f3f4f6', background: '#fafbfc' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <button onClick={closeDrawer} style={{
-                                width: 34, height: 34, borderRadius: '50%', border: '1px solid #e5e7eb', background: 'transparent',
-                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 16,
-                            }}>←</button>
-                            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: 0 }}>Add New Client</h2>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#1D9E75', display: 'inline-block' }} />
-                            <span style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Active</span>
-                        </div>
-                    </div>
-
-                    {/* Body — scrollable */}
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-                        {/* Client Details Card */}
-                        <div style={{ background: 'white', border: '1px solid #f0fdfa', borderRadius: 16, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span style={{ fontSize: 16, color: '#1D9E75' }}>👤</span> Client Details
-                                </h3>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: '#1D9E75', cursor: 'pointer' }}>Auto-Fill from GSTIN</span>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                <div>
-                                    <label style={dLabel}>Client Billing Name <span style={{ color: '#ef4444' }}>*</span></label>
-                                    <input value={newClientForm.name} onChange={e => setNewClientForm({ ...newClientForm, name: e.target.value })}
-                                        placeholder="Legal Business Name" style={dInput} />
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                                    <div>
-                                        <label style={dLabel}>Contact Name</label>
-                                        <input value={newClientForm.contactName} onChange={e => setNewClientForm({ ...newClientForm, contactName: e.target.value })}
-                                            placeholder="POC Name" style={dInput} />
-                                    </div>
-                                    <div>
-                                        <label style={dLabel}>Email <span style={{ color: '#ef4444' }}>*</span></label>
-                                        <input type="email" value={newClientForm.email} onChange={e => setNewClientForm({ ...newClientForm, email: e.target.value })}
-                                            placeholder="billing@email.com" style={dInput} />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label style={dLabel}>Phone Number</label>
-                                    <div style={{ display: 'flex' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 12px', background: '#f9fafb', border: '1px solid #f3f4f6', borderRight: 'none', borderRadius: '12px 0 0 12px', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
-                                            <span>🇮🇳</span>
-                                            <span style={{ fontSize: 10, color: '#9ca3af' }}>⇅</span>
-                                        </div>
-                                        <input type="tel" value={newClientForm.phone} onChange={e => setNewClientForm({ ...newClientForm, phone: e.target.value })}
-                                            style={{ ...dInput, borderRadius: '0 12px 12px 0', flex: 1 }} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Billing Address Card */}
-                        <div style={{ background: 'white', border: '1px solid #f0fdfa', borderRadius: 16, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: 16, color: '#1D9E75' }}>📍</span> Billing Address
+        <div className="h-screen bg-gradient-to-br from-teal-50/50 via-white to-cyan-50/30 flex flex-col overflow-hidden text-left" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <AnimatePresence>
+                {/* Email Modal */}
+                {isEmailModalOpen && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEmailModalOpen(false)} className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white rounded-3xl p-8 w-full max-sm shadow-2xl border border-teal-100">
+                            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                <Mail className="text-teal-500" size={20} />
+                                Send Invoice
                             </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <InputWrapper label="Recipient Email">
+                                <input value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="client@example.com" className={commonInputClass} />
+                            </InputWrapper>
+                            <div className="grid grid-cols-2 gap-3 mt-8">
+                                <button onClick={() => setIsEmailModalOpen(false)} className="py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 transition">Cancel</button>
+                                <button onClick={actions.handleSendEmail} disabled={loading} className="py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold shadow-lg shadow-teal-600/20 hover:bg-teal-700 transition disabled:opacity-50">
+                                    {activeAction === 'emailing' ? 'Sending...' : 'Send'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
+                {/* Add New Client Drawer */}
+                {showNewClientModal && (
+                    <div className="fixed inset-0 z-[150] overflow-hidden flex justify-end">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeDrawer} className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm" />
+                        <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="relative w-full max-w-md bg-white shadow-2xl border-l border-teal-100 flex flex-col">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-teal-400 opacity-[0.04] blur-[100px] pointer-events-none rounded-full" />
+                            
+                            {/* Drawer Header */}
+                            <div className="px-6 py-5 border-b border-teal-100/60 bg-white/40 flex justify-between items-center relative z-10">
                                 <div>
-                                    <label style={dLabel}>Country</label>
-                                    <select value={newClientForm.country}
-                                        onChange={e => setNewClientForm({ ...newClientForm, country: e.target.value, state: '', currency: e.target.value === 'IN' ? 'INR' : 'USD' })}
-                                        style={dSelect}>
-                                        {COUNTRY_OPTIONS.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
-                                    </select>
+                                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                        <User size={18} className="text-teal-500" />
+                                        Add New Client
+                                    </h2>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Contact Registry</p>
                                 </div>
-                                <div>
-                                    <label style={dLabel}>Address <span style={{ color: '#ef4444' }}>*</span></label>
-                                    <textarea rows={3} value={newClientForm.addressLine1}
-                                        onChange={e => setNewClientForm({ ...newClientForm, addressLine1: e.target.value })}
-                                        placeholder="Street, Building, Area..."
-                                        style={{ ...dInput, resize: 'none' }} />
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                                    <div>
-                                        <label style={dLabel}>State</label>
-                                        <input value={newClientForm.state} onChange={e => setNewClientForm({ ...newClientForm, state: e.target.value })}
-                                            placeholder="State" style={dInput} />
+                                <button onClick={closeDrawer} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl transition">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Drawer Body */}
+                            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 relative z-10 custom-scrollbar text-left">
+                                <div className="p-5 bg-teal-50/30 rounded-2xl border border-teal-100/50 space-y-4">
+                                    <InputWrapper label="Business Name" required>
+                                        <input value={newClientForm.name} onChange={e => setNewClientForm({ ...newClientForm, name: e.target.value })} placeholder="Legal Entity Name" className={commonInputClass} />
+                                    </InputWrapper>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <InputWrapper label="Contact Name">
+                                            <input value={newClientForm.contactName} onChange={e => setNewClientForm({ ...newClientForm, contactName: e.target.value })} placeholder="POC Name" className={commonInputClass} />
+                                        </InputWrapper>
+                                        <InputWrapper label="Email" required>
+                                            <input type="email" value={newClientForm.email} onChange={e => setNewClientForm({ ...newClientForm, email: e.target.value })} placeholder="billing@email.com" className={commonInputClass} />
+                                        </InputWrapper>
                                     </div>
-                                    <div>
-                                        <label style={dLabel}>City</label>
-                                        <input value={newClientForm.city} onChange={e => setNewClientForm({ ...newClientForm, city: e.target.value })}
-                                            placeholder="City" style={dInput} />
-                                    </div>
-                                    <div>
-                                        <label style={dLabel}>{newClientForm.country === 'IN' ? 'Pin' : 'Zip'}</label>
-                                        <div style={{ position: 'relative' }}>
-                                            <input value={newClientForm.pincode}
-                                                onChange={e => {
-                                                    const val = e.target.value;
-                                                    setNewClientForm({ ...newClientForm, pincode: val });
-                                                    if (newClientForm.country === 'IN' && val.length === 6) fetchPincode(val);
-                                                }}
-                                                placeholder={newClientForm.country === 'IN' ? '6 digits' : 'ZIP'} style={dInput} />
-                                            {pincodeLoading && <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#1D9E75' }}>⟳</span>}
+                                    <InputWrapper label="Phone Number">
+                                        <div className="flex bg-white/50 border border-teal-100/60 rounded-xl overflow-hidden focus-within:ring-4 focus-within:ring-teal-500/10 focus-within:border-teal-500/40 transition-all">
+                                            <div className="px-3 flex items-center bg-teal-50/50 border-r border-teal-100/60 text-sm font-bold text-gray-500">🇮🇳</div>
+                                            <input type="tel" value={newClientForm.phone} onChange={e => setNewClientForm({ ...newClientForm, phone: e.target.value })} className="w-full bg-transparent px-4 py-2.5 text-sm font-semibold outline-none" placeholder="Mobile Number" />
                                         </div>
+                                    </InputWrapper>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <InputWrapper label="Country" icon={MapPin}>
+                                        <select value={newClientForm.country} onChange={e => setNewClientForm({ ...newClientForm, country: e.target.value, state: '', currency: e.target.value === 'IN' ? 'INR' : 'USD' })} className={selectClass}>
+                                            {COUNTRY_OPTIONS.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+                                        </select>
+                                    </InputWrapper>
+                                    <InputWrapper label="Address">
+                                        <textarea rows={3} value={newClientForm.addressLine1} onChange={e => setNewClientForm({ ...newClientForm, addressLine1: e.target.value })} placeholder="Street, Building, Area..." className={`${commonInputClass} resize-none`} />
+                                    </InputWrapper>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <InputWrapper label="State"><input value={newClientForm.state} onChange={e => setNewClientForm({ ...newClientForm, state: e.target.value })} placeholder="State" className={commonInputClass} /></InputWrapper>
+                                        <InputWrapper label="City"><input value={newClientForm.city} onChange={e => setNewClientForm({ ...newClientForm, city: e.target.value })} placeholder="City" className={commonInputClass} /></InputWrapper>
+                                        <InputWrapper label={newClientForm.country === 'IN' ? 'Pin' : 'Zip'}>
+                                            <div className="relative">
+                                                <input value={newClientForm.pincode} onChange={e => { const val = e.target.value; setNewClientForm({ ...newClientForm, pincode: val }); if (newClientForm.country === 'IN' && val.length === 6) fetchPincode(val); }} placeholder="Code" className={commonInputClass} />
+                                                {pincodeLoading && <div className="absolute right-3 top-2.5 animate-spin text-teal-500"><Smartphone size={14} /></div>}
+                                            </div>
+                                        </InputWrapper>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Billing Options */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                            <div style={{ background: 'white', border: '1px solid #f0fdfa', borderRadius: 16, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                                <label style={dLabel}>Currency</label>
-                                <select value={newClientForm.currency}
-                                    onChange={e => setNewClientForm({ ...newClientForm, currency: e.target.value })}
-                                    style={dSelect}>
-                                    {CURRENCY_OPTIONS.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
-                                </select>
-                            </div>
-                            <div style={{ background: 'white', border: '1px solid #f0fdfa', borderRadius: 16, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                                <label style={dLabel}>Terms</label>
-                                <select value={newClientForm.paymentTerms}
-                                    onChange={e => setNewClientForm({ ...newClientForm, paymentTerms: Number(e.target.value) })}
-                                    style={dSelect}>
-                                    {TERMS_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                                </select>
-                            </div>
-                        </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <InputWrapper label="Currency"><select value={newClientForm.currency} onChange={e => setNewClientForm({ ...newClientForm, currency: e.target.value })} className={selectClass}>{CURRENCY_OPTIONS.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}</select></InputWrapper>
+                                    <InputWrapper label="Terms"><select value={newClientForm.paymentTerms} onChange={e => setNewClientForm({ ...newClientForm, paymentTerms: Number(e.target.value) })} className={selectClass}>{TERMS_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></InputWrapper>
+                                </div>
 
-                        {/* GSTIN */}
-                        <div style={{ background: 'white', border: '1px solid #f0fdfa', borderRadius: 16, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                            <label style={dLabel}>GSTIN</label>
-                            <input value={newClientForm.gstin}
-                                onChange={e => setNewClientForm({ ...newClientForm, gstin: e.target.value.toUpperCase().replace(/\s/g, '') })}
-                                placeholder="27ABCDE1234F1Z5" style={dInput} />
-                        </div>
+                                <InputWrapper label="Tax ID (GSTIN)"><input value={newClientForm.gstin} onChange={e => setNewClientForm({ ...newClientForm, gstin: e.target.value.toUpperCase().replace(/\s/g, '') })} placeholder="27ABCDE1234F1Z5" className={commonInputClass} /></InputWrapper>
+                            </div>
 
-                        {/* Tags */}
-                        <div style={{ background: 'white', border: '1px solid #f0fdfa', borderRadius: 16, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-                            <label style={dLabel}>Tags</label>
-                            <input value={newClientForm.tags}
-                                onChange={e => setNewClientForm({ ...newClientForm, tags: e.target.value })}
-                                placeholder="VIP, Regular..." style={dInput} />
-                        </div>
+                            {/* Drawer Footer */}
+                            <div className="p-6 border-t border-teal-100/60 bg-white/40 flex gap-3 relative z-10">
+                                <button onClick={closeDrawer} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 transition">Discard</button>
+                                <button onClick={handleSaveNewClient} disabled={savingNewClient} className="flex-2 px-8 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold shadow-lg shadow-teal-600/20 hover:bg-teal-700 transition disabled:opacity-50">
+                                    {savingNewClient ? 'Saving...' : 'Save Client'}
+                                </button>
+                            </div>
+                        </motion.div>
                     </div>
+                )}
+            </AnimatePresence>
 
-                    {/* Footer */}
-                    <div style={{
-                        padding: '16px 28px', borderTop: '1px solid #f3f4f6', background: 'white',
-                        display: 'flex', justifyContent: 'flex-end', gap: 10,
-                        boxShadow: '0 -4px 20px rgba(0,0,0,0.03)',
-                    }}>
-                        <button onClick={closeDrawer}
-                            style={{ padding: '10px 22px', borderRadius: 12, border: '1px solid #e5e7eb', background: 'transparent', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#6b7280' }}>
-                            Discard
-                        </button>
-                        <button onClick={handleSaveNewClient} disabled={savingNewClient}
-                            style={{ padding: '10px 28px', borderRadius: 12, border: 'none', background: '#1D9E75', color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: savingNewClient ? 0.6 : 1, boxShadow: '0 4px 14px rgba(29,158,117,0.2)' }}>
-                            {savingNewClient ? 'Saving...' : 'Save Client'}
-                        </button>
+            {/* ══════ TOP HEADER ══════ */}
+            <div className="relative h-20 bg-white/70 backdrop-blur-2xl border-b border-teal-100/60 flex items-center justify-between px-8 flex-shrink-0 z-50 overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-teal-400 opacity-[0.05] blur-[100px] pointer-events-none rounded-full" />
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-teal-500/30 to-transparent" />
+                
+                <div className="flex items-center gap-5 relative z-10">
+                    <button onClick={handleClose} className="w-10 h-10 rounded-xl border border-teal-100 bg-white/80 flex items-center justify-center text-teal-600 hover:bg-teal-50 hover:border-teal-200 transition-all shadow-sm group">
+                        <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+                    </button>
+                    <div>
+                        <h1 className="text-xl font-black text-gray-900 tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
+                            {fetchedInvoice ? 'Edit Proforma' : 'Create New Invoice'}
+                        </h1>
+                        <p className="text-[10px] font-bold text-teal-600/70 uppercase tracking-widest mt-0.5">Financial Operations Control</p>
                     </div>
                 </div>
-            </>)}
 
-            {/* ══════ TOP BAR ══════ */}
-            <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 28px', background: 'white',
-                borderBottom: '1px solid #e5e7eb', flexShrink: 0,
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <button onClick={handleClose} style={{
-                        width: 36, height: 36, borderRadius: 8, border: '1px solid #e5e7eb',
-                        background: 'transparent', cursor: 'pointer', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center', color: '#374151', fontSize: 18,
-                    }}>←</button>
-                    <h1 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0 }}>
-                        {fetchedInvoice ? 'Edit Invoice' : 'Create New Invoice'}
-                    </h1>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <button onClick={handleClose}
-                        style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                        Discard Changes
+                <div className="flex items-center gap-3 relative z-10">
+                    <button onClick={handleClose} className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 transition-colors">Discard</button>
+                    <button onClick={actions.handleSaveOnly} disabled={loading} className="px-6 py-2.5 rounded-xl border border-teal-100 bg-white/80 text-sm font-bold text-teal-700 shadow-sm hover:bg-teal-50 transition-all">
+                        {activeAction === 'saving' ? 'Saving...' : 'Save Draft'}
                     </button>
-                    <button onClick={actions.handleSaveOnly} disabled={loading}
-                        style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#374151', opacity: loading ? 0.6 : 1 }}>
-                        {activeAction === 'saving' ? '...' : 'Save as Draft'}
-                    </button>
-                    <button onClick={actions.handleSaveAndDownload} disabled={loading}
-                        style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#374151', opacity: loading ? 0.6 : 1 }}>
-                        {activeAction === 'downloading' ? '...' : 'Create as Proforma'}
-                    </button>
-                    <button onClick={actions.handleSaveOnly} disabled={loading}
-                        style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#1D9E75', color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: loading ? 0.6 : 1 }}>
-                        {activeAction === 'saving' ? '...' : 'Create Invoice'}
+                    <button onClick={actions.handleSaveAndDownload} disabled={loading} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-white text-sm font-black shadow-lg shadow-teal-500/25 hover:from-teal-600 hover:to-teal-700 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                        {activeAction === 'downloading' ? 'Generating...' : fetchedInvoice ? 'Update & Download' : 'Generate Proforma'}
                     </button>
                 </div>
             </div>
 
-            {/* ══════ BODY: Left Form + Right Preview ══════ */}
-            <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 420px',
-                overflow: 'hidden', minHeight: 0,
-            }}>
-
-                {/* ──── LEFT: Form ──── */}
-                <div style={{ overflowY: 'auto', padding: '24px 28px' }}>
-
-                    {/* Section: Client + Invoice ID */}
-                    <div style={sectionCard}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                            <div>
-                                <label style={labelStyle}>Client</label>
-                                <div style={{ position: 'relative' }}>
-                                    <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                                        <span style={{ color: '#9ca3af', fontSize: 16 }}>👤</span>
-                                        <input
-                                            value={buyer.name || ''}
-                                            onChange={e => { setBuyer({ ...buyer, name: e.target.value }); clearErrors(); }}
-                                            onFocus={() => setIsBuyerFocused(true)}
-                                            onBlur={() => setTimeout(() => setIsBuyerFocused(false), 200)}
-                                            placeholder="Select a client"
-                                            style={{ border: 'none', outline: 'none', flex: 1, fontSize: 14, fontWeight: 500, color: '#111827', background: 'transparent' }}
-                                        />
-                                        <span style={{ color: '#9ca3af' }}>▾</span>
-                                    </div>
-                                    {buyerErrors?.name && <ErrMsg>{buyerErrors.name}</ErrMsg>}
-
-                                    {isBuyerFocused && customers.length > 0 && (
-                                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.12)', border: '1px solid #e5e7eb', maxHeight: 200, overflowY: 'auto', zIndex: 100, marginTop: 4 }}>
-                                            <div style={{ padding: '8px 12px', fontSize: 10, fontWeight: 700, color: '#9ca3af', letterSpacing: '0.08em', borderBottom: '1px solid #f3f4f6', background: '#f9fafb', display: 'flex', justifyContent: 'space-between' }}>
-                                                <span>EXISTING CLIENTS</span>
-                                                <button type="button" onClick={() => { setIsBuyerFocused(false); openDrawer(); }} style={{ color: '#1D9E75', background: 'transparent', border: 'none', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>+ ADD NEW</button>
-                                            </div>
-                                            {customers.filter(c => !buyer.name || c.name.toLowerCase().includes(buyer.name.toLowerCase())).slice(0, 8).map(customer => (
-                                                <button key={customer.id} onClick={() => {
-                                                    const combinedAddr = [customer.addressLine1, customer.addressLine2, customer.city, customer.state, customer.pincode, customer.country].filter(Boolean).join(', ');
-                                                    setBuyer({ name: customer.name, address: combinedAddr, email: customer.email || '', phone: customer.phone || '', taxId: customer.taxId || '' });
-                                                    setIsBuyerFocused(false);
-                                                }}
-                                                    style={{ width: '100%', textAlign: 'left', padding: '10px 12px', border: 'none', background: 'transparent', cursor: 'pointer', borderBottom: '1px solid #f3f4f6' }}>
-                                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{customer.name}</div>
-                                                    <div style={{ fontSize: 11, color: '#9ca3af' }}>{customer.email || 'No email'}</div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+            {/* ══════ MAIN BODY ══════ */}
+            <div className="flex-1 flex overflow-hidden lg:grid lg:grid-cols-[1fr_420px]">
+                
+                {/* ──── LEFT: FORM SECTION ──── */}
+                <div className="flex-1 overflow-y-auto p-6 xl:p-10 space-y-8 custom-scrollbar bg-white/30 backdrop-blur-sm text-left">
+                    
+                    {/* Header Controls: Currency & Tax */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="flex gap-4">
+                            <div className="flex-1">
+                                <InputWrapper label="Currency">
+                                    <select value={currency.code} onChange={e => setCurrency(CURRENCIES.find(c => c.code === e.target.value) || CURRENCIES[0])} className={selectClass}>
+                                        {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
+                                    </select>
+                                </InputWrapper>
                             </div>
-
-                            <div>
-                                <label style={labelStyle}>Invoice ID</label>
-                                <div style={{ ...inputStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <input value={meta.number || ''} readOnly
-                                        style={{ border: 'none', outline: 'none', flex: 1, fontSize: 14, fontWeight: 500, color: '#111827', background: 'transparent' }} />
-                                    <span style={{ color: '#9ca3af', cursor: 'pointer', fontSize: 14 }}>✏️</span>
-                                </div>
+                            <div className="flex-1">
+                                <InputWrapper label="Taxation Type">
+                                    <select value={taxLabel} onChange={e => setTaxLabel(e.target.value)} className={selectClass}>
+                                        {TAX_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
+                                    </select>
+                                </InputWrapper>
                             </div>
                         </div>
-
-                        {/* Dates row */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 16 }}>
-                            <div>
-                                <label style={labelStyle}>Invoice Date</label>
-                                <div style={{ position: 'relative' }}>
-                                    <input type="date" value={meta.date || ''} onChange={e => setMeta({ ...meta, date: e.target.value })} style={dateInputStyle} />
-                                    {headerErrors?.date && <ErrMsg>{headerErrors.date}</ErrMsg>}
-                                </div>
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Due Date</label>
-                                <input type="date" value={meta.dueDate || ''} onChange={e => setMeta({ ...meta, dueDate: e.target.value })} style={dateInputStyle} />
-                            </div>
+                        <div className="flex justify-end items-end gap-3 pb-1">
+                            <Toggle label="Notes" value={showNotes} onChange={setShowNotes} />
                         </div>
+                    </div>
 
-                        {/* Persona-specific fields */}
-                        {(businessType === 'services_firm' || businessType === 'ecommerce' || businessType === 'subscription') && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 16 }}>
-                                {businessType === 'services_firm' && (
-                                    <div>
-                                        <label style={labelStyle}>Project Name</label>
-                                        <input value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="Website Redesign" style={inputStyle} />
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        {/* Section: Client Details */}
+                        <SectionCard title="Client Information" icon={User} 
+                                     action={<button type="button" onClick={openDrawer} className="text-[10px] font-black text-teal-600 hover:tracking-wider transition-all uppercase">+ New Client</button>}>
+                            <InputWrapper label="Select Client" error={buyerErrors?.name} required>
+                                <div className="relative">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-500 transition-colors">
+                                        <Search size={14} />
                                     </div>
+                                    <input
+                                        value={buyer.name || ''}
+                                        onChange={e => { setBuyer({ ...buyer, name: e.target.value }); clearErrors(); }}
+                                        onFocus={() => setIsBuyerFocused(true)}
+                                        onBlur={() => setTimeout(() => setIsBuyerFocused(false), 200)}
+                                        placeholder="Search or select client..."
+                                        className={`${commonInputClass} pl-10`}
+                                    />
+                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    
+                                    <AnimatePresence>
+                                        {isBuyerFocused && customers.length > 0 && (
+                                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-teal-100/60 overflow-hidden z-[100] max-h-60 overflow-y-auto custom-scrollbar">
+                                                <div className="px-4 py-2.5 bg-teal-50/50 border-b border-teal-100/60 flex justify-between items-center text-[10px] font-black text-teal-600 uppercase tracking-widest">
+                                                    <span>Active Accounts</span>
+                                                </div>
+                                                {customers.filter(c => !buyer.name || c.name.toLowerCase().includes(buyer.name.toLowerCase())).slice(0, 8).map(customer => (
+                                                    <button key={customer.id} onClick={() => {
+                                                        const combinedAddr = [customer.addressLine1, customer.addressLine2, customer.city, customer.state, customer.pincode, customer.country].filter(Boolean).join(', ');
+                                                        setBuyer({ name: customer.name, address: combinedAddr, email: customer.email || '', phone: customer.phone || '', taxId: customer.taxId || '' });
+                                                        setIsBuyerFocused(false);
+                                                    }} className="w-full px-5 py-3.5 text-left border-b border-gray-50 last:border-0 hover:bg-teal-50 transition-colors flex items-center justify-between group">
+                                                        <div>
+                                                            <p className="text-sm font-bold text-gray-900 group-hover:text-teal-700 transition-colors">{customer.name}</p>
+                                                            <p className="text-xs text-gray-400 mt-0.5">{customer.email || 'No contact email'}</p>
+                                                        </div>
+                                                        <Plus size={14} className="text-gray-300 group-hover:text-teal-400" />
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </InputWrapper>
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputWrapper label="Invoice ID">
+                                    <input value={meta.number || ''} disabled className={`${commonInputClass} opacity-60 bg-gray-50/50 cursor-not-allowed`} />
+                                </InputWrapper>
+                                <InputWrapper label="GST Identification (Client)">
+                                    <input value={buyer.taxId || ''} onChange={e => setBuyer({ ...buyer, taxId: e.target.value.toUpperCase() })} placeholder="GSTIN" className={commonInputClass} />
+                                </InputWrapper>
+                            </div>
+                        </SectionCard>
+
+                        {/* Section: Schedule */}
+                        <SectionCard title="Invoice Schedule" icon={Calendar}>
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputWrapper label="Issue Date" icon={Calendar} error={headerErrors?.date} required>
+                                    <input type="date" value={meta.date || ''} onChange={e => setMeta({ ...meta, date: e.target.value })} className={commonInputClass} />
+                                </InputWrapper>
+                                <InputWrapper label="Due Date" icon={Calendar}>
+                                    <input type="date" value={meta.dueDate || ''} onChange={e => setMeta({ ...meta, dueDate: e.target.value })} className={commonInputClass} />
+                                </InputWrapper>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4">
+                                {(businessType === 'services_firm' || businessType === 'solopreneur') && (
+                                    <InputWrapper label="Project Reference (Optional)">
+                                        <input value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="Project Alpha Release" className={commonInputClass} />
+                                    </InputWrapper>
                                 )}
                                 {(businessType === 'ecommerce' || businessType === 'subscription') && (
-                                    <div>
-                                        <label style={labelStyle}>Order / Ref #</label>
-                                        <input value={orderNumber} onChange={e => setOrderNumber(e.target.value)} placeholder="ORD-9981" style={inputStyle} />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <InputWrapper label="Order / Ref #">
+                                            <input value={orderNumber} onChange={e => setOrderNumber(e.target.value)} placeholder="ORD-9981" className={commonInputClass} />
+                                        </InputWrapper>
+                                        <InputWrapper label="Dispatch Date">
+                                            <input type="date" value={dispatchDate} onChange={e => setDispatchDate(e.target.value)} className={commonInputClass} />
+                                        </InputWrapper>
                                     </div>
                                 )}
-                                {businessType === 'ecommerce' && (
-                                    <div>
-                                        <label style={labelStyle}>Dispatch Date</label>
-                                        <input type="date" value={dispatchDate} onChange={e => setDispatchDate(e.target.value)} style={dateInputStyle} />
-                                    </div>
-                                )}
                             </div>
-                        )}
-
-                        {/* Currency + Tax row */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 16 }}>
-                            <div>
-                                <label style={labelStyle}>Currency</label>
-                                <select value={currency.code} onChange={e => setCurrency(CURRENCIES.find(c => c.code === e.target.value) || CURRENCIES[0])} style={inputStyle}>
-                                    {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Tax Type</label>
-                                <select value={taxLabel} onChange={e => setTaxLabel(e.target.value)} style={inputStyle}>
-                                    {TAX_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
-                                </select>
-                            </div>
-                        </div>
+                        </SectionCard>
                     </div>
 
-                    {/* Section: From / To Details */}
-                    <div style={sectionCard}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                            {/* FROM */}
-                            <div>
-                                <p style={{ fontSize: 13, fontWeight: 700, color: '#1D9E75', letterSpacing: '0.05em', margin: '0 0 12px', textTransform: 'uppercase' }}>From (Your Details)</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                    <div>
-                                        <label style={labelStyle}>Business Name *</label>
-                                        <input value={seller.name || ''} onChange={e => { setSeller({ ...seller, name: e.target.value }); clearErrors(); }}
-                                            placeholder={businessType === 'solopreneur' ? 'Your Name / Studio' : 'Your Business Name'} style={inputStyle} />
-                                        {sellerErrors?.name && <ErrMsg>{sellerErrors.name}</ErrMsg>}
-                                    </div>
-                                    <div>
-                                        <label style={labelStyle}>Address</label>
-                                        <textarea rows={2} value={seller.address || ''} onChange={e => setSeller({ ...seller, address: e.target.value })}
-                                            placeholder="Business Address" style={{ ...inputStyle, resize: 'none' }} />
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                        <div>
-                                            <label style={labelStyle}>Email</label>
-                                            <input value={seller.email || ''} onChange={e => setSeller({ ...seller, email: e.target.value })} placeholder="Email" style={inputStyle} />
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Phone</label>
-                                            <input value={seller.phone || ''} onChange={e => setSeller({ ...seller, phone: e.target.value })} placeholder="Phone" style={inputStyle} />
-                                        </div>
-                                    </div>
-                                    {businessType === 'solopreneur' && (
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f9fafb', borderRadius: 8, padding: '8px 12px', border: '1px solid #e5e7eb' }}>
-                                            <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>GST Registered?</span>
-                                            <Toggle value={isGstRegistered} onChange={v => { setIsGstRegistered(v); setTaxRate(v ? 18 : 0); }} />
-                                        </div>
-                                    )}
-                                    {(businessType !== 'solopreneur' || isGstRegistered) && (
-                                        <div>
-                                            <label style={labelStyle}>GST ID</label>
-                                            <input value={seller.taxId || ''} onChange={e => setSeller({ ...seller, taxId: e.target.value })} placeholder="GST123456" style={inputStyle} />
-                                        </div>
-                                    )}
-                                    {(businessType === 'services_firm' || businessType === 'ca_firm') && (
-                                        <div>
-                                            <label style={labelStyle}>PAN</label>
-                                            <input value={seller.panNumber || ''} onChange={e => setSeller({ ...seller, panNumber: e.target.value })} placeholder="ABCDE1234F" style={inputStyle} />
-                                        </div>
-                                    )}
-                                    {businessType === 'ca_firm' && (
-                                        <div>
-                                            <label style={labelStyle}>FRN (ICAI)</label>
-                                            <input value={seller.frnNumber || ''} onChange={e => setSeller({ ...seller, frnNumber: e.target.value })} placeholder="123456W" style={inputStyle} />
-                                        </div>
-                                    )}
-                                    <div>
-                                        <label style={labelStyle}>UPI ID</label>
-                                        <input value={seller.upiId || ''} onChange={e => setSeller({ ...seller, upiId: e.target.value })} placeholder="yourname@upi" style={inputStyle} />
-                                    </div>
-                                    {businessType === 'solopreneur' && (
-                                        <div>
-                                            <label style={labelStyle}>Bank Details</label>
-                                            <textarea rows={2} value={seller.bankDetails || ''} onChange={e => setSeller({ ...seller, bankDetails: e.target.value })}
-                                                placeholder="A/C No, IFSC, Bank Name" style={{ ...inputStyle, resize: 'none' }} />
-                                        </div>
-                                    )}
+                    {/* Section: Service Items */}
+                    <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-teal-100/60 overflow-hidden shadow-sm">
+                        <div className="px-6 py-5 border-b border-teal-100/60 bg-teal-50/20 flex justify-between items-center">
+                            <h3 className="text-sm font-black text-gray-900 flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-teal-500 text-white flex items-center justify-center shadow-md shadow-teal-500/20">
+                                    <Plus size={16} strokeWidth={3} />
                                 </div>
-                            </div>
-
-                            {/* TO */}
-                            <div>
-                                <p style={{ fontSize: 13, fontWeight: 700, color: '#1D9E75', letterSpacing: '0.05em', margin: '0 0 12px', textTransform: 'uppercase' }}>To (Client Details)</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                    <div>
-                                        <label style={labelStyle}>Address</label>
-                                        <textarea rows={2} value={buyer.address || ''} onChange={e => setBuyer({ ...buyer, address: e.target.value })}
-                                            placeholder="Client Address" style={{ ...inputStyle, resize: 'none' }} />
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                        <div>
-                                            <label style={labelStyle}>Email</label>
-                                            <input value={buyer.email || ''} onChange={e => setBuyer({ ...buyer, email: e.target.value })} placeholder="Email" style={inputStyle} />
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Phone</label>
-                                            <input value={buyer.phone || ''} onChange={e => setBuyer({ ...buyer, phone: e.target.value })} placeholder="Phone" style={inputStyle} />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label style={labelStyle}>Client GSTIN</label>
-                                        <input value={buyer.taxId || ''} onChange={e => {
-                                            const raw = e.target.value.toUpperCase().replace(/\s/g, '');
-                                            const updated = { ...buyer, taxId: raw };
-                                            if (raw.length === 15) { const s = getStateFromGstin(raw); if (s) (updated as any).state = s; }
-                                            setBuyer(updated);
-                                        }} placeholder="27ABCDE1234F1Z5" style={inputStyle} />
-                                        {buyer.taxId && (
-                                            <span style={{ fontSize: 11, display: 'block', marginTop: 4, color: buyer.taxId.length < 15 ? '#9ca3af' : validateGstin(buyer.taxId) ? '#16a34a' : '#d97706' }}>
-                                                {buyer.taxId.length < 15 ? `${buyer.taxId.length}/15` : validateGstin(buyer.taxId) ? `Valid — ${getGstinStateDisplay(buyer.taxId)}` : 'Invalid GSTIN format'}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {businessType === 'ca_firm' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 16 }}>
-                                <div>
-                                    <label style={labelStyle}>Place of Supply *</label>
-                                    <select value={placeOfSupply} onChange={e => setPlaceOfSupply(e.target.value)} style={inputStyle}>
-                                        {INDIAN_STATES.map(s => <option key={s}>{s}</option>)}
-                                    </select>
-                                </div>
-                                <div style={toggleRow}>
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>Reverse Charge</span>
-                                    <Toggle value={reverseCharge} onChange={setReverseCharge} />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Section: Invoice Services (Line Items) */}
-                    <div style={sectionCard}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <p style={sectionTitle}>Invoice Services</p>
-                            <button onClick={() => setItems([...items, { description: '', quantity: 1, unit: businessType === 'solopreneur' ? 'Service' : 'Qty', price: undefined, discount: 0, sac_code: '', tax_rate: 18, is_exempt: false }])}
-                                style={{ fontSize: 13, fontWeight: 700, color: '#1D9E75', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                + Add Service
+                                Line Items & Services
+                            </h3>
+                            <button onClick={() => setItems([...items, { description: '', quantity: 1, unit: businessType === 'solopreneur' ? 'Service' : 'Qty', price: undefined, discount: 0, sac_code: '', tax_rate: 18, is_exempt: false }])} className="px-4 py-2 rounded-xl border border-teal-200 bg-white text-xs font-black text-teal-600 hover:bg-teal-50 transition-all shadow-sm">
+                                Add Row
                             </button>
                         </div>
-
-                        {items.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af', fontSize: 14 }}>
-                                No Services added yet. Click "Add Service" to get started.
-                            </div>
-                        ) : (
-                            <div>
-                                {/* Table Header */}
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: businessType === 'solopreneur' ? '2fr 80px 100px 90px 30px' : '2fr 70px 70px 80px 70px 90px 30px',
-                                    gap: 8, padding: '10px 12px', background: '#f9fafb', borderRadius: '8px 8px 0 0', border: '1px solid #e5e7eb',
-                                }}>
-                                    {['Description', ...(businessType === 'solopreneur' ? [] : ['Unit']), 'Qty', 'Price', ...(businessType !== 'solopreneur' ? ['Disc%'] : []), 'Amount', ''].map((h, i) => (
-                                        <span key={i} style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textAlign: i === 0 ? 'left' : 'center' }}>{h}</span>
-                                    ))}
-                                </div>
-
-                                {/* Table Rows */}
-                                {items.map((item, idx) => {
-                                    const lineAmt = (item.quantity || 0) * (item.price || 0) * (1 - (item.discount || 0) / 100);
-                                    return (
-                                        <div key={idx} style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: businessType === 'solopreneur' ? '2fr 80px 100px 90px 30px' : '2fr 70px 70px 80px 70px 90px 30px',
-                                            gap: 8, padding: '10px 12px', border: '1px solid #e5e7eb', borderTop: 'none', alignItems: 'center', background: 'white',
-                                        }}>
-                                            <div style={{ position: 'relative' }}>
-                                                <input value={item.description || ''} placeholder={businessType === 'solopreneur' ? 'Service description...' : 'Item name...'}
-                                                    onChange={e => {
-                                                        const v = e.target.value; const sug = autoSuggestSac(v);
-                                                        if (sug && !item.sac_code) { updateItem(idx, { description: v, sac_code: sug.sacCode, tax_rate: sug.entry.gstRate, is_exempt: sug.entry.isExempt }); }
-                                                        else { updateItem(idx, { description: v }); }
-                                                    }}
-                                                    onFocus={() => businessType === 'ecommerce' && setFocusedItemIndex(idx)}
-                                                    onBlur={() => setTimeout(() => setFocusedItemIndex(null), 200)}
-                                                    style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 14, fontWeight: 500, color: '#111827', outline: 'none' }} />
-                                                {item.sac_code && <span style={{ fontSize: 9, color: '#9ca3af', fontFamily: 'monospace', display: 'block' }}>SAC {item.sac_code}</span>}
-                                                {itemErrors?.[idx] && <ErrMsg>{itemErrors[idx]}</ErrMsg>}
-
-                                                {focusedItemIndex === idx && (
-                                                    <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 100, background: 'white', borderRadius: 10, boxShadow: '0 20px 40px rgba(0,0,0,0.12)', border: '1px solid #e5e7eb', minWidth: 260, maxHeight: 220, overflowY: 'auto' }}>
-                                                        {products.filter(p => !item.description || p.name.toLowerCase().includes(item.description.toLowerCase())).slice(0, 12).map(product => (
-                                                            <button key={product.id} onClick={() => updateItem(idx, { description: product.name, price: product.price, unit: product.unit, productId: product.id, sku: product.sku, hsn_code: product.hsnCode || '' })}
-                                                                style={{ width: '100%', textAlign: 'left', padding: '8px 12px', border: 'none', background: 'transparent', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between' }}>
-                                                                <div><div style={{ fontSize: 13, fontWeight: 600 }}>{product.name}</div>{product.sku && <div style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace' }}>SKU: {product.sku}</div>}</div>
-                                                                <div style={{ textAlign: 'right' }}><div style={{ fontSize: 13, fontWeight: 700 }}>₹{product.price}</div><div style={{ fontSize: 9, color: (product.stock || 0) < 5 ? '#f59e0b' : '#9ca3af' }}>{product.stock} left</div></div>
-                                                            </button>
-                                                        ))}
+                        
+                        <div className="p-1 overflow-x-auto">
+                            <table className="w-full min-w-[700px]">
+                                <thead className="bg-gray-50/30 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-teal-100/60">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left">Description</th>
+                                        {businessType !== 'solopreneur' && <th className="px-6 py-3 text-center w-24">Unit</th>}
+                                        <th className="px-6 py-3 text-center w-24">Qty</th>
+                                        <th className="px-6 py-3 text-right w-32">Price</th>
+                                        {businessType !== 'solopreneur' && <th className="px-6 py-3 text-center w-20">Disc%</th>}
+                                        <th className="px-6 py-3 text-right w-32">Amount</th>
+                                        <th className="px-6 py-3 w-12 text-center"></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-teal-50/50">
+                                    {items.map((item, idx) => {
+                                        const lineAmt = (item.quantity || 0) * (item.price || 0) * (1 - (item.discount || 0) / 100);
+                                        return (
+                                            <tr key={idx} className="group hover:bg-teal-50/20 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="relative">
+                                                        <input
+                                                            value={item.description || ''}
+                                                            onChange={e => {
+                                                                const v = e.target.value; const sug = autoSuggestSac(v);
+                                                                if (sug && !item.sac_code) { updateItem(idx, { description: v, sac_code: sug.sacCode, tax_rate: sug.entry.gstRate, is_exempt: sug.entry.isExempt }); }
+                                                                else { updateItem(idx, { description: v }); }
+                                                            }}
+                                                            placeholder="Consulting Fee..."
+                                                            className="w-full bg-transparent border-none outline-none font-bold text-sm text-gray-900 placeholder:font-normal placeholder:text-gray-300"
+                                                        />
+                                                        {item.sac_code && <span className="text-[9px] font-black text-teal-600 block bg-teal-50/50 px-1.5 py-0.5 rounded border border-teal-100 w-fit mt-1">SAC {item.sac_code}</span>}
+                                                        {itemErrors?.[idx] && <ErrMsg>{itemErrors[idx]}</ErrMsg>}
                                                     </div>
+                                                </td>
+                                                {businessType !== 'solopreneur' && (
+                                                    <td className="px-4 py-4">
+                                                        <select value={item.unit || 'Qty'} onChange={e => updateItem(idx, { unit: e.target.value })} className="w-full bg-transparent text-center text-xs font-bold text-gray-500 outline-none">
+                                                            {UNITS.map(u => <option key={u}>{u}</option>)}
+                                                        </select>
+                                                    </td>
                                                 )}
-                                            </div>
+                                                <td className="px-4 py-4">
+                                                    <input type="number" value={item.quantity || 1} onChange={e => updateItem(idx, { quantity: Number(e.target.value) })} className="w-full bg-transparent text-center font-bold text-sm text-gray-700 outline-none" />
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <input type="number" value={item.price ?? ''} onChange={e => updateItem(idx, { price: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="0.00" className="w-full bg-transparent text-right font-black text-sm text-gray-900 outline-none" />
+                                                </td>
+                                                {businessType !== 'solopreneur' && (
+                                                    <td className="px-4 py-4">
+                                                        <input type="number" value={item.discount ?? ''} onChange={e => updateItem(idx, { discount: e.target.value === '' ? undefined : Number(e.target.value) })} className="w-full bg-transparent text-center text-xs font-bold text-gray-400 outline-none" />
+                                                    </td>
+                                                )}
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className="font-black text-sm text-gray-900">{currency.symbol}{lineAmt.toLocaleString()}</span>
+                                                </td>
+                                                <td className="px-4 py-4 text-center">
+                                                    <button onClick={() => setItems(items.filter((_, i) => i !== idx))} className="text-gray-300 hover:text-red-400 transition-colors">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
-                                            {businessType !== 'solopreneur' && (
-                                                <select value={item.unit || 'Qty'} onChange={e => updateItem(idx, { unit: e.target.value })}
-                                                    style={{ fontSize: 12, border: '1px solid #e5e7eb', borderRadius: 6, padding: '4px', background: 'white', textAlign: 'center', outline: 'none', cursor: 'pointer' }}>
-                                                    {UNITS.map(u => <option key={u}>{u}</option>)}
-                                                </select>
-                                            )}
-                                            <input type="number" value={item.quantity || 1} onChange={e => updateItem(idx, { quantity: Number(e.target.value) })}
-                                                style={{ textAlign: 'center', border: '1px solid #e5e7eb', borderRadius: 6, padding: '6px', fontSize: 13, fontWeight: 600, background: '#f9fafb', outline: 'none' }} />
-                                            <input type="number" value={item.price ?? ''} onChange={e => updateItem(idx, { price: e.target.value === '' ? undefined : Number(e.target.value) })}
-                                                placeholder="0.00" style={{ textAlign: 'center', border: '1px solid #e5e7eb', borderRadius: 6, padding: '6px', fontSize: 13, fontWeight: 600, outline: 'none', background: 'white' }} />
-                                            {businessType !== 'solopreneur' && (
-                                                <input type="number" value={item.discount ?? ''} onChange={e => updateItem(idx, { discount: e.target.value === '' ? undefined : Number(e.target.value) })}
-                                                    style={{ textAlign: 'center', border: '1px solid #e5e7eb', borderRadius: 6, padding: '6px', fontSize: 12, background: '#f9fafb', outline: 'none' }} />
-                                            )}
-                                            <span style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#111827' }}>{currency.symbol}{lineAmt.toFixed(2)}</span>
-                                            <button onClick={() => setItems(items.filter((_, i) => i !== idx))}
-                                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#d1d5db', fontSize: 18, padding: 2 }}>×</button>
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        {/* Section: Your Business */}
+                        <SectionCard title="Billing From" icon={Banknote}>
+                            <div className="grid grid-cols-1 gap-4">
+                                <InputWrapper label="Legal Entity Name" required error={sellerErrors?.name}>
+                                    <input value={seller.name || ''} onChange={e => setSeller({ ...seller, name: e.target.value })} className={commonInputClass} />
+                                </InputWrapper>
+                                <InputWrapper label="Address & Registration">
+                                    <textarea rows={2} value={seller.address || ''} onChange={e => setSeller({ ...seller, address: e.target.value })} className={`${commonInputClass} resize-none`} />
+                                </InputWrapper>
+                            </div>
+                        </SectionCard>
+
+                        {/* Section: Additional Details */}
+                        <SectionCard title="Additional Context" icon={FileText}>
+                             <div className="space-y-4">
+                                {showNotes && (
+                                    <InputWrapper label="Internal Notes & Footers">
+                                        <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Bank details, terms, etc." className={`${commonInputClass} resize-none`} />
+                                    </InputWrapper>
+                                )}
+                                <div className="flex items-center justify-between p-4 bg-teal-50/20 rounded-2xl border border-teal-100/50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white rounded-lg border border-teal-100/60 shadow-sm">
+                                            <CreditCard size={14} className="text-teal-600" />
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Section: Add Terms / Notes */}
-                    {!showNotes ? (
-                        <button onClick={() => setShowNotes(true)}
-                            style={{ ...sectionCard, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#374151', padding: '16px 24px' }}>
-                            + Add Terms / Notes
-                        </button>
-                    ) : (
-                        <div style={sectionCard}>
-                            <p style={sectionTitle}>Terms / Notes</p>
-                            <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)}
-                                placeholder="Payment terms, bank details, thank you note..."
-                                style={{ ...inputStyle, resize: 'vertical' }} />
-                            {businessType === 'ecommerce' && (
-                                <div style={{ marginTop: 12 }}>
-                                    <label style={labelStyle}>Courier & Tracking</label>
-                                    <input value={courierTracking} onChange={e => setCourierTracking(e.target.value)} placeholder="Delhivery AWB: 1234567890" style={inputStyle} />
+                                        <span className="text-[11px] font-black text-gray-600 uppercase tracking-wider">GST Registered</span>
+                                    </div>
+                                    <Toggle value={isGstRegistered} onChange={v => { setIsGstRegistered(v); setTaxRate(v ? 18 : 0); }} />
                                 </div>
-                            )}
-                            {businessType === 'services_firm' && (
-                                <div style={{ marginTop: 12 }}>
-                                    <label style={labelStyle}>Authorized Signatory</label>
-                                    <input value={authorizedSignatory} onChange={e => setAuthorizedSignatory(e.target.value)} placeholder="Partner / Director name" style={inputStyle} />
+                             </div>
+                        </SectionCard>
+                    </div>
+
+                </div>
+
+                {/* ──── RIGHT: LIVE PREVIEW ──── */}
+                <div className="hidden lg:flex flex-col bg-teal-50/20 border-l border-teal-100/60 relative overflow-hidden">
+                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-400 opacity-[0.04] blur-[120px] pointer-events-none rounded-full" />
+                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-400 opacity-[0.04] blur-[120px] pointer-events-none rounded-full" />
+                    
+                    <div className="px-8 py-5 border-b border-teal-100/60 flex justify-between items-center bg-white/40 backdrop-blur-md relative z-10">
+                        <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest flex items-center gap-2">
+                            <Smartphone size={12} />
+                            Real-time Rendering
+                        </span>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-10 custom-scrollbar relative z-10 flex justify-center items-start overflow-x-hidden">
+                        {/* THE DOCUMENT */}
+                        <div className="w-full max-w-[400px] bg-white rounded-[2rem] border border-teal-100/60 shadow-[0_20px_50px_rgba(20,184,166,0.1)] overflow-hidden scale-[0.85] origin-top">
+                            {/* Branding Info */}
+                            <div className="p-8 bg-gradient-to-br from-teal-500 to-teal-700 text-white flex justify-between items-start">
+                                <div className="text-left">
+                                    <h2 className="text-2xl font-black tracking-tighter">PROFORMA</h2>
+                                    <p className="text-[10px] font-bold opacity-80 mt-1 uppercase tracking-[0.2em]">{meta.number || 'P-0001'}</p>
                                 </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Section: Signature toggle */}
-                    <div style={toggleRow}>
-                        <div>
-                            <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>Signature</p>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Include Signature on Invoice</span>
-                            <Toggle value={false} onChange={() => { }} />
-                        </div>
-                    </div>
-
-                    {/* Logo upload */}
-                    <div style={sectionCard}>
-                        <p style={sectionTitle}>Logo</p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                            <div style={{ width: 80, height: 80, border: '2px dashed #d1d5db', borderRadius: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-                                <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 1 }} />
-                                {logo ? <img src={logo} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 6 }} />
-                                    : <><div style={{ fontSize: 20, color: '#d1d5db' }}>⊞</div><span style={{ fontSize: 10, color: '#9ca3af' }}>Logo</span></>}
-                            </div>
-                            <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>Upload your business logo. It will appear on the invoice preview.</p>
-                        </div>
-                    </div>
-
-                </div>{/* end LEFT */}
-
-
-                {/* ──── RIGHT: Live Invoice Preview ──── */}
-                <div style={{ overflowY: 'auto', padding: '24px 20px', borderLeft: '1px solid #e5e7eb', background: '#f3f4f6' }}>
-
-                    {/* Preview PDF button */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16, gap: 8 }}>
-                        <button onClick={actions.handlePrint} disabled={loading}
-                            style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#374151', display: 'flex', alignItems: 'center', gap: 6, opacity: loading ? 0.6 : 1 }}>
-                            👁 Preview PDF
-                        </button>
-                        <button onClick={actions.handleEmailClick} disabled={loading}
-                            style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#374151', opacity: loading ? 0.6 : 1 }}>
-                            ✉ Email
-                        </button>
-                    </div>
-
-                    {/* Invoice Card */}
-                    <div style={{
-                        background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
-                        padding: '32px 28px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                    }}>
-                        {/* Logo + INVOICE heading */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-                            <div style={{ width: 60 }}>
-                                {logo && <img src={logo} alt="logo" style={{ width: 60, height: 60, objectFit: 'contain' }} />}
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <h2 style={{ fontSize: 28, fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>INVOICE</h2>
-                                <p style={{ fontSize: 13, color: '#6b7280', margin: '4px 0 0', fontWeight: 500 }}>{meta.number || 'INV-0001'}</p>
-                            </div>
-                        </div>
-
-                        {/* Billed From / Billed To */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 20 }}>
-                            <div>
-                                <p style={{ fontSize: 11, fontWeight: 800, color: '#111827', margin: '0 0 8px', letterSpacing: '0.05em' }}>BILLED FROM</p>
-                                {seller.name && <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: '0 0 2px' }}>{seller.name}</p>}
-                                {seller.address && <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 2px', lineHeight: 1.4 }}>{seller.address}</p>}
-                                {seller.phone && <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 2px' }}>Phone: {seller.phone}</p>}
-                                {seller.email && <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 2px' }}>Email: {seller.email}</p>}
-                                {seller.panNumber && <p style={{ fontSize: 12, fontWeight: 600, color: '#374151', margin: '0 0 2px' }}>PAN: {seller.panNumber}</p>}
-                                {seller.taxId && <p style={{ fontSize: 12, fontWeight: 600, color: '#374151', margin: 0 }}>GSTIN: {seller.taxId}</p>}
-                            </div>
-                            <div>
-                                <p style={{ fontSize: 11, fontWeight: 800, color: '#111827', margin: '0 0 8px', letterSpacing: '0.05em' }}>BILLED TO</p>
-                                {buyer.name ? (
-                                    <>
-                                        <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: '0 0 2px' }}>{buyer.name}</p>
-                                        {buyer.address && <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 2px', lineHeight: 1.4 }}>{buyer.address}</p>}
-                                        {buyer.email && <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 2px' }}>{buyer.email}</p>}
-                                        {buyer.taxId && <p style={{ fontSize: 12, fontWeight: 600, color: '#374151', margin: 0 }}>GSTIN: {buyer.taxId}</p>}
-                                    </>
+                                {logo ? (
+                                    <img src={logo} alt="logo" className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md p-1 object-contain" />
                                 ) : (
-                                    <p style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>Select a client to view their billing and tax details.</p>
+                                    <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-black text-xl italic text-white/40">
+                                        M
+                                    </div>
                                 )}
                             </div>
-                        </div>
 
-                        {/* Invoice Date / Due Date */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #f3f4f6' }}>
-                            <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', margin: 0 }}>
-                                INVOICE DATE: &nbsp;<span style={{ fontWeight: 500 }}>{formatDate(meta.date || '')}</span>
-                            </p>
-                            <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', margin: 0 }}>
-                                DUE DATE: &nbsp;<span style={{ fontWeight: 500 }}>{formatDate(meta.dueDate || '')}</span>
-                            </p>
-                        </div>
-
-                        {/* Line items table */}
-                        <div style={{ marginBottom: 16 }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', padding: '8px 0', borderBottom: '2px solid #111827' }}>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>Description</span>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textAlign: 'right' }}>Amount</span>
-                            </div>
-                            {items.length === 0 ? (
-                                <p style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic', padding: '16px 0', textAlign: 'center', margin: 0 }}>No items added</p>
-                            ) : items.map((item, idx) => {
-                                const lineAmt = (item.quantity || 0) * (item.price || 0) * (1 - (item.discount || 0) / 100);
-                                return (
-                                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
-                                        <div>
-                                            <span style={{ fontSize: 13, fontWeight: 500, color: '#111827' }}>{item.description || 'Untitled'}</span>
-                                            {item.quantity > 1 && <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 8 }}>× {item.quantity}</span>}
-                                        </div>
-                                        <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', textAlign: 'right' }}>{currency.symbol}{lineAmt.toFixed(2)}</span>
+                            <div className="p-8 space-y-8 text-left">
+                                {/* Bill To/From */}
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="text-left">
+                                        <h4 className="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-2">Billed To</h4>
+                                        <p className="text-xs font-black text-gray-900 leading-tight">{buyer.name || 'Untitled Client'}</p>
+                                        <p className="text-[10px] text-gray-400 font-medium mt-1 leading-relaxed line-clamp-3">{buyer.address || 'Address pending'}</p>
                                     </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Totals */}
-                        <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                                <span style={{ color: '#6b7280' }}>Subtotal</span>
-                                <span style={{ fontWeight: 600, color: '#111827' }}>{currency.symbol}{subtotal.toFixed(2)}</span>
-                            </div>
-                            {resolvedGstType === 'cgst_sgst' && <>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>CGST @ {(taxRate / 2).toFixed(1)}%</span><span style={{ fontWeight: 600 }}>{currency.symbol}{(taxAmount / 2).toFixed(2)}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>SGST @ {(taxRate / 2).toFixed(1)}%</span><span style={{ fontWeight: 600 }}>{currency.symbol}{(taxAmount / 2).toFixed(2)}</span></div>
-                            </>}
-                            {resolvedGstType === 'igst' && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}><span style={{ color: '#6b7280' }}>IGST @ {taxRate}%</span><span style={{ fontWeight: 600 }}>{currency.symbol}{taxAmount.toFixed(2)}</span></div>}
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
-                                <span style={{ color: '#6b7280' }}>Discount</span>
-                                <div style={{ position: 'relative', width: 86 }}>
-                                    <span style={{ position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#9ca3af' }}>{currency.symbol}</span>
-                                    <input type="number" value={discountAmount ?? ''} onChange={e => setDiscountAmount(e.target.value === '' ? undefined : Number(e.target.value))}
-                                        style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 6, padding: '4px 6px 4px 20px', fontSize: 12, textAlign: 'right', background: '#f9fafb', outline: 'none', boxSizing: 'border-box' }} />
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
-                                <span style={{ color: '#6b7280' }}>Shipping</span>
-                                <div style={{ position: 'relative', width: 86 }}>
-                                    <span style={{ position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#9ca3af' }}>{currency.symbol}</span>
-                                    <input type="number" value={shipping ?? ''} onChange={e => setShipping(e.target.value === '' ? undefined : Number(e.target.value))}
-                                        style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 6, padding: '4px 6px 4px 20px', fontSize: 12, textAlign: 'right', background: '#f9fafb', outline: 'none', boxSizing: 'border-box' }} />
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderTop: '1px solid #e5e7eb', paddingTop: 10, marginTop: 4 }}>
-                                <span style={{ fontSize: 14, fontWeight: 700, color: '#374151' }}>Total</span>
-                                <span style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>{currency.symbol}{total.toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        {/* Total in words */}
-                        {currency.code === 'INR' && total > 0 && (
-                            <p style={{ fontSize: 12, color: '#6b7280', fontStyle: 'italic', margin: '12px 0 0', textAlign: 'right' }}>
-                                Total In Words: <span style={{ fontWeight: 600, fontStyle: 'italic' }}>{numberToIndianWords(total)}</span>
-                            </p>
-                        )}
-
-                        {/* TDS info */}
-                        {tdsEnabled && tdsAmount && tdsAmount > 0 && (
-                            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: 12, marginTop: 12 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div>
-                                        <p style={{ fontSize: 11, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', margin: '0 0 2px' }}>You will receive</p>
-                                        <p style={{ fontSize: 10, color: '#16a34a', margin: 0 }}>After TDS {tdsRate}% deduction</p>
+                                    <div className="text-right">
+                                        <h4 className="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-2">Issue Date</h4>
+                                        <p className="text-xs font-black text-gray-900">{formatDate(meta.date || '')}</p>
+                                        <h4 className="text-[9px] font-black text-teal-600 uppercase tracking-widest mt-4 mb-2">Due Date</h4>
+                                        <p className="text-xs font-black text-gray-900">{formatDate(meta.dueDate || '')}</p>
                                     </div>
-                                    <p style={{ fontSize: 20, fontWeight: 800, color: '#15803d', margin: 0 }}>₹{state.netReceivable?.toFixed(2)}</p>
                                 </div>
+
+                                {/* Items */}
+                                <div className="space-y-4">
+                                    <div className="flex justify-between border-b-2 border-gray-900 pb-2 text-[10px] font-black uppercase tracking-widest">
+                                        <span>Description</span>
+                                        <span>Amount</span>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {items.length === 0 ? (
+                                            <div className="py-4 border-b border-gray-50 flex justify-between items-center opacity-30">
+                                                <span className="text-[11px] italic">Sample Line Item #1</span>
+                                                <span className="font-bold text-xs">{currency.symbol}0.00</span>
+                                            </div>
+                                        ) : items.map((item, idx) => {
+                                            const amt = (item.quantity || 0) * (item.price || 0) * (1 - (item.discount || 0) / 100);
+                                            return (
+                                                <div key={idx} className="flex justify-between items-start pt-1">
+                                                    <div className="max-w-[180px] text-left">
+                                                        <p className="text-[11px] font-bold text-gray-900">{item.description || 'Untitled Service'}</p>
+                                                        {item.quantity > 1 && <p className="text-[9px] text-teal-600 font-bold mt-0.5">{item.quantity} units</p>}
+                                                    </div>
+                                                    <span className="font-black text-xs text-gray-900">{currency.symbol}{amt.toLocaleString()}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Totals */}
+                                <div className="border-t-2 border-gray-900/5 pt-6 space-y-2 text-left">
+                                    <div className="flex justify-between text-[11px] font-bold text-gray-400">
+                                        <span>Subtotal</span>
+                                        <span>{currency.symbol}{subtotal.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[11px] font-black text-teal-600">
+                                        <span>Taxation ({taxRate}%)</span>
+                                        <span>{currency.symbol}{taxAmount.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between pt-4 pb-2">
+                                        <span className="text-xs font-black text-gray-900 uppercase">Grand Total</span>
+                                        <span className="text-2xl font-black text-gray-900 tracking-tighter">{currency.symbol}{total.toLocaleString()}</span>
+                                    </div>
+                                </div>
+
+                                {/* Words */}
+                                {currency.code === 'INR' && total > 0 && (
+                                    <div className="pt-2 text-left">
+                                        <p className="text-[8px] font-black text-teal-600/50 uppercase tracking-[0.2em] mb-1">Total in words</p>
+                                        <p className="text-[10px] font-bold italic text-gray-400 leading-tight">
+                                            {numberToIndianWords(total)} Only
+                                        </p>
+                                    </div>
+                                )}
                             </div>
-                        )}
+
+                            {/* Footer Art */}
+                            <div className="mt-8 relative overflow-hidden h-24 flex items-center justify-center">
+                                <div className="absolute inset-0 bg-teal-50 group-hover:bg-teal-100/50 transition-colors" />
+                                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-teal-200 to-transparent" />
+                                <p className="text-[10px] font-black text-teal-900/20 uppercase tracking-[0.5em] relative z-10">Edge Flow Financial</p>
+                                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-teal-400 opacity-20 blur-3xl rounded-full" />
+                            </div>
+                        </div>
                     </div>
-                </div>{/* end RIGHT */}
+                </div>
 
-            </div>{/* end BODY grid */}
+            </div>
+
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </div>
     );
 }

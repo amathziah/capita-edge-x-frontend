@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import {
   CreditCard, Smartphone, DollarSign, CheckCircle, Download, TrendingUp,
   X, Search, Eye, LayoutGrid, List,
-  SortAsc, SortDesc, Banknote, Clock, Filter, Plus, User, Hash, ChevronDown, Calendar, ChevronLeft, ChevronRight
+  SortAsc, SortDesc, Banknote, Clock, Filter, Plus, Hash, ChevronDown, Calendar, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService } from '../services/dataService';
@@ -334,27 +334,50 @@ export function Payments() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8"
         >
           {[
-            { label: 'Total Payments', value: stats.count.toString(), sub: `${payments.length} total`, icon: CreditCard, badge: null },
-            { label: 'Total Amount', value: `Rs. ${(stats.sum / 1000).toFixed(1)}k`, sub: `Rs. ${stats.sum.toLocaleString()}`, icon: TrendingUp, badge: null },
-            { label: 'Reconciled', value: stats.reconciledCount.toString(), sub: 'Completed', icon: CheckCircle, badge: null },
-            { label: 'Pending', value: stats.pendingCount.toString(), sub: 'Awaiting', icon: Clock, badge: stats.pendingCount > 0 ? 'Action needed' : null },
-          ].map(({ label, value, sub, icon: Icon, badge }, idx) => (
-            <div key={idx} className="relative bg-gradient-to-br from-white to-teal-50/30 p-5 rounded-2xl border border-teal-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-              <div className="absolute -top-8 -right-8 w-20 h-20 bg-teal-100/40 rounded-full blur-2xl" />
-              <div className="relative">
-                {badge && (
-                  <span className="absolute top-0 right-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 rounded-full border border-amber-200">
-                    {badge}
-                  </span>
-                )}
-                <div className="p-2.5 bg-teal-100 text-teal-600 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform">
-                  <Icon size={18} />
-                </div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">{label}</p>
-                <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-                <p className="text-xs text-teal-600 mt-1 font-medium">{sub}</p>
-              </div>
-            </div>
+            { 
+              label: 'Total Payments', value: stats.count.toString(), sub: `${payments.length} total`, icon: CreditCard, badge: null,
+              gradient: 'from-amber-500 to-orange-500', glow: 'shadow-amber-500/25', accent: 'text-amber-600', bg: 'from-amber-50/60 via-white to-orange-50/40', ring: 'bg-amber-500', border: 'border-amber-200/60'
+            },
+            { 
+              label: 'Total Amount', value: `₹${(stats.sum / 1000).toFixed(1)}k`, sub: `₹${stats.sum.toLocaleString()}`, icon: TrendingUp, badge: null,
+              gradient: 'from-emerald-500 to-green-500', glow: 'shadow-emerald-500/25', accent: 'text-emerald-600', bg: 'from-emerald-50/60 via-white to-green-50/40', ring: 'bg-emerald-500', border: 'border-emerald-200/60'
+            },
+            { 
+              label: 'Reconciled', value: stats.reconciledCount.toString(), sub: 'Completed', icon: CheckCircle, badge: null,
+              gradient: 'from-teal-500 to-cyan-500', glow: 'shadow-teal-500/25', accent: 'text-teal-600', bg: 'from-teal-50/60 via-white to-cyan-50/40', ring: 'bg-teal-500', border: 'border-teal-200/60'
+            },
+            { 
+              label: 'Pending', value: stats.pendingCount.toString(), sub: 'Awaiting', icon: Clock, badge: stats.pendingCount > 0 ? 'Action needed' : null,
+              gradient: 'from-rose-500 to-red-500', glow: 'shadow-rose-500/25', accent: 'text-rose-600', bg: 'from-rose-50/60 via-white to-red-50/40', ring: 'bg-rose-500', border: 'border-rose-200/60'
+            },
+          ].map((card, idx) => (
+                <motion.div
+                  key={card.label}
+                  initial={{ opacity: 0, y: 18, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.45, delay: 0.05 + (idx * 0.05), ease: [0.23, 1, 0.32, 1] }}
+                  className={`relative bg-white p-5 rounded-2xl border ${card.border} shadow-sm hover:shadow-lg ${card.glow} hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 group overflow-hidden cursor-default`}
+                >
+
+                  <div className="relative">
+                    {card.badge && (
+                      <span className={`absolute top-0 right-0 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest bg-white ${card.accent} rounded-full border ${card.border} shadow-sm`}>
+                        {card.badge}
+                      </span>
+                    )}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className={`p-2.5 bg-gradient-to-br ${card.gradient} text-white rounded-xl shadow-lg ${card.glow} group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                        <card.icon size={18} strokeWidth={2.2} />
+                      </div>
+                    </div>
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.12em] mb-1">{card.label}</p>
+                    <h3 className="text-[28px] font-extrabold text-gray-900 tracking-tight leading-none">{card.value}</h3>
+                    <p className={`text-xs ${card.accent} mt-2 font-semibold flex items-center gap-1.5`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${card.ring}`} />
+                      {card.sub}
+                    </p>
+                  </div>
+                </motion.div>
           ))}
         </motion.div>
 
@@ -366,7 +389,7 @@ export function Payments() {
           transition={{ duration: 0.35, delay: 0.1 }}
           className="mb-6"
         >
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-teal-100/60 shadow-sm p-4">
+          <div className="bg-white rounded-2xl border border-teal-100/60 shadow-sm p-4">
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
               {/* Search */}
               <div className="relative flex-1 w-full md:max-w-sm">
@@ -468,7 +491,7 @@ export function Payments() {
           transition={{ duration: 0.4, delay: 0.15 }}
         >
           {filtered.length === 0 ? (
-            <div className="text-center py-20 bg-white/80 backdrop-blur-xl rounded-3xl border border-teal-100/60 shadow-sm">
+            <div className="text-center py-20 bg-white rounded-3xl border border-teal-100/60 shadow-sm">
               <div className="bg-teal-50 p-4 rounded-2xl inline-flex mb-4 border border-teal-100">
                 <DollarSign className="w-8 h-8 text-teal-400" />
               </div>
@@ -480,76 +503,78 @@ export function Payments() {
               {filtered.map(p => (
                 <div
                   key={p.id}
-                  className={`group bg-white/80 backdrop-blur-xl border rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col overflow-hidden ${selectedInvoice === p.invoice
-                    ? 'ring-2 ring-teal-400 border-teal-300'
-                    : 'border-teal-100/60 hover:border-teal-300'
-                    } ${settings.compactCards ? 'p-4' : 'p-5'}`}
+                  className={`relative group bg-white border rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01] transition-all duration-300 cursor-pointer flex flex-col overflow-hidden ${selectedInvoice === p.invoice
+                    ? 'ring-2 ring-teal-400 border-teal-300 shadow-teal-500/20'
+                    : 'border-teal-200/60 hover:border-teal-300 shadow-teal-500/10'
+                    }`}
                   onClick={() => setSelectedInvoice(p.invoice)}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Invoice</span>
-                    <span className="text-sm font-bold text-gray-900 group-hover:text-teal-700 transition">{p.invoice}</span>
-                  </div>
-
-                  {settings.showMethodIcon && (
+                  <div className={`relative ${settings.compactCards ? 'p-4' : 'p-5'}`}>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Method</span>
-                      <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-teal-50 text-teal-500 border border-teal-100 group-hover:scale-110 transition-transform">
-                          {methodIcon(p.method)}
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Invoice</span>
+                      <span className="text-sm font-bold text-gray-900 group-hover:text-teal-700 transition">{p.invoice}</span>
+                    </div>
+
+                    {settings.showMethodIcon && (
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Method</span>
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white text-teal-500 border border-teal-100 group-hover:scale-110 transition-transform shadow-sm">
+                            {methodIcon(p.method)}
+                          </span>
+                          <span className="font-bold">{p.method}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between mb-1">
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Amount</p>
+                        <p className="text-xl font-extrabold text-gray-900">₹{p.amount.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold shadow-sm ${p.reconciled
+                          ? 'bg-white text-teal-700 border border-teal-200'
+                          : 'bg-white text-amber-700 border border-amber-200'
+                          }`}>
+                          {p.reconciled ? "Reconciled" : "Pending"}
                         </span>
-                        <span>{p.method}</span>
+                        {settings.showDate && <p className="text-xs text-gray-400 mt-1.5 font-bold">{p.date}</p>}
                       </div>
                     </div>
-                  )}
 
-                  <div className="flex items-center justify-between mb-1">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-0.5">Amount</p>
-                      <p className="text-xl font-bold text-gray-900">Rs. {p.amount.toLocaleString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold ${p.reconciled
-                        ? 'bg-teal-50 text-teal-700 border border-teal-200'
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}>
-                        {p.reconciled ? "Reconciled" : "Pending"}
-                      </span>
-                      {settings.showDate && <p className="text-xs text-gray-400 mt-1.5 font-medium">{p.date}</p>}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="mt-3 pt-3 border-t border-teal-50 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {!p.reconciled && (
+                    {/* Actions */}
+                    <div className="mt-4 pt-3 border-t border-gray-100/80 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {!p.reconciled && (
+                        <button
+                          onClick={e => { e.stopPropagation(); markReconciled(p.id); }}
+                          className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition"
+                        >
+                          Mark Reconciled
+                        </button>
+                      )}
                       <button
-                        onClick={e => { e.stopPropagation(); markReconciled(p.id); }}
-                        className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition"
+                        onClick={e => { e.stopPropagation(); handleViewReceipt(p.id); }}
+                        className="px-3 py-1.5 rounded-lg text-teal-700 bg-white border border-teal-100 hover:bg-teal-50 text-[11px] font-bold transition flex items-center gap-1.5"
                       >
-                        Mark Reconciled
+                        <Eye size={12} strokeWidth={2.5}/> View
                       </button>
-                    )}
-                    <button
-                      onClick={e => { e.stopPropagation(); handleViewReceipt(p.id); }}
-                      className="px-3 py-1.5 rounded-lg text-teal-700 bg-teal-50 hover:bg-teal-100 text-xs font-semibold transition flex items-center gap-1.5"
-                    >
-                      <Eye size={14} /> View
-                    </button>
-                    <button
-                      onClick={e => { e.stopPropagation(); handleDownloadReceipt(p.id); }}
-                      className="px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm hover:bg-teal-700"
-                      style={{ backgroundColor: '#0d9488' }}
-                      title="Download Receipt"
-                    >
-                      <Download size={14} /> Download
-                    </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); handleDownloadReceipt(p.id); }}
+                        className="px-3 py-1.5 rounded-lg text-white text-[11px] font-bold transition flex items-center gap-1.5 shadow-sm hover:bg-teal-700"
+                        style={{ backgroundColor: '#0d9488' }}
+                        title="Download Receipt"
+                      >
+                        <Download size={12} strokeWidth={2.5} /> Download
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             /* List View */
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-teal-100/60 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-3xl border border-teal-100/60 shadow-sm overflow-hidden">
               <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-sm">
                   <thead className="bg-teal-50/40 border-b border-teal-100/60 sticky top-0 z-10">
@@ -566,13 +591,13 @@ export function Payments() {
                     {filtered.map(p => (
                       <tr
                         key={p.id}
-                        className={`hover:bg-teal-50/30 transition cursor-pointer group ${selectedInvoice === p.invoice ? 'bg-teal-50/40' : ''}`}
+                        className={`hover:bg-gray-50 transition cursor-pointer group ${selectedInvoice === p.invoice ? 'bg-gray-50' : ''}`}
                         onClick={() => setSelectedInvoice(p.invoice)}
                       >
                         <td className="px-6 py-3.5 font-semibold text-gray-900 group-hover:text-teal-700 transition">{p.invoice}</td>
                         <td className="px-6 py-3.5">
                           <div className="flex items-center gap-3">
-                            <span className="w-6 h-6 bg-teal-50 rounded-md flex items-center justify-center text-teal-500 border border-teal-100">
+                            <span className="w-6 h-6 bg-white rounded-md flex items-center justify-center text-teal-500 border border-teal-100">
                               {methodIcon(p.method)}
                             </span>
                             <span className="text-gray-700">{formatMethod(p.method)}</span>
@@ -625,320 +650,257 @@ export function Payments() {
         </motion.div>
       </div>
 
-      {/* Record Payment Modal */}
+      {/* Record Payment Drawer */}
       <AnimatePresence>
         {showRecordModal && (
-          <div className="fixed inset-0 flex items-center justify-center p-4 z-[9999]">
+          <div className="fixed inset-0 z-[9999] flex">
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
-              onClick={() => setShowRecordModal(false)}
+              onClick={() => { setShowRecordModal(false); setSearchInvoice(""); setShowInvoiceDropdown(false); setShowMethodDropdown(false); setShowCalendar(false); }}
             />
+
+            {/* Drawer — slides in from right, fixed height no scroll */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative z-10 w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-teal-100/60"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="relative ml-auto z-10 w-full max-w-sm h-full flex flex-col bg-white shadow-[-20px_0_60px_-10px_rgba(20,184,166,0.12)] border-l border-teal-100/60"
             >
-              <div className="px-8 py-6 border-b border-teal-50 flex justify-between items-center bg-teal-50/20 rounded-t-3xl">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>Record New Payment</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Enter details to reconcile with an invoice</p>
+              <div className="absolute top-0 right-0 w-48 h-48 bg-teal-400 opacity-[0.04] blur-[80px] rounded-full pointer-events-none" />
+
+              {/* Header */}
+              <div className="relative flex-shrink-0 px-5 py-3.5 border-b border-teal-100/60 flex items-center justify-between bg-gradient-to-r from-white via-teal-50/30 to-white">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-teal-400/40 to-transparent" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-md shadow-teal-500/20">
+                    <Plus className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900 leading-tight">Record New Payment</h3>
+                    <p className="text-[10px] text-gray-400 font-medium">Reconcile with an invoice</p>
+                  </div>
                 </div>
-                <button onClick={() => { setShowRecordModal(false); setSearchInvoice(""); setShowInvoiceDropdown(false); setShowMethodDropdown(false); }} className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-400"><X size={20} /></button>
+                <button
+                  onClick={() => { setShowRecordModal(false); setSearchInvoice(""); setShowInvoiceDropdown(false); setShowMethodDropdown(false); setShowCalendar(false); }}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 border border-transparent hover:border-red-100 transition"
+                >
+                  <X size={14} />
+                </button>
               </div>
 
-              <div className="p-8 space-y-5">
-                {/* Advanced Invoice Search/Select */}
-                <div className="relative">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Select Invoice</label>
+              {/* Body — no scroll, compact spacing */}
+              <div className="flex-1 px-5 py-4 space-y-3">
+
+                {/* Select Invoice */}
+                <div>
+                  <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Select Invoice</label>
                   <div
-                    onClick={() => setShowInvoiceDropdown(!showInvoiceDropdown)}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm cursor-pointer hover:border-teal-400 transition flex justify-between items-center"
+                    onClick={() => { setShowInvoiceDropdown(!showInvoiceDropdown); setShowMethodDropdown(false); setShowCalendar(false); }}
+                    className={`w-full px-3 py-2 bg-white border rounded-xl text-xs cursor-pointer transition-all flex justify-between items-center shadow-sm ${showInvoiceDropdown ? 'border-teal-300 shadow-[0_0_0_3px_rgba(20,184,166,0.08)]' : 'border-teal-100 hover:border-teal-200'}`}
                   >
                     {newPayment.invoiceId ? (
-                      <div className="flex items-center gap-2">
-                        <Hash size={14} className="text-teal-500" />
-                        <span className="font-bold text-gray-900">
-                          {allInvoices.find(i => i.id === newPayment.invoiceId)?.invoiceNumber}
-                        </span>
-                        <span className="text-gray-400 mx-1">|</span>
-                        <User size={14} className="text-gray-400" />
-                        <span className="text-gray-600 truncate max-w-[150px]">
-                          {allInvoices.find(i => i.id === newPayment.invoiceId)?.buyer?.name}
-                        </span>
+                      <div className="flex items-center gap-1.5">
+                        <Hash size={11} className="text-teal-500 flex-shrink-0" />
+                        <span className="font-bold text-gray-900">{allInvoices.find(i => i.id === newPayment.invoiceId)?.invoiceNumber}</span>
+                        <span className="text-gray-300">·</span>
+                        <span className="text-gray-500 truncate max-w-[120px]">{allInvoices.find(i => i.id === newPayment.invoiceId)?.buyer?.name}</span>
                       </div>
                     ) : (
                       <span className="text-gray-400">Search or choose invoice...</span>
                     )}
-                    <Search size={16} className="text-gray-400" />
+                    <ChevronDown size={13} className={`text-gray-400 transition-transform flex-shrink-0 ml-1.5 ${showInvoiceDropdown ? 'rotate-180' : ''}`} />
                   </div>
-
                   <AnimatePresence>
                     {showInvoiceDropdown && (
                       <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute left-0 right-0 mt-2 bg-white border border-teal-100 shadow-2xl rounded-2xl z-[10000] overflow-hidden"
-                        style={{ maxHeight: '300px' }}
+                        initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.15 }}
+                        className="mt-1.5 bg-white border border-teal-100 rounded-xl shadow-[0_8px_24px_-8px_rgba(20,184,166,0.18)] overflow-hidden"
                       >
-                        <div className="p-3 border-b border-gray-50 sticky top-0 bg-white z-20">
+                        <div className="px-2.5 py-2 border-b border-teal-50">
                           <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-teal-400" size={11} />
                             <input
-                              type="text"
-                              autoFocus
-                              placeholder="Type invoice # or customer name..."
-                              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs outline-none focus:ring-2 focus:ring-teal-500/20"
+                              type="text" autoFocus placeholder="Invoice # or client name..."
+                              className="w-full pl-6 pr-2 py-1.5 bg-teal-50/50 border border-teal-100 rounded-lg text-[11px] outline-none focus:ring-1 focus:ring-teal-400/30 text-gray-700 placeholder-gray-400"
                               value={searchInvoice}
                               onChange={e => setSearchInvoice(e.target.value)}
                               onClick={e => e.stopPropagation()}
                             />
                           </div>
                         </div>
-                        <div className="overflow-y-auto max-h-[240px] custom-scrollbar">
+                        <div className="overflow-y-auto max-h-32">
                           {allInvoices
                             .filter(i => i.status !== 'paid' && i.status !== 'draft')
-                            .filter(i =>
-                              i.invoiceNumber.toLowerCase().includes(searchInvoice.toLowerCase()) ||
-                              i.buyer?.name?.toLowerCase().includes(searchInvoice.toLowerCase())
-                            )
-                            .map(i => (
-                              <div
-                                key={i.id}
-                                onClick={() => {
-                                  // Calculate remaining balance
-                                  const invoicePayments = payments.filter(p => {
-                                    const inv = allInvoices.find(all => all.id === i.id);
-                                    return inv && p.invoice === inv.invoiceNumber && p.reconciled;
-                                  });
-                                  const paidAmount = invoicePayments.reduce((sum, p) => sum + p.amount, 0);
-                                  const balance = i.total - paidAmount;
-
-                                  setNewPayment({ ...newPayment, invoiceId: i.id, amount: balance > 0 ? balance : i.total });
-                                  setShowInvoiceDropdown(false);
-                                  setSearchInvoice("");
-                                }}
-                                className="px-4 py-3 hover:bg-teal-50/50 cursor-pointer transition flex justify-between items-center group"
-                              >
-                                <div>
-                                  <p className="text-sm font-bold text-gray-900 group-hover:text-teal-700 transition">{i.invoiceNumber}</p>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <User size={10} className="text-gray-400" />
-                                    <p className="text-[10px] text-gray-500 font-medium">{i.buyer?.name}</p>
+                            .filter(i => i.invoiceNumber.toLowerCase().includes(searchInvoice.toLowerCase()) || i.buyer?.name?.toLowerCase().includes(searchInvoice.toLowerCase()))
+                            .map(i => {
+                              const paid = payments.filter(p => p.invoice === i.invoiceNumber && p.reconciled).reduce((s, p) => s + p.amount, 0);
+                              const balance = i.total - paid;
+                              return (
+                                <div key={i.id}
+                                  onClick={() => { setNewPayment({ ...newPayment, invoiceId: i.id, amount: balance > 0 ? balance : i.total }); setShowInvoiceDropdown(false); setSearchInvoice(""); }}
+                                  className="px-3 py-2 hover:bg-teal-50/60 cursor-pointer transition flex justify-between items-center border-b border-gray-50 last:border-0 group"
+                                >
+                                  <div>
+                                    <p className="text-xs font-bold text-gray-800 group-hover:text-teal-700 transition">{i.invoiceNumber}</p>
+                                    <p className="text-[10px] text-gray-400">{i.buyer?.name}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs font-bold text-teal-700">₹{balance.toLocaleString()}</p>
+                                    <p className="text-[9px] text-gray-400">of ₹{i.total.toLocaleString()}</p>
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  {(() => {
-                                    const invoicePayments = payments.filter(p => p.invoice === i.invoiceNumber && p.reconciled);
-                                    const paidAmount = invoicePayments.reduce((sum, p) => sum + p.amount, 0);
-                                    const balance = i.total - paidAmount;
-                                    return (
-                                      <>
-                                        <p className="text-xs font-bold text-gray-900 font-mono">Rs. {balance.toLocaleString()}</p>
-                                        <p className="text-[9px] text-gray-400">of Rs. {i.total.toLocaleString()}</p>
-                                      </>
-                                    );
-                                  })()}
-                                </div>
-                              </div>
-                            ))}
-                          {allInvoices.filter(i => i.status !== 'paid').filter(i =>
-                            i.invoiceNumber.toLowerCase().includes(searchInvoice.toLowerCase()) ||
-                            i.buyer?.name?.toLowerCase().includes(searchInvoice.toLowerCase())
-                          ).length === 0 && (
-                              <div className="p-8 text-center">
-                                <Search className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                                <p className="text-xs text-gray-400 font-medium">No pending invoices match your search</p>
-                              </div>
-                            )}
+                              );
+                            })}
+                          {allInvoices.filter(i => i.status !== 'paid' && i.status !== 'draft').filter(i =>
+                            i.invoiceNumber.toLowerCase().includes(searchInvoice.toLowerCase()) || i.buyer?.name?.toLowerCase().includes(searchInvoice.toLowerCase())
+                          ).length === 0 && <div className="py-4 text-center"><p className="text-[11px] text-gray-400">No pending invoices</p></div>}
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Amount + Method side by side */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Amount Paid (Rs.)</label>
+                    <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Amount</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rs.</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-600 font-bold text-xs pointer-events-none">₹</span>
                       <input
-                        type="number"
-                        value={newPayment.amount}
+                        type="number" value={newPayment.amount}
                         onChange={e => setNewPayment({ ...newPayment, amount: Number(e.target.value) })}
-                        className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 outline-none transition"
+                        className="w-full pl-7 pr-2 py-2 bg-white border border-teal-100 rounded-xl text-sm font-black text-teal-900 focus:ring-2 focus:ring-teal-400/20 focus:border-teal-300 outline-none transition shadow-sm"
                       />
                     </div>
                   </div>
-                  <div className="col-span-2 sm:col-span-1">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Payment Method</label>
-                    <div className="relative">
-                      <div
-                        onClick={() => setShowMethodDropdown(!showMethodDropdown)}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm cursor-pointer hover:border-teal-400 transition flex justify-between items-center"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-teal-500">{methodIcon(newPayment.method)}</span>
-                          <span className="font-semibold text-gray-900">{newPayment.method}</span>
-                        </div>
-                        <ChevronDown size={16} className={`text-gray-400 transition-transform ${showMethodDropdown ? 'rotate-180' : ''}`} />
-                      </div>
-
-                      <AnimatePresence>
-                        {showMethodDropdown && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="absolute left-0 right-0 mt-2 bg-white border border-teal-100 shadow-xl rounded-2xl z-[10001] overflow-hidden"
-                          >
-                            {methods.filter(m => m !== 'All').map(m => (
-                              <div
-                                key={m}
-                                onClick={() => {
-                                  setNewPayment({ ...newPayment, method: m });
-                                  setShowMethodDropdown(false);
-                                }}
-                                className="px-4 py-3 hover:bg-teal-50/50 cursor-pointer transition flex items-center gap-3 border-b border-gray-50 last:border-0"
-                              >
-                                <span className="text-teal-500">{methodIcon(m)}</span>
-                                <span className={`text-sm font-medium ${newPayment.method === m ? 'text-teal-700 font-bold' : 'text-gray-700'}`}>
-                                  {m}
-                                </span>
-                                {newPayment.method === m && <CheckCircle size={14} className="ml-auto text-teal-500" />}
-                              </div>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Payment Date</label>
-                  <div className="relative">
+                  <div>
+                    <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Method</label>
                     <div
-                      onClick={() => setShowCalendar(!showCalendar)}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm cursor-pointer hover:border-teal-400 transition flex justify-between items-center"
+                      onClick={() => { setShowMethodDropdown(!showMethodDropdown); setShowInvoiceDropdown(false); setShowCalendar(false); }}
+                      className={`w-full px-3 py-2 bg-white border rounded-xl text-xs cursor-pointer transition-all flex justify-between items-center shadow-sm ${showMethodDropdown ? 'border-teal-300 shadow-[0_0_0_3px_rgba(20,184,166,0.08)]' : 'border-teal-100 hover:border-teal-200'}`}
                     >
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} className="text-teal-500" />
-                        <span className="font-semibold text-gray-900">
-                          {new Date(newPayment.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
-                        </span>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="text-teal-500 text-sm flex-shrink-0">{methodIcon(newPayment.method)}</span>
+                        <span className="font-semibold text-gray-800 truncate text-[11px]">{newPayment.method}</span>
                       </div>
-                      <ChevronDown size={14} className={`text-gray-400 transition-transform ${showCalendar ? 'rotate-180' : ''}`} />
+                      <ChevronDown size={13} className={`text-gray-400 transition-transform flex-shrink-0 ml-1 ${showMethodDropdown ? 'rotate-180' : ''}`} />
                     </div>
-
                     <AnimatePresence>
-                      {showCalendar && (
+                      {showMethodDropdown && (
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute left-0 right-0 max-w-[340px] mt-2 bg-white border border-teal-100 shadow-2xl rounded-2xl z-[10002] p-4"
+                          initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.15 }}
+                          className="mt-1.5 bg-white border border-teal-100 rounded-xl shadow-[0_8px_24px_-8px_rgba(20,184,166,0.18)] overflow-hidden z-10 relative"
                         >
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-sm font-bold text-gray-900">
-                              {viewDate.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
-                            </h4>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1))); }}
-                                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition"
-                              >
-                                <ChevronLeft size={16} />
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1))); }}
-                                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition"
-                              >
-                                <ChevronRight size={16} />
-                              </button>
+                          {methods.filter(m => m !== 'All').map(m => (
+                            <div key={m}
+                              onClick={() => { setNewPayment({ ...newPayment, method: m }); setShowMethodDropdown(false); }}
+                              className={`px-3 py-2 hover:bg-teal-50/60 cursor-pointer transition flex items-center gap-2 border-b border-gray-50 last:border-0 ${newPayment.method === m ? 'bg-teal-50/40' : ''}`}
+                            >
+                              <span className="text-teal-500">{methodIcon(m)}</span>
+                              <span className={`text-[11px] font-medium flex-1 ${newPayment.method === m ? 'text-teal-700 font-bold' : 'text-gray-700'}`}>{m}</span>
+                              {newPayment.method === m && <CheckCircle size={12} className="text-teal-500" />}
                             </div>
-                          </div>
-
-                          <div className="grid grid-cols-7 gap-1 mb-2">
-                            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                              <div key={d} className="text-[10px] font-bold text-gray-400 text-center uppercase py-1">{d}</div>
-                            ))}
-                          </div>
-
-                          <div className="grid grid-cols-7 gap-1">
-                            {getDaysInMonth(viewDate.getMonth(), viewDate.getFullYear()).map((d, i) => {
-                              const isSelected = newPayment.date === d.date.toISOString().split('T')[0];
-                              const isToday = new Date().toISOString().split('T')[0] === d.date.toISOString().split('T')[0];
-                              return (
-                                <div
-                                  key={i}
-                                  onClick={() => {
-                                    setNewPayment({ ...newPayment, date: d.date.toISOString().split('T')[0] });
-                                    setShowCalendar(false);
-                                  }}
-                                  className={`aspect-square flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium
-                                    ${d.currentMonth ? 'text-gray-700 hover:bg-teal-50 hover:text-teal-700' : 'text-gray-300 hover:bg-gray-50'}
-                                    ${isSelected ? 'bg-teal-600 text-white hover:bg-teal-700 hover:text-white shadow-md shadow-teal-100' : ''}
-                                    ${isToday && !isSelected ? 'border border-teal-200 text-teal-600' : ''}
-                                  `}
-                                >
-                                  {d.day}
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          <button
-                            onClick={() => {
-                              const today = new Date().toISOString().split('T')[0];
-                              setNewPayment({ ...newPayment, date: today });
-                              setViewDate(new Date());
-                              setShowCalendar(false);
-                            }}
-                            className="w-full mt-4 py-2 border-t border-gray-50 text-[10px] font-bold text-teal-600 hover:text-teal-700 transition"
-                          >
-                            Jump to Today
-                          </button>
+                          ))}
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
                 </div>
 
+                {/* Payment Date — mini inline calendar */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Notes</label>
+                  <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Payment Date</label>
+                  <div
+                    onClick={() => { setShowCalendar(!showCalendar); setShowInvoiceDropdown(false); setShowMethodDropdown(false); }}
+                    className={`w-full px-3 py-2 bg-white border rounded-xl text-xs cursor-pointer transition-all flex justify-between items-center shadow-sm ${showCalendar ? 'border-teal-300 shadow-[0_0_0_3px_rgba(20,184,166,0.08)]' : 'border-teal-100 hover:border-teal-200'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Calendar size={12} className="text-teal-500" />
+                      <span className="font-semibold text-gray-800">{new Date(newPayment.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                    <ChevronDown size={13} className={`text-gray-400 transition-transform ${showCalendar ? 'rotate-180' : ''}`} />
+                  </div>
+                  <AnimatePresence>
+                    {showCalendar && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.18 }} className="overflow-hidden"
+                      >
+                        <div className="mt-1.5 bg-white border border-teal-100 rounded-xl shadow-[0_8px_24px_-8px_rgba(20,184,166,0.18)] p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[11px] font-bold text-gray-800">{viewDate.toLocaleDateString('default', { month: 'short', year: 'numeric' })}</span>
+                            <div className="flex gap-0.5">
+                              <button type="button" onClick={e => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)); }} className="p-1 hover:bg-teal-50 rounded-md text-gray-400 hover:text-teal-600 transition"><ChevronLeft size={12} /></button>
+                              <button type="button" onClick={e => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)); }} className="p-1 hover:bg-teal-50 rounded-md text-gray-400 hover:text-teal-600 transition"><ChevronRight size={12} /></button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-7 gap-px mb-1">
+                            {['S','M','T','W','T','F','S'].map((d, i) => <div key={i} className="text-[8px] font-bold text-gray-400 text-center py-0.5">{d}</div>)}
+                          </div>
+                          <div className="grid grid-cols-7 gap-px">
+                            {getDaysInMonth(viewDate.getMonth(), viewDate.getFullYear()).map((d, i) => {
+                              const isSelected = newPayment.date === d.date.toISOString().split('T')[0];
+                              const isToday = new Date().toISOString().split('T')[0] === d.date.toISOString().split('T')[0];
+                              return (
+                                <button key={i} type="button"
+                                  onClick={() => { setNewPayment({ ...newPayment, date: d.date.toISOString().split('T')[0] }); setShowCalendar(false); }}
+                                  className={`aspect-square flex items-center justify-center text-[10px] rounded-md transition-all font-medium
+                                    ${d.currentMonth ? 'text-gray-700 hover:bg-teal-50 hover:text-teal-700' : 'text-gray-200'}
+                                    ${isSelected ? '!bg-teal-600 !text-white' : ''}
+                                    ${isToday && !isSelected ? 'border border-teal-200 !text-teal-600' : ''}
+                                  `}
+                                >{d.day}</button>
+                              );
+                            })}
+                          </div>
+                          <button type="button"
+                            onClick={() => { const today = new Date().toISOString().split('T')[0]; setNewPayment({ ...newPayment, date: today }); setViewDate(new Date()); setShowCalendar(false); }}
+                            className="w-full mt-2 pt-2 border-t border-teal-50 text-[10px] font-bold text-teal-600 hover:text-teal-700 transition"
+                          >Today</button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Notes</label>
                   <textarea
                     value={newPayment.notes}
                     onChange={e => setNewPayment({ ...newPayment, notes: e.target.value })}
-                    placeholder="Reference ID, Bank details, etc."
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 outline-none transition h-20 resize-none"
+                    placeholder="Reference ID, bank details, etc."
+                    className="w-full px-3 py-2 bg-white border border-teal-100 rounded-xl text-xs text-gray-700 focus:ring-2 focus:ring-teal-400/20 focus:border-teal-300 outline-none transition h-14 resize-none shadow-sm placeholder-gray-400"
                   />
                 </div>
+
               </div>
 
-              <div className="p-8 bg-gray-50 border-t border-gray-100 flex gap-3">
+              {/* Footer */}
+              <div className="flex-shrink-0 px-5 py-3 border-t border-teal-100/60 bg-gradient-to-r from-white via-teal-50/20 to-white flex items-center gap-2">
+                <p className="text-[9px] text-gray-400 font-medium flex-1">Instantly reflected in your ledger.</p>
                 <button
-                  onClick={() => { setShowRecordModal(false); setSearchInvoice(""); setShowInvoiceDropdown(false); setShowMethodDropdown(false); }}
-                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 font-semibold text-gray-600 hover:bg-gray-100 transition"
-                >
-                  Cancel
-                </button>
+                  onClick={() => { setShowRecordModal(false); setSearchInvoice(""); setShowInvoiceDropdown(false); setShowMethodDropdown(false); setShowCalendar(false); }}
+                  className="px-4 py-2 rounded-lg border border-gray-200 font-bold text-[11px] text-gray-600 hover:bg-gray-50 transition"
+                >Cancel</button>
                 <button
-                  onClick={handleSavePayment}
-                  disabled={saving}
-                  className="flex-1 px-4 py-3 rounded-xl bg-teal-600 font-semibold text-white hover:bg-teal-700 transition disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : 'Record Payment'}
-                </button>
+                  onClick={handleSavePayment} disabled={saving}
+                  className="px-5 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-teal-600 font-bold text-[11px] text-white hover:from-teal-600 hover:to-teal-700 transition disabled:opacity-50 shadow-md shadow-teal-500/20"
+                >{saving ? 'Saving...' : 'Record Payment'}</button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+
 
       {/* ─── Detail Modal ─────────────────────────────────────────── */}
       {selectedInvoice && (
@@ -955,26 +917,32 @@ export function Payments() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-2xl border border-teal-100/60 overflow-hidden"
+            className="relative z-10 w-full max-w-md bg-gradient-to-br from-white via-white to-cyan-50/30 rounded-3xl shadow-[0_20px_60px_-15px_rgba(20,184,166,0.15)] border border-teal-100/60 overflow-hidden"
           >
             {/* Header */}
-            <div className="relative bg-gradient-to-r from-white via-teal-50/60 to-white px-6 py-5 border-b border-teal-100/60 overflow-hidden">
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-teal-100/30 rounded-full blur-2xl" />
-              <div className="relative flex justify-between items-start">
+            <div className="relative bg-gradient-to-r from-white via-teal-50/40 to-white px-6 py-6 border-b border-teal-100/60 overflow-hidden">
+              <div className="absolute -top-12 -right-12 w-40 h-40 bg-gradient-to-br from-teal-400 to-cyan-400 opacity-15 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-20" />
+              <div className="relative flex justify-between items-start z-10">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif' }}>
+                    <div className="bg-teal-50 p-1.5 rounded-lg border border-teal-100 hidden sm:block text-teal-600">
+                      <Banknote size={14} />
+                    </div>
                     Payment Details
                   </h3>
-                  <p className="text-xs text-gray-400 mt-1 font-medium">Invoice → {selectedInvoice}</p>
+                  <p className="text-xs text-gray-400 mt-1.5 font-medium ml-0 sm:ml-9 flex items-center gap-1">
+                    Invoice <span className="text-gray-300">→</span> <span className="text-teal-600 font-bold">{selectedInvoice}</span>
+                  </p>
                 </div>
-                <button onClick={() => setSelectedInvoice(null)} className="p-1.5 hover:bg-gray-100 rounded-xl transition text-gray-400 hover:text-gray-600">
-                  <X className="w-5 h-5" />
+                <button onClick={() => setSelectedInvoice(null)} className="p-2 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 transition text-gray-400 hover:text-red-500 shadow-sm hover:shadow">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
             {/* Body */}
-            <div className="p-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <div className="p-6 relative z-10" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {(() => {
                 const matchingPayments = payments.filter(p => p.invoice === selectedInvoice);
                 const total = matchingPayments.reduce((s, p) => s + p.amount, 0);

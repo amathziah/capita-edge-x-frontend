@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, User, MapPin, Loader2 } from "lucide-react";
+import { X, User, MapPin, Loader2, Tag, CreditCard, Sparkles, Building2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RegionDropdown } from "react-country-region-selector";
 import { SearchableSelect } from "./SearchableSelect";
@@ -51,7 +51,6 @@ const defaultForm = {
   email: '',
   phone: '',
   addressLine1: '',
-  addressLine2: '',
   city: '',
   state: '',
   pincode: '',
@@ -63,6 +62,43 @@ const defaultForm = {
   paymentTerms: 0
 };
 
+/* ── Premium Label ──────────────────────────────────────── */
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-1.5" style={{ fontFamily: 'Sora, sans-serif' }}>
+      {children}
+    </label>
+  );
+}
+
+/* ── Premium Input Style ────────────────────────────────── */
+const inputCls =
+  "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] font-medium text-gray-900 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-teal-500/10 outline-none transition-shadow duration-200";
+
+/* ── Section Card — Premium Glass Style ─────────────────── */
+function Section({ icon: Icon, title, children, action }: {
+  icon: React.ElementType; title: string; children: React.ReactNode; action?: React.ReactNode;
+}) {
+  return (
+    <div
+      className="relative bg-white rounded-2xl p-5 border border-gray-200 shadow-sm"
+    >
+      {/* Subtle gradient accent on top */}
+      <div className="absolute top-0 left-6 right-6 h-[1.5px] rounded-b-full bg-teal-600/20" />
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xs font-bold text-gray-800 flex items-center gap-2 uppercase tracking-widest" style={{ fontFamily: 'Sora, sans-serif' }}>
+          <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-sm">
+            <Icon size={12} className="text-white" />
+          </span>
+          {title}
+        </h2>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSaveSuccess }: AddClientDrawerProps) {
   const [customerForm, setCustomerForm] = useState(defaultForm);
   const [savingCustomer, setSavingCustomer] = useState(false);
@@ -71,7 +107,10 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        setCustomerForm({ ...defaultForm, ...initialData, tags: Array.isArray(initialData.tags) ? initialData.tags.join(', ') : initialData.tags || '' });
+        setCustomerForm({
+          ...defaultForm, ...initialData,
+          tags: Array.isArray(initialData.tags) ? initialData.tags.join(', ') : initialData.tags || ''
+        });
       } else {
         setCustomerForm(defaultForm);
       }
@@ -79,27 +118,18 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
   }, [isOpen, initialData]);
 
   const handleCountryChange = (country: string) => {
-    setCustomerForm(prev => ({
-      ...prev,
-      country,
-      state: '',
-      currency: country === 'IN' ? 'INR' : 'USD'
-    }));
+    setCustomerForm(prev => ({ ...prev, country, state: '', currency: country === 'IN' ? 'INR' : 'USD' }));
   };
 
   const fetchLocationByPincode = async (pincode: string) => {
     if (!/^\d{6}$/.test(pincode)) return;
     setPincodeLoading(true);
     try {
-      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-      const data = await response.json();
-      if (data && data[0] && data[0].Status === "Success") {
-        const postOffice = data[0].PostOffice[0];
-        setCustomerForm(prev => ({
-          ...prev,
-          city: postOffice.District,
-          state: postOffice.State
-        }));
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await res.json();
+      if (data?.[0]?.Status === "Success") {
+        const po = data[0].PostOffice[0];
+        setCustomerForm(prev => ({ ...prev, city: po.District, state: po.State }));
       }
     } catch (err) {
       console.error("Pincode lookup error:", err);
@@ -115,10 +145,11 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
     }
     setSavingCustomer(true);
     try {
-      let savedCustomer: any;
-      const tagsArray = typeof customerForm.tags === 'string' ? customerForm.tags.split(',').map(t => t.trim()).filter(Boolean) : customerForm.tags;
-      
+      const tagsArray = typeof customerForm.tags === 'string'
+        ? customerForm.tags.split(',').map(t => t.trim()).filter(Boolean)
+        : customerForm.tags;
       const payload = { ...customerForm, tags: tagsArray };
+      let savedCustomer: any;
 
       if (isEditing && initialData) {
         savedCustomer = await dataService.saveCustomer({ ...initialData, ...payload } as any);
@@ -141,276 +172,327 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* ── Backdrop ──────────────────────────────────────── */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
             onClick={onClose}
-            className="fixed inset-0 z-[110] bg-slate-900/10 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[110] bg-gray-900/40 backdrop-blur-[1px]"
           />
-          {/* Drawer Content */}
-          <motion.div
-            initial={{ x: '100%', opacity: 1 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: '100%', opacity: 1 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white shadow-2xl z-[120] flex flex-col border-l border-teal-100/50"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 bg-gray-50/50">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={onClose}
-                  className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-white hover:text-teal-600 transition shadow-sm"
-                >
-                  <ArrowLeft size={16} />
-                </button>
-                <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>
-                  {isEditing ? 'Edit Client' : 'Add New Client'}
-                </h1>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full shadow-sm ${customerForm.status === 'Active' ? 'bg-teal-500 shadow-teal-500/20' : 'bg-gray-300'}`} />
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">{customerForm.status}</span>
-              </div>
-            </div>
 
-            {/* Body - Scrollable */}
-            <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar space-y-8">
-              {/* Client Details */}
-              <div className="bg-white border border-teal-50 rounded-2xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <User size={18} className="text-teal-500" /> Client Details
-                  </h2>
-                  <button type="button" className="text-sm font-semibold text-teal-600 hover:text-teal-700 transition">
-                    Auto-Fill from GSTIN
+          {/* ── Premium Slide-in Panel from Right ────────────── */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+            className="fixed inset-y-0 right-0 z-[120] flex items-stretch"
+            style={{ width: 'min(1060px, 100vw)' }}
+          >
+            <div
+              className="relative w-full rounded-l-3xl border-l border-y border-gray-200 shadow-2xl flex flex-col"
+              style={{
+                background: '#f8fafc', // Dim solid background
+              }}
+            >
+              {/* ── Decorative Background Glows ───────────────── */}
+              <div className="absolute -top-20 -right-20 h-56 w-56 rounded-full bg-teal-300/20 blur-3xl pointer-events-none" />
+              <div className="absolute bottom-10 -left-16 h-48 w-48 rounded-full bg-teal-200/15 blur-[80px] pointer-events-none" />
+
+              {/* ── Header ────────────────────────────────────── */}
+              <div className="relative flex items-center justify-between px-7 py-5 border-b border-gray-200 rounded-tl-3xl bg-gray-50/80"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/25">
+                    <Building2 size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold text-gray-900 leading-tight tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
+                      {isEditing ? 'Edit Client' : 'Add New Client'}
+                    </h1>
+                    <p className="text-[11px] text-gray-500 mt-0.5 font-medium flex items-center gap-1.5">
+                      <Sparkles size={10} className="text-teal-500" />
+                      {isEditing ? 'Update the existing customer record' : 'Create a new customer record'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {/* Status toggle */}
+                  <button
+                    onClick={() => setCustomerForm(p => ({ ...p, status: p.status === 'Active' ? 'Inactive' : 'Active' }))}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                      customerForm.status === 'Active'
+                        ? 'bg-teal-50 border-gray-200 text-teal-800'
+                        : 'bg-gray-100 border-gray-200 text-gray-500'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full transition-colors ${customerForm.status === 'Active' ? 'bg-teal-500' : 'bg-gray-400'}`} />
+                    {customerForm.status}
+                  </button>
+
+                  {/* Close button */}
+                  <button
+                    onClick={onClose}
+                    className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  >
+                    <X size={16} />
                   </button>
                 </div>
-                <div className="space-y-5">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">
-                      Client Billing Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={customerForm.name}
-                      onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })}
-                      placeholder="Legal Business Name"
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 placeholder-gray-400 focus:bg-white focus:border-teal-400 outline-none transition-all"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Contact Name</label>
-                      <input 
-                        type="text" 
-                        value={customerForm.contactName}
-                        onChange={e => setCustomerForm({ ...customerForm, contactName: e.target.value })}
-                        placeholder="POC Name" 
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all" 
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email <span className="text-red-500">*</span></label>
-                      <input
-                        type="email"
-                        value={customerForm.email}
-                        onChange={e => setCustomerForm({ ...customerForm, email: e.target.value })}
-                        placeholder="billing@email.com"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Phone Number</label>
-                    <div className="flex">
-                      <div className="flex items-center gap-1.5 px-3.5 border border-r-0 border-gray-100 rounded-l-xl bg-gray-50 text-sm font-bold text-gray-600 cursor-pointer">
-                        <span>🇮🇳</span>
-                        <span className="text-gray-400 text-[10px]">⇅</span>
-                      </div>
-                      <input
-                        type="tel"
-                        value={customerForm.phone}
-                        onChange={e => setCustomerForm({ ...customerForm, phone: e.target.value })}
-                        className="flex-1 px-4 py-3 border border-gray-100 rounded-r-xl bg-gray-50 text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              {/* Billing Address */}
-              <div className="bg-white border border-teal-50 rounded-2xl p-6 shadow-sm">
-                <h2 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <MapPin size={18} className="text-teal-500" /> Billing Address
-                </h2>
-                <div className="space-y-5">
-                  <div className="space-y-1.5">
-                    <SearchableSelect
-                      label="Country"
-                      options={countryOptions}
-                      value={customerForm.country}
-                      onChange={handleCountryChange}
-                      placeholder="Search country..."
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Address <span className="text-red-500">*</span></label>
-                    <textarea
-                      value={customerForm.addressLine1}
-                      onChange={e => setCustomerForm({ ...customerForm, addressLine1: e.target.value })}
-                      placeholder="Street, Building, Area..."
-                      rows={3}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all resize-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">State</label>
-                      {customerForm.country === 'IN' ? (
-                        <div className="relative">
-                          <RegionDropdown
-                            country={customerForm.country}
-                            value={customerForm.state}
-                            onChange={val => setCustomerForm({ ...customerForm, state: val })}
-                            countryValueType="short"
-                            showDefaultOption={true}
-                            defaultOptionLabel="Select"
-                            disableWhenEmpty={true}
-                            className="w-full px-2.5 py-2.5 border border-gray-100 rounded-xl text-[13px] font-bold text-gray-800 bg-gray-50 focus:bg-white appearance-none pr-6"
-                          />
-                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">⌄</span>
+              {/* ── Body — Two-column layout, NO SCROLL ──────── */}
+              <div className="flex-1 px-7 py-6 grid grid-cols-2 gap-5 content-start">
+
+                {/* ═══════ LEFT COLUMN ═══════ */}
+                <div className="flex flex-col gap-5">
+
+                  {/* Client Details */}
+                  <Section icon={User} title="Client Details"
+                    action={
+                      <button className="text-[10px] font-bold text-teal-600 hover:text-teal-700 uppercase tracking-wider transition px-2 py-1 rounded-lg hover:bg-teal-50">
+                        Auto-Fill GSTIN
+                      </button>
+                    }
+                  >
+                    <div className="space-y-3.5">
+                      <div>
+                        <Label>Billing Name <span className="text-red-400">*</span></Label>
+                        <input type="text" value={customerForm.name}
+                          onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })}
+                          placeholder="Legal Business Name" className={inputCls} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Contact Name</Label>
+                          <input type="text" value={customerForm.contactName}
+                            onChange={e => setCustomerForm({ ...customerForm, contactName: e.target.value })}
+                            placeholder="POC Name" className={inputCls} />
                         </div>
-                      ) : (
-                        <input
-                          type="text"
-                          value={customerForm.state}
-                          onChange={e => setCustomerForm({ ...customerForm, state: e.target.value })}
-                          className="w-full px-3 py-2.5 border border-gray-100 bg-gray-50 rounded-xl text-[13px] font-semibold focus:bg-white outline-none"
-                        />
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">City</label>
-                      <input
-                        type="text"
-                        value={customerForm.city}
-                        onChange={e => setCustomerForm({ ...customerForm, city: e.target.value })}
-                        className="w-full px-3 py-2.5 border border-gray-100 bg-gray-50 rounded-xl text-[13px] font-semibold focus:bg-white outline-none"
-                      />
-                    </div>
-                    <div className="space-y-1.5 flex-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">{customerForm.country === 'IN' ? 'Pin' : 'Zip'}</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={customerForm.pincode}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setCustomerForm({ ...customerForm, pincode: val });
-                            if (customerForm.country === 'IN' && val.length === 6) {
-                              fetchLocationByPincode(val);
-                            }
-                          }}
-                          placeholder={customerForm.country === 'IN' ? '6 digits' : 'ZIP'}
-                          className="w-full px-3 py-2.5 border border-gray-100 bg-gray-50 rounded-xl text-[13px] font-semibold focus:bg-white focus:border-teal-400 outline-none pr-8"
-                        />
-                        {pincodeLoading && (
-                          <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                            <Loader2 className="w-3.5 h-3.5 text-teal-500 animate-spin" />
+                        <div>
+                          <Label>Email <span className="text-red-400">*</span></Label>
+                          <input type="email" value={customerForm.email}
+                            onChange={e => setCustomerForm({ ...customerForm, email: e.target.value })}
+                            placeholder="billing@email.com" className={inputCls} />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Phone</Label>
+                        <div className="flex">
+                          <div className="flex items-center gap-1 px-3 border border-gray-200 rounded-l-xl bg-gray-50 text-xs font-bold text-gray-500">
+                            🇮🇳
                           </div>
-                        )}
+                          <input type="tel" value={customerForm.phone}
+                            onChange={e => setCustomerForm({ ...customerForm, phone: e.target.value })}
+                            placeholder="+91 98765 43210"
+                          className="flex-1 px-4 py-2.5 border border-gray-200 border-l-0 rounded-r-xl bg-white text-[13px] font-medium text-gray-900 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-teal-500/10 outline-none transition-shadow" />
+                        </div>
                       </div>
                     </div>
+                  </Section>
+
+                  {/* Tax Info + Tags row */}
+                  <div className="grid grid-cols-2 gap-5">
+                    <Section icon={CreditCard} title="Tax Info">
+                      <div>
+                        <Label>GSTIN</Label>
+                        <input type="text" value={customerForm.gstin || ''}
+                          onChange={e => setCustomerForm({ ...customerForm, gstin: e.target.value.toUpperCase().replace(/\s/g, '') })}
+                          placeholder="27ABCDE1234F1Z5" className={inputCls} />
+                      </div>
+                    </Section>
+
+                    <Section icon={Tag} title="Tags">
+                      <div>
+                        <Label>Labels</Label>
+                        <input type="text" value={customerForm.tags}
+                          onChange={e => setCustomerForm({ ...customerForm, tags: e.target.value })}
+                          placeholder="VIP, Regular, Wholesale..." className={inputCls} />
+                        <p className="text-[10px] text-gray-400 mt-1.5 font-medium">Comma-separated tags</p>
+                      </div>
+                    </Section>
                   </div>
                 </div>
-              </div>
 
-              {/* Billing Options */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white border border-teal-50 rounded-2xl p-5 shadow-sm space-y-4">
-                  <SearchableSelect
-                    label="Currency"
-                    options={currencyOptions}
-                    value={customerForm.currency}
-                    onChange={val => setCustomerForm({ ...customerForm, currency: val })}
-                    placeholder="Search currency..."
-                  />
-                </div>
-                <div className="bg-white border border-teal-50 rounded-2xl p-5 shadow-sm space-y-3">
-                  <SearchableSelect
-                    label="Terms"
-                    options={paymentTermsOptions}
-                    value={paymentTermsOptions.some(o => o.value === customerForm.paymentTerms && o.value !== -1) ? customerForm.paymentTerms : -1}
-                    onChange={val => {
-                      if (val === -1) {
-                        setCustomerForm({ ...customerForm, paymentTerms: 30 }); // Default for custom
-                      } else {
-                        setCustomerForm({ ...customerForm, paymentTerms: val });
-                      }
-                    }}
-                    placeholder="Search terms..."
-                  />
-                  {(customerForm.paymentTerms !== 0 && !paymentTermsOptions.some(o => o.value === customerForm.paymentTerms && o.value !== -1)) || (customerForm.paymentTerms !== 0 && paymentTermsOptions.some(o => o.value === -1 && customerForm.paymentTerms !== 0)) ? (
-                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                      <input
-                        type="number"
-                        value={customerForm.paymentTerms}
-                        onChange={e => setCustomerForm({ ...customerForm, paymentTerms: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 bg-teal-50/50 border border-teal-100 rounded-lg text-xs font-bold text-teal-700 outline-none focus:border-teal-300"
-                        placeholder="Days"
-                      />
-                      <span className="text-[10px] font-bold text-teal-600 uppercase">Days</span>
+                {/* ═══════ RIGHT COLUMN ═══════ */}
+                <div className="flex flex-col gap-5">
+
+                  {/* Billing Address — Speed-optimized */}
+                  <Section icon={MapPin} title="Billing Address"
+                    action={
+                      customerForm.city && customerForm.state ? (
+                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-teal-700 uppercase tracking-wider bg-teal-50 px-2.5 py-1 rounded-lg border border-gray-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                          Auto-filled
+                        </span>
+                      ) : null
+                    }
+                  >
+                    <div className="space-y-3.5">
+                      {/* Row 1: Country + Pincode/ZIP — the magic row */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Country</Label>
+                          <SearchableSelect
+                            options={countryOptions}
+                            value={customerForm.country}
+                            onChange={handleCountryChange}
+                            placeholder="Search country..."
+                          />
+                        </div>
+                        <div>
+                          <Label>
+                            {customerForm.country === 'IN' ? 'Pincode' : 'ZIP / Postal Code'}
+                            {customerForm.country === 'IN' && (
+                              <span className="ml-1.5 normal-case tracking-normal text-teal-500 font-medium">
+                                — auto-fills city & state
+                              </span>
+                            )}
+                          </Label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={customerForm.pincode}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setCustomerForm({ ...customerForm, pincode: val });
+                                if (customerForm.country === 'IN' && val.length === 6) fetchLocationByPincode(val);
+                              }}
+                              placeholder={customerForm.country === 'IN' ? 'e.g. 560001' : 'e.g. 10001'}
+                              maxLength={customerForm.country === 'IN' ? 6 : 10}
+                              className={inputCls + " pr-9 font-semibold tracking-wider"}
+                              autoComplete="postal-code"
+                            />
+                            {pincodeLoading ? (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <Loader2 className="w-4 h-4 text-teal-500 animate-spin" />
+                              </div>
+                            ) : customerForm.pincode && customerForm.city ? (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <span className="text-teal-500 text-sm">✓</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Row 2: Street Address — single wide field */}
+                      <div>
+                        <Label>
+                          {customerForm.country === 'IN'
+                            ? 'Flat / Building / Street / Area'
+                            : 'Street Address'}
+                        </Label>
+                        <input
+                          type="text"
+                          value={customerForm.addressLine1}
+                          onChange={e => setCustomerForm({ ...customerForm, addressLine1: e.target.value })}
+                          placeholder={customerForm.country === 'IN'
+                            ? 'e.g. 42, MG Road, Indiranagar'
+                            : 'e.g. 123 Main St, Apt 4B'}
+                          className={inputCls}
+                          autoComplete="street-address"
+                        />
+                      </div>
+
+                      {/* Row 3: City + State — auto-filled for India, manual for others */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>City / District</Label>
+                          <input
+                            type="text"
+                            value={customerForm.city}
+                            onChange={e => setCustomerForm({ ...customerForm, city: e.target.value })}
+                            placeholder={customerForm.country === 'IN' ? 'Auto-fills from pincode' : 'City'}
+                            className={`${inputCls} ${customerForm.city && customerForm.country === 'IN' ? 'bg-teal-50/40 border-gray-200' : ''}`}
+                            autoComplete="address-level2"
+                          />
+                        </div>
+                        <div>
+                          <Label>State / Province</Label>
+                          {customerForm.country === 'IN' ? (
+                            <div className="relative">
+                              <RegionDropdown
+                                country={customerForm.country}
+                                value={customerForm.state}
+                                onChange={val => setCustomerForm({ ...customerForm, state: val })}
+                                countryValueType="short"
+                                showDefaultOption defaultOptionLabel={customerForm.state || 'Auto-fills from pincode'}
+                                disableWhenEmpty
+                                className={`w-full px-4 py-2.5 border border-gray-200 rounded-xl text-[13px] font-medium text-gray-900 appearance-none pr-7 focus:ring-2 focus:ring-teal-500/10 outline-none transition-shadow ${customerForm.state ? 'bg-teal-50/40' : 'bg-white'}`}
+                              />
+                              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">▾</span>
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              value={customerForm.state}
+                              onChange={e => setCustomerForm({ ...customerForm, state: e.target.value })}
+                              placeholder="State / Province"
+                              className={inputCls}
+                              autoComplete="address-level1"
+                            />
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  ) : null}
+                  </Section>
+
+                  {/* Billing Options */}
+                  <Section icon={CreditCard} title="Billing Options">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Currency</Label>
+                        <SearchableSelect
+                          options={currencyOptions}
+                          value={customerForm.currency}
+                          onChange={val => setCustomerForm({ ...customerForm, currency: val })}
+                          placeholder="Currency..."
+                        />
+                      </div>
+                      <div>
+                        <Label>Payment Terms</Label>
+                        <SearchableSelect
+                          options={paymentTermsOptions}
+                          value={paymentTermsOptions.some(o => o.value === customerForm.paymentTerms && o.value !== -1) ? customerForm.paymentTerms : -1}
+                          onChange={val => {
+                            setCustomerForm({ ...customerForm, paymentTerms: val === -1 ? 30 : val });
+                          }}
+                          placeholder="Terms..."
+                        />
+                      </div>
+                    </div>
+                    {!paymentTermsOptions.some(o => o.value === customerForm.paymentTerms && o.value !== -1) && customerForm.paymentTerms !== 0 && (
+                      <div className="flex items-center gap-3 mt-3">
+                        <input type="number" value={customerForm.paymentTerms}
+                          onChange={e => setCustomerForm({ ...customerForm, paymentTerms: parseInt(e.target.value) || 0 })}
+                          className="flex-1 px-4 py-2.5 bg-teal-50/40 border border-gray-200 rounded-xl text-xs font-bold text-teal-800 outline-none focus:ring-2 focus:ring-teal-500/10 transition-shadow"
+                          placeholder="Days" />
+                        <span className="text-[10px] font-bold text-teal-500 uppercase tracking-wider">Days</span>
+                      </div>
+                    )}
+                  </Section>
                 </div>
               </div>
-              
-              {/* GSTIN */}
-              <div className="bg-white border border-teal-50 rounded-2xl p-6 shadow-sm">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">GSTIN</h3>
-                <input
-                  type="text"
-                  value={customerForm.gstin || ''}
-                  onChange={e => setCustomerForm({ ...customerForm, gstin: e.target.value.toUpperCase().replace(/\s/g, '') })}
-                  placeholder="27ABCDE1234F1Z5"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all"
-                />
-              </div>
 
-              {/* Tags */}
-              <div className="bg-white border border-teal-50 rounded-2xl p-6 shadow-sm">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Tags</h3>
-                <input
-                  type="text"
-                  value={customerForm.tags}
-                  onChange={e => setCustomerForm({ ...customerForm, tags: e.target.value })}
-                  placeholder="VIP, Regular..."
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-semibold text-gray-800 focus:bg-white focus:border-teal-400 outline-none transition-all placeholder:text-gray-300"
-                />
+              {/* ── Footer ────────────────────────────────────── */}
+              <div className="border-t border-gray-200 px-7 py-4 flex items-center justify-between rounded-bl-3xl bg-gray-50/90"
+              >
+                <p className="text-[11px] text-gray-400 font-medium">
+                  <span className="text-red-400">*</span> Required fields
+                </p>
+                <div className="flex items-center gap-3">
+                  <button onClick={onClose}
+                    className="px-6 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors">
+                    Discard
+                  </button>
+                  <button onClick={handleSaveCustomer} disabled={savingCustomer}
+                    className="px-7 py-2.5 rounded-xl bg-teal-600 border border-gray-200 text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+                    {savingCustomer && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    {isEditing ? 'Update Client' : 'Save Client'}
+                  </button>
+                </div>
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-100 px-8 py-5 flex items-center justify-end gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-10">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 transition"
-              >
-                Discard
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveCustomer}
-                disabled={savingCustomer}
-                className="px-8 py-3 rounded-xl bg-teal-600 text-white text-sm font-bold shadow-lg shadow-teal-600/20 hover:bg-teal-700 disabled:opacity-50 transition flex items-center gap-2"
-              >
-                {savingCustomer && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isEditing ? 'Update Client' : 'Save Client'}
-              </button>
             </div>
           </motion.div>
         </>

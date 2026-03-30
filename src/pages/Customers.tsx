@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ArrowLeft, User, MapPin, Search, Filter, Mail, Phone, Calendar, CheckCircle, Activity, CreditCard, AlertCircle, TrendingUp, Users, Plus, FileText, Download, ArrowUpRight, ArrowDownRight, Tag, Edit, Trash2, X, SortAsc, SortDesc, LayoutGrid, List, ArrowRight } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Search, Filter, Mail, Phone, Calendar, CheckCircle, Activity, CreditCard, AlertCircle, TrendingUp, Users, Plus, FileText, Edit, Trash2, X, SortAsc, SortDesc, LayoutGrid, List } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { dataService } from '../services/dataService';
 import { Customer, Invoice, CustomerInsights } from '../types';
@@ -17,64 +17,6 @@ const formatLTV = (val: number) => {
   return `₹${val}`;
 };
 
-// ---------------------------------------------------------------------------
-// SearchableSelect Component
-// ---------------------------------------------------------------------------
-const SearchableSelect: React.FC<{
-  label: string;
-  options: { value: any; label: string; icon?: React.ReactNode }[];
-  value: any;
-  onChange: (val: any) => void;
-  placeholder?: string;
-  className?: string;
-}> = ({ label, options, value, onChange, placeholder = "Search...", className }) => {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
-  const activeLabel = options.find(o => o.value === value)?.label || placeholder;
-
-  return (
-    <div className="relative space-y-1.5 w-full">
-      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">{label}</label>
-      <div 
-        onClick={() => setOpen(!open)}
-        className={`flex items-center justify-between px-3.5 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-[13px] font-bold text-gray-800 cursor-pointer hover:bg-white hover:border-teal-200 transition-all ${className}`}
-      >
-        <span className="truncate">{activeLabel}</span>
-        <span className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
-      </div>
-      
-      {open && (
-        <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-teal-100 rounded-xl shadow-xl z-[150] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="p-1 border-b border-gray-50">
-            <input 
-              autoFocus
-              type="text" 
-              placeholder={placeholder}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 text-xs font-semibold rounded-lg border-none focus:ring-0 placeholder:text-gray-300"
-            />
-          </div>
-          <div className="max-h-48 overflow-y-auto custom-scrollbar">
-            {filtered.length > 0 ? filtered.map(o => (
-              <div 
-                key={o.value}
-                onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
-                className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold cursor-pointer transition-colors ${value === o.value ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}
-              >
-                {o.icon}
-                {o.label}
-              </div>
-            )) : (
-              <div className="px-4 py-3 text-[10px] text-gray-400 font-bold uppercase text-center">No results</div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 
 // ---------------------------------------------------------------------------
@@ -251,7 +193,7 @@ export function Customers() {
             {/* Nav & Header */}
             <div className="flex items-center gap-4">
               <button
-                className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition shadow-sm"
+                className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition shadow-sm"
                 onClick={() => { setSelectedCustomer(null); setCustomerInsights(null); setCustomerInvoices([]); }}
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -266,10 +208,10 @@ export function Customers() {
                 </h1>
               </div>
               <div className="ml-auto flex gap-2 items-center">
-                <button onClick={handleEditCustomer} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-gray-300 transition">
+                <button onClick={handleEditCustomer} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
                   <Edit size={15} /> Edit
                 </button>
-                <button onClick={handleDeleteCustomer} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition">
+                <button onClick={handleDeleteCustomer} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
                   <Trash2 size={15} /> Delete
                 </button>
                 {(() => {
@@ -288,8 +230,8 @@ export function Customers() {
             {/* Profile + AI Insights Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Profile Card */}
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-teal-100/60 shadow-sm p-6 flex flex-col gap-4">
-                <div className="flex items-center gap-4 border-b border-gray-50 pb-4">
+              <div className="bg-white rounded-3xl border border-gray-200 shadow-[0_15px_60px_-15px_rgba(0,0,0,0.08)] p-6 flex flex-col gap-4">
+                <div className="flex items-center gap-4 border-b border-gray-200 pb-4">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-100 text-teal-600">
                     <User className="w-7 h-7" />
                   </div>
@@ -315,14 +257,14 @@ export function Customers() {
                 {settings.showTags && selectedCustomer.tags && selectedCustomer.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-2">
                     {selectedCustomer.tags.map((tag, i) => (
-                      <span key={i} className="px-2.5 py-1 bg-teal-50 text-teal-700 border border-teal-100 rounded-lg text-xs font-medium">{tag}</span>
+                      <span key={i} className="px-2.5 py-1 bg-teal-50 text-teal-700 border border-gray-200 rounded-lg text-xs font-medium">{tag}</span>
                     ))}
                   </div>
                 )}
               </div>
 
               {/* AI Insights */}
-              <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl border border-teal-100/60 shadow-sm p-6 relative overflow-hidden">
+              <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-200 shadow-[0_15px_60px_-15px_rgba(0,0,0,0.08)] p-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-teal-100/20 rounded-full blur-3xl -z-10 transform translate-x-1/2 -translate-y-1/2" />
                 {customerInsights ? (
                   <>
@@ -348,7 +290,7 @@ export function Customers() {
                               <h4 className="text-xl font-bold text-gray-900">{churnRisk}%</h4>
                               <p className="text-xs text-gray-400 mt-1">Probability in 30 days</p>
                             </div>
-                            <div className="bg-gradient-to-br from-white to-teal-50/30 p-4 rounded-2xl border border-teal-100">
+                            <div className="bg-white p-4 rounded-2xl border border-gray-200">
                               <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                                 <Calendar className="w-3 h-3 text-teal-500" />
                                 Next Purchase
@@ -357,7 +299,7 @@ export function Customers() {
                               <p className="text-xs text-gray-400 mt-1">Based on history</p>
                             </div>
                           </div>
-                          <div className="bg-teal-50 p-4 rounded-2xl border border-teal-100">
+                          <div className="bg-teal-50/40 p-4 rounded-2xl border border-gray-200">
                             <h4 className="text-sm font-bold text-teal-700 flex items-center gap-2 mb-2">
                               <CheckCircle className="w-4 h-4" /> Recommended Action
                             </h4>
@@ -375,7 +317,7 @@ export function Customers() {
                   <div className="animate-pulse flex flex-col gap-4">
                     <div className="h-6 w-38 bg-gray-100 rounded" />
                     <div className="grid sm:grid-cols-3 gap-4">
-                      {[1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-50 rounded-2xl border border-gray-100" />)}
+                      {[1, 2, 3].map(i => <div key={i} className="h-24 bg-white rounded-2xl border border-gray-200" />)}
                     </div>
                     <div className="h-20 bg-gray-50 rounded-2xl" />
                   </div>
@@ -384,8 +326,8 @@ export function Customers() {
             </div>
 
             {/* Transaction History */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-teal-100/60 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-teal-100/60">
+            <div className="bg-white rounded-3xl border border-gray-200 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif' }}>
                   <CreditCard size={18} className="text-teal-500" /> Transaction History
                 </h3>
@@ -393,7 +335,7 @@ export function Customers() {
               <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                 {customerInvoices.length > 0 ? (
                   <table className="w-full text-sm">
-                    <thead className="bg-teal-50/40 border-b border-teal-100/60 sticky top-0">
+                    <thead className="bg-teal-50/10 border-b border-gray-200 sticky top-0">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Invoice #</th>
                         <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
@@ -401,18 +343,16 @@ export function Customers() {
                         <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-teal-50">
+                    <tbody className="divide-y divide-gray-950">
                       {customerInvoices.map((invoice) => (
-                        <tr key={invoice.id} className="hover:bg-teal-50/30 transition">
+                        <tr key={invoice.id} className="hover:bg-gray-50 transition">
                           <td className="px-6 py-3.5 font-semibold text-gray-900">{invoice.invoiceNumber}</td>
                           <td className="px-6 py-3.5 text-gray-500">{new Date(invoice.date || Date.now()).toLocaleDateString()}</td>
                           <td className="px-6 py-3.5 text-gray-900 font-medium">₹{typeof invoice.total === 'number' ? invoice.total.toLocaleString() : invoice.total}</td>
                           <td className="px-6 py-3.5">
-                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize ${invoice.status === 'paid' ? 'bg-teal-50 text-teal-700 border border-teal-200' :
-                              invoice.status === 'overdue' ? 'bg-red-50 text-red-700 border border-red-200' :
-                                (invoice.status === 'sent' || invoice.status === 'viewed' || invoice.status === 'partially_paid') ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                                  'bg-gray-50 text-gray-600 border border-gray-200'
-                              }`}>{invoice.status}</span>
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize bg-white border border-gray-200 text-gray-700`}>
+                              {invoice.status}
+                            </span>
                           </td>
                         </tr>
                       ))}
@@ -457,16 +397,16 @@ export function Customers() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    setSelectedCustomer(null);
-                    setShowCustomerModal(true);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-teal-200 bg-teal-50 text-sm font-semibold text-teal-700 hover:bg-teal-100 transition"
-                >
-                  <Plus size={16} /> Add Customer
-                </button>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setSelectedCustomer(null);
+                      setShowCustomerModal(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-teal-50 text-sm font-semibold text-teal-700 hover:bg-teal-100 transition"
+                  >
+                    <Plus size={16} /> Add Customer
+                  </button>
               </div>
             </motion.div>
 
@@ -477,39 +417,69 @@ export function Customers() {
               transition={{ duration: 0.45, delay: 0.05 }}
               className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8"
             >
-              <div className="relative bg-gradient-to-br from-white to-teal-50/30 p-5 rounded-2xl border border-teal-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-                <div className="absolute -top-8 -right-8 w-20 h-20 bg-teal-100/40 rounded-full blur-2xl" />
-                <div className="relative">
-                  <div className="p-2.5 bg-teal-100 text-teal-600 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform">
-                    <Users size={18} />
+              {[
+                {
+                  label: 'Total Clients',
+                  value: stats.total.toString(),
+                  sub: `${filteredCustomers.length} visible`,
+                  icon: Users,
+                  gradient: 'from-teal-500 to-cyan-500',
+                  glow: 'shadow-teal-500/25',
+                  accent: 'text-teal-600',
+                  bg: 'from-teal-50/60 via-white to-cyan-50/40',
+                  borderColor: 'border-teal-200/60',
+                  ring: 'bg-teal-500',
+                  delay: 0,
+                },
+                {
+                  label: 'New This Month',
+                  value: stats.recentCount.toString(),
+                  sub: 'Last 30 days',
+                  icon: TrendingUp,
+                  gradient: 'from-violet-500 to-purple-500',
+                  glow: 'shadow-violet-500/25',
+                  accent: 'text-violet-600',
+                  bg: 'from-violet-50/60 via-white to-purple-50/40',
+                  borderColor: 'border-violet-200/60',
+                  ring: 'bg-violet-500',
+                  delay: 0.05,
+                },
+                {
+                  label: 'Tagged Clients',
+                  value: stats.withTags.toString(),
+                  sub: 'Categorized',
+                  icon: Filter,
+                  gradient: 'from-amber-500 to-orange-500',
+                  glow: 'shadow-amber-500/25',
+                  accent: 'text-amber-600',
+                  bg: 'from-amber-50/60 via-white to-orange-50/40',
+                  borderColor: 'border-amber-200/60',
+                  ring: 'bg-amber-500',
+                  delay: 0.1,
+                },
+              ].map((card) => (
+                <motion.div
+                  key={card.label}
+                  initial={{ opacity: 0, y: 18, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.45, delay: 0.05 + card.delay, ease: [0.23, 1, 0.32, 1] }}
+                  className={`relative bg-white p-5 rounded-2xl border ${card.borderColor} shadow-sm hover:shadow-lg ${card.glow} hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 group overflow-hidden cursor-default`}
+                >
+                  <div className="relative">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className={`p-2.5 bg-gradient-to-br ${card.gradient} text-white rounded-xl shadow-lg ${card.glow} group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                        <card.icon size={18} strokeWidth={2.2} />
+                      </div>
+                    </div>
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.12em] mb-1">{card.label}</p>
+                    <h3 className="text-[28px] font-extrabold text-gray-900 tracking-tight leading-none">{card.value}</h3>
+                    <p className={`text-xs ${card.accent} mt-2 font-semibold flex items-center gap-1.5`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${card.ring}`} />
+                      {card.sub}
+                    </p>
                   </div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">Total Clients</p>
-                  <h3 className="text-2xl font-bold text-gray-900">{stats.total}</h3>
-                  <p className="text-xs text-teal-600 mt-1 font-medium">{filteredCustomers.length} visible</p>
-                </div>
-              </div>
-              <div className="relative bg-gradient-to-br from-white to-teal-50/30 p-5 rounded-2xl border border-teal-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-                <div className="absolute -top-8 -right-8 w-20 h-20 bg-teal-100/40 rounded-full blur-2xl" />
-                <div className="relative">
-                  <div className="p-2.5 bg-teal-100 text-teal-600 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform">
-                    <TrendingUp size={18} />
-                  </div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">New This Month</p>
-                  <h3 className="text-2xl font-bold text-gray-900">{stats.recentCount}</h3>
-                  <p className="text-xs text-teal-600 mt-1 font-medium">Last 30 days</p>
-                </div>
-              </div>
-              <div className="relative bg-gradient-to-br from-white to-teal-50/30 p-5 rounded-2xl border border-teal-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-                <div className="absolute -top-8 -right-8 w-20 h-20 bg-teal-100/40 rounded-full blur-2xl" />
-                <div className="relative">
-                  <div className="p-2.5 bg-teal-100 text-teal-600 rounded-xl w-fit mb-3 group-hover:scale-110 transition-transform">
-                    <Filter size={18} />
-                  </div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5">Tagged Clients</p>
-                  <h3 className="text-2xl font-bold text-gray-900">{stats.withTags}</h3>
-                  <p className="text-xs text-teal-600 mt-1 font-medium">Categorized</p>
-                </div>
-              </div>
+                </motion.div>
+              ))}
             </motion.div>
 
 
@@ -520,7 +490,7 @@ export function Customers() {
               transition={{ duration: 0.35, delay: 0.1 }}
               className="mb-6"
             >
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-teal-100/60 shadow-sm p-4">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                   {/* Search */}
                   <div className="relative flex-1 w-full md:max-w-sm">
@@ -530,7 +500,7 @@ export function Customers() {
                       placeholder="Search by name, email, phone, tag..."
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition"
+                      className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500/10 transition"
                       style={{ fontFamily: 'Manrope, sans-serif' }}
                     />
                     {searchTerm && (
@@ -550,9 +520,9 @@ export function Customers() {
                           if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
                           else { setSortField(field); setSortDir('asc'); }
                         }}
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${sortField === field
-                          ? 'bg-teal-50 border-teal-300 text-teal-700'
-                          : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 transition-all ${sortField === field
+                          ? 'bg-teal-50 text-teal-700'
+                          : 'bg-white text-gray-600 hover:bg-gray-50'
                           }`}
                       >
                         {field === 'createdAt' ? 'Date' : field.charAt(0).toUpperCase() + field.slice(1)}
@@ -579,7 +549,7 @@ export function Customers() {
                 </div>
 
                 {searchTerm && (
-                  <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                  <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
                     Showing <strong className="text-gray-700">{filteredCustomers.length}</strong> of {customers.length} customers
                     {searchTerm && <span className="ml-1">matching "<strong className="text-teal-600">{searchTerm}</strong>"</span>}
                   </div>
@@ -587,104 +557,109 @@ export function Customers() {
               </div>
             </motion.div>
 
-            {/* ─── Customer Grid/List ─────────────────────────────── */}
+            {/* ─── Customer Grid/List ─── */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.15 }}
             >
               {customers.length === 0 ? (
-                <div className="text-center py-20 bg-white/80 backdrop-blur-xl rounded-3xl border border-teal-100/60 shadow-sm">
-                  <div className="bg-teal-50 p-4 rounded-2xl inline-flex mb-4 border border-teal-100">
+                <div className="text-center py-20 bg-white rounded-3xl border border-gray-200 shadow-sm">
+                  <div className="bg-teal-50 p-4 rounded-2xl inline-flex mb-4 border border-gray-200">
                     <Users className="w-8 h-8 text-teal-400" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>No customers yet</h3>
                   <p className="text-gray-400 mt-2 text-sm">Add your first client to get started.</p>
                   <button
                     onClick={() => { setIsEditing(false); setSelectedCustomer(null); setShowCustomerModal(true); }}
-                    className="mt-4 px-4 py-2.5 rounded-xl bg-teal-50 border border-teal-200 text-sm font-semibold text-teal-700 hover:bg-teal-100 transition"
+                    className="mt-4 px-4 py-2.5 rounded-xl bg-teal-50 border border-gray-200 text-sm font-semibold text-teal-700 hover:bg-teal-100 transition"
                   >
                     <Plus size={14} className="inline mr-1" /> Add Customer
                   </button>
                 </div>
               ) : viewMode === 'grid' ? (
                 <div className={`grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5`}>
-                  {filteredCustomers.map(cust => (
-                      <div
+                  {filteredCustomers.map((cust, idx) => {
+                    return (
+                      <motion.div
                         key={cust.id}
-                        className={`group bg-white/80 backdrop-blur-xl border border-teal-100/60 rounded-2xl shadow-sm hover:shadow-md hover:border-teal-300 transition-all cursor-pointer flex flex-col overflow-hidden relative ${settings.compactCards ? 'p-4' : ''}`}
+                        initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.4, delay: Math.min(idx * 0.03, 0.3), ease: [0.23, 1, 0.32, 1] }}
+                        className={`relative bg-white rounded-2xl border border-teal-200/60 shadow-sm hover:shadow-lg shadow-teal-500/10 hover:-translate-y-1 hover:scale-[1.01] transition-all duration-300 group overflow-hidden cursor-pointer`}
                         onClick={() => setSelectedCustomer(cust)}
                       >
-                        {/* Solopreneur Intelligence: Risk Dot */}
-                        {isSolopreneur && (cust as any).risk_score && (
-                          <div 
-                            className={`absolute top-3 right-3 w-2.5 h-2.5 rounded-full z-10 ${
-                              (cust as any).risk_score === 'green' ? 'bg-green-500' : 
-                              (cust as any).risk_score === 'yellow' ? 'bg-amber-500' : 'bg-red-500'
-                            }`}
-                            title={
-                              (cust as any).risk_score === 'green' ? 'Pays on time' : 
-                              (cust as any).risk_score === 'yellow' ? 'Sometimes late' : 'Chronic late payer'
-                            }
-                          />
-                        )}
-
-                        {!settings.compactCards && (
-                          <div className="p-5 pb-0 flex items-center justify-between">
-                            <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-teal-50 text-teal-500 group-hover:bg-teal-100 group-hover:scale-110 transition-all border border-teal-100">
-                              <User className="w-5 h-5" />
+                        <div className="relative p-4">
+                          {/* Top row: actions only */}
+                          <div className="flex items-start justify-end gap-3 mb-3">
+                            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setIsEditing(true); setSelectedCustomer(cust); setShowCustomerModal(true); }}
+                                className="p-1.5 hover:bg-white/80 rounded-lg transition"
+                                title="Edit"
+                              >
+                                <Edit size={14} className="text-gray-500" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); /* Delete handler placeholder */ }}
+                                className="p-1.5 hover:bg-red-50 rounded-lg transition"
+                                title="Delete"
+                              >
+                                <Trash2 size={14} className="text-red-500" />
+                              </button>
                             </div>
                           </div>
-                        )}
-                        <div className={settings.compactCards ? '' : 'px-5 py-3 flex-1'}>
-                          <h3 className="text-base font-bold text-gray-900 mb-0.5 group-hover:text-teal-700 transition truncate" style={{ fontFamily: 'Sora, sans-serif' }}>{cust.name}</h3>
-                          
-                          {/* Solopreneur Intelligence: Stats */}
-                          {isSolopreneur && (
-                            <div className="flex flex-col gap-0.5 mb-2">
-                              {(cust as any).avg_payment_days > 0 && (
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
-                                  Pays in ~{(cust as any).avg_payment_days} days avg
-                                </p>
-                              )}
-                              {(cust as any).total_invoiced_lifetime > 0 && (
-                                <p className="text-[10px] text-teal-600/70 font-black uppercase tracking-tight">
-                                  {formatLTV((cust as any).total_invoiced_lifetime)} lifetime
-                                </p>
-                              )}
-                            </div>
-                          )}
 
-                          {settings.showEmail && (
-                            <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-2 truncate">
-                              <Mail className="w-3 h-3 shrink-0" /> <span className="truncate">{cust.email}</span>
+                          <h3 className="text-[13px] font-bold text-gray-900 mb-2.5 line-clamp-2 leading-snug flex items-center gap-1.5">
+                            <Mail size={13} className="text-teal-500 shrink-0" />
+                            <span className="truncate">{cust.email}</span>
+                          </h3>
+
+                          <div className="flex items-baseline gap-2 mb-2.5">
+                            <span className="text-base font-extrabold text-gray-900 tracking-tight break-words leading-snug" style={{ fontFamily: 'Sora, sans-serif' }}>
+                              {cust.name}
+                            </span>
+                            {/* Instead of GST, show Solopreneur Risk */}
+                            {isSolopreneur && (cust as any).risk_score && (
+                              <span className={`text-[10px] font-bold text-teal-600 bg-white px-1.5 py-0.5 rounded-md flex items-center gap-1 border border-gray-100 shadow-sm`}>
+                                <div 
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    (cust as any).risk_score === 'green' ? 'bg-green-500' : 
+                                    (cust as any).risk_score === 'yellow' ? 'bg-amber-500' : 'bg-red-500'
+                                  }`}
+                                />
+                                Risk
+                              </span>
+                            )}
+                          </div>
+
+
+
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-100/80 mt-2.5">
+                            <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium">
+                              <Calendar className="w-3 h-3 text-gray-400" />
+                              <span>Added</span>
+                              <span className="text-gray-300">·</span>
+                              <span className="text-gray-400">{new Date(cust.createdAt as any || Date.now()).toLocaleDateString()}</span>
                             </div>
-                          )}
-                          {settings.showAddress && (
-                            <p className="text-xs text-gray-400 line-clamp-1">{[cust.addressLine1, cust.city].filter(Boolean).join(', ')}</p>
-                          )}
-                          {settings.showTags && cust.tags && cust.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-3">
-                              {cust.tags.map((tag, i) => (
-                                <span key={i} className="px-2 py-0.5 bg-teal-50 border border-teal-100 text-teal-600 rounded-md text-[10px] font-semibold uppercase tracking-wide">{tag}</span>
-                              ))}
+                            <div className={`flex items-center gap-1 text-[9px] font-bold text-teal-600 group-hover:translate-x-1 transition-transform`}>
+                              <User className="w-2.5 h-2.5" />
+                              Profile
                             </div>
-                          )}
+                          </div>
                         </div>
-                        {!settings.compactCards && (
-                          <div className="px-5 py-2.5 border-t border-teal-50 bg-teal-50/20 flex items-center text-xs text-teal-600 font-medium group-hover:bg-teal-50/40 transition">
-                            View Profile <ArrowRight size={12} className="ml-1 group-hover:translate-x-1 transition-transform" />
-                          </div>
-                        )}
-                      </div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               ) : (
                 /* List View */
-                <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-teal-100/60 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-3xl border border-gray-200 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] overflow-hidden">
                   <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
                     <table className="w-full text-sm">
-                      <thead className="bg-teal-50/40 border-b border-teal-100/60 sticky top-0 z-10">
+                      <thead className="bg-teal-50/40 border-b border-gray-200 sticky top-0 z-10">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
                           <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
@@ -693,17 +668,17 @@ export function Customers() {
                           <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Joined</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-teal-50">
+                      <tbody className="divide-y divide-gray-950">
                         {filteredCustomers.map(cust => (
                           <tr
                             key={cust.id}
-                            className="hover:bg-teal-50/30 transition cursor-pointer group"
+                            className="hover:bg-gray-50 transition cursor-pointer group"
                             onClick={() => setSelectedCustomer(cust)}
                           >
                             <td className="px-6 py-3.5">
                               <div className="flex items-center gap-3">
                                 <div className="relative">
-                                  <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center text-teal-500 border border-teal-100 group-hover:scale-110 transition-transform">
+                                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-teal-500 border border-gray-100 group-hover:scale-110 transition-transform">
                                     <User size={14} />
                                   </div>
                                   {/* Solopreneur Intelligence: Risk Dot */}
@@ -717,7 +692,7 @@ export function Customers() {
                                   )}
                                 </div>
                                 <div>
-                                  <div className="font-semibold text-gray-900 group-hover:text-teal-700 transition">{cust.name}</div>
+                                  <div className="text-xs font-semibold text-gray-900 group-hover:text-teal-700 transition break-words whitespace-normal">{cust.name}</div>
                                   {isSolopreneur && (
                                     <div className="flex gap-2 text-[10px] text-gray-400 font-medium">
                                       {(cust as any).avg_payment_days > 0 && (
@@ -736,7 +711,7 @@ export function Customers() {
                             <td className="px-6 py-3.5">
                               <div className="flex gap-1">
                                 {cust.tags?.slice(0, 2).map((tag, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-teal-50 border border-teal-100 text-teal-600 rounded text-[10px] font-semibold uppercase">{tag}</span>
+                                  <span key={i} className="px-2 py-0.5 bg-teal-50 border border-gray-200 text-teal-600 rounded text-[10px] font-semibold uppercase">{tag}</span>
                                 ))}
                                 {(cust.tags?.length ?? 0) > 2 && <span className="text-xs text-gray-400">+{(cust.tags?.length ?? 0) - 2}</span>}
                               </div>
