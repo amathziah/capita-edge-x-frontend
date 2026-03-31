@@ -19,7 +19,7 @@ import { dataService } from '../services/dataService';
 import { useNotifications } from "../contexts/NotificationContext";
 import { useData } from '../contexts/DataContext';
 import { ComplianceTask } from '../types';
-
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 const priorityColors = {
   low: { bg: "bg-gray-100", text: "text-gray-600", ring: "ring-gray-200" },
@@ -532,24 +532,23 @@ function ComplianceTaskModal({
             className="p-8 space-y-6"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="col-span-1">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Audit Type</label>
-                <select
-                  required
-                  className="w-full px-4 py-2.5 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-sm font-semibold transition-all outline-none"
+              <div className="col-span-1 relative z-50">
+                <CustomSelect
+                  label="Audit Type"
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                >
-                  <option value="">Select Protocol</option>
-                  <option value="GST Return">GST Return</option>
-                  <option value="TDS Payment">TDS Payment</option>
-                  <option value="E-Way Bill">E-Way Bill</option>
-                  <option value="Annual Return">Annual Return</option>
-                  <option value="Tax Audit">Tax Audit</option>
-                  <option value="ROC Filing">ROC Filing</option>
-                  <option value="PF/ESI">PF/ESI Payment</option>
-                  <option value="Other">Other Protocol</option>
-                </select>
+                  onChange={(val: string) => setFormData({ ...formData, type: val })}
+                  options={[
+                    { value: "GST Return", label: "GST Return" },
+                    { value: "TDS Payment", label: "TDS Payment" },
+                    { value: "E-Way Bill", label: "E-Way Bill" },
+                    { value: "Annual Return", label: "Annual Return" },
+                    { value: "Tax Audit", label: "Tax Audit" },
+                    { value: "ROC Filing", label: "ROC Filing" },
+                    { value: "PF/ESI", label: "PF/ESI Payment" },
+                    { value: "Other", label: "Other Protocol" }
+                  ]}
+                  placeholder="Select Protocol"
+                />
               </div>
 
               <div className="col-span-1">

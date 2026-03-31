@@ -25,11 +25,10 @@ export function Reports() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // If we have data already, don't show the full page loader
         if (data.length === 0) setLoading(true);
-        const trends = await dataService.getRevenueTrends('monthly') as any[];
+        const trends = await dataService.getRevenueTrends('weekly') as any[];
         const mapped = trends.map((t: any) => ({
-          month: t.period,
+          period: t.period,
           revenue: t.revenue,
           expenses: t.expenses
         }));
@@ -106,7 +105,7 @@ export function Reports() {
     {
       title: "Total Revenue",
       value: `₹${totalRevenue.toLocaleString()}`,
-      sub: data.length > 0 ? `${data.length} months tracked` : 'No data yet',
+      sub: data.length > 0 ? `${data.length} weeks tracked` : 'No data yet',
       trend: growthRate,
       trendType: growthType,
       icon: DollarSign,
@@ -304,7 +303,7 @@ export function Reports() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                     <XAxis
-                      dataKey="month"
+                      dataKey="period"
                       axisLine={false}
                       tickLine={false}
                       tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}
@@ -404,7 +403,7 @@ export function Reports() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                     <XAxis
-                      dataKey="month"
+                      dataKey="period"
                       axisLine={false}
                       tickLine={false}
                       tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 700 }}

@@ -113,6 +113,9 @@ export const ControlRoom = () => {
         // 3. Cash Collected (This Month)
         const monthlyPayments = payments.filter(p => isInCurrentMonth(p.date || p.createdAt));
         const totalCollectedMonth = monthlyPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        
+        // Collection rate should be (Collected / (Overdue + Sent + Paid this month)) or just matching user's request
+        const totalOutstanding = invoices.filter(i => ['sent', 'overdue'].includes(i.status)).reduce((sum, i) => sum + (i.total || 0), 0);
         const collectionRate = totalInvoicedMonth > 0 ? Math.round((totalCollectedMonth / totalInvoicedMonth) * 100) : 0;
 
         // 4. Net Receivable (Sent + Overdue)
@@ -248,7 +251,7 @@ export const ControlRoom = () => {
                             exit={{ opacity: 0, y: -12 }}
                         >
                             {/* SaaS Metrics or Standard Stats Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+                            <div className={`grid grid-cols-1 md:grid-cols-2 ${isSolopreneur ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-5 mb-10`}>
                                 {businessType === 'subscription' ? (
                                     <>
                                         {/* Card 1: MRR */}
@@ -425,8 +428,7 @@ export const ControlRoom = () => {
                                     <>
                                         {/* Card 1: Total Invoiced */}
                                         <div
-                                            onClick={() => navigate('/invoices')}
-                                            className="relative bg-white p-6 rounded-2xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-lg transition-all duration-300 group overflow-hidden"
+                                            className="relative bg-white p-6 rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-gray-50 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -445,8 +447,7 @@ export const ControlRoom = () => {
 
                                         {/* Card 2: Overdue */}
                                         <div
-                                            onClick={() => navigate('/invoices')}
-                                            className="relative bg-white p-6 rounded-2xl border border-amber-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-amber-200 transition-all duration-300 group overflow-hidden"
+                                            className="relative bg-white p-6 rounded-2xl border border-amber-100 shadow-sm transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-amber-50 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -465,8 +466,7 @@ export const ControlRoom = () => {
 
                                         {/* Card 3: Cash Collected */}
                                         <div
-                                            onClick={() => navigate('/payments')}
-                                            className="relative bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                            className="relative bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-50 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -483,25 +483,7 @@ export const ControlRoom = () => {
                                             </div>
                                         </div>
 
-                                        {/* Card 4: Net Receivable */}
-                                        <div
-                                            onClick={() => navigate('/invoices')}
-                                            className="relative bg-emerald-50 p-6 rounded-2xl border-2 border-emerald-200 shadow-sm cursor-pointer hover:shadow-lg transition-all duration-300 group overflow-hidden"
-                                        >
-                                            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/50 rounded-full blur-2xl" />
-                                            <div className="relative">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="p-3 bg-emerald-500 text-white rounded-xl group-hover:scale-110 transition-transform">
-                                                        <TrendingUp size={20} />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1">Net Receivable</p>
-                                                    <h3 className="text-2xl font-black text-emerald-700 tracking-tight">₹{solopreneurMetrics.netReceivableTotal.toLocaleString()}</h3>
-                                                    <p className="text-xs text-emerald-600 mt-2 font-bold">After TDS deductions</p>
-                                                </div>
-                                            </div>
-                                        </div>
+
                                     </>
                                 ) : (
                                     <>

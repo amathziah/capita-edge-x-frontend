@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
-import { FileText, Download, Mail, Loader2, Eye, Printer, X, Plus, Search, Filter, Edit2, Trash2, DollarSign, CheckCircle, Share2 } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { FileText, Download, Mail, Loader2, Eye, Printer, X, Plus, Search, Edit2, Trash2, DollarSign, CheckCircle, Share2 } from "lucide-react";
 import { pdf } from '@react-pdf/renderer';
 import InvoicePDF from '../components/PDF/InvoicePDF';
 import { dataService } from '../services/dataService';
@@ -10,6 +10,7 @@ import { Toast, ToastType } from '../components/Toast';
 import RecordPaymentModal from '../components/Invoice/RecordPaymentModal';
 import { useData } from "../contexts/DataContext";
 import { usePersona } from "../contexts/PersonaContext";
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 const STATUS_COLORS: Record<string, string> = {
   paid: "bg-status-success-bg text-status-success border-status-success/10",
@@ -25,6 +26,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export function Invoices() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { filteredInvoices: invoices, loading, refreshData, setData } = useData();
   const { businessType } = usePersona();
 
@@ -55,6 +57,19 @@ export function Invoices() {
   const showToast = (message: string, type: ToastType = 'info') => {
     setToast({ message, type });
   };
+
+
+  // Check for view parameter on mount
+  useEffect(() => {
+    const viewId = searchParams.get('view');
+    if (viewId) {
+      setViewInvoiceId(viewId);
+      // Clean up the URL without reloading
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('view');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, []);
 
 
   // Fetch initial data
@@ -359,26 +374,19 @@ export function Invoices() {
             />
           </div>
 
-          <div className="relative group">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-            <select
-              className="w-full sm:w-48 pl-10 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none transition-all cursor-pointer"
+          <div className="relative group z-10 w-full sm:w-48">
+            <CustomSelect
               value={filterStatus}
-              onChange={(e) => {
-                setFilterStatus(e.target.value);
+              onChange={(val) => {
+                setFilterStatus(val);
                 setPage(1);
               }}
-            >
-              {(["All", "paid", "overdue", "sent", "draft", "cancelled", "recurring"]).map((s) => (
-                <option key={s} value={s}>
-                  {s === "All" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)}
-                </option>
-              ))}
-            </select>
-            {/* Custom chevron if needed, or rely on browser default hidden by appearance-none if styled */}
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
+              options={(["All", "paid", "overdue", "sent", "draft", "cancelled", "recurring"]).map((s) => ({
+                value: s,
+                label: s === "All" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)
+              }))}
+              className="w-full"
+            />
           </div>
         </div>
 

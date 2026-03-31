@@ -28,12 +28,13 @@ import {
     startOfWeek,
     endOfWeek,
     isToday,
-    getDaysInMonth,
-    getDay,
-    parseISO,
 } from 'date-fns';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useData } from '../../contexts/DataContext';
+import RecordPaymentModal from '../Invoice/RecordPaymentModal';
+import { Invoice } from '../../types';
 
 /* ─────────────────────────────────────────────
    Types
@@ -279,21 +280,21 @@ function ListRow({ event, onClick }: { event: CalendarEvent; onClick: () => void
 /* ─────────────────────────────────────────────
    Event Detail Modal
 ───────────────────────────────────────────── */
-function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => void }) {
+function EventModal({ event, onClose, onMarkPaid, onViewInvoice }: { event: CalendarEvent; onClose: () => void; onMarkPaid: () => void; onViewInvoice: () => void }) {
     const s = normaliseStatus(event.status);
     const cfg = STATUS_CONFIG[s];
     const Icon = cfg.icon;
 
-    return (
+    return createPortal(
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4"
+            className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-4"
             onClick={onClose}
         >
             {/* backdrop */}
-            <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" />
+            <div className="absolute inset-0 bg-[#0f172a]/30 backdrop-blur-sm" />
 
             <motion.div
                 initial={{ y: 40, opacity: 0, scale: 0.96 }}
@@ -348,18 +349,22 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
 
                     {/* actions */}
                     <div className="flex gap-2">
-                        <button className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900 text-white rounded-2xl text-sm font-bold hover:bg-black transition-colors">
+                        <button 
+                            onClick={onViewInvoice}
+                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900 text-white rounded-2xl text-sm font-bold hover:bg-black transition-colors">
                             View Invoice <ArrowUpRight size={15} />
                         </button>
                         {s !== 'paid' && (
-                            <button className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl text-sm font-bold hover:bg-emerald-100 transition-colors">
+                            <button 
+                                onClick={onMarkPaid}
+                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl text-sm font-bold hover:bg-emerald-100 transition-colors">
                                 Mark Paid <CheckCircle2 size={15} />
                             </button>
                         )}
                     </div>
                 </div>
             </motion.div>
-        </motion.div>
+        </motion.div>, document.body
     );
 }
 
@@ -367,30 +372,46 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
    Main Component
 ───────────────────────────────────────────── */
 export function LiquidityCalendar() {
-    const { invoices, loading, refreshData } = useData();
+    const navigate = useNavigate();
+    const { invoices, payments, refreshData } = useData();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState<ViewMode>('month');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const [showPaymentModalFor, setShowPaymentModalFor] = useState<Invoice | null>(null);
 
     useEffect(() => {
-        refreshData(['invoices']);
+        refreshData(['invoices', 'payments']);
     }, [refreshData]);
 
     /* ── Build events ── */
     const allEvents: CalendarEvent[] = useMemo(() =>
-        invoices.map((inv: any) => ({
-            id: inv.id,
-            title: inv.buyer?.name || 'Unknown',
-            date: new Date(inv.date || Date.now()),
-            amount: inv.total || 0,
-            status: inv.status,
-            customerName: inv.buyer?.name || 'Unknown',
-            invoiceNumber: inv.invoiceNumber || '—',
-            raw: inv,
-        })),
-        [invoices]
+        invoices.map((inv: any) => {
+            // Default to due date for liquidity projection
+            let eventDate = new Date(inv.dueDate || inv.date || Date.now());
+            
+            // If paid, show on the actual payment date (recorded date)
+            if (inv.status === 'paid') {
+                const invPayments = (payments || []).filter(p => p.invoiceId === inv.id && p.status === 'completed');
+                if (invPayments.length > 0) {
+                    const latest = [...invPayments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                    eventDate = new Date(latest.date);
+                }
+            }
+
+            return {
+                id: inv.id,
+                title: inv.buyer?.name || 'Unknown',
+                date: eventDate,
+                amount: inv.total || 0,
+                status: inv.status,
+                customerName: inv.buyer?.name || 'Unknown',
+                invoiceNumber: inv.invoiceNumber || '—',
+                raw: inv,
+            };
+        }),
+        [invoices, payments]
     );
 
     const filteredEvents = useMemo(() => {
@@ -666,7 +687,27 @@ export function LiquidityCalendar() {
             {/* ── Event Modal ── */}
             <AnimatePresence>
                 {selectedEvent && (
-                    <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+                    <EventModal 
+                        event={selectedEvent} 
+                        onClose={() => setSelectedEvent(null)}
+                        onMarkPaid={() => setShowPaymentModalFor(selectedEvent.raw)}
+                        onViewInvoice={() => navigate(`/dashboard/invoices?view=${selectedEvent.id}`)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* ── Record Payment Modal ── */}
+            <AnimatePresence>
+                {showPaymentModalFor && (
+                    <RecordPaymentModal
+                        invoice={showPaymentModalFor}
+                        onClose={() => setShowPaymentModalFor(null)}
+                        onSuccess={() => {
+                            setShowPaymentModalFor(null);
+                            setSelectedEvent(null);
+                            refreshData(['invoices', 'payments']);
+                        }}
+                    />
                 )}
             </AnimatePresence>
 

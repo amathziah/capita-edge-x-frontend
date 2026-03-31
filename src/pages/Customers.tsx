@@ -89,17 +89,27 @@ export function Customers() {
 
   // ── Filtered & Sorted ─────────────────────────────────────────────────
   const filteredCustomers = useMemo(() => {
-    let result = customers.filter(c =>
-      (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.phone?.includes(searchTerm) ||
-      c.tags?.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const searchLower = searchTerm.toLowerCase().trim();
+    let result = customers.filter(c => {
+      if (!searchLower) return true;
+      const matchName = (c.name || '').toLowerCase().includes(searchLower);
+      const matchEmail = (c.email || '').toLowerCase().includes(searchLower);
+      const matchPhone = (c.phone || '').toLowerCase().includes(searchLower);
+      const matchTag = c.tags ? c.tags.some(t => t.toLowerCase().includes(searchLower)) : false;
+      return matchName || matchEmail || matchPhone || matchTag;
+    });
+
     result.sort((a, b) => {
       let cmp = 0;
-      if (sortField === 'name') cmp = a.name.localeCompare(b.name);
-      else if (sortField === 'email') cmp = (a.email || '').localeCompare(b.email || '');
-      else cmp = new Date(a.createdAt as any).getTime() - new Date(b.createdAt as any).getTime();
+      if (sortField === 'name') {
+        cmp = (a.name || '').localeCompare(b.name || '');
+      } else if (sortField === 'email') {
+        cmp = (a.email || '').localeCompare(b.email || '');
+      } else {
+        const timeA = new Date(a.createdAt || (a as any).created_at || 0).getTime() || 0;
+        const timeB = new Date(b.createdAt || (b as any).created_at || 0).getTime() || 0;
+        cmp = timeA - timeB;
+      }
       return sortDir === 'desc' ? -cmp : cmp;
     });
     return result;

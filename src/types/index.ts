@@ -283,6 +283,9 @@ export interface CustomerInsights {
   healthScore: number;
   churnRisk: number;
   healthLabel: 'VIP' | 'Active' | 'Regular' | 'At Risk' | 'New';
+  nextPurchase?: string;
+  recommendedAction?: string;
+  avgInterval?: number;
 }
 
 export interface ComplianceTask {

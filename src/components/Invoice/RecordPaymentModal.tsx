@@ -1,5 +1,5 @@
-
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, DollarSign, Calendar, CreditCard, Banknote, Smartphone, CheckCircle, Loader2 } from 'lucide-react';
 import { Invoice, Payment } from '../../types';
 import { dataService } from '../../services/dataService';
@@ -51,10 +51,9 @@ export default function RecordPaymentModal({ invoice, onClose, onSuccess }: Reco
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-
+    return createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-[#0f172a]/30 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                 {/* Header */}
                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                     <div>
@@ -154,6 +153,6 @@ export default function RecordPaymentModal({ invoice, onClose, onSuccess }: Reco
                     </div>
                 </form>
             </div>
-        </div>
+        </div>, document.body
     );
 }

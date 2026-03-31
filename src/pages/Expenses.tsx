@@ -6,6 +6,7 @@ import { dataService } from '../services/dataService';
 import { Expense } from '../types';
 import { ExpensesMap } from '../components/Visualizations/ExpensesMap';
 import { useData } from "../contexts/DataContext";
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 const CATEGORIES = ["Travel", "Meals", "Supplies", "Utilities", "Marketing", "Rent", "Salary", "Other"];
 
@@ -26,10 +27,20 @@ export function Expenses() {
   const [savingExpense, setSavingExpense] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState('');
 
   useEffect(() => {
     refreshData(['expenses']);
   }, [refreshData]);
+
+  const dynCategories = useMemo(() => {
+    const cats = new Set(CATEGORIES);
+    expenses.forEach(e => {
+        if (e.category) cats.add(e.category);
+    });
+    return Array.from(cats);
+  }, [expenses]);
 
 
   const handleCreateOrUpdateExpense = async () => {
@@ -41,11 +52,13 @@ export function Expenses() {
     try {
       setSavingExpense(true);
 
+      const finalCategory = isCustomCategory ? customCategoryName.trim() || 'Other' : expenseForm.category || 'Other';
+
       await dataService.saveExpense({
         id: expenseForm.id || '',
         description: expenseForm.description,
         amount: Number(expenseForm.amount),
-        category: expenseForm.category || 'Other',
+        category: finalCategory,
         date: expenseForm.date,
         gstAmount: expenseForm.gstAmount ? Number(expenseForm.gstAmount) : 0,
         createdAt: new Date().toISOString()
@@ -60,6 +73,8 @@ export function Expenses() {
         date: new Date().toISOString().split('T')[0],
         gstAmount: ''
       });
+      setIsCustomCategory(false);
+      setCustomCategoryName('');
       setShowModal(false);
 
       // Refresh expenses list
@@ -79,10 +94,17 @@ export function Expenses() {
       id: expense.id,
       description: expense.description,
       amount: expense.amount.toString(),
-      category: expense.category || 'Other',
+      category: dynCategories.includes(expense.category || 'Other') ? (expense.category || 'Other') : 'CUSTOM_NEW',
       date: new Date(expense.date).toISOString().split('T')[0],
       gstAmount: expense.gstAmount ? expense.gstAmount.toString() : ''
     });
+    if (!dynCategories.includes(expense.category || 'Other') && expense.category) {
+      setIsCustomCategory(true);
+      setCustomCategoryName(expense.category);
+    } else {
+      setIsCustomCategory(false);
+      setCustomCategoryName('');
+    }
     setShowModal(true);
   };
 
@@ -348,16 +370,16 @@ export function Expenses() {
               />
             </div>
 
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none shadow-sm transition"
-            >
-              <option value="All">All Categories</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+            <div className="w-full sm:w-48 z-10">
+              <CustomSelect
+                value={filterCategory}
+                onChange={(val) => setFilterCategory(val)}
+                options={[
+                  { value: 'All', label: 'All Categories' },
+                  ...dynCategories.map(cat => ({ value: cat, label: cat }))
+                ]}
+              />
+            </div>
 
             <div className="px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100 text-sm text-text-muted font-medium whitespace-nowrap">
               {filteredExpenses.length} {filteredExpenses.length === 1 ? 'expense' : 'expenses'}
@@ -578,18 +600,38 @@ export function Expenses() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-text-main mb-2">Category *</label>
-                <select
-                  value={expenseForm.category}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
-                >
-                  {CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+              <div className="relative z-[100]">
+                <CustomSelect
+                  label="Category *"
+                  value={isCustomCategory ? 'CUSTOM_NEW' : expenseForm.category}
+                  onChange={(val) => {
+                    if (val === 'CUSTOM_NEW') {
+                      setIsCustomCategory(true);
+                      setExpenseForm({ ...expenseForm, category: 'CUSTOM_NEW' });
+                    } else {
+                      setIsCustomCategory(false);
+                      setExpenseForm({ ...expenseForm, category: val });
+                    }
+                  }}
+                  options={[
+                    ...dynCategories.map(cat => ({ value: cat, label: cat })),
+                    { value: 'CUSTOM_NEW', label: '+ Add Custom Category' }
+                  ]}
+                />
               </div>
+
+              {isCustomCategory && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                  <label className="block text-sm font-medium text-text-main mb-2">Custom Category Name *</label>
+                  <input
+                    type="text"
+                    value={customCategoryName}
+                    onChange={(e) => setCustomCategoryName(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                    placeholder="e.g. Server Hosting"
+                  />
+                </motion.div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-text-main mb-2">Date *</label>
