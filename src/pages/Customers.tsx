@@ -274,7 +274,7 @@ export function Customers() {
                       return (
                         <>
                           <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-5" style={{ fontFamily: 'Sora, sans-serif' }}>
-                            <Activity className="w-5 h-5 text-teal-500" /> AI Analysis
+                            <Activity className="w-5 h-5 text-teal-500" /> Customer Intelligence
                           </h3>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                             <div className="bg-gradient-to-br from-white to-teal-50/30 p-4 rounded-2xl border border-teal-100">
@@ -284,19 +284,21 @@ export function Customers() {
                             </div>
                             <div className="bg-gradient-to-br from-white to-teal-50/30 p-4 rounded-2xl border border-teal-100">
                               <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                                <AlertCircle className={`w-3 h-3 ${churnRisk > 50 ? 'text-red-500' : 'text-teal-500'}`} />
+                                <AlertCircle className={`w-3 h-3 ${churnRisk > 40 ? 'text-red-500' : 'text-teal-500'}`} />
                                 Churn Risk
                               </div>
                               <h4 className="text-xl font-bold text-gray-900">{churnRisk}%</h4>
-                              <p className="text-xs text-gray-400 mt-1">Probability in 30 days</p>
+                              <p className="text-xs text-gray-400 mt-1">Mathematical Probability</p>
                             </div>
                             <div className="bg-white p-4 rounded-2xl border border-gray-200">
                               <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                                 <Calendar className="w-3 h-3 text-teal-500" />
                                 Next Purchase
                               </div>
-                              <h4 className="text-base font-bold text-gray-900">{nextPurchase}</h4>
-                              <p className="text-xs text-gray-400 mt-1">Based on history</p>
+                              <h4 className="text-base font-bold text-gray-900 truncate" title={customerInsights.nextPurchase}>
+                                {customerInsights.nextPurchase}
+                              </h4>
+                              <p className="text-xs text-gray-400 mt-1">Based on frequency</p>
                             </div>
                           </div>
                           <div className="bg-teal-50/40 p-4 rounded-2xl border border-gray-200">
@@ -304,9 +306,7 @@ export function Customers() {
                               <CheckCircle className="w-4 h-4" /> Recommended Action
                             </h4>
                             <p className="text-sm text-gray-700">
-                              {churnRisk > 50
-                                ? "Schedule a check-in call and offer a loyalty discount."
-                                : "Send a personalized email highlighting new features."}
+                              {customerInsights.recommendedAction}
                             </p>
                           </div>
                         </>

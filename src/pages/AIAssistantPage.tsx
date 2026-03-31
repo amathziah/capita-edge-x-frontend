@@ -310,6 +310,7 @@ export function AIAssistantPage() {
   const [greetingCopied, setGreetingCopied] = useState(false);
   const [pendingAction, setPendingAction] = useState<any>(null);
   const [provider, setProvider] = useState<'cloud' | 'local_fallback'>('cloud');
+  const [budget, setBudget] = useState<{ userRemaining: number; userMax: number; globalRemaining: number; isExhausted: boolean } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -325,8 +326,16 @@ export function AIAssistantPage() {
         
         // 2. Stagger: Give Google a breather
         await delay(800);
+
+        // 3. Load Budget Status
+        try {
+          const budgetRes = await aiService.getBudget();
+          setBudget(budgetRes as any);
+        } catch { /* Budget endpoint optional */ }
+
+        await delay(300);
         
-        // 3. Load Usage Stats
+        // 4. Load Usage Stats
         const usage = await aiService.getUsage();
         setUsageStats(usage as any);
       } catch (err) {
@@ -403,6 +412,9 @@ export function AIAssistantPage() {
       }
       setMessages(prev => [...prev, botMsg]);
 
+      // Update budget from response if available
+      if (res.budget) setBudget(res.budget);
+
     } catch {
       setMessages(prev => [...prev, {
         id: Date.now().toString(), sender: 'bot',
@@ -425,6 +437,8 @@ export function AIAssistantPage() {
         ? { buyer: { name: data.customer, phone: '' }, items: [{ description: data.description || 'Service', quantity: 1, price: data.amount, unit: 'Qty', discount: 0 }] }
         : (initialData || data);
       window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail }));
+    } else if (type === 'open_customer_modal') {
+      window.dispatchEvent(new CustomEvent('open-customer-modal', { detail: data || initialData }));
     } else if (type === 'navigate' && data?.to) {
       let p = data.to;
       if (p.startsWith('/') && !p.startsWith('/dashboard') && !['/login', '/setup', '/pricing'].includes(p))
@@ -534,6 +548,25 @@ export function AIAssistantPage() {
 
           {/* Controls */}
           <div className="flex items-center gap-2">
+            {/* Budget Indicator */}
+            {budget && (
+              <div className={`group relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-all ${
+                budget.isExhausted
+                  ? 'text-red-400 border-red-500/20 bg-red-500/10'
+                  : budget.userRemaining <= 2
+                    ? 'text-amber-400 border-amber-500/20 bg-amber-500/10'
+                    : 'text-teal-400 border-teal-500/20 bg-teal-500/10'
+              }`}>
+                <Zap size={9} />
+                <span>{budget.isExhausted ? 'Budget Used' : `${budget.userRemaining}/${budget.userMax} Left`}</span>
+                <div className="absolute top-full right-0 mt-1 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[9px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case tracking-normal font-medium">
+                  {budget.isExhausted 
+                    ? 'Daily AI budget exhausted. Using local mode. Resets at midnight Pacific.'
+                    : `${budget.userRemaining} AI queries remaining today. ${budget.globalRemaining} global pool left.`
+                  }
+                </div>
+              </div>
+            )}
             <button
               onClick={copyGreeting}
               disabled={isTyping}

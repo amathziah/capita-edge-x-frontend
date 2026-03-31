@@ -14,6 +14,7 @@ export const aiService = {
 
   getInsights: (persona?: string) => api.get(persona ? `${ENDPOINTS.AI_INSIGHTS}?persona=${persona}` : ENDPOINTS.AI_INSIGHTS),
   getUsage: () => api.get(ENDPOINTS.AI_USAGE),
+  getBudget: () => api.get(ENDPOINTS.AI_BUDGET),
 
   predictRevenue: (historicalData: any[]) => api.post(ENDPOINTS.AI_PREDICT_REVENUE, { historicalData }),
 
