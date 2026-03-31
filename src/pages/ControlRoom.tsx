@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InvoiceLifecycleMap } from '../components/Visualizations/InvoiceLifecycleMap';
+import { SYNC_STEPS } from '../utils/aiLoadingSteps';
 
 
 export const ControlRoom = () => {
@@ -24,11 +25,26 @@ export const ControlRoom = () => {
     const navigate = useNavigate();
     const { invoices, payments, customers, expenses, stats, loading, refreshData } = useData();
     const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+    const [currentStep, setCurrentStep] = useState(SYNC_STEPS[0]);
 
 
     useEffect(() => {
         refreshData(['invoices', 'stats', 'payments', 'customers', 'expenses']);
     }, [refreshData]);
+
+    // Sync Step cycling
+    useEffect(() => {
+        if (!loading && !personaLoading) {
+            setCurrentStep(SYNC_STEPS[0]);
+            return;
+        }
+        let stepIdx = 0;
+        const interval = setInterval(() => {
+            stepIdx = (stepIdx + 1) % SYNC_STEPS.length;
+            setCurrentStep(SYNC_STEPS[stepIdx]);
+        }, 1800);
+        return () => clearInterval(interval);
+    }, [loading, personaLoading]);
 
     const isSolopreneur = businessType === 'solopreneur';
 
@@ -151,7 +167,7 @@ export const ControlRoom = () => {
                     </div>
                 </div>
                 <div className="space-y-2 text-center">
-                    <h3 className="text-sm font-semibold tracking-widest text-emerald-800 uppercase">Synchronizing Neural Interface</h3>
+                    <h3 className="text-sm font-semibold tracking-widest text-emerald-800 uppercase">{currentStep}</h3>
                     <div className="flex justify-center gap-1">
                         <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                         <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>

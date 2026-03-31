@@ -1,23 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Sora:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:slnt,wght@-10..0,100..900&family=Outfit:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-background text-text-main font-sans antialiased;
-    font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  :root {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-medium text-text-main;
-    font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  body {
+    @apply bg-background text-text-main antialiased selection:bg-teal-500/20;
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv05", "cv11", "ss01";
+    font-variation-settings: "opsz" 32;
+    letter-spacing: -0.011em;
+    line-height: 1.5;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-display {
+    @apply font-semibold text-text-main;
+    font-family: var(--font-display);
+    letter-spacing: -0.022em;
+    line-height: 1.1;
   }
 }
 
@@ -85,4 +93,26 @@
 @keyframes breathing-glow {
   0%, 100% { opacity: 0.15; filter: blur(80px); }
   50% { opacity: 0.25; filter: blur(100px); }
+}
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .perspective-2000 {
+    perspective: 2000px;
+  }
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
+  
+  /* Moving 3D Grid */
+  .grid-3d {
+      background-image: 
+          linear-gradient(rgba(20, 184, 166, 0.2) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(20, 184, 166, 0.2) 1px, transparent 1px);
+      background-size: 60px 60px;
+      transform: perspective(600px) rotateX(60deg) translateY(0);
+      mask-image: linear-gradient(to bottom, transparent, black);
+  }
 }

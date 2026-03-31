@@ -9,6 +9,7 @@ import { delay } from '../services/aiService';
 import { ReportInsights } from "../components/ReportInsights";
 import { usePersona } from "../contexts/PersonaContext";
 import { useData } from "../contexts/DataContext";
+import { ANALYTICS_STEPS } from "../utils/aiLoadingSteps";
 
 
 export function Reports() {
@@ -21,6 +22,7 @@ export function Reports() {
   const [loading, setLoading] = useState(true);
   const [showInsights, setShowInsights] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(ANALYTICS_STEPS[0]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +59,20 @@ export function Reports() {
     fetchData();
     fetchAiInsights();
   }, []);
+
+  // AI Step cycling
+  useEffect(() => {
+    if (!isAiLoading) {
+      setCurrentStep(ANALYTICS_STEPS[0]);
+      return;
+    }
+    let stepIdx = 0;
+    const interval = setInterval(() => {
+      stepIdx = (stepIdx + 1) % ANALYTICS_STEPS.length;
+      setCurrentStep(ANALYTICS_STEPS[stepIdx]);
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [isAiLoading]);
 
 
 
@@ -197,7 +213,7 @@ export function Reports() {
             className="flex-1 md:flex-none justify-center flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-[13px] font-bold text-white shadow-lg shadow-slate-900/10 transition-all select-none disabled:opacity-70 active:scale-[0.98]"
           >
             {isAiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lightbulb className="w-5 h-5 text-teal-400" />}
-            {isAiLoading ? 'Analyzing...' : 'View Insights'}
+            {isAiLoading ? currentStep : 'View Insights'}
           </button>
         </div>
       </motion.div>

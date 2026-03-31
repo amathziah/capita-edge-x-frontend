@@ -9,6 +9,7 @@ import { usePersona } from '../contexts/PersonaContext';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import * as LucideIcons from 'lucide-react';
+import { GENERAL_CHAT_STEPS } from '../utils/aiLoadingSteps';
 
 const IconMap: Record<string, any> = {
   TrendingUp: LucideIcons.TrendingUp,
@@ -311,6 +312,7 @@ export function AIAssistantPage() {
   const [pendingAction, setPendingAction] = useState<any>(null);
   const [provider, setProvider] = useState<'cloud' | 'local_fallback'>('cloud');
   const [budget, setBudget] = useState<{ userRemaining: number; userMax: number; globalRemaining: number; isExhausted: boolean } | null>(null);
+  const [currentStep, setCurrentStep] = useState(GENERAL_CHAT_STEPS[0]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -345,13 +347,26 @@ export function AIAssistantPage() {
     init();
   }, [businessType, STORAGE_KEY]);
 
-  // Auto-scroll
   useEffect(() => {
     if (!scrollRef.current) return;
     const el = scrollRef.current;
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 140)
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // AI Step cycling
+  useEffect(() => {
+    if (!isTyping) {
+      setCurrentStep(GENERAL_CHAT_STEPS[0]);
+      return;
+    }
+    let stepIdx = 0;
+    const interval = setInterval(() => {
+      stepIdx = (stepIdx + 1) % GENERAL_CHAT_STEPS.length;
+      setCurrentStep(GENERAL_CHAT_STEPS[stepIdx]);
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [isTyping]);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
@@ -548,7 +563,7 @@ export function AIAssistantPage() {
 
           {/* Controls */}
           <div className="flex items-center gap-2">
-            {/* Budget Indicator */}
+            {/* Budget Indicator - Temporarily Disabled
             {budget && (
               <div className={`group relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-all ${
                 budget.isExhausted
@@ -567,6 +582,7 @@ export function AIAssistantPage() {
                 </div>
               </div>
             )}
+            */}
             <button
               onClick={copyGreeting}
               disabled={isTyping}
@@ -626,6 +642,7 @@ export function AIAssistantPage() {
               </AnimatePresence>
             </div>
 
+            {/* AI Credits Section - Temporarily Disabled
             <div className="px-3 py-3.5 border-t border-white/[0.05] bg-black/20">
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
@@ -635,7 +652,6 @@ export function AIAssistantPage() {
                   </span>
                 </div>
                 
-                {/* Progress Bar */}
                 <div className="h-1.5 w-full bg-white/[0.03] rounded-full overflow-hidden border border-white/5">
                   <motion.div
                     initial={{ width: 0 }}
@@ -663,6 +679,12 @@ export function AIAssistantPage() {
                   </span>
                 </div>
               </div>
+            </div>
+            */}
+            <div className="px-3 py-3.5 border-t border-white/[0.05] bg-black/20">
+              <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest opacity-60 italic leading-none">
+                Finance engine · Encrypted
+              </span>
             </div>
           </div>
 
@@ -715,7 +737,7 @@ export function AIAssistantPage() {
                               />
                             ))}
                           </div>
-                          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Analyzing</span>
+                          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{currentStep}</span>
                         </div>
                       </motion.div>
                     )}
