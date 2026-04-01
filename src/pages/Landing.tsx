@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../components/common/Logo';
+import { CapitaCore } from '../components/landing/CapitaCore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface TierType {
@@ -73,7 +74,7 @@ function CustomCursor() {
     );
 }
 
-// ─── Particle Field ───────────────────────────────────────────────────────────
+// ─── Particle Field (3D Point Cloud) ──────────────────────────────────────────
 function ParticleField() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     useEffect(() => {
@@ -81,40 +82,102 @@ function ParticleField() {
         const ctx = canvas.getContext('2d')!;
         let W = canvas.width = window.innerWidth;
         let H = canvas.height = window.innerHeight;
-        let mouseX = W / 2, mouseY = H / 2;
-        const particles: Array<{ x: number; y: number; vx: number; vy: number; size: number; alpha: number; hue: number }> = [];
-        for (let i = 0; i < 70; i++) {
-            particles.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, size: Math.random() * 1.5 + 0.3, alpha: Math.random() * 0.5 + 0.1, hue: 165 + Math.random() * 30 });
+        let mouseX = 0, mouseY = 0;
+        
+        const FOCAL_LENGTH = 1000;
+        const particles: Array<{ x: number; y: number; z: number; size: number; alpha: number; hue: number }> = [];
+        
+        for (let i = 0; i < 150; i++) {
+            particles.push({
+                x: (Math.random() - 0.5) * 4000,
+                y: (Math.random() - 0.5) * 4000,
+                z: Math.random() * 4000,
+                size: Math.random() * 2 + 0.5,
+                alpha: Math.random() * 0.4 + 0.1,
+                hue: 165 + Math.random() * 30
+            });
         }
-        const onMouse = (e: MouseEvent) => { mouseX = e.clientX; mouseY = e.clientY; };
-        const onResize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; };
+
+        const onMouse = (e: MouseEvent) => {
+            mouseX = (e.clientX - W / 2) * 0.05;
+            mouseY = (e.clientY - H / 2) * 0.05;
+        };
+        
         window.addEventListener('mousemove', onMouse);
-        window.addEventListener('resize', onResize);
-        let raf: number;
+        window.addEventListener('resize', () => {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        });
+
+        let rotation = 0;
         const draw = () => {
             ctx.clearRect(0, 0, W, H);
+            rotation += 0.001;
+
             particles.forEach(p => {
-                const dx = mouseX - p.x, dy = mouseY - p.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 200) { p.vx += dx / dist * 0.015; p.vy += dy / dist * 0.015; }
-                p.vx *= 0.97; p.vy *= 0.97;
-                p.x = (p.x + p.vx + W) % W; p.y = (p.y + p.vy + H) % H;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `hsla(${p.hue},80%,65%,${p.alpha})`; ctx.fill();
-            });
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
-                    const d = Math.sqrt(dx * dx + dy * dy);
-                    if (d < 110) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = `rgba(20,184,166,${0.07 * (1 - d / 110)})`; ctx.lineWidth = 0.5; ctx.stroke(); }
+                // 3D Rotation along Y axis
+                let x = p.x;
+                let z = p.z - 2000; // Offset for depth
+                
+                const cos = Math.cos(rotation);
+                const sin = Math.sin(rotation);
+                
+                const rx = x * cos - z * sin;
+                const rz = x * sin + z * cos;
+                
+                // Add mouse parallax
+                const finalX = rx + mouseX;
+                const finalY = p.y + mouseY;
+                const finalZ = rz + 2000;
+
+                if (finalZ > 0) {
+                    const scale = FOCAL_LENGTH / (FOCAL_LENGTH + finalZ);
+                    const px = finalX * scale + W / 2;
+                    const py = finalY * scale + H / 2;
+                    const pSize = p.size * scale;
+
+                    ctx.beginPath();
+                    ctx.arc(px, py, pSize, 0, Math.PI * 2);
+                    ctx.fillStyle = `hsla(${p.hue}, 80%, 65%, ${p.alpha * scale * 2})`;
+                    ctx.fill();
                 }
-            }
-            raf = requestAnimationFrame(draw);
+            });
+            requestAnimationFrame(draw);
         };
         draw();
-        return () => { cancelAnimationFrame(raf); window.removeEventListener('mousemove', onMouse); window.removeEventListener('resize', onResize); };
+        return () => { window.removeEventListener('mousemove', onMouse); };
     }, []);
-    return <canvas ref={canvasRef} className="fixed inset-0 z-[1] pointer-events-none opacity-60" />;
+    return <canvas ref={canvasRef} className="fixed inset-0 z-[1] pointer-events-none opacity-40" />;
+}
+
+// ─── Space Debris (Parallax Floating Orbs) ─────────────────────────────────────
+function SpaceDebris() {
+    return (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            {[...Array(6)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute w-64 h-64 rounded-full"
+                    style={{
+                        background: `radial-gradient(circle, rgba(20,184,166,${0.03 + i * 0.01}) 0%, transparent 70%)`,
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        filter: 'blur(40px)',
+                    }}
+                    animate={{
+                        x: [0, Math.random() * 100 - 50, 0],
+                        y: [0, Math.random() * 100 - 50, 0],
+                        scale: [1, 1.2, 1],
+                    }}
+                    transition={{
+                        duration: 15 + Math.random() * 10,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                    }}
+                />
+            ))}
+        </div>
+    );
 }
 
 // ─── Morphing Blob ────────────────────────────────────────────────────────────
@@ -193,97 +256,6 @@ function BeamScanner() {
     );
 }
 
-// ─── Geometric 3D Layer ───────────────────────────────────────────────────────
-function Geometric3DLayer() {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    useEffect(() => {
-        const canvas = canvasRef.current!;
-        const ctx = canvas.getContext('2d')!;
-        let W = canvas.width = window.innerWidth;
-        let H = canvas.height = window.innerHeight;
-        
-        let mouseX = 0, mouseY = 0;
-        const onMouse = (e: MouseEvent) => {
-            mouseX = (e.clientX - W / 2) * 0.05;
-            mouseY = (e.clientY - H / 2) * 0.05;
-        };
-
-        const nodes: any[] = [];
-        for(let i=0; i<20; i++) {
-            nodes.push({
-                x: (Math.random() - 0.5) * W * 1.5,
-                y: (Math.random() - 0.5) * H * 1.5,
-                z: Math.random() * 1000,
-                size: Math.random() * 2 + 1,
-                speed: Math.random() * 0.5 + 0.2
-            });
-        }
-
-        const project = (x: number, y: number, z: number) => {
-            const focalLength = 400;
-            const scale = focalLength / (focalLength + z);
-            return {
-                x: x * scale + W / 2,
-                y: y * scale + H / 2,
-                scale
-            };
-        };
-
-        const draw = () => {
-            ctx.clearRect(0, 0, W, H);
-            nodes.forEach(n => {
-                n.z -= n.speed;
-                if(n.z < -400) n.z = 1000;
-                
-                const p = project(n.x + mouseX * (n.z/200), n.y + mouseY * (n.z/200), n.z);
-                const opacity = Math.min(1, Math.max(0, 1 - n.z/1000));
-                
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, n.size * p.scale, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(20, 184, 166, ${opacity * 0.4})`;
-                ctx.fill();
-
-                // Draw wireframe connection to nearby nodes
-                nodes.forEach(m => {
-                    const dist = Math.sqrt(Math.pow(n.x-m.x, 2) + Math.pow(n.y-m.y, 2) + Math.pow(n.z-m.z, 2));
-                    if(dist < 300) {
-                        const p2 = project(m.x + mouseX * (m.z/200), m.y + mouseY * (m.z/200), m.z);
-                        ctx.beginPath();
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.strokeStyle = `rgba(20, 184, 166, ${opacity * 0.1 * (1 - dist/300)})`;
-                        ctx.stroke();
-                    }
-                });
-            });
-            requestAnimationFrame(draw);
-        };
-        draw();
-        window.addEventListener('mousemove', onMouse);
-        return () => window.removeEventListener('mousemove', onMouse);
-    }, []);
-    return <canvas ref={canvasRef} className="fixed inset-0 z-[2] pointer-events-none" />;
-}
-
-// ─── Perspective Grid ─────────────────────────────────────────────────────────
-function PerspectiveGrid() {
-    return (
-        <div className="absolute inset-0 z-[1] pointer-events-none overflow-hidden perspective-1000">
-            <motion.div 
-                animate={{ 
-                    rotateX: [60, 60],
-                    y: [0, 60]
-                }}
-                transition={{ 
-                    y: { duration: 2, repeat: Infinity, ease: 'linear' }
-                }}
-                className="absolute bottom-0 left-[-50%] w-[200%] h-[100%] grid-3d opacity-[0.15]" 
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050810] via-transparent to-transparent" />
-        </div>
-    );
-}
-
 // ─── Orbit Rings ──────────────────────────────────────────────────────────────
 function OrbitRings() {
     return (
@@ -322,15 +294,22 @@ function ScrollTicker({ items }: { items: string[] }) {
 function FeatureCard({ icon: Icon, title, desc, index }: { icon: any; title: string; desc: string; index: number }) {
     const [hovered, setHovered] = useState(false);
     return (
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.05, duration: 0.5 }}
+        <motion.div 
+            initial={{ opacity: 0, y: 50, rotateX: 25, z: -100 }} 
+            whileInView={{ opacity: 1, y: 0, rotateX: 0, z: 0 }} 
+            viewport={{ once: true, margin: "-100px" }} 
+            transition={{ delay: index * 0.05, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-            className="relative group p-6 rounded-2xl border transition-all duration-400 cursor-default overflow-hidden"
-            style={{ background: hovered ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)', borderColor: hovered ? 'rgba(20,184,166,0.35)' : 'rgba(255,255,255,0.06)', transform: hovered ? 'translateY(-4px)' : 'none' }}>
+            className="relative group p-6 rounded-2xl border transition-all duration-400 cursor-default overflow-hidden transform-style-3d"
+            style={{ 
+                background: hovered ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)', 
+                borderColor: hovered ? 'rgba(20,184,166,0.35)' : 'rgba(255,255,255,0.06)', 
+                transform: hovered ? 'translateY(-8px) rotateX(4deg)' : 'none' 
+            }}>
             {hovered && <motion.div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-transparent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} />}
             <div className="w-10 h-10 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden transition-all duration-300"
                 style={{ background: hovered ? 'rgba(20,184,166,0.2)' : 'rgba(20,184,166,0.08)', border: `1px solid ${hovered ? 'rgba(20,184,166,0.4)' : 'rgba(20,184,166,0.15)'}` }}>
                 <Icon className="text-teal-400" style={{ width: 18, height: 18 }} />
-                {hovered && <motion.div className="absolute inset-0 bg-teal-400/10" initial={{ scale: 0, opacity: 1 }} animate={{ scale: 2, opacity: 0 }} transition={{ duration: 0.5 }} />}
             </div>
             <h3 className="font-black text-white text-[15px] mb-2">{title}</h3>
             <p className="text-slate-400 text-[13px] leading-relaxed">{desc}</p>
@@ -340,16 +319,38 @@ function FeatureCard({ icon: Icon, title, desc, index }: { icon: any; title: str
 
 // ─── Dashboard Mockup ─────────────────────────────────────────────────────────
 function DashboardMockup() {
+    const x = useMotionValue(0);
+    const y = useMotionValue(0);
+    const rotateX = useSpring(useTransform(y, [-300, 300], [10, -10]), { stiffness: 100, damping: 30 });
+    const rotateY = useSpring(useTransform(x, [-300, 300], [-10, 10]), { stiffness: 100, damping: 30 });
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        x.set(e.clientX - centerX);
+        y.set(e.clientY - centerY);
+    };
+
+    const handleMouseLeave = () => {
+        x.set(0);
+        y.set(0);
+    };
+
     const events = [
         { type: 'Payment Received', detail: 'Received ₹3,540 via cash', time: '17:57:54', ok: true },
         { type: 'Payment Received', detail: 'Received ₹60 via upi', time: '16:21:09', ok: true },
         { type: 'Invoice Overdue', detail: 'STR-5739-2359 · ₹8,644', time: '09:00:00', ok: false },
     ];
     return (
-        <div className="relative">
-            <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/10 via-cyan-500/8 to-teal-500/10 rounded-[3rem] blur-3xl" />
-            <motion.div className="relative bg-[#080c18]/95 border border-white/[0.07] rounded-[1.75rem] overflow-hidden shadow-[0_60px_120px_rgba(0,0,0,0.8)]"
-                initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.7, duration: 1, ease: [0.16, 1, 0.3, 1] }}>
+        <div className="relative perspective-1000" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+            <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/10 via-cyan-500/8 to-teal-500/10 rounded-[3rem] blur-3xl opacity-50" />
+            <motion.div 
+                style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+                className="relative bg-[#080c18]/95 border border-white/[0.07] rounded-[1.75rem] overflow-hidden shadow-[0_60px_120px_rgba(0,0,0,0.8)]"
+                initial={{ y: 40, opacity: 0 }} 
+                animate={{ y: 0, opacity: 1 }} 
+                transition={{ delay: 0.7, duration: 1, ease: [0.16, 1, 0.3, 1] }}>
                 <BeamScanner />
                 <div className="bg-[#0d1117]/90 border-b border-white/[0.05] px-5 py-3 flex items-center gap-2 backdrop-blur">
                     <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-rose-400/70" /><div className="w-3 h-3 rounded-full bg-yellow-400/70" /><div className="w-3 h-3 rounded-full bg-emerald-400/70" /></div>
@@ -635,16 +636,23 @@ export const Landing: React.FC = () => {
     const tickerItems = ['GST-compliant invoicing', 'UPI & Razorpay integration', 'Automated collections', 'Real-time P&L', 'WhatsApp alerts', 'AI-powered follow-ups', 'Multi-client dashboard', 'Compliance tracking', 'Inventory management'];
 
     return (
-        <div className="min-h-screen bg-[#050810] text-white overflow-x-hidden selection:bg-teal-500/30 cursor-none font-sans">
+        <div className="min-h-screen bg-[#050810] text-white overflow-x-hidden selection:bg-teal-500/30 cursor-none"
+            style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+                .display { font-family: 'Outfit', sans-serif; }
+                html { scroll-behavior: smooth; }
+                * { cursor: none !important; }
+            `}</style>
 
             <CustomCursor />
             <ParticleField />
+            <SpaceDebris />
+            <CapitaCore />
 
             {/* Background */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute inset-0 bg-[#050810]" />
-                <PerspectiveGrid />
-                <Geometric3DLayer />
                 <Blob className="w-[800px] h-[800px] -top-60 -left-40 opacity-25" color="rgba(20,184,166,0.18)" delay={0} />
                 <Blob className="w-[600px] h-[600px] top-1/2 -right-40 opacity-18" color="rgba(14,165,233,0.15)" delay={7} />
                 <Blob className="w-[500px] h-[500px] bottom-0 left-1/3 opacity-12" color="rgba(20,184,166,0.12)" delay={14} />
@@ -660,7 +668,7 @@ export const Landing: React.FC = () => {
                         className={`flex items-center justify-between px-5 py-3 rounded-2xl transition-all duration-500 ${scrolled ? 'bg-[#050810]/80 backdrop-blur-3xl border border-white/[0.08] shadow-[0_8px_40px_rgba(0,0,0,0.4)]' : 'border border-transparent'}`}>
                         <div className="flex items-center gap-2.5">
                             <Logo size={32} />
-                            <span className="font-display font-bold text-xl text-white tracking-tight">Capita <span className="text-teal-400">AI</span></span>
+                            <span className="display font-black text-xl text-white tracking-tight">Capita <span className="text-teal-400">AI</span></span>
                         </div>
                         <div className="hidden md:flex items-center gap-6">
                             {[['#features', 'Features'], ['#how-it-works', 'How it Works'], ['#pricing', 'Pricing'], ['#faq', 'FAQ']].map(([href, label]) => (
@@ -684,7 +692,15 @@ export const Landing: React.FC = () => {
             {/* HERO */}
             <section ref={heroRef} className="relative pt-36 pb-16 lg:pt-52 lg:pb-24 overflow-hidden min-h-screen flex flex-col justify-center">
                 <OrbitRings />
-                <motion.div style={{ y: heroY, opacity: heroO, scale: heroScale }} className="max-w-6xl mx-auto px-6 relative z-10 w-full">
+                <motion.div 
+                    style={{ 
+                        y: heroY, 
+                        opacity: heroO, 
+                        scale: heroScale,
+                        rotateX: useTransform(scrollYProgress, [0, 0.4], [0, 15]),
+                        z: useTransform(scrollYProgress, [0, 0.4], [0, -200])
+                    }} 
+                    className="max-w-6xl mx-auto px-6 relative z-10 w-full transform-style-3d">
                     <div className="text-center mb-16">
                         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}>
                             <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-300 text-[11px] font-black uppercase tracking-[0.2em] mb-8 relative">
@@ -695,7 +711,7 @@ export const Landing: React.FC = () => {
                         </motion.div>
 
                         <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                            className="font-display font-bold leading-[0.87] tracking-tight mb-6" style={{ fontSize: 'clamp(48px, 9.5vw, 112px)' }}>
+                            className="display font-black leading-[0.87] tracking-tight mb-6" style={{ fontSize: 'clamp(48px, 9.5vw, 112px)' }}>
                             <span className="text-white">Stop Chasing</span>
                             <br />
                             <span className="relative inline-block">
@@ -721,7 +737,7 @@ export const Landing: React.FC = () => {
                             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
                             <Magnetic>
                                 <Link to="/login"
-                                    className="group relative w-full sm:w-auto px-10 py-5 bg-teal-500 text-white rounded-2xl font-bold text-[17px] overflow-hidden flex items-center justify-center gap-2.5"
+                                    className="group relative w-full sm:w-auto px-10 py-5 bg-teal-500 text-white rounded-2xl font-black text-[17px] overflow-hidden flex items-center justify-center gap-2.5"
                                     onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 0 40px rgba(20,184,166,0.5)')}
                                     onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}>
                                     <motion.div className="absolute inset-0 bg-gradient-to-r from-teal-400 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -775,7 +791,7 @@ export const Landing: React.FC = () => {
                             <motion.div key={i} variants={fadeUp} className="bg-[#050810] p-8 text-center relative group overflow-hidden">
                                 <motion.div className="absolute inset-0 bg-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <s.icon className="w-5 h-5 text-teal-500/50 mx-auto mb-3" />
-                                <div className="font-display font-bold text-4xl text-white mb-2"><Counter to={s.to} suffix={s.suffix} /></div>
+                                <div className="display font-black text-4xl text-white mb-2"><Counter to={s.to} suffix={s.suffix} /></div>
                                 <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{s.label}</div>
                             </motion.div>
                         ))}
@@ -788,7 +804,7 @@ export const Landing: React.FC = () => {
                 <div className="max-w-6xl mx-auto px-6 space-y-32">
                     <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center">
                         <motion.div variants={fadeUp} className="text-teal-400 font-black uppercase tracking-[0.22em] text-[11px] mb-4">Complete Platform</motion.div>
-                        <motion.h2 variants={fadeUp} className="font-display font-bold text-white leading-tight" style={{ fontSize: 'clamp(32px, 5.5vw, 64px)' }}>
+                        <motion.h2 variants={fadeUp} className="display font-black text-white leading-tight" style={{ fontSize: 'clamp(32px, 5.5vw, 64px)' }}>
                             Every financial tool<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">your agency needs.</span>
                         </motion.h2>
                     </motion.div>
@@ -796,8 +812,8 @@ export const Landing: React.FC = () => {
                     {/* Invoice */}
                     <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} className="grid lg:grid-cols-2 gap-16 items-center">
                         <div>
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-400 text-[11px] font-bold uppercase tracking-[0.18em] mb-5">Invoice Management</div>
-                            <h3 className="font-display font-bold text-white text-3xl md:text-4xl mb-4 leading-tight">Every invoice. Every status. <span className="text-teal-400">Total control.</span></h3>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-400 text-[11px] font-black uppercase tracking-[0.18em] mb-5">Invoice Management</div>
+                            <h3 className="display font-black text-white text-3xl md:text-4xl mb-4 leading-tight">Every invoice. Every status. <span className="text-teal-400">Total control.</span></h3>
                             <p className="text-slate-400 text-[15px] leading-relaxed mb-6">Create, send, and track unlimited invoices with real-time status updates — Paid, Sent, Overdue, Draft.</p>
                             <ul className="space-y-3">
                                 {['Unlimited GST-compliant invoices', 'Bulk email sending to overdue clients', '1,000+ invoice pagination with instant search', 'One-click PDF download and sharing'].map((f, i) => (
@@ -817,8 +833,8 @@ export const Landing: React.FC = () => {
                     {/* Control Room */}
                     <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} className="grid lg:grid-cols-2 gap-16 items-center">
                         <div className="lg:order-2">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-400 text-[11px] font-bold uppercase tracking-[0.18em] mb-5">Live Monitoring</div>
-                            <h3 className="font-display font-bold text-white text-3xl md:text-4xl mb-4 leading-tight">Your revenue <span className="text-teal-400">command centre.</span></h3>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-400 text-[11px] font-black uppercase tracking-[0.18em] mb-5">Live Monitoring</div>
+                            <h3 className="display font-black text-white text-3xl md:text-4xl mb-4 leading-tight">Your revenue <span className="text-teal-400">command centre.</span></h3>
                             <p className="text-slate-400 text-[15px] leading-relaxed mb-6">The Control Room shows live payment events, overdue prioritisation, and total revenue health in real-time.</p>
                             <ul className="space-y-3">
                                 {['Live payment event stream (UPI, Cash, Card)', 'Priority queue of overdue clients by value', 'Pending revenue vs cash collected view', 'Action Required alerts with one-click resolution'].map((f, i) => (
@@ -832,14 +848,14 @@ export const Landing: React.FC = () => {
                                 <BeamScanner />
                                 <div className="flex items-center gap-2 mb-4">
                                     <motion.span className="w-1.5 h-1.5 rounded-full bg-teal-400" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-                                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-teal-400">Mission Control · Live</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-400">Mission Control · Live</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2.5 mb-3">
                                     {[{ label: 'Pending Revenue', val: '₹27,03,800', color: 'text-white', sub: '500 invoices pending' }, { label: 'Action Required', val: '₹13,03,000', color: 'text-orange-400', sub: '250 overdue' }, { label: 'Cash Collected', val: '₹13,17,600', color: 'text-teal-400', sub: '65% of goal' }, { label: 'Active Clients', val: '4,004', color: 'text-white', sub: 'Manage clients' }].map((k, i) => (
                                         <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                                             className="bg-white/[0.03] border border-white/[0.04] rounded-xl p-2.5">
                                             <div className="text-[8.5px] text-slate-600 font-semibold uppercase tracking-wider mb-1">{k.label}</div>
-                                            <div className={`font-bold text-[15px] ${k.color}`}>{k.val}</div>
+                                            <div className={`font-black text-[15px] ${k.color}`}>{k.val}</div>
                                             <div className="text-[9px] text-slate-500 mt-0.5">{k.sub}</div>
                                         </motion.div>
                                     ))}
@@ -864,8 +880,8 @@ export const Landing: React.FC = () => {
                     {/* Reports */}
                     <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} className="grid lg:grid-cols-2 gap-16 items-center">
                         <div>
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-400 text-[11px] font-bold uppercase tracking-[0.18em] mb-5">Analytics & Reports</div>
-                            <h3 className="font-display font-bold text-white text-3xl md:text-4xl mb-4 leading-tight">P&L in real-time. <span className="text-teal-400">No accountant needed.</span></h3>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-400 text-[11px] font-black uppercase tracking-[0.18em] mb-5">Analytics & Reports</div>
+                            <h3 className="display font-black text-white text-3xl md:text-4xl mb-4 leading-tight">P&L in real-time. <span className="text-teal-400">No accountant needed.</span></h3>
                             <p className="text-slate-400 text-[15px] leading-relaxed mb-6">Track total revenue, expenses, net profit, and average margin automatically. Revenue vs Expenses charts give you the full financial picture every month.</p>
                             <ul className="space-y-3">
                                 {['Automatic P&L calculation', 'Revenue vs Expenses trend chart', 'Comparative month-by-month analysis', 'One-click export'].map((f, i) => (
