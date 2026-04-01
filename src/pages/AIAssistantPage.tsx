@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Send, Mic, MicOff, Zap, RotateCcw, Copy, Check, ChevronDown,
+  Send, Mic, MicOff, Zap, RotateCcw, ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService, delay } from '../services/aiService';
@@ -153,14 +153,10 @@ function SidebarActionCard({
 // ─── Chat bubble ───────────────────────────────────────────────────────────────
 function ChatBubble({
   msg,
-  copiedId,
-  onCopy,
   onConfirmAction,
   onCancelAction,
 }: {
   msg: Message;
-  copiedId: string | null;
-  onCopy: (text: string, id: string) => void;
   onConfirmAction?: () => void;
   onCancelAction?: () => void;
 }) {
@@ -232,16 +228,7 @@ function ChatBubble({
         </div>
 
         <div className={`mt-1 flex items-center gap-2 ${isBot ? 'pl-1' : 'pr-1 flex-row-reverse'}`}>
-          {isBot && (
-            <button
-              onClick={() => onCopy(msg.text, msg.id)}
-              className="flex items-center gap-1 text-[8px] font-bold text-gray-600 hover:text-gray-400 transition-colors uppercase tracking-widest"
-            >
-              {copiedId === msg.id
-                ? <><Check size={9} color={TEAL} /><span style={{ color: TEAL }}>Copied</span></>
-                : <><Copy size={9} />Copy</>}
-            </button>
-          )}
+          {/* Timestamp only */}
           <span className="text-[8px] text-gray-600 font-mono">{formatTime(msg.timestamp)}</span>
         </div>
       </div>
@@ -250,7 +237,7 @@ function ChatBubble({
 }
 
 // ─── Empty state ───────────────────────────────────────────────────────────────
-function EmptyState({ greeting }: { greeting: string }) {
+function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center h-full py-16 px-8 text-center select-none">
       <div className="relative mb-5">
@@ -273,7 +260,7 @@ function EmptyState({ greeting }: { greeting: string }) {
 
       <h3 className="text-white font-bold text-[15px] mb-2 tracking-tight">Hey, I'm Capita</h3>
       <p className="text-gray-500 text-[12px] leading-relaxed max-w-xs">
-        {greeting || 'Your AI finance assistant. Ask me anything about revenue, invoices, cash flow, or taxes.'}
+        Ask me anything about your revenue, invoices, cash flow, or taxes.
       </p>
 
       <div className="mt-5 flex items-center gap-2">
@@ -305,13 +292,9 @@ export function AIAssistantPage() {
   const [query, setQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [inputFocused, setInputFocused] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [greetingCopied, setGreetingCopied] = useState(false);
   const [pendingAction, setPendingAction] = useState<any>(null);
-  const [provider, setProvider] = useState<'cloud' | 'local_fallback'>('cloud');
-  const [budget, setBudget] = useState<{ userRemaining: number; userMax: number; globalRemaining: number; isExhausted: boolean } | null>(null);
   const [currentStep, setCurrentStep] = useState(GENERAL_CHAT_STEPS[0]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -331,8 +314,8 @@ export function AIAssistantPage() {
 
         // 3. Load Budget Status
         try {
-          const budgetRes = await aiService.getBudget();
-          setBudget(budgetRes as any);
+          // const budgetRes = await aiService.getBudget();
+          // setBudget(budgetRes as any);
         } catch { /* Budget endpoint optional */ }
 
         await delay(300);
@@ -379,18 +362,6 @@ export function AIAssistantPage() {
   const scrollToBottom = () =>
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
 
-  const handleCopy = (text: string, id?: string) => {
-    navigator.clipboard.writeText(text);
-    if (id) setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const copyGreeting = () => {
-    navigator.clipboard.writeText(dynamicConfig.meta.greeting || '');
-    setGreetingCopied(true);
-    setTimeout(() => setGreetingCopied(false), 2000);
-  };
-
   const handleSend = async (textOverride?: string) => {
     if (isTyping) return;
     const text = (textOverride || query).trim();
@@ -404,8 +375,6 @@ export function AIAssistantPage() {
     try {
       const res = await aiService.processQuery(text, undefined, businessType || undefined);
       
-      if (res.provider) setProvider(res.provider);
-
       const botMsg: Message = {
         id: (Date.now() + 1).toString(), 
         sender: 'bot',
@@ -421,6 +390,7 @@ export function AIAssistantPage() {
         botMsg.data = { ...botMsg.data, type: 'action_prompt' };
       }
 
+      // Update usage if available
       if (res.usage?.totalTokenCount) {
         const updatedUsage = await aiService.getUsage();
         setUsageStats(updatedUsage as any);
@@ -428,12 +398,14 @@ export function AIAssistantPage() {
       setMessages(prev => [...prev, botMsg]);
 
       // Update budget from response if available
-      if (res.budget) setBudget(res.budget);
+      // if (res.budget) setBudget(res.budget);
 
-    } catch {
+    } catch (err: any) {
+      const errorMsg = 'I encountered an issue processing your request. Please try again in a moment.';
+        
       setMessages(prev => [...prev, {
         id: Date.now().toString(), sender: 'bot',
-        text: 'Something went wrong. Please try again.',
+        text: errorMsg,
         timestamp: new Date(), status: 'error',
       }]);
     } finally {
@@ -499,8 +471,7 @@ export function AIAssistantPage() {
     r.start();
   };
 
-  const { meta, actions } = dynamicConfig;
-  const greeting = meta.greeting || '';
+  const { actions } = dynamicConfig;
 
   return (
     <div className="flex flex-col w-full max-w-[1400px] mx-auto h-full px-4 pb-4 pt-4 lg:pt-6 overflow-hidden">
@@ -535,18 +506,7 @@ export function AIAssistantPage() {
               <RobotSVG size={20} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white tracking-tight">Capita AI</span>
-                {provider === 'local_fallback' && (
-                  <div className="group relative flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
-                    <div className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="text-[7px] font-black text-amber-500 uppercase tracking-tighter">Local Engine</span>
-                    <div className="absolute top-full left-0 mt-1 w-32 p-2 bg-black border border-white/10 rounded text-[9px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                      Running in offline/local mode due to connection limits.
-                    </div>
-                  </div>
-                )}
-              </div>
+              <span className="text-sm font-bold text-white tracking-tight">Capita AI</span>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
                 <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Online</span>
@@ -554,12 +514,7 @@ export function AIAssistantPage() {
             </div>
           </div>
 
-          {/* Greeting preview — desktop only, centre */}
-          {greeting && (
-            <p className="hidden lg:block flex-1 max-w-md mx-8 truncate text-[11px] text-gray-500 italic">
-              {greeting}
-            </p>
-          )}
+          {/* Greeting preview removed */}
 
           {/* Controls */}
           <div className="flex items-center gap-2">
@@ -576,22 +531,14 @@ export function AIAssistantPage() {
                 <span>{budget.isExhausted ? 'Budget Used' : `${budget.userRemaining}/${budget.userMax} Left`}</span>
                 <div className="absolute top-full right-0 mt-1 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[9px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case tracking-normal font-medium">
                   {budget.isExhausted 
-                    ? 'Daily AI budget exhausted. Using local mode. Resets at midnight Pacific.'
-                    : `${budget.userRemaining} AI queries remaining today. ${budget.globalRemaining} global pool left.`
+                    ? 'Daily AI budget exhausted. Please upgrade to continue.'
+                    : `${budget.userRemaining} AI queries remaining today.`
                   }
                 </div>
               </div>
             )}
             */}
-            <button
-              onClick={copyGreeting}
-              disabled={isTyping}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-widest transition-all
-                ${isTyping ? 'opacity-30 cursor-not-allowed text-gray-600 border-white/5' : 'text-gray-400 hover:text-white border-white/10 hover:border-white/20'}`}
-            >
-              {greetingCopied ? <Check size={9} color={TEAL} /> : <Copy size={9} />}
-              {greetingCopied ? 'Copied' : 'Copy'}
-            </button>
+            {/* Reset only */}
             <button
               onClick={clearChat}
               disabled={isTyping}
@@ -699,7 +646,7 @@ export function AIAssistantPage() {
               style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
             >
               {messages.length === 0 ? (
-                <EmptyState greeting={greeting} />
+                <EmptyState />
               ) : (
                 <div className="max-w-3xl mx-auto px-5 py-5 space-y-5">
                   <AnimatePresence initial={false}>
@@ -707,8 +654,6 @@ export function AIAssistantPage() {
                       <ChatBubble 
                         key={msg.id} 
                         msg={msg} 
-                        copiedId={copiedId} 
-                        onCopy={handleCopy} 
                         onConfirmAction={handleConfirmAction}
                         onCancelAction={handleCancelAction}
                       />
@@ -727,7 +672,7 @@ export function AIAssistantPage() {
                         <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center bg-teal-500/10 border border-teal-500/20">
                           <RobotSVG size={20} animate />
                         </div>
-                        <div className="bg-white/[0.04] border border-white/[0.07] rounded-tr-2xl rounded-tl-sm rounded-b-2xl px-4 py-3 flex items-center gap-2.5">
+                        <div className="bg-white/[0.04] border border-teal-500/30 rounded-tr-2xl rounded-tl-sm rounded-b-2xl px-4 py-3 flex items-center gap-2.5 shadow-[0_0_15px_-3px_rgba(45,212,191,0.2)] animate-pulse">
                           <div className="flex gap-1">
                             {[0, 1, 2].map(i => (
                               <div
