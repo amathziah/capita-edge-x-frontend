@@ -35,6 +35,7 @@ export function CreateInvoice() {
         customerGstin: string;
         fromName: string;
         fromAddress: string;
+        isGstRegistered: boolean;
         notes: string;
         discount: number;
         shipping: number;
@@ -50,7 +51,7 @@ export function CreateInvoice() {
             status: 'draft',
             items: [{ description: '', quantity: 1, price: 0 }],
             customerName: '', customerEmail: '', customerAddress: '', customerGstin: '',
-            fromName: '', fromAddress: '',
+            fromName: '', fromAddress: '', isGstRegistered: false,
             notes: '', discount: 0, shipping: 0,
             includeSignature: false, isRecurring: false,
         }
@@ -67,7 +68,7 @@ export function CreateInvoice() {
         line_items: watchedItems.map(item => ({
             quantity: item.quantity || 0,
             unit_price: item.price || 0,
-            tax_rate: 18,
+            tax_rate: w.isGstRegistered ? 18 : 0,
             is_interstate: false,
         })),
         shipping_charges: 0,
@@ -211,7 +212,30 @@ export function CreateInvoice() {
                 <div className="w-[50%] flex flex-col border-r border-gray-200 bg-white min-h-0">
 
                     {/* A: Meta fields */}
-                    <div className="shrink-0 px-6 pt-5 pb-4 border-b border-gray-150 space-y-3.5" style={{ borderColor: '#E8EAED' }}>
+                    <div className="shrink-0 px-6 pt-5 pb-4 border-b border-gray-150 space-y-3.5 overflow-y-auto max-h-[50vh]" style={{ borderColor: '#E8EAED' }}>
+
+                        {/* Billing From */}
+                        <div className="mb-5 space-y-3 pb-5 border-b border-gray-150" style={{ borderColor: '#E8EAED' }}>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">Billing From</span>
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox" {...register('isGstRegistered')} className="w-3.5 h-3.5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" />
+                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded border transition-colors ${w.isGstRegistered ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-gray-500 bg-gray-50 border-gray-200'}`}>GST Registered</span>
+                                </label>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                    <label className={lbl}>Legal Entity Name <span className="text-red-500">*</span></label>
+                                    <input {...register('fromName', { required: true })} placeholder="Your Name or Business" className={inp + (errors.fromName ? ' border-red-400 ring-1 ring-red-400' : '')} />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className={lbl}>Address & Registration</label>
+                                    <input {...register('fromAddress')} placeholder="City, State, PIN..." className={inp} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <span className="text-xs font-bold text-gray-800 uppercase tracking-wider block mb-2 pt-1">Billed To (Client)</span>
 
                         {/* Client + Invoice ID */}
                         <div className="grid grid-cols-2 gap-4">
@@ -482,7 +506,7 @@ export function CreateInvoice() {
                                             <span className="text-sm font-semibold text-gray-700">₹{subtotal.toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-sm font-medium text-gray-500">GST (18%)</span>
+                                            <span className="text-sm font-medium text-gray-500">GST ({w.isGstRegistered ? '18%' : '0%'})</span>
                                             <span className="text-sm font-semibold text-gray-700">₹{taxAmount.toFixed(2)}</span>
                                         </div>
                                         {watchedDiscount > 0 && (

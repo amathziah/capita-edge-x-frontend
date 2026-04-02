@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Check, Zap, ArrowRight, Sparkles, Shield, Crown,
-  MessageSquare, FileText, Mail, BarChart3, Bell, X
+  Check, Zap, ArrowRight, Sparkles, Crown, X
 } from 'lucide-react';
 
 // ─── Plan Data ────────────────────────────────────────────────────────────────
@@ -93,14 +92,6 @@ const PLANS = [
   },
 ];
 
-const AI_FEATURES = [
-  { icon: MessageSquare, label: 'Ask Capita anything', desc: 'Natural language queries about your business' },
-  { icon: BarChart3, label: 'Revenue & cash analysis', desc: 'Real-time insights from your actual data' },
-  { icon: FileText, label: 'Invoice intelligence', desc: 'Track, analyse and collect smarter' },
-  { icon: Mail, label: 'Collection drafts', desc: 'AI-written follow-up & reminder emails' },
-  { icon: Bell, label: 'Risk alerts', desc: 'Get warned before problems become crises' },
-  { icon: Shield, label: 'Tax & compliance Q&A', desc: 'GST, PAN, MSME guidance on demand' },
-];
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
 const COLOR = {
@@ -223,8 +214,8 @@ export function Pricing({ currentPlan, isEmbedded = false }: { currentPlan?: str
   };
 
   return (
-    <div className={isEmbedded ? "w-full py-20 bg-white shadow-2xl rounded-3xl" : "min-h-screen bg-gray-50/50"}>
-      <div className={`max-w-6xl mx-auto px-4 ${isEmbedded ? '' : 'py-10 md:py-16'} space-y-12`}>
+    <div className={isEmbedded ? "w-full py-10 md:py-20 bg-white shadow-xl md:shadow-2xl rounded-2xl md:rounded-3xl" : "min-h-screen bg-gray-50/50"}>
+      <div className={`max-w-6xl mx-auto px-4 sm:px-6 md:px-8 ${isEmbedded ? '' : 'py-10 md:py-16'} space-y-8 md:space-y-12`}>
 
         {/* Header */}
         <div className="text-center space-y-3">
@@ -271,83 +262,6 @@ export function Pricing({ currentPlan, isEmbedded = false }: { currentPlan?: str
           ))}
         </div>
 
-        {/* Enterprise callout */}
-        <div className="bg-gray-900 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Shield className="w-4 h-4 text-teal-400" />
-              <span className="text-sm font-black text-white">Enterprise / CA Firms</span>
-            </div>
-            <p className="text-[13px] text-gray-400 max-w-md">
-              Managing multiple client accounts? Get white-label invoicing, multi-org management, unlimited AI, and a dedicated account manager.
-            </p>
-          </div>
-          <a
-            href="mailto:hello@capita.ai?subject=Enterprise Inquiry"
-            className="shrink-0 px-5 py-2.5 bg-white text-gray-900 rounded-xl text-[13px] font-bold hover:bg-gray-100 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap"
-          >
-            Contact us <ArrowRight className="w-3.5 h-3.5" />
-          </a>
-        </div>
-
-        {/* What AI does */}
-        <div>
-          <h2 className="text-base font-black text-gray-900 mb-5 text-center">What Capita AI actually does for you</h2>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {AI_FEATURES.map((f, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-teal-200 transition-all"
-              >
-                <div className="p-2 bg-teal-50 rounded-lg w-fit mb-3">
-                  <f.icon className="w-4 h-4 text-teal-600" />
-                </div>
-                <p className="text-[13px] font-bold text-gray-900 mb-0.5">{f.label}</p>
-                <p className="text-[11px] text-gray-400 leading-relaxed">{f.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* FAQ */}
-        <div className="max-w-2xl mx-auto space-y-3">
-          <h2 className="text-base font-black text-gray-900 text-center mb-5">Common questions</h2>
-          {[
-            {
-              q: 'What counts as an AI query?',
-              a: 'Every message you send to Capita counts as 1 query. Follow-up questions in the same conversation also count individually. Automated weekly summaries do NOT count toward your limit.'
-            },
-            {
-              q: 'Can I upgrade or downgrade anytime?',
-              a: 'Yes — upgrades are instant and prorated. Downgrades take effect at the end of your current billing cycle, so you keep your access until then.'
-            },
-            {
-              q: 'Is my financial data safe?',
-              a: 'Your data is encrypted at rest and in transit. We never use your financial data to train AI models, and we never share it with third parties.'
-            },
-            {
-              q: 'What happens when I hit my AI limit?',
-              a: 'Capita will notify you when you\'re at 80% of your query limit. Once exceeded, basic features still work — only AI chat is paused until your cycle resets.'
-            },
-            {
-              q: 'Can I pay annually and save?',
-              a: 'Yes! Annual plans give you approximately 2 months free. Solo saves ₹598/year, and Solo Pro saves ₹1,398/year. Payment is charged upfront for the full year.'
-            },
-          ].map((faq, i) => (
-            <details key={i} className="group bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-              <summary className="px-5 py-4 text-[13px] font-semibold text-gray-800 cursor-pointer list-none flex items-center justify-between gap-3 select-none">
-                {faq.q}
-                <ArrowRight className="w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform group-open:rotate-90" />
-              </summary>
-              <div className="px-5 pb-4 text-[12.5px] text-gray-500 leading-relaxed border-t border-gray-50 pt-3">
-                {faq.a}
-              </div>
-            </details>
-          ))}
-        </div>
 
         {/* Upgrade confirmation modal */}
         <AnimatePresence>

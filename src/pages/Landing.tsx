@@ -33,40 +33,6 @@ function Magnetic({ children, strength = 0.3 }: { children: React.ReactNode; str
     );
 }
 
-// ─── Custom Cursor ────────────────────────────────────────────────────────────
-function CustomCursor() {
-    const cursorX = useMotionValue(-100);
-    const cursorY = useMotionValue(-100);
-    const trailX = useSpring(cursorX, { stiffness: 80, damping: 20 });
-    const trailY = useSpring(cursorY, { stiffness: 80, damping: 20 });
-    const [isHovering, setIsHovering] = useState(false);
-
-    useEffect(() => {
-        const move = (e: MouseEvent) => { cursorX.set(e.clientX); cursorY.set(e.clientY); };
-        const over = (e: MouseEvent) => { if ((e.target as HTMLElement).closest('a,button,[data-hover]')) setIsHovering(true); };
-        const out = () => setIsHovering(false);
-        window.addEventListener('mousemove', move);
-        document.addEventListener('mouseover', over);
-        document.addEventListener('mouseout', out);
-        return () => { window.removeEventListener('mousemove', move); document.removeEventListener('mouseover', over); document.removeEventListener('mouseout', out); };
-    }, []);
-
-    return (
-        <>
-            <motion.div className="fixed top-0 left-0 z-[9999] pointer-events-none mix-blend-difference"
-                style={{ x: cursorX, y: cursorY, translateX: '-50%', translateY: '-50%' }}>
-                <motion.div animate={{ scale: isHovering ? 1.5 : 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                    className="w-3 h-3 rounded-full bg-white" />
-            </motion.div>
-            <motion.div className="fixed top-0 left-0 z-[9998] pointer-events-none"
-                style={{ x: trailX, y: trailY, translateX: '-50%', translateY: '-50%' }}>
-                <motion.div animate={{ scale: isHovering ? 2.5 : 1, opacity: isHovering ? 0.6 : 0.2 }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                    className="w-8 h-8 rounded-full border border-teal-400" />
-            </motion.div>
-        </>
-    );
-}
 
 // ─── Particle Field (3D Point Cloud) ──────────────────────────────────────────
 function ParticleField() {
@@ -76,12 +42,11 @@ function ParticleField() {
         const ctx = canvas.getContext('2d')!;
         let W = canvas.width = window.innerWidth;
         let H = canvas.height = window.innerHeight;
-        let mouseX = 0, mouseY = 0;
         
         const FOCAL_LENGTH = 1000;
         const particles: Array<{ x: number; y: number; z: number; size: number; alpha: number; hue: number }> = [];
         
-        for (let i = 0; i < 150; i++) {
+        for (let i = 0; i < 40; i++) {
             particles.push({
                 x: (Math.random() - 0.5) * 4000,
                 y: (Math.random() - 0.5) * 4000,
@@ -92,12 +57,6 @@ function ParticleField() {
             });
         }
 
-        const onMouse = (e: MouseEvent) => {
-            mouseX = (e.clientX - W / 2) * 0.05;
-            mouseY = (e.clientY - H / 2) * 0.05;
-        };
-        
-        window.addEventListener('mousemove', onMouse);
         window.addEventListener('resize', () => {
             W = canvas.width = window.innerWidth;
             H = canvas.height = window.innerHeight;
@@ -119,9 +78,9 @@ function ParticleField() {
                 const rx = x * cos - z * sin;
                 const rz = x * sin + z * cos;
                 
-                // Add mouse parallax
-                const finalX = rx + mouseX;
-                const finalY = p.y + mouseY;
+                // Removed mouse parallax for massive performance gain
+                const finalX = rx;
+                const finalY = p.y;
                 const finalZ = rz + 2000;
 
                 if (finalZ > 0) {
@@ -139,7 +98,7 @@ function ParticleField() {
             requestAnimationFrame(draw);
         };
         draw();
-        return () => { window.removeEventListener('mousemove', onMouse); };
+        return () => {};
     }, []);
     return <canvas ref={canvasRef} className="fixed inset-0 z-[1] pointer-events-none opacity-40" />;
 }
@@ -148,25 +107,14 @@ function ParticleField() {
 function SpaceDebris() {
     return (
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-            {[...Array(6)].map((_, i) => (
-                <motion.div
+            {[...Array(3)].map((_, i) => (
+                <div
                     key={i}
                     className="absolute w-64 h-64 rounded-full"
                     style={{
                         background: `radial-gradient(circle, rgba(20,184,166,${0.03 + i * 0.01}) 0%, transparent 70%)`,
                         left: `${Math.random() * 100}%`,
                         top: `${Math.random() * 100}%`,
-                        filter: 'blur(40px)',
-                    }}
-                    animate={{
-                        x: [0, Math.random() * 100 - 50, 0],
-                        y: [0, Math.random() * 100 - 50, 0],
-                        scale: [1, 1.2, 1],
-                    }}
-                    transition={{
-                        duration: 15 + Math.random() * 10,
-                        repeat: Infinity,
-                        ease: "easeInOut",
                     }}
                 />
             ))}
@@ -175,12 +123,10 @@ function SpaceDebris() {
 }
 
 // ─── Morphing Blob ────────────────────────────────────────────────────────────
-function Blob({ className, color, delay = 0 }: { className: string; color: string; delay?: number }) {
+function Blob({ className, color }: { className: string; color: string }) {
     return (
-        <motion.div className={`absolute rounded-full pointer-events-none ${className}`}
-            style={{ background: color, filter: 'blur(80px)' }}
-            animate={{ x: [0, 60, -40, 0], y: [0, -70, 50, 0], scale: [1, 1.2, 0.85, 1], borderRadius: ['50%', '60% 40% 70% 30%', '40% 60% 30% 70%', '50%'] }}
-            transition={{ duration: 22, delay, repeat: Infinity, ease: 'easeInOut' }} />
+        <div className={`absolute rounded-full pointer-events-none ${className}`}
+            style={{ backgroundImage: `radial-gradient(circle at center, ${color} 0%, transparent 70%)` }} />
     );
 }
 
@@ -289,34 +235,17 @@ function FeatureCard({ icon: Icon, title, desc, index }: { icon: any; title: str
 
 // ─── Dashboard Mockup ─────────────────────────────────────────────────────────
 function DashboardMockup() {
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-    const rotateX = useSpring(useTransform(y, [-300, 300], [10, -10]), { stiffness: 100, damping: 30 });
-    const rotateY = useSpring(useTransform(x, [-300, 300], [-10, 10]), { stiffness: 100, damping: 30 });
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        x.set(e.clientX - centerX);
-        y.set(e.clientY - centerY);
-    };
-
-    const handleMouseLeave = () => {
-        x.set(0);
-        y.set(0);
-    };
-
+    // Removed heavy 3D mouse tracking tilt logic
     const events = [
         { type: 'Payment Received', detail: 'Received ₹3,540 via cash', time: '17:57:54', ok: true },
         { type: 'Payment Received', detail: 'Received ₹60 via upi', time: '16:21:09', ok: true },
         { type: 'Invoice Overdue', detail: 'STR-5739-2359 · ₹8,644', time: '09:00:00', ok: false },
     ];
     return (
-        <div className="relative perspective-1000" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-            <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/10 via-cyan-500/8 to-teal-500/10 rounded-[3rem] blur-3xl opacity-50" />
+        <div className="relative perspective-1000">
+            <div className="absolute -inset-4 bg-gradient-to-r from-teal-500/10 via-cyan-500/8 to-teal-500/10 rounded-[3rem] opacity-50" />
             <motion.div 
-                style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+                style={{ transformStyle: "preserve-3d" }}
                 className="relative bg-[#080c18]/95 border border-white/[0.07] rounded-[1.75rem] overflow-hidden shadow-[0_60px_120px_rgba(0,0,0,0.8)]"
                 initial={{ y: 40, opacity: 0 }} 
                 animate={{ y: 0, opacity: 1 }} 
@@ -534,16 +463,14 @@ export const Landing: React.FC = () => {
     const tickerItems = ['GST-compliant invoicing', 'UPI & Razorpay integration', 'Automated collections', 'Real-time P&L', 'WhatsApp alerts', 'AI-powered follow-ups', 'Multi-client dashboard', 'Compliance tracking', 'Inventory management'];
 
     return (
-        <div className="min-h-screen bg-[#050810] text-white overflow-x-hidden selection:bg-teal-500/30 cursor-none"
+        <div className="min-h-screen bg-[#050810] text-white overflow-x-hidden selection:bg-teal-500/30"
             style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
                 .display { font-family: 'Outfit', sans-serif; }
                 html { scroll-behavior: smooth; }
-                * { cursor: none !important; }
             `}</style>
 
-            <CustomCursor />
             <ParticleField />
             <SpaceDebris />
             <CapitaCore />
@@ -551,9 +478,9 @@ export const Landing: React.FC = () => {
             {/* Background */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute inset-0 bg-[#050810]" />
-                <Blob className="w-[800px] h-[800px] -top-60 -left-40 opacity-25" color="rgba(20,184,166,0.18)" delay={0} />
-                <Blob className="w-[600px] h-[600px] top-1/2 -right-40 opacity-18" color="rgba(14,165,233,0.15)" delay={7} />
-                <Blob className="w-[500px] h-[500px] bottom-0 left-1/3 opacity-12" color="rgba(20,184,166,0.12)" delay={14} />
+                <Blob className="w-[800px] h-[800px] -top-60 -left-40 opacity-25" color="rgba(20,184,166,0.18)" />
+                <Blob className="w-[600px] h-[600px] top-1/2 -right-40 opacity-18" color="rgba(14,165,233,0.15)" />
+                <Blob className="w-[500px] h-[500px] bottom-0 left-1/3 opacity-12" color="rgba(20,184,166,0.12)" />
                 <div className="absolute inset-0 opacity-[0.022]" style={{ backgroundImage: 'linear-gradient(rgba(20,184,166,1) 1px,transparent 1px),linear-gradient(90deg,rgba(20,184,166,1) 1px,transparent 1px)', backgroundSize: '64px 64px' }} />
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,transparent_40%,#050810_100%)]" />
                 <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#050810] to-transparent" />
@@ -827,10 +754,6 @@ export const Landing: React.FC = () => {
                         </motion.h2>
                     </motion.div>
                     <div className="grid md:grid-cols-4 gap-4 relative">
-                        <div className="hidden md:block absolute top-14 left-[12.5%] right-[12.5%] h-px">
-                            <motion.div className="h-full bg-gradient-to-r from-transparent via-teal-500/40 to-transparent"
-                                initial={{ scaleX: 0 }} whileInView={{ scaleX: 1 }} viewport={{ once: true }} transition={{ duration: 1.5, delay: 0.4 }} />
-                        </div>
                         {[
                             { n: '01', t: 'Create Account', d: 'Sign up with your email. No credit card required. Your Financial OS is ready instantly.' },
                             { n: '02', t: 'Add Your Clients', d: 'Import or add clients manually. Capita stores all their billing info for fast invoicing.' },
@@ -852,7 +775,7 @@ export const Landing: React.FC = () => {
             </section>
 
             {/* PRICING */}
-            <section id="pricing" className="relative z-20 max-w-7xl mx-auto px-6 pt-10 pb-20">
+            <section id="pricing" className="relative z-20 w-full lg:max-w-5xl mx-auto px-4 md:px-6 pt-10 pb-20 scale-100 lg:scale-90 lg:origin-top">
                 <Pricing isEmbedded={true} />
             </section>
 
@@ -897,15 +820,9 @@ export const Landing: React.FC = () => {
                             <div className="relative w-7 h-7 bg-gradient-to-br from-teal-400 to-cyan-600 rounded-lg flex items-center justify-center"><Zap className="w-3.5 h-3.5 text-white" /></div>
                         </div>
                         <span className="display font-black text-white tracking-tight">CapitaEdgeX</span>
-                        <span className="text-slate-600 text-[12px] ml-1">— Financial OS for Agencies</span>
+                        <span className="text-slate-600 text-[12px] ml-1">— Create your invoice in 1 min</span>
                     </div>
-                    <div className="flex gap-7 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
-                        {['Privacy', 'Terms', 'Contact'].map(l => (
-                            <a key={l} href="#" className="hover:text-white transition-colors relative group">
-                                {l}<span className="absolute -bottom-0.5 left-0 w-0 h-px bg-teal-400 group-hover:w-full transition-all duration-300" />
-                            </a>
-                        ))}
-                    </div>
+
                     <div className="text-slate-600 text-[11px] font-semibold">© {new Date().getFullYear()} Laboratory Capita, Inc.</div>
                 </div>
             </footer>

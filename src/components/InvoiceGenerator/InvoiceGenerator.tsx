@@ -37,6 +37,7 @@ interface SectionCardProps {
     children: React.ReactNode;
     icon?: React.ElementType;
     action?: React.ReactNode;
+    className?: string;
 }
 
 /* ─── Shared Components ────────────────────────────────────────────────── */
@@ -76,8 +77,8 @@ const InputWrapper = ({ label, children, error, icon: Icon, required }: InputWra
     </div>
 );
 
-const SectionCard = ({ title, children, icon: Icon, action }: SectionCardProps) => (
-    <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-teal-100/60 p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full">
+const SectionCard = ({ title, children, icon: Icon, action, className = '' }: SectionCardProps) => (
+    <div className={`bg-white/70 backdrop-blur-xl rounded-3xl border border-teal-100/60 p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full ${className}`}>
         <div className="flex justify-between items-center mb-5">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
@@ -409,7 +410,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
 
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                         {/* Section: Client Details */}
-                        <SectionCard title="Client Information" icon={User} 
+                        <SectionCard title="Client Information" icon={User} className="relative z-[60]"
                                      action={<button type="button" onClick={openDrawer} className="text-[10px] font-black text-teal-600 hover:tracking-wider transition-all uppercase">+ New Client</button>}>
                             <InputWrapper label="Select Client" error={buyerErrors?.name} required>
                                 <div className="relative">
