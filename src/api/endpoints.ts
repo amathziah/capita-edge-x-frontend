@@ -80,6 +80,8 @@ export const ENDPOINTS = {
     AI_COMMAND: '/ai/command',
     AI_SETTLEMENT: '/ai/settlement',
     AI_AUDIT_INVOICE: '/ai/audit-invoice',
+    AI_CONVERSATIONS: '/ai/conversations',
+    AI_CONVERSATION_MESSAGES: (id: string) => `/ai/conversations/${id}`,
     AI_HISTORY: '/ai/history',
     AI_USAGE: '/ai/usage',
     AI_BUDGET: '/ai/budget',

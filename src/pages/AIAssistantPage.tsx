@@ -8,6 +8,8 @@ import { aiService, delay } from '../services/aiService';
 import { usePersona } from '../contexts/PersonaContext';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
+import { api } from '../api/client';
+import { ENDPOINTS } from '../api/endpoints';
 import * as LucideIcons from 'lucide-react';
 import { GENERAL_CHAT_STEPS } from '../utils/aiLoadingSteps';
 
@@ -387,6 +389,9 @@ export function AIAssistantPage() {
   });
   
   const [usageStats, setUsageStats] = useState({ usage: 0, limit: 0, percent: 0, remaining: 0 });
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
@@ -426,16 +431,31 @@ export function AIAssistantPage() {
 
         await delay(200);
 
-        // 5. Load Chat History
-        const history = await aiService.getHistory();
-        if (Array.isArray(history) && history.length > 0) {
-          setMessages(history.map((m: any) => ({
-            ...m,
-            timestamp: new Date(m.timestamp)
-          })));
+        // 5. Load Session List
+        setIsHistoryLoading(true);
+        const sessions = await aiService.getConversations();
+        setConversations(sessions as any[]);
+        setIsHistoryLoading(false);
+
+        // 6. Load Latest Chat History (Fallback if no session selected)
+        if (!currentConversationId) {
+          const history = await aiService.getHistory();
+          if (Array.isArray(history) && history.length > 0) {
+            setMessages(history.map((m: any) => ({
+              ...m,
+              timestamp: new Date(m.timestamp)
+            })));
+            // Force scroll to bottom after hydration
+            setTimeout(() => {
+              if (scrollRef.current) {
+                scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'instant' });
+              }
+            }, 100);
+          }
         }
       } catch (err) {
         console.error('Failed to init AI page:', err);
+        setIsHistoryLoading(false);
       }
     };
     init();
@@ -484,12 +504,19 @@ export function AIAssistantPage() {
     setIsTyping(true);
 
     try {
-      const history = messages.slice(-10).map(m => ({
+      // Build history context from current state EXCLUDING the user's latest message
+      // (Gemini expects history of PAST turns; the current query is sent separately)
+      const historyContext = messages.slice(-10).map(m => ({
         role: m.sender === 'user' ? 'user' : 'model',
         parts: [{ text: m.text }]
       }));
 
-      const res = await aiService.processQuery(text, undefined, businessType || undefined, history);
+      const res = await api.post<any>(ENDPOINTS.AI_CHAT, { 
+        query: text, 
+        businessType: businessType || undefined, 
+        history: historyContext,
+        conversationId: currentConversationId || undefined
+      });
       
       const botMsg: Message = {
         id: (Date.now() + 1).toString(), 
@@ -499,6 +526,13 @@ export function AIAssistantPage() {
         usage: res.usage,
         timestamp: new Date(),
       };
+
+      if (res.conversationId && !currentConversationId) {
+        setCurrentConversationId(res.conversationId);
+        // Refresh session list
+        const sessions = await aiService.getConversations();
+        setConversations(sessions as any[]);
+      }
 
       if (res.action) {
         // Intercept action and ask for confirmation
@@ -572,10 +606,32 @@ export function AIAssistantPage() {
     ]);
   };
 
+  const loadConversation = async (id: string) => {
+    if (id === currentConversationId) return;
+    setIsTyping(true);
+    try {
+      const msgs = await aiService.getConversationMessages(id);
+      setMessages(msgs as any[]);
+      setCurrentConversationId(id);
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Failed to load conversation:', err);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
   const clearChat = async () => {
     try {
       await aiService.deleteHistory();
       setMessages([]);
+      setCurrentConversationId(null);
+      const sessions = await aiService.getConversations();
+      setConversations(sessions as any[]);
     } catch (err) {
       console.error('Failed to clear history:', err);
     }
@@ -677,37 +733,67 @@ export function AIAssistantPage() {
         <div className="flex flex-1 min-h-0 relative z-10 overflow-hidden">
 
           {/* ── LEFT SIDEBAR ── */}
-          <div className="w-48 lg:w-52 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#07090f]/70">
+          <div className="w-56 lg:w-64 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#07090f]/90 backdrop-blur-xl">
 
+            {/* Quick Actions */}
             <div className="px-3 pt-3.5 pb-2.5 border-b border-white/[0.05]">
-              <span className="text-[8px] font-black text-gray-600 tracking-widest uppercase">Quick actions</span>
+              <span className="text-[8px] font-black text-gray-500 tracking-widest uppercase">Presets</span>
             </div>
 
             <div
-              className="flex-1 overflow-y-auto py-2 px-2 space-y-1"
+              className="max-h-[35%] overflow-y-auto py-2 px-2 space-y-1"
               style={{ scrollbarWidth: 'none' }}
             >
-              <AnimatePresence>
-                {actions.length > 0
-                  ? actions.map((action: any, i: number) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.06, duration: 0.22 }}
-                    >
-                      <SidebarActionCard
-                        action={action}
-                        onClick={() => handleSend(action.query)}
-                        disabled={isTyping}
-                      />
-                    </motion.div>
-                  ))
-                  : Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-11 rounded-xl bg-white/[0.02] border border-white/[0.04] animate-pulse" />
-                  ))
-                }
-              </AnimatePresence>
+              {actions.map((action: any, i: number) => (
+                <SidebarActionCard
+                  key={i}
+                  action={action}
+                  onClick={() => handleSend(action.query)}
+                  disabled={isTyping}
+                />
+              ))}
+            </div>
+
+            {/* History Section */}
+            <div className="px-3 pt-4 pb-2.5 border-t border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between">
+              <span className="text-[8px] font-black text-teal-500/70 tracking-widest uppercase">Recent Advice</span>
+              <button 
+                onClick={() => { setMessages([]); setCurrentConversationId(null); }}
+                className="text-[8px] font-black text-gray-500 hover:text-white transition-colors uppercase tracking-widest"
+              >
+                + New
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-2 px-2 space-y-1 bg-[#090c14]/40">
+              {isHistoryLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-10 mx-1 rounded-lg bg-white/[0.02] border border-white/[0.03] animate-pulse" />
+                ))
+              ) : conversations.length > 0 ? (
+                conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    onClick={() => loadConversation(conv.id)}
+                    className={`w-full text-left p-2.5 rounded-xl border transition-all group flex flex-col gap-1 ${
+                      currentConversationId === conv.id
+                        ? 'bg-teal-500/10 border-teal-500/30 ring-1 ring-teal-500/20'
+                        : 'border-transparent hover:bg-white/[0.03] grayscale hover:grayscale-0'
+                    }`}
+                  >
+                    <span className={`text-[10px] font-bold truncate ${currentConversationId === conv.id ? 'text-teal-400' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                      {conv.title}
+                    </span>
+                    <span className="text-[7px] font-mono text-gray-600 uppercase tracking-tighter">
+                      {new Date(conv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' })}
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-20 opacity-30 grayscale saturate-0">
+                  <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">No History Yet</span>
+                </div>
+              )}
             </div>
 
             {/* AI Credits Section - Temporarily Disabled

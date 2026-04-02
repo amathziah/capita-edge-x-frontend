@@ -18,6 +18,8 @@ export const aiService = {
   getBudget: () => api.get(ENDPOINTS.AI_BUDGET),
   getHistory: () => api.get(ENDPOINTS.AI_HISTORY),
   deleteHistory: () => api.delete(ENDPOINTS.AI_HISTORY),
+  getConversations: () => api.get(ENDPOINTS.AI_CONVERSATIONS),
+  getConversationMessages: (id: string) => api.get(ENDPOINTS.AI_CONVERSATION_MESSAGES(id)),
 
   predictRevenue: (historicalData: any[]) => api.post(ENDPOINTS.AI_PREDICT_REVENUE, { historicalData }),
 
