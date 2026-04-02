@@ -113,7 +113,7 @@ const COLOR = {
 function PlanCard({ plan, annual, currentPlan, onUpgrade }: {
   plan: typeof PLANS[0];
   annual: boolean;
-  currentPlan: string;
+  currentPlan?: string | null;
   onUpgrade: (id: string) => void;
 }) {
   const c = COLOR[plan.color as keyof typeof COLOR];
@@ -214,7 +214,7 @@ function PlanCard({ plan, annual, currentPlan, onUpgrade }: {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function Pricing({ currentPlan = 'starter' }: { currentPlan?: string }) {
+export function Pricing({ currentPlan }: { currentPlan?: string | null }) {
   const [annual, setAnnual] = useState(false);
   const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null);
 

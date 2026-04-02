@@ -5,21 +5,15 @@ import {
     CheckCircle2, ChevronRight, Globe, Lock,
     ChevronDown, Clock, TrendingUp, Users,
     FileText, CreditCard, Calendar, Package,
-    AlertTriangle, Activity, Star, Building2, X,
+    AlertTriangle, Activity, Star, Building2,
     Sparkles, Play, Crown, MessageSquare, Mail, Bell
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../components/common/Logo';
+import { Pricing } from './Pricing';
 import { CapitaCore } from '../components/landing/CapitaCore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface TierType {
-    slug: string; name: string; tagline: string; price: number | null;
-    priceAnnual: number | null; priceLabel?: string; icon: any;
-    gradient: string; borderColor: string; bgTint: string; features: string[];
-    notIncluded?: string[]; cta: string; popular?: boolean;
-}
-
 // ─── Magnetic Button ──────────────────────────────────────────────────────────
 function Magnetic({ children, strength = 0.3 }: { children: React.ReactNode; strength?: number }) {
     const ref = useRef<HTMLDivElement>(null);
@@ -207,30 +201,6 @@ function Counter({ to, suffix = '', prefix = '' }: { to: number; suffix?: string
         requestAnimationFrame(step);
     }, [inView, to]);
     return <span ref={ref}>{prefix}{count.toLocaleString()}{suffix}</span>;
-}
-
-// ─── FAQ Item ─────────────────────────────────────────────────────────────────
-function FAQItem({ q, a }: { q: string; a: string }) {
-    const [open, setOpen] = useState(false);
-    return (
-        <motion.div className="border-b border-white/[0.06] last:border-0" layout>
-            <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between py-5 text-left gap-4 group">
-                <span className="font-semibold text-slate-200 text-[15px] group-hover:text-white transition-colors">{q}</span>
-                <motion.div animate={{ rotate: open ? 180 : 0, scale: open ? 1.15 : 1 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors ${open ? 'bg-teal-500/20 text-teal-400' : 'bg-white/[0.04] text-slate-500'}`}>
-                    <ChevronDown className="w-3.5 h-3.5" />
-                </motion.div>
-            </button>
-            <AnimatePresence>
-                {open && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }} className="overflow-hidden">
-                        <p className="pb-5 text-slate-400 text-[14px] leading-relaxed pr-10">{a}</p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </motion.div>
-    );
 }
 
 // ─── Floating Badge ───────────────────────────────────────────────────────────
@@ -533,77 +503,6 @@ function ReportsMock() {
         </div>
     );
 }
-
-// ─── Pricing Card ─────────────────────────────────────────────────────────────
-function PricingCard({ tier, isAnnual, index }: { tier: TierType; isAnnual: boolean; index: number }) {
-    const [hovered, setHovered] = useState(false);
-    return (
-        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-            className={`relative rounded-3xl p-6 flex flex-col overflow-hidden ${tier.bgTint} border ${tier.borderColor}`}
-            style={{ transform: hovered ? 'translateY(-4px)' : tier.popular ? 'translateY(-12px)' : 'none', transition: 'transform 0.3s ease, box-shadow 0.3s ease', boxShadow: tier.popular ? '0 0 40px rgba(20,184,166,0.12)' : 'none' }}>
-            <AnimatePresence>
-                {hovered && <motion.div className="absolute inset-0 pointer-events-none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    style={{ background: 'radial-gradient(circle at 50% 0%, rgba(20,184,166,0.06) 0%, transparent 70%)' }} />}
-            </AnimatePresence>
-            {tier.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                    <motion.span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-[10px] font-black uppercase tracking-[0.15em] shadow-lg"
-                        animate={{ boxShadow: ['0 0 10px rgba(20,184,166,0.3)', '0 0 25px rgba(20,184,166,0.55)', '0 0 10px rgba(20,184,166,0.3)'] }} transition={{ duration: 2, repeat: Infinity }}>
-                        <Sparkles className="w-2.5 h-2.5" /> Most Popular
-                    </motion.span>
-                </div>
-            )}
-            <div className="mt-2 mb-4">
-                <motion.div className={`inline-flex p-2.5 rounded-2xl bg-gradient-to-br ${tier.gradient} shadow-lg mb-4`}
-                    animate={hovered ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-                    <tier.icon className="w-5 h-5 text-white" strokeWidth={2.5} />
-                </motion.div>
-                <h3 className="text-xl font-bold text-white">{tier.name}</h3>
-                <p className="text-[11px] text-slate-500 mt-1">{tier.tagline}</p>
-            </div>
-            <div className="mb-5">
-                <div className="flex items-baseline gap-1">
-                    {tier.priceLabel ? (
-                        <span className="text-[17px] font-black text-white">{tier.priceLabel}</span>
-                    ) : (
-                        <>
-                            <AnimatePresence mode="wait">
-                                <motion.span key={isAnnual ? 'a' : 'm'} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -10, opacity: 0 }} transition={{ duration: 0.2 }} className="text-3xl font-black text-white">
-                                    {tier.price === null ? 'Custom' : tier.price === 0 ? 'Free' : isAnnual && tier.priceAnnual ? `₹${Math.round(tier.priceAnnual / 12).toLocaleString()}` : `₹${tier.price!.toLocaleString()}`}
-                                </motion.span>
-                            </AnimatePresence>
-                            {tier.price !== null && tier.price > 0 && <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">/mo</span>}
-                        </>
-                    )}
-                </div>
-                {isAnnual && tier.priceAnnual && !tier.priceLabel && <p className="text-[10px] text-emerald-400 font-semibold mt-1">Billed ₹{tier.priceAnnual.toLocaleString()}/year</p>}
-            </div>
-            <ul className="space-y-2.5 mb-7 flex-1">
-                {tier.features.map((f, i) => (
-                    <motion.li key={i} initial={{ opacity: 0, x: -5 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 + i * 0.04 }}
-                        className="flex items-start gap-2 text-[12px] text-slate-300 font-medium">
-                        <div className={`p-0.5 rounded-full bg-gradient-to-br ${tier.gradient} mt-0.5 flex-shrink-0`}>
-                            <CheckCircle2 className="w-2.5 h-2.5 text-white" strokeWidth={3} />
-                        </div>
-                        <span className="leading-snug">{f}</span>
-                    </motion.li>
-                ))}
-            </ul>
-            <Link to="/login" className={`w-full py-3 px-4 rounded-xl text-center text-[12px] font-black uppercase tracking-wider transition-all duration-300 ${tier.popular ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:shadow-[0_0_20px_rgba(20,184,166,0.4)]' : 'bg-white/[0.05] text-white hover:bg-white/[0.1] border border-white/[0.1]'}`}>
-                {tier.cta}
-            </Link>
-        </motion.div>
-    );
-}
-
-// ─── Tier config ──────────────────────────────────────────────────────────────
-const TIERS: TierType[] = [
-    { slug: 'free', name: 'Free', tagline: 'Get started, no card needed', price: 0, priceAnnual: 0, icon: Star, gradient: 'from-gray-400 to-gray-600', borderColor: 'border-white/[0.07]', bgTint: 'bg-white/[0.02]', features: ['14-day Solo trial included', '25 AI queries / month', '5 invoices / month', '15 clients', 'PDF invoice download', 'Basic cash & revenue Q&A'], cta: 'Start Free' },
-    { slug: 'solo', name: 'Solo', tagline: 'For freelancers who mean business', price: 299, priceAnnual: 2990, icon: Sparkles, gradient: 'from-teal-400 to-cyan-500', borderColor: 'border-teal-500/30', bgTint: 'bg-teal-500/5', popular: true, features: ['150 AI queries / month', 'Unlimited invoices', 'Unlimited clients', 'Strategic CFO advice', 'Email invoices to clients', 'Auto follow-up emails', 'GST-compliant reports', 'Cash runway analysis', 'Revenue concentration risk', 'Weekly cash summary email'], cta: 'Upgrade to Solo' },
-    { slug: 'solo_pro', name: 'Solo Pro', tagline: 'Deep intelligence for power users', price: 699, priceAnnual: 6990, icon: Crown, gradient: 'from-violet-500 to-purple-600', borderColor: 'border-violet-500/30', bgTint: 'bg-violet-500/5', features: ['500 AI queries / month', 'Everything in Solo', 'Cash flow forecasting', 'Client churn prediction', 'Proactive risk alerts', 'AI collection letter drafts', 'Settlement negotiation AI', 'Priority AI response queue', 'Priority support', 'Early access to new features'], cta: 'Upgrade to Solo Pro' },
-    { slug: 'enterprise', name: 'Enterprise / CA Firms', tagline: 'Managing multiple client accounts?', price: null, priceAnnual: null, icon: Shield, gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-500/30', bgTint: 'bg-amber-500/5', features: ['White-label invoicing', 'Multi-org management', 'Unlimited AI', 'Dedicated account manager'], cta: 'Contact us' },
-];
 
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.07 } } };
 const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } } };
@@ -953,95 +852,8 @@ export const Landing: React.FC = () => {
             </section>
 
             {/* PRICING */}
-            <section id="pricing" className="py-24 relative z-10 overflow-hidden">
-                <div className="absolute inset-0 pointer-events-none">
-                    <Blob className="w-[700px] h-[700px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-15" color="rgba(20,184,166,0.2)" />
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_70%_at_50%_50%,transparent_40%,#050810_90%)]" />
-                </div>
-                <div className="max-w-7xl mx-auto px-6 relative z-10">
-                    <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-12">
-                        <motion.div variants={fadeUp} className="text-teal-400 font-black uppercase tracking-[0.22em] text-[11px] mb-4">Pricing</motion.div>
-                        <motion.h2 variants={fadeUp} className="display font-black text-white leading-tight mb-5" style={{ fontSize: 'clamp(30px, 5vw, 60px)' }}>Your AI-powered CFO,<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">priced for freelancers</span></motion.h2>
-                        <motion.p variants={fadeUp} className="text-slate-400 max-w-xl mx-auto font-medium">All plans include a 14-day full-feature trial. No credit card required to start.</motion.p>
-                        <motion.div variants={fadeUp} className="mt-8 inline-flex items-center gap-1 p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl">
-                            {['Monthly', 'Annual'].map((label, i) => {
-                                const active = i === 0 ? !isAnnual : isAnnual;
-                                return (
-                                    <button key={label} onClick={() => setIsAnnual(i === 1)}
-                                        className={`relative px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${active ? 'text-white' : 'text-slate-400 hover:text-white'}`}>
-                                        {active && <motion.div layoutId="pricingToggle" className="absolute inset-0 bg-teal-500 rounded-lg shadow-[0_0_15px_rgba(20,184,166,0.3)]" />}
-                                        <span className="relative z-10 flex items-center gap-2">
-                                            {label}
-                                            {i === 1 && <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-wider">Save 17%</span>}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </motion.div>
-                    </motion.div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                        {TIERS.map((tier, idx) => <PricingCard key={tier.slug} tier={tier} isAnnual={isAnnual} index={idx} />)}
-                    </div>
-                </div>
-            </section>
-
-            {/* WHAT AI DOES */}
-            <section className="py-20 relative z-10">
-                <div className="max-w-6xl mx-auto px-6">
-                    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-                        <h2 className="display font-black text-white text-3xl md:text-4xl">What Capita AI <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">actually does for you</span></h2>
-                    </motion.div>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {[
-                            { icon: MessageSquare, title: 'Ask Capita anything', desc: 'Natural language queries about your business data and performance.' },
-                            { icon: BarChart3, title: 'Revenue & cash analysis', desc: 'Real-time insights from your actual invoice and payment data.' },
-                            { icon: FileText, title: 'Invoice intelligence', desc: 'Track, analyse and collect smarter with predictive insights.' },
-                            { icon: Mail, title: 'Collection drafts', desc: 'AI-written follow-up & reminder emails tailored to each client.' },
-                            { icon: Bell, title: 'Risk alerts', desc: 'Get warned before problems like client churn or cash crunches become crises.' },
-                            { icon: Shield, title: 'Tax & compliance Q&A', desc: 'GST, PAN, MSME guidance on demand straight from the AI.' },
-                        ].map((f, i) => <FeatureCard key={f.title} {...f} index={i} />)}
-                    </div>
-                </div>
-            </section>
-
-            {/* TRUST */}
-            <section className="py-16 relative z-10">
-                <div className="max-w-4xl mx-auto px-6">
-                    <div className="grid md:grid-cols-3 gap-4">
-                        {[
-                            { icon: Shield, title: 'Bank-grade security', desc: 'All data encrypted in transit and at rest. Your financial data stays private.' },
-                            { icon: Globe, title: 'Built for India', desc: 'GST, TDS, UPI, INR-native. Designed around how Indian businesses actually work.' },
-                            { icon: Zap, title: 'Always up-to-date', desc: 'Continuous updates to stay compliant with the latest GST regulations and changes.' },
-                        ].map((item, i) => (
-                            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                                className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] flex gap-4 items-start hover:border-teal-500/20 transition-colors">
-                                <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center flex-shrink-0">
-                                    <item.icon className="w-5 h-5 text-teal-400" />
-                                </div>
-                                <div><h4 className="font-black text-white text-[14px] mb-1">{item.title}</h4><p className="text-slate-500 text-[12.5px] leading-relaxed">{item.desc}</p></div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* FAQ */}
-            <section id="faq" className="py-20 relative z-10">
-                <div className="max-w-2xl mx-auto px-6">
-                    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
-                        <h2 className="display font-black text-white text-3xl md:text-4xl">Questions answered.</h2>
-                    </motion.div>
-                    <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}
-                        className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-8 py-4">
-                        {[
-                            { q: 'What counts as an AI query?', a: 'Every message you send to Capita counts as 1 query. Follow-up questions in the same conversation also count individually. Automated weekly summaries do NOT count toward your limit.' },
-                            { q: 'Can I upgrade or downgrade anytime?', a: 'Yes — upgrades are instant and prorated. Downgrades take effect at the end of your current billing cycle, so you keep your access until then.' },
-                            { q: 'Is my financial data safe?', a: 'Your data is encrypted at rest and in transit. We never use your financial data to train AI models, and we never share it with third parties.' },
-                            { q: 'What happens when I hit my AI limit?', a: 'Capita will notify you when you\'re at 80% of your query limit. Once exceeded, basic features still work — only AI chat is paused until your cycle resets.' },
-                            { q: 'Can I pay annually and save?', a: 'Yes! Annual plans give you approximately 2 months free. Solo saves ₹598/year, and Solo Pro saves ₹1,398/year. Payment is charged upfront for the full year.' }
-                        ].map(item => <FAQItem key={item.q} q={item.q} a={item.a} />)}
-                    </motion.div>
-                </div>
+            <section id="pricing" className="relative z-20">
+                <Pricing />
             </section>
 
             {/* FINAL CTA */}
