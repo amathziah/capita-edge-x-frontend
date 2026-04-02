@@ -852,8 +852,8 @@ export const Landing: React.FC = () => {
             </section>
 
             {/* PRICING */}
-            <section id="pricing" className="relative z-20">
-                <Pricing />
+            <section id="pricing" className="relative z-20 max-w-7xl mx-auto px-6 pt-10 pb-20">
+                <Pricing isEmbedded={true} />
             </section>
 
             {/* FINAL CTA */}

@@ -214,7 +214,7 @@ function PlanCard({ plan, annual, currentPlan, onUpgrade }: {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function Pricing({ currentPlan }: { currentPlan?: string | null }) {
+export function Pricing({ currentPlan, isEmbedded = false }: { currentPlan?: string | null, isEmbedded?: boolean }) {
   const [annual, setAnnual] = useState(false);
   const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null);
 
@@ -223,8 +223,8 @@ export function Pricing({ currentPlan }: { currentPlan?: string | null }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <div className="max-w-6xl mx-auto px-4 py-10 md:py-16 space-y-12">
+    <div className={isEmbedded ? "w-full py-20 bg-white shadow-2xl rounded-3xl" : "min-h-screen bg-gray-50/50"}>
+      <div className={`max-w-6xl mx-auto px-4 ${isEmbedded ? '' : 'py-10 md:py-16'} space-y-12`}>
 
         {/* Header */}
         <div className="text-center space-y-3">
