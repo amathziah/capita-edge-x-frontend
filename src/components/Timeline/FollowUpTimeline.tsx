@@ -84,7 +84,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({ invoice, onA
                         <div className="flex-1 pt-1">
                             <h4 className="font-medium text-gray-900 text-sm">{event.title}</h4>
                             <p className="text-xs text-gray-400 font-mono mt-0.5">
-                                {new Date(event.date).toLocaleDateString()} • {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(event.date || new Date()).toLocaleDateString()} • {new Date(event.date || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                         </div>
                     </div>

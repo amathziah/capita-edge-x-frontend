@@ -42,7 +42,10 @@ interface Message {
 }
 
 const TEAL = '#2dd4bf';
-const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const formatTime = (d: any) => {
+  const date = d instanceof Date ? d : new Date(d);
+  return isNaN(date.getTime()) ? '--:--' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
 // ─── Markdown renderers ────────────────────────────────────────────────────────
 const botMd: Components = {
@@ -611,7 +614,10 @@ export function AIAssistantPage() {
     setIsTyping(true);
     try {
       const msgs = await aiService.getConversationMessages(id);
-      setMessages(msgs as any[]);
+      setMessages((msgs as any[]).map(m => ({
+        ...m,
+        timestamp: new Date(m.timestamp)
+      })));
       setCurrentConversationId(id);
       setTimeout(() => {
         if (scrollRef.current) {

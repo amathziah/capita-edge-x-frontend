@@ -610,7 +610,7 @@ export const ControlRoom = () => {
                                                     <div>
                                                         <h3 className="text-sm font-bold text-gray-900">Invoice {inv.status === 'draft' ? 'Draft' : 'Sent'}</h3>
                                                         <p className="text-sm text-gray-500 mt-0.5">#{inv.invoiceNumber} to {inv.buyer?.name} - ₹{inv.total.toLocaleString()}</p>
-                                                        <span className="text-xs text-gray-400 mt-2 block">{new Date(inv.createdAt).toLocaleTimeString()}</span>
+                                                        <span className="text-xs text-gray-400 mt-2 block">{new Date(inv.createdAt || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                     </div>
                                                 </div>
                                             ))}
