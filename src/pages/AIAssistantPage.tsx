@@ -423,6 +423,17 @@ export function AIAssistantPage() {
         // 4. Load Usage Stats
         const usage = await aiService.getUsage();
         setUsageStats(usage as any);
+
+        await delay(200);
+
+        // 5. Load Chat History
+        const history = await aiService.getHistory();
+        if (Array.isArray(history) && history.length > 0) {
+          setMessages(history.map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          })));
+        }
       } catch (err) {
         console.error('Failed to init AI page:', err);
       }
@@ -561,8 +572,13 @@ export function AIAssistantPage() {
     ]);
   };
 
-  const clearChat = () => {
-    setMessages([]);
+  const clearChat = async () => {
+    try {
+      await aiService.deleteHistory();
+      setMessages([]);
+    } catch (err) {
+      console.error('Failed to clear history:', err);
+    }
   };
 
   const startListening = () => {
