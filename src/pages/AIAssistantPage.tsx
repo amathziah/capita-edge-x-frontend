@@ -21,6 +21,7 @@ const IconMap: Record<string, any> = {
   Clock: LucideIcons.Clock,
   AlertTriangle: LucideIcons.AlertTriangle,
   RotateCcw: LucideIcons.RotateCcw,
+  ShieldCheck: LucideIcons.ShieldCheck,
 };
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
