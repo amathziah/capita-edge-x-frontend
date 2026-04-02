@@ -14,6 +14,7 @@ import { Profile } from './pages/Profile';
 import { LiquidityCalendar } from './components/features/LiquidityCalendar';
 import { AIAssistantPage } from './pages/AIAssistantPage';
 import { Settings } from './pages/Settings';
+import { Pricing } from './pages/Pricing';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PersonaProvider } from './contexts/PersonaContext';
 
@@ -103,6 +104,7 @@ function App() {
                         <Route path="ai" element={<AIAssistantPage />} />
                         <Route path="profile" element={<Profile />} />
                         <Route path="settings" element={<Settings />} />
+                        <Route path="pricing" element={<Pricing />} />
 
                         <Route path="integrity" element={<Support />} />
                       </Route>

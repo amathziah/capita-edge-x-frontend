@@ -8,7 +8,8 @@ export const aiService = {
   chat: (query: string, persona?: string) => api.post(ENDPOINTS.AI_CHAT, { query, persona }),
   getConfig: (persona?: string) => api.get(persona ? `${ENDPOINTS.AI_CONFIG}?persona=${persona}` : ENDPOINTS.AI_CONFIG),
 
-  processQuery: (query: string, agentId?: string, persona?: string) => api.post<any>(ENDPOINTS.AI_CHAT, { query, agentId, persona }),
+  processQuery: (query: string, agentId?: string, persona?: string, history?: any[]) => 
+    api.post<any>(ENDPOINTS.AI_CHAT, { query, agentId, persona, history }),
 
   magicFill: (text: string) => api.post(ENDPOINTS.AI_MAGIC_FILL, { text }),
 

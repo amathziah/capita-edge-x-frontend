@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Settings as SettingsIcon, Upload, Save, Building, Image as ImageIcon,
   Loader2, CheckCircle2, CreditCard, ChevronRight, Mail, AlertCircle,
-  Phone, MapPin, Receipt, Settings2 as Settings2Icon,
+  Receipt, Settings2 as Settings2Icon,
 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -128,47 +128,76 @@ function AlertBanner({
 // ─── Tab panels ───────────────────────────────────────────────────────────────
 
 function GeneralTab({ settings, onChange, onSave, saving }: TabProps) {
+  const freelanceCategories = [
+    'Design & Creative', 'Software Development', 'Consulting & Strategy',
+    'Writing & Content', 'Marketing & Growth', 'Video & Photography',
+    'Finance & Accounting', 'Legal Services', 'Other'
+  ];
+
   return (
     <div className="space-y-4">
+      {/* Identity */}
       <Card>
-        <SectionHeader icon={Building} title="Company profile" description="General identity of your organisation" />
+        <SectionHeader icon={Building} title="Your business identity" description="How you appear on invoices and client-facing documents" />
         <div className="grid md:grid-cols-2 gap-4">
-          <Field label="Business name">
-            <input className={inputCls} value={settings.businessName || ''} onChange={e => onChange('businessName', e.target.value)} placeholder="Acme Corp" />
+          <Field label="Your full name" hint="Shown as the invoice sender">
+            <input className={inputCls} value={settings.owner_name || ''} onChange={e => onChange('owner_name', e.target.value)} placeholder="e.g. Priya Sharma" />
           </Field>
-          <Field label="Tax ID / GSTIN">
+          <Field label="Business / brand name" hint="Leave blank to use your name">
+            <input className={inputCls} value={settings.businessName || ''} onChange={e => onChange('businessName', e.target.value)} placeholder="e.g. Priya Design Studio" />
+          </Field>
+          <Field label="Freelance category" hint="Helps Capita give you relevant advice">
+            <select className={inputCls} value={settings.freelanceCategory || ''} onChange={e => onChange('freelanceCategory', e.target.value)}>
+              <option value="">Select your category</option>
+              {freelanceCategories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </Field>
+          <Field label="Currency">
+            <select className={inputCls} value={settings.currency || 'INR'} onChange={e => onChange('currency', e.target.value)}>
+              <option value="INR">₹ Indian Rupee (INR)</option>
+              <option value="USD">$ US Dollar (USD)</option>
+              <option value="EUR">€ Euro (EUR)</option>
+              <option value="GBP">£ British Pound (GBP)</option>
+              <option value="AED">د.إ UAE Dirham (AED)</option>
+              <option value="SGD">S$ Singapore Dollar (SGD)</option>
+            </select>
+          </Field>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4 pt-1">
+          <Field label="Your standard daily rate" hint="Used by Capita to estimate project profitability">
+            <input type="number" className={inputCls} value={settings.dailyRate || ''} onChange={e => onChange('dailyRate', e.target.value)} placeholder="e.g. 8000" />
+          </Field>
+          <Field label="Tax ID / GSTIN" hint="If registered for GST">
             <input className={`${inputCls} font-mono uppercase`} value={settings.companyTaxId || ''} onChange={e => onChange('companyTaxId', e.target.value)} placeholder="27ABCDE1234F1Z5" />
           </Field>
         </div>
+        <SaveRow onClick={() => onSave(['owner_name', 'businessName', 'freelanceCategory', 'currency', 'dailyRate', 'companyTaxId'], 'Business identity')} saving={saving} />
       </Card>
 
+      {/* Contact */}
       <Card>
-        <SectionHeader icon={Mail} title="Contact information" description="How customers can reach you" iconColor="text-blue-500" iconBg="bg-blue-50" />
+        <SectionHeader icon={Mail} title="Contact details" description="How clients can reach you — shown on invoices" iconColor="text-blue-500" iconBg="bg-blue-50" />
         <div className="grid md:grid-cols-2 gap-4">
           <Field label="Email address">
-            <input type="email" className={inputCls} value={settings.email || ''} onChange={e => onChange('email', e.target.value)} placeholder="hello@company.com" />
+            <input type="email" className={inputCls} value={settings.email || ''} onChange={e => onChange('email', e.target.value)} placeholder="you@email.com" />
           </Field>
           <Field label="Phone number">
             <input className={inputCls} value={settings.phone || ''} onChange={e => onChange('phone', e.target.value)} placeholder="+91 98765 43210" />
           </Field>
         </div>
-      </Card>
-
-      <Card>
-        <SectionHeader icon={MapPin} title="Registered address" description="Your official business location" iconColor="text-orange-500" iconBg="bg-orange-50" />
-        <Field label="Business address">
-          <textarea className={`${inputCls} resize-none`} rows={2} value={settings.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="Street, City, State, PIN" />
+        <Field label="Location / city" hint="Optional — shown on invoice footer">
+          <input className={inputCls} value={settings.address || ''} onChange={e => onChange('address', e.target.value)} placeholder="e.g. Mumbai, Maharashtra" />
         </Field>
-        <SaveRow onClick={() => onSave(['businessName', 'email', 'phone', 'address', 'companyTaxId'], 'General details')} saving={saving} />
+        <SaveRow onClick={() => onSave(['email', 'phone', 'address'], 'Contact details')} saving={saving} />
       </Card>
     </div>
   );
 }
 
-function BrandingTab({ settings, onSave, saving, logoPreview, onLogoChange }: TabProps & { logoPreview: string | null; onLogoChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+function BrandingTab({ onSave, saving, logoPreview, onLogoChange }: Omit<TabProps, 'onChange'> & { logoPreview: string | null; onLogoChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <Card>
-      <SectionHeader icon={ImageIcon} title="Visual identity" description="Your logo appears on all invoices and emails" />
+      <SectionHeader icon={ImageIcon} title="Your logo" description="Appears on all invoices and client-facing emails" />
 
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
         <label className="group relative cursor-pointer shrink-0">
@@ -206,35 +235,48 @@ function PaymentsTab({ settings, onChange, onSave, saving }: TabProps) {
   return (
     <div className="space-y-4">
       <Card>
-        <SectionHeader icon={Receipt} title="Invoice configuration" description="Default terms and notes for new invoices" />
+        <SectionHeader icon={Receipt} title="Invoice defaults" description="Pre-filled on every new invoice you create" />
         <div className="grid md:grid-cols-2 gap-4">
           <Field label="Default payment terms">
-            <input className={inputCls} value={settings.paymentTerms || ''} onChange={e => onChange('paymentTerms', e.target.value)} placeholder="Due on Receipt, Net 30" />
+            <select className={inputCls} value={settings.paymentTerms || ''} onChange={e => onChange('paymentTerms', e.target.value)}>
+              <option value="">Select terms</option>
+              <option value="Due on Receipt">Due on Receipt</option>
+              <option value="Net 7">Net 7 (7 days)</option>
+              <option value="Net 15">Net 15 (15 days)</option>
+              <option value="Net 30">Net 30 (30 days)</option>
+              <option value="Net 45">Net 45 (45 days)</option>
+            </select>
           </Field>
-          <Field label="Footer text">
-            <input className={inputCls} value={settings.footerText || ''} onChange={e => onChange('footerText', e.target.value)} placeholder="Registered Office: 123 Main St…" />
+          <Field label="Default GST rate (%)">
+            <select className={inputCls} value={settings.defaultGstRate || '18'} onChange={e => onChange('defaultGstRate', e.target.value)}>
+              <option value="0">0% (Exempt / Export)</option>
+              <option value="5">5%</option>
+              <option value="12">12%</option>
+              <option value="18">18% (Most services)</option>
+              <option value="28">28%</option>
+            </select>
           </Field>
         </div>
-        <Field label="Default customer notes">
-          <textarea className={`${inputCls} resize-none`} rows={2} value={settings.invoiceNotes || ''} onChange={e => onChange('invoiceNotes', e.target.value)} placeholder="Thank you for your business!" />
+        <Field label="Default thank-you note">
+          <textarea className={`${inputCls} resize-none`} rows={2} value={settings.invoiceNotes || ''} onChange={e => onChange('invoiceNotes', e.target.value)} placeholder="e.g. Thank you for the opportunity! Looking forward to working with you again." />
         </Field>
-        <SaveRow onClick={() => onSave(['paymentTerms', 'invoiceNotes', 'footerText'], 'Invoice configuration')} saving={saving} />
+        <SaveRow onClick={() => onSave(['paymentTerms', 'defaultGstRate', 'invoiceNotes'], 'Invoice defaults')} saving={saving} />
       </Card>
 
       <Card>
-        <SectionHeader icon={CreditCard} title="Payment instructions" description="How customers should pay you — shown on invoices" />
-        <Field label="UPI ID" hint="Generates a scannable QR code on PDF invoices.">
-          <input className={inputCls} value={settings.upiId || ''} onChange={e => onChange('upiId', e.target.value)} placeholder="username@bank" />
+        <SectionHeader icon={CreditCard} title="How clients pay you" description="Payment details printed on every invoice" iconColor="text-emerald-500" iconBg="bg-emerald-50" />
+        <Field label="UPI ID" hint="Generates a scannable QR code on PDF invoices — the easiest way to get paid.">
+          <input className={inputCls} value={settings.upiId || ''} onChange={e => onChange('upiId', e.target.value)} placeholder="yourname@upi" />
         </Field>
         <div className="grid md:grid-cols-2 gap-4">
-          <Field label="Bank account details">
-            <textarea className={`${inputCls} resize-none font-mono text-xs`} rows={2} value={settings.bankDetails || ''} onChange={e => onChange('bankDetails', e.target.value)} placeholder={`Bank: HDFC Bank\nAccount: 1234567890`} />
+          <Field label="Bank account details" hint="For NEFT / RTGS transfers">
+            <textarea className={`${inputCls} resize-none font-mono text-xs`} rows={3} value={settings.bankDetails || ''} onChange={e => onChange('bankDetails', e.target.value)} placeholder={`Bank: HDFC Bank\nAccount No: 1234567890\nIFSC: HDFC0001234`} />
           </Field>
-          <Field label="Other instructions">
-            <textarea className={`${inputCls} resize-none`} rows={2} value={settings.paymentInstructions || ''} onChange={e => onChange('paymentInstructions', e.target.value)} placeholder="Include invoice number in remarks." />
+          <Field label="Payment note" hint="e.g. Reference or instructions">
+            <textarea className={`${inputCls} resize-none`} rows={3} value={settings.paymentInstructions || ''} onChange={e => onChange('paymentInstructions', e.target.value)} placeholder="Please include invoice number in the payment reference." />
           </Field>
         </div>
-        <SaveRow onClick={() => onSave(['upiId', 'bankDetails', 'paymentInstructions'], 'Payment instructions')} saving={saving} />
+        <SaveRow onClick={() => onSave(['upiId', 'bankDetails', 'paymentInstructions'], 'Payment details')} saving={saving} />
       </Card>
     </div>
   );
@@ -244,44 +286,37 @@ function ComplianceTab({ settings, onChange, onSave, saving }: TabProps) {
   const isOn = (key: string) => settings[key] === 'true' || settings[key] === true;
   const toggleKey = (key: string) => onChange(key, isOn(key) ? 'false' : 'true');
 
+  // Only automation features relevant to solopreneurs
   const automationToggles = [
-    { key: 'autoFollowUp', label: 'Auto follow-up emails', desc: 'Sends payment reminders' },
-    { key: 'reorderAlertsEnabled', label: 'Stock reorder alerts', desc: 'Low stock notifications' },
-    { key: 'mrrAlertsEnabled', label: 'MRR drop alerts', desc: 'Alerts on monthly revenue drops' },
-    { key: 'weeklySummaryEnabled', label: 'Weekly cash summary', desc: 'Monday morning email' },
+    { key: 'autoFollowUp', label: 'Auto follow-up emails', desc: 'Sends payment reminders when invoices go overdue' },
+    { key: 'weeklySummaryEnabled', label: 'Weekly cash summary', desc: 'Monday morning email with your cash position' },
   ];
 
   return (
     <div className="space-y-4">
-      {/* GST & Tax Identity */}
+      {/* Tax Identity — solopreneur essentials only */}
       <Card>
-        <SectionHeader icon={Receipt} title="GST & tax identity" description="Required for GST-compliant invoices" />
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <Field label="GSTIN">
+        <SectionHeader icon={Receipt} title="Tax identity" description="Required for GST-compliant invoices" />
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="GSTIN" hint="15-digit GST registration number">
             <input className={`${inputCls} font-mono uppercase`} value={settings.gstin || ''} onChange={e => onChange('gstin', e.target.value)} placeholder="27ABCDE1234F1Z5" maxLength={15} />
           </Field>
-          <Field label="PAN number">
+          <Field label="PAN number" hint="Required for income tax compliance">
             <input className={`${inputCls} font-mono uppercase`} value={settings.pan || ''} onChange={e => onChange('pan', e.target.value)} placeholder="ABCDE1234F" maxLength={10} />
           </Field>
-          <Field label="FRN (CA firms)">
-            <input className={`${inputCls} font-mono`} value={settings.frn || ''} onChange={e => onChange('frn', e.target.value)} placeholder="000000N" />
-          </Field>
-          <Field label="LUT Number">
-            <input className={inputCls} value={settings.lutNumber || ''} onChange={e => onChange('lutNumber', e.target.value)} placeholder="AD220421006927E" />
-          </Field>
-          <Field label="MSME Number">
-            <input className={inputCls} value={settings.msmeNumber || ''} onChange={e => onChange('msmeNumber', e.target.value)} placeholder="UDYAM-MH-00-00" />
+          <Field label="MSME / Udyam number" hint="Optional — unlocks MSME protections for late payments">
+            <input className={inputCls} value={settings.msmeNumber || ''} onChange={e => onChange('msmeNumber', e.target.value)} placeholder="UDYAM-MH-00-00000" />
           </Field>
         </div>
-        <SaveRow onClick={() => onSave(['gstin', 'pan', 'frn', 'lutNumber', 'msmeNumber'], 'GST & tax details')} saving={saving} />
+        <SaveRow onClick={() => onSave(['gstin', 'pan', 'msmeNumber'], 'Tax identity')} saving={saving} />
       </Card>
 
-      {/* Automation */}
+      {/* Automation — only solopreneur-relevant */}
       <Card>
-        <SectionHeader icon={Settings2Icon} title="Capita automation" description="Configure what Capita handles automatically" iconColor="text-purple-500" iconBg="bg-purple-50" />
-        <div className="grid sm:grid-cols-2 gap-3 mb-4">
+        <SectionHeader icon={Settings2Icon} title="Capita automations" description="What Capita handles for you in the background" iconColor="text-purple-500" iconBg="bg-purple-50" />
+        <div className="space-y-2 mb-4">
           {automationToggles.map(item => (
-            <div key={item.key} className="flex items-center justify-between gap-3 p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+            <div key={item.key} className="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
               <div>
                 <p className="text-[13px] font-semibold text-text-main leading-none">{item.label}</p>
                 <p className="text-[11px] text-text-muted mt-1">{item.desc}</p>
@@ -297,7 +332,7 @@ function ComplianceTab({ settings, onChange, onSave, saving }: TabProps) {
             {[
               { key: 'followUpDay1', label: 'Reminder 1', default: 7 },
               { key: 'followUpDay2', label: 'Reminder 2', default: 14 },
-              { key: 'followUpDay3', label: 'Reminder 3', default: 30 },
+              { key: 'followUpDay3', label: 'Final notice', default: 30 },
             ].map(f => (
               <Field key={f.key} label={f.label}>
                 <input type="number" className={inputCls} value={settings[f.key] ?? f.default} onChange={e => onChange(f.key, e.target.value)} min={1} max={90} />
@@ -307,7 +342,7 @@ function ComplianceTab({ settings, onChange, onSave, saving }: TabProps) {
         </div>
 
         <SaveRow
-          onClick={() => onSave(['autoFollowUp', 'reorderAlertsEnabled', 'mrrAlertsEnabled', 'weeklySummaryEnabled', 'followUpDay1', 'followUpDay2', 'followUpDay3'], 'Automation settings')}
+          onClick={() => onSave(['autoFollowUp', 'weeklySummaryEnabled', 'followUpDay1', 'followUpDay2', 'followUpDay3'], 'Automation settings')}
           saving={saving}
         />
       </Card>

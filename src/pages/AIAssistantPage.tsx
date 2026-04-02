@@ -43,32 +43,87 @@ const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minu
 
 // ─── Markdown renderers ────────────────────────────────────────────────────────
 const botMd: Components = {
-  p: ({ children }) => <p style={{ margin: '0 0 6px', lineHeight: 1.72, color: '#d1d5db' }}>{children}</p>,
-  ul: ({ children }) => <ul style={{ paddingLeft: 18, margin: '6px 0' }}>{children}</ul>,
-  ol: ({ children }) => <ol style={{ paddingLeft: 18, margin: '6px 0' }}>{children}</ol>,
-  li: ({ children }) => <li style={{ marginBottom: 3, color: '#9ca3af' }}>{children}</li>,
-  strong: ({ children }) => <strong style={{ color: TEAL, fontWeight: 700 }}>{children}</strong>,
-  em: ({ children }) => <em style={{ color: '#d1d5db', fontStyle: 'italic' }}>{children}</em>,
+  p: ({ children }) => (
+    <p className="mb-2.5 last:mb-0 leading-[1.75] text-[13px] text-gray-300">{children}</p>
+  ),
+  ul: ({ children }) => (
+    <ul className="my-2.5 space-y-1.5 pl-0 list-none">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="my-2.5 space-y-1.5 pl-5 list-decimal text-gray-300 text-[13px]">{children}</ol>
+  ),
+  li: ({ children }) => (
+    <li className="flex items-start gap-2 text-[13px] text-gray-300 leading-[1.65]">
+      <span className="mt-[6px] w-1 h-1 rounded-full bg-teal-400 shrink-0" />
+      <span>{children}</span>
+    </li>
+  ),
+  h1: ({ children }) => (
+    <h1 className="text-[15px] font-black text-white mt-5 mb-2 tracking-tight border-b border-white/10 pb-2">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="text-[13px] font-bold text-teal-400 mt-4 mb-2 uppercase tracking-widest">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="text-[13px] font-semibold text-white/90 mt-3 mb-1">{children}</h3>
+  ),
+  hr: () => (
+    <hr className="my-4 border-0 h-px bg-gradient-to-r from-teal-500/20 via-white/10 to-transparent" />
+  ),
+  blockquote: ({ children }) => (
+    <div className="my-3 pl-3 border-l-2 border-teal-400/50 bg-teal-400/5 rounded-r-lg py-2 pr-3 text-[12px] text-teal-300/90 italic">
+      {children}
+    </div>
+  ),
+  table: ({ children }) => (
+    <div className="my-4 overflow-x-auto rounded-xl border border-white/10 bg-black/30 shadow-xl shadow-black/20">
+      <table className="w-full text-left text-[12px] border-collapse">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => (
+    <thead className="bg-white/[0.04] text-[10px] font-bold uppercase tracking-widest text-teal-400/80 border-b border-white/10">
+      {children}
+    </thead>
+  ),
+  th: ({ children }) => <th className="px-4 py-3 whitespace-nowrap">{children}</th>,
+  tbody: ({ children }) => <tbody className="divide-y divide-white/[0.04]">{children}</tbody>,
+  td: ({ children }) => <td className="px-4 py-2.5 text-gray-300">{children}</td>,
+  tr: ({ children }) => (
+    <tr className="hover:bg-white/[0.02] transition-colors duration-150">{children}</tr>
+  ),
+  strong: ({ children }) => (
+    <strong className="text-teal-300 font-semibold">{children}</strong>
+  ),
+  em: ({ children }) => <em className="text-gray-400 italic">{children}</em>,
   a: ({ href, children }) => (
-    <a href={href} style={{ color: TEAL, textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer">
+    <a
+      href={href}
+      className="text-teal-400 underline underline-offset-2 decoration-teal-400/30 hover:decoration-teal-400 transition-all"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       {children}
     </a>
   ),
   code: ({ className, children }) =>
     /language-/.test(className || '') ? (
-      <pre style={{ background: 'rgba(0,0,0,0.45)', borderRadius: 8, padding: '10px 14px', overflowX: 'auto', margin: '8px 0', border: '1px solid rgba(255,255,255,0.07)' }}>
-        <code style={{ fontFamily: 'monospace', fontSize: 12, color: '#a3e635' }}>{children}</code>
+      <pre className="bg-[#0d1117] rounded-xl p-4 overflow-x-auto my-3 border border-white/[0.06] shadow-inner">
+        <code className="font-mono text-[11px] text-emerald-400/90 leading-relaxed">{children}</code>
       </pre>
     ) : (
-      <code style={{ background: 'rgba(0,0,0,0.35)', padding: '1px 6px', borderRadius: 4, fontFamily: 'monospace', fontSize: 12, color: TEAL }}>
+      <code className="bg-white/[0.08] px-1.5 py-0.5 rounded-md font-mono text-[11px] text-teal-300 border border-white/[0.06]">
         {children}
       </code>
     ),
 };
 
 const userMd: Components = {
-  p: ({ children }) => <p style={{ margin: '0 0 4px', lineHeight: 1.65 }}>{children}</p>,
-  strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
+  p: ({ children }) => <p className="mb-0.5 leading-relaxed text-[13px]">{children}</p>,
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
 };
 
 // ─── Robot SVG ─────────────────────────────────────────────────────────────────
@@ -162,74 +217,118 @@ function ChatBubble({
 }) {
   const isBot = msg.sender === 'bot';
   const isPendingAction = msg.data?.type === 'action_prompt';
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className={`flex items-end gap-2.5 w-full ${isBot ? 'flex-row' : 'flex-row-reverse'}`}
     >
       {/* Avatar */}
       {isBot ? (
-        <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center bg-teal-500/10 border border-teal-500/20">
-          <RobotSVG size={20} />
+        <div className="relative w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
+          style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)' }}>
+          <RobotSVG size={18} />
+          {/* Pulse indicator */}
+          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-teal-400 border border-[#0c0f1a]">
+            <span className="absolute inset-0 rounded-full bg-teal-400 animate-ping opacity-60" />
+          </span>
         </div>
       ) : (
-        <div className="w-8 h-8 rounded-xl shrink-0 bg-white/[0.05] border border-white/[0.1] flex items-center justify-center">
-          <span className="text-[10px] text-gray-400 font-black font-mono">U</span>
+        <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <span className="text-[10px] text-gray-400 font-black font-mono">ME</span>
         </div>
       )}
 
-      <div className="max-w-[80%]">
+      <div className={`flex flex-col gap-1 ${isBot ? 'items-start' : 'items-end'} max-w-[82%]`}>
+        {/* Bubble */}
         <div
-          className={`relative px-4 py-2.5 text-sm ${isBot
-            ? 'bg-white/[0.04] border border-white/[0.07] rounded-tr-2xl rounded-tl-sm rounded-b-2xl'
-            : 'border border-teal-500/20 rounded-tl-2xl rounded-tr-sm rounded-b-2xl'
-            }`}
-          style={!isBot ? { background: 'linear-gradient(135deg, rgba(45,212,191,0.15), rgba(6,182,212,0.1))' } : {}}
+          className="relative rounded-2xl overflow-hidden"
+          style={isBot ? {
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+          } : {
+            background: 'linear-gradient(135deg, rgba(45,212,191,0.18) 0%, rgba(6,182,212,0.12) 100%)',
+            border: '1px solid rgba(45,212,191,0.22)',
+            boxShadow: '0 4px 16px rgba(45,212,191,0.08)',
+          }}
         >
+          {/* Top shimmer line for bot */}
           {isBot && (
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-              background: 'linear-gradient(90deg, rgba(45,212,191,0.25), transparent)',
+              background: 'linear-gradient(90deg, rgba(45,212,191,0.4) 0%, rgba(45,212,191,0.15) 50%, transparent 100%)',
             }} />
           )}
-          <div className={isBot ? 'text-gray-300' : 'text-gray-200'}>
-            <ReactMarkdown components={isBot ? botMd : userMd}>{msg.text}</ReactMarkdown>
-          </div>
-          {msg.data?.type === 'stat' && (
-            <motion.div
-              initial={{ scale: 0.85, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.15 }}
-              className="mt-2 inline-block px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 font-mono text-lg font-black text-teal-400"
-            >
-              ₹{msg.data.value.toLocaleString()}
-            </motion.div>
-          )}
 
-          {isPendingAction && (
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                onClick={onConfirmAction}
-                className="flex-1 py-2 px-4 rounded-lg bg-teal-500 text-[#0c0f1a] font-bold text-xs hover:bg-teal-400 transition-colors"
-              >
-                Go ahead
-              </button>
-              <button
-                onClick={onCancelAction}
-                className="flex-1 py-2 px-4 rounded-lg bg-white/10 text-white font-bold text-xs hover:bg-white/20 transition-colors"
-              >
-                Cancel
-              </button>
+          {/* Bot header label */}
+          {isBot && (
+            <div className="px-4 pt-3 pb-1 flex items-center gap-1.5">
+              <span className="text-[9px] font-black tracking-[0.15em] uppercase text-teal-500/60">Capita</span>
+              <span className="text-[9px] text-white/10">·</span>
+              <span className="text-[9px] text-white/25 font-medium">Strategic AI</span>
             </div>
           )}
+
+          <div className={`px-4 ${isBot ? 'pt-0.5 pb-3.5' : 'py-2.5'}`}>
+            <div className={isBot ? 'text-gray-300' : 'text-gray-100'}>
+              <ReactMarkdown components={isBot ? botMd : userMd}>{msg.text}</ReactMarkdown>
+            </div>
+
+            {msg.data?.type === 'stat' && (
+              <motion.div
+                initial={{ scale: 0.85, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.15 }}
+                className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xl font-black text-teal-300"
+                style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)' }}
+              >
+                ₹{msg.data.value.toLocaleString()}
+              </motion.div>
+            )}
+
+            {isPendingAction && (
+              <div className="mt-4 flex items-center gap-2">
+                <button
+                  onClick={onConfirmAction}
+                  className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all hover:scale-[1.02] active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #2dd4bf, #06b6d4)', color: '#0c0f1a' }}
+                >
+                  Go ahead →
+                </button>
+                <button
+                  onClick={onCancelAction}
+                  className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all hover:bg-white/10"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className={`mt-1 flex items-center gap-2 ${isBot ? 'pl-1' : 'pr-1 flex-row-reverse'}`}>
-          {/* Timestamp only */}
-          <span className="text-[8px] text-gray-600 font-mono">{formatTime(msg.timestamp)}</span>
+        {/* Footer: timestamp + copy */}
+        <div className={`flex items-center gap-2 px-1 ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
+          <span className="text-[9px] text-gray-600 font-mono">{formatTime(msg.timestamp)}</span>
+          {isBot && (
+            <button
+              onClick={handleCopy}
+              className="text-[9px] text-gray-600 hover:text-teal-400 transition-colors font-medium tracking-wide"
+            >
+              {copied ? '✓ copied' : 'copy'}
+            </button>
+          )}
         </div>
       </div>
     </motion.div>
@@ -373,7 +472,12 @@ export function AIAssistantPage() {
     setIsTyping(true);
 
     try {
-      const res = await aiService.processQuery(text, undefined, businessType || undefined);
+      const history = messages.slice(-10).map(m => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: m.text }]
+      }));
+
+      const res = await aiService.processQuery(text, undefined, businessType || undefined, history);
       
       const botMsg: Message = {
         id: (Date.now() + 1).toString(), 

@@ -14,7 +14,11 @@ import {
   User,
   LogOut,
   ChevronUp,
-  Globe
+  Globe,
+  Sparkles,
+  ArrowUpRight,
+  Crown,
+  CreditCard as BillingIcon,
 } from "lucide-react";
 import { useLanguage } from "../LanguageProvider";
 import { useAuth } from "../../contexts/AuthContext";
@@ -288,18 +292,106 @@ export function Sidebar() {
           );
         })}
 
-        {/* ── Plan Usage / Upgrade Section ──────────────────────── */}
-        {!collapsed && (
-          <div className="mt-8 px-3">
-            <div className="relative overflow-hidden bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4">
-              <div className="absolute -top-12 -right-12 w-24 h-24 bg-teal-500/10 blur-[40px] rounded-full pointer-events-none" />
-              <div className="relative z-10 flex items-center gap-2">
-                <ShieldCheck className="w-3.5 h-3.5 text-teal-500" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{config?.label ?? 'CapitaEdgeX'}</span>
+        {/* ── AI Quota + Upgrade ──────────────────────────────────── */}
+        {!collapsed && (() => {
+          // Derive plan info from planTier
+          const tierMap: Record<string, { name: string; queries: number; color: string; isUpgradable: boolean }> = {
+            starter: { name: 'Free', queries: 25, color: 'teal', isUpgradable: true },
+            solo:    { name: 'Solo', queries: 150, color: 'teal', isUpgradable: true },
+            solo_pro:{ name: 'Solo Pro', queries: 500, color: 'violet', isUpgradable: false },
+            enterprise:{ name: 'Enterprise', queries: Infinity, color: 'violet', isUpgradable: false },
+          };
+          const tier = tierMap[planTier ?? 'starter'] ?? tierMap.starter;
+          // Placeholder usage: 0 until real tracking is wired up
+          const usedQueries = 0;
+          const pct = tier.queries === Infinity ? 0 : Math.min((usedQueries / tier.queries) * 100, 100);
+          const isLow = pct > 80;
+
+          return (
+            <div className="mt-6 px-3">
+              <div
+                className="relative overflow-hidden rounded-2xl p-3.5"
+                style={{
+                  background: tier.color === 'violet'
+                    ? 'linear-gradient(145deg, rgba(139,92,246,0.12) 0%, rgba(109,40,217,0.06) 100%)'
+                    : 'linear-gradient(145deg, rgba(45,212,191,0.1) 0%, rgba(6,182,212,0.05) 100%)',
+                  border: tier.color === 'violet'
+                    ? '1px solid rgba(139,92,246,0.2)'
+                    : '1px solid rgba(45,212,191,0.15)',
+                }}
+              >
+                {/* Glow blob */}
+                <div style={{
+                  position: 'absolute', top: -20, right: -20,
+                  width: 60, height: 60, borderRadius: '50%',
+                  background: tier.color === 'violet' ? 'rgba(139,92,246,0.15)' : 'rgba(45,212,191,0.12)',
+                  filter: 'blur(20px)',
+                  pointerEvents: 'none',
+                }} />
+
+                <div className="relative z-10">
+                  {/* Plan badge */}
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-1.5">
+                      {tier.color === 'violet'
+                        ? <Crown className="w-3 h-3 text-violet-400" />
+                        : <Sparkles className="w-3 h-3 text-teal-400" />
+                      }
+                      <span className="text-[10px] font-black uppercase tracking-widest"
+                        style={{ color: tier.color === 'violet' ? '#a78bfa' : '#2dd4bf' }}>
+                        {tier.name}
+                      </span>
+                    </div>
+                    <span className="text-[9px] text-gray-500 font-medium">
+                      {tier.queries === Infinity ? '∞' : tier.queries} AI queries/mo
+                    </span>
+                  </div>
+
+                  {/* Quota bar */}
+                  {tier.queries !== Infinity && (
+                    <>
+                      <div className="flex justify-between text-[9px] mb-1">
+                        <span className={isLow ? 'text-rose-400 font-semibold' : 'text-gray-500'}>
+                          {usedQueries} used
+                        </span>
+                        <span className="text-gray-600">{tier.queries - usedQueries} left</span>
+                      </div>
+                      <div className="h-1 rounded-full bg-white/[0.05] overflow-hidden mb-3">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${pct}%`,
+                            background: isLow
+                              ? 'linear-gradient(90deg, #f97316, #ef4444)'
+                              : tier.color === 'violet'
+                                ? 'linear-gradient(90deg, #a78bfa, #7c3aed)'
+                                : 'linear-gradient(90deg, #2dd4bf, #06b6d4)',
+                          }}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Upgrade CTA */}
+                  {tier.isUpgradable && (
+                    <NavLink
+                      to="/dashboard/pricing"
+                      className="flex items-center justify-between w-full px-3 py-2 rounded-xl text-[11px] font-bold transition-all active:scale-95"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(45,212,191,0.2), rgba(6,182,212,0.12))',
+                        border: '1px solid rgba(45,212,191,0.25)',
+                        color: '#2dd4bf',
+                      }}
+                    >
+                      <span>Upgrade plan</span>
+                      <ArrowUpRight className="w-3 h-3" />
+                    </NavLink>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </nav>
 
       {/* ── Footer: User Menu Dropdown ───────────────────────────── */}
@@ -343,6 +435,25 @@ export function Sidebar() {
                   <>
                     <Settings className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-teal-400" : "text-gray-500"}`} strokeWidth={1.8} />
                     <span>Organization Settings</span>
+                  </>
+                )}
+              </NavLink>
+
+              <NavLink
+                to="/dashboard/pricing"
+                onClick={() => setUserMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-all duration-150 ${isActive
+                    ? "bg-teal-500/10 text-teal-400"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.05]"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <BillingIcon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-teal-400" : "text-gray-500"}`} strokeWidth={1.8} />
+                    <span>Plans & Billing</span>
+                    <span className="ml-auto px-1.5 py-0.5 rounded-full bg-teal-500/10 text-teal-400 text-[9px] font-black">NEW</span>
                   </>
                 )}
               </NavLink>
