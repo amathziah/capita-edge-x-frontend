@@ -6,7 +6,7 @@ import {
     ChevronDown, Clock, TrendingUp, Users,
     FileText, CreditCard, Calendar, Package,
     AlertTriangle, Activity, Star, Building2, X,
-    Sparkles, Play
+    Sparkles, Play, Crown, MessageSquare, Mail, Bell
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../components/common/Logo';
@@ -599,11 +599,10 @@ function PricingCard({ tier, isAnnual, index }: { tier: TierType; isAnnual: bool
 
 // ─── Tier config ──────────────────────────────────────────────────────────────
 const TIERS: TierType[] = [
-    { slug: 'free', name: 'Free Forever', tagline: 'Perfect to start', price: 0, priceAnnual: 0, icon: Star, gradient: 'from-gray-400 to-gray-600', borderColor: 'border-white/[0.07]', bgTint: 'bg-white/[0.02]', features: ['5 invoices/month', 'Basic GST validation', 'PDF export', '10 products/customers', 'Email support'], cta: 'Start Free' },
-    { slug: 'freelancer', name: 'Freelancer', tagline: 'Solo pros & hustlers', price: 199, priceAnnual: 1990, icon: Zap, gradient: 'from-teal-400 to-cyan-500', borderColor: 'border-teal-500/30', bgTint: 'bg-teal-500/5', popular: true, features: ['Unlimited invoices', '50 AI requests/day', 'Email reminders', 'Collections coach', 'Basic inventory', 'Full reports', 'WhatsApp alerts', 'Priority support'], cta: 'Start Freelancer (₹16/mo)' },
-    { slug: 'growth', name: 'Growth', tagline: 'Small teams scaling', price: 799, priceAnnual: 7990, icon: TrendingUp, gradient: 'from-emerald-400 to-teal-600', borderColor: 'border-emerald-500/30', bgTint: 'bg-emerald-500/5', features: ['Everything in Freelancer', '200 AI requests/day', 'Bulk operations', 'Advanced inventory', 'Team access (3 users)', 'API access', 'Phone support'], cta: 'Start Growth' },
-    { slug: 'ca_partner', name: 'CA Partner', tagline: 'Earn ₹37/client/mo', price: 0, priceAnnual: null, priceLabel: '₹37 per active client', icon: Users, gradient: 'from-violet-500 to-purple-600', borderColor: 'border-violet-500/30', bgTint: 'bg-violet-500/5', features: ['Unlimited clients', 'White-label branding', 'Multi-client dashboard', '100 AI requests/client', 'You set client pricing', 'Compliance templates', 'CA-specific reports'], cta: 'Join Partner Program' },
-    { slug: 'enterprise', name: 'Enterprise', tagline: 'Large agencies & firms', price: null, priceAnnual: null, icon: Building2, gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-500/30', bgTint: 'bg-amber-500/5', features: ['Custom AI limits', 'Full API + webhooks', 'SLA & dedicated support', 'Custom integrations', 'On-premise option', 'Advanced security'], cta: 'Contact Sales' },
+    { slug: 'free', name: 'Free', tagline: 'Get started, no card needed', price: 0, priceAnnual: 0, icon: Star, gradient: 'from-gray-400 to-gray-600', borderColor: 'border-white/[0.07]', bgTint: 'bg-white/[0.02]', features: ['14-day Solo trial included', '25 AI queries / month', '5 invoices / month', '15 clients', 'PDF invoice download', 'Basic cash & revenue Q&A'], cta: 'Start Free' },
+    { slug: 'solo', name: 'Solo', tagline: 'For freelancers who mean business', price: 299, priceAnnual: 2990, icon: Sparkles, gradient: 'from-teal-400 to-cyan-500', borderColor: 'border-teal-500/30', bgTint: 'bg-teal-500/5', popular: true, features: ['150 AI queries / month', 'Unlimited invoices', 'Unlimited clients', 'Strategic CFO advice', 'Email invoices to clients', 'Auto follow-up emails', 'GST-compliant reports', 'Cash runway analysis', 'Revenue concentration risk', 'Weekly cash summary email'], cta: 'Upgrade to Solo' },
+    { slug: 'solo_pro', name: 'Solo Pro', tagline: 'Deep intelligence for power users', price: 699, priceAnnual: 6990, icon: Crown, gradient: 'from-violet-500 to-purple-600', borderColor: 'border-violet-500/30', bgTint: 'bg-violet-500/5', features: ['500 AI queries / month', 'Everything in Solo', 'Cash flow forecasting', 'Client churn prediction', 'Proactive risk alerts', 'AI collection letter drafts', 'Settlement negotiation AI', 'Priority AI response queue', 'Priority support', 'Early access to new features'], cta: 'Upgrade to Solo Pro' },
+    { slug: 'enterprise', name: 'Enterprise / CA Firms', tagline: 'Managing multiple client accounts?', price: null, priceAnnual: null, icon: Shield, gradient: 'from-amber-500 to-orange-600', borderColor: 'border-amber-500/30', bgTint: 'bg-amber-500/5', features: ['White-label invoicing', 'Multi-org management', 'Unlimited AI', 'Dedicated account manager'], cta: 'Contact us' },
 ];
 
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.07 } } };
@@ -962,8 +961,8 @@ export const Landing: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-6 relative z-10">
                     <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-12">
                         <motion.div variants={fadeUp} className="text-teal-400 font-black uppercase tracking-[0.22em] text-[11px] mb-4">Pricing</motion.div>
-                        <motion.h2 variants={fadeUp} className="display font-black text-white leading-tight mb-5" style={{ fontSize: 'clamp(30px, 5vw, 60px)' }}>Simple, honest pricing.</motion.h2>
-                        <motion.p variants={fadeUp} className="text-slate-400 max-w-xl mx-auto font-medium">Choose the plan that matches your business stage. Upgrade or downgrade anytime.</motion.p>
+                        <motion.h2 variants={fadeUp} className="display font-black text-white leading-tight mb-5" style={{ fontSize: 'clamp(30px, 5vw, 60px)' }}>Your AI-powered CFO,<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">priced for freelancers</span></motion.h2>
+                        <motion.p variants={fadeUp} className="text-slate-400 max-w-xl mx-auto font-medium">All plans include a 14-day full-feature trial. No credit card required to start.</motion.p>
                         <motion.div variants={fadeUp} className="mt-8 inline-flex items-center gap-1 p-1 bg-white/[0.04] border border-white/[0.08] rounded-xl">
                             {['Monthly', 'Annual'].map((label, i) => {
                                 const active = i === 0 ? !isAnnual : isAnnual;
@@ -980,8 +979,27 @@ export const Landing: React.FC = () => {
                             })}
                         </motion.div>
                     </motion.div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                         {TIERS.map((tier, idx) => <PricingCard key={tier.slug} tier={tier} isAnnual={isAnnual} index={idx} />)}
+                    </div>
+                </div>
+            </section>
+
+            {/* WHAT AI DOES */}
+            <section className="py-20 relative z-10">
+                <div className="max-w-6xl mx-auto px-6">
+                    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
+                        <h2 className="display font-black text-white text-3xl md:text-4xl">What Capita AI <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">actually does for you</span></h2>
+                    </motion.div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[
+                            { icon: MessageSquare, title: 'Ask Capita anything', desc: 'Natural language queries about your business data and performance.' },
+                            { icon: BarChart3, title: 'Revenue & cash analysis', desc: 'Real-time insights from your actual invoice and payment data.' },
+                            { icon: FileText, title: 'Invoice intelligence', desc: 'Track, analyse and collect smarter with predictive insights.' },
+                            { icon: Mail, title: 'Collection drafts', desc: 'AI-written follow-up & reminder emails tailored to each client.' },
+                            { icon: Bell, title: 'Risk alerts', desc: 'Get warned before problems like client churn or cash crunches become crises.' },
+                            { icon: Shield, title: 'Tax & compliance Q&A', desc: 'GST, PAN, MSME guidance on demand straight from the AI.' },
+                        ].map((f, i) => <FeatureCard key={f.title} {...f} index={i} />)}
                     </div>
                 </div>
             </section>
@@ -1016,12 +1034,11 @@ export const Landing: React.FC = () => {
                     <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}
                         className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-8 py-4">
                         {[
-                            { q: 'Is this built for Indian businesses?', a: 'Yes, completely. Capita handles GST-compliant invoicing, TDS, INR-native reporting, and is designed around how Indian agencies and freelancers actually bill clients — including UPI payment tracking and reconciliation.' },
-                            { q: 'Can I import my existing invoices and clients?', a: 'You can add clients manually or in bulk. You can start fresh with Capita immediately and build your invoice history from day one.' },
-                            { q: 'How does the Debt Hunter actually work?', a: 'You activate it per invoice. Capita then sends politely-worded automated email reminders on a smart schedule — escalating tone based on how overdue the invoice is. No spam, no robotic messages.' },
-                            { q: 'Is my financial data secure?', a: 'Yes. All data is encrypted in transit and at rest. We follow industry-standard security practices. Your invoice and payment data is never shared or sold.' },
-                            { q: "Do I need to be technical to use it?", a: 'Not at all. Capita is designed for agency owners and freelancers, not developers. If you can use Gmail, you can use Capita. The setup takes under 5 minutes.' },
-                            { q: "What payment methods does Capita track?", a: 'Capita tracks UPI, cash, card, cheque, and net banking payments. You can manually record payments or link with Razorpay for automatic reconciliation.' },
+                            { q: 'What counts as an AI query?', a: 'Every message you send to Capita counts as 1 query. Follow-up questions in the same conversation also count individually. Automated weekly summaries do NOT count toward your limit.' },
+                            { q: 'Can I upgrade or downgrade anytime?', a: 'Yes — upgrades are instant and prorated. Downgrades take effect at the end of your current billing cycle, so you keep your access until then.' },
+                            { q: 'Is my financial data safe?', a: 'Your data is encrypted at rest and in transit. We never use your financial data to train AI models, and we never share it with third parties.' },
+                            { q: 'What happens when I hit my AI limit?', a: 'Capita will notify you when you\'re at 80% of your query limit. Once exceeded, basic features still work — only AI chat is paused until your cycle resets.' },
+                            { q: 'Can I pay annually and save?', a: 'Yes! Annual plans give you approximately 2 months free. Solo saves ₹598/year, and Solo Pro saves ₹1,398/year. Payment is charged upfront for the full year.' }
                         ].map(item => <FAQItem key={item.q} q={item.q} a={item.a} />)}
                     </motion.div>
                 </div>
