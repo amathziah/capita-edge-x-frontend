@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
@@ -18,6 +18,7 @@ export default function AuthComponent() {
     const [message, setMessage] = useState<string | null>(null);
     const [showOtpInput, setShowOtpInput] = useState(false);
     const [otp, setOtp] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,9 +49,9 @@ export default function AuthComponent() {
         try {
             // Call backend API instead of direct Supabase signup
             // This ensures the confirmation email is sent via our SMTP service
-            await api.post<any>(ENDPOINTS.AUTH_SIGNUP, { email, password, companyName });
+            const response = await api.post<any>(ENDPOINTS.AUTH_SIGNUP, { email, password, companyName });
 
-            setMessage('Account created! Please check your email for the 6-digit verification code.');
+            setMessage(response.message || 'Account created! Please check your email for the 6-digit verification code.');
             setShowOtpInput(true);
         } catch (error: any) {
             setError(error.message || 'Failed to sign up');
@@ -64,9 +65,9 @@ export default function AuthComponent() {
         setLoading(true);
         setError(null);
         try {
-            await api.post<any>(ENDPOINTS.AUTH_VERIFY_OTP, { email, otp });
+            const response = await api.post<any>(ENDPOINTS.AUTH_VERIFY_OTP, { email, otp });
 
-            setMessage('Email verified successfully! You can now sign in.');
+            setMessage(response.message || 'Email verified successfully! You can now sign in.');
             setShowOtpInput(false);
             setView('signin');
             setPassword('');
@@ -119,9 +120,9 @@ export default function AuthComponent() {
         try {
             // Call backend API instead of direct Supabase resend
             // This allows us to use our own SMTP as a fallback
-            await api.post<any>(ENDPOINTS.AUTH_RESEND, { email });
+            const response = await api.post<any>(ENDPOINTS.AUTH_RESEND, { email });
 
-            setMessage('A new verification code has been sent to your email.');
+            setMessage(response.message || 'A new verification code has been sent to your email.');
         } catch (error: any) {
             console.error('Resend error:', error);
             setError(error.message || 'Failed to resend confirmation email');
@@ -236,13 +237,20 @@ export default function AuthComponent() {
                                         <div className="relative group">
                                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                                             <input
-                                                type="password"
+                                                type={showPassword ? "text" : "password"}
                                                 placeholder="Password"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 required
-                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                                className="w-full pl-12 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors"
+                                            >
+                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
                                         </div>
                                     )}
                                 </>

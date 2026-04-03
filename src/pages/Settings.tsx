@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
-  Settings as SettingsIcon, Upload, Save, Building, Image as ImageIcon,
-  Loader2, CheckCircle2, CreditCard, ChevronRight, Mail, AlertCircle,
-  Receipt, Settings2 as Settings2Icon,
-} from 'lucide-react';
+    Settings as SettingsIcon, Upload, Save, Building, Image as ImageIcon,
+    Loader2, CheckCircle2, CreditCard, ChevronRight, Mail, AlertCircle,
+    Receipt, Settings2 as Settings2Icon, Eye, EyeOff
+  } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -360,6 +360,7 @@ function EmailTab({ settings, onChange, isVerified, connectionChecked, testingCo
   onVerify: (user: string, pass: string) => void;
   onDisconnect: () => void;
 }) {
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
   const handleConnect = async () => {
     if (!settings.smtp_user || !settings.smtp_pass) return;
     try {
@@ -417,7 +418,23 @@ function EmailTab({ settings, onChange, isVerified, connectionChecked, testingCo
                 How to generate? <ChevronRight className="w-3 h-3" />
               </a>
             </div>
-            <input type="password" className={`${inputCls} font-mono tracking-widest`} value={settings.smtp_pass || ''} onChange={e => onChange('smtp_pass', e.target.value)} placeholder="xxxx xxxx xxxx xxxx" />
+            <div className="relative">
+              <input
+                type={showSmtpPass ? "text" : "password"}
+                className={`${inputCls} font-mono tracking-widest pr-10`}
+                value={settings.smtp_pass || ''}
+                onChange={e => onChange('smtp_pass', e.target.value)}
+                placeholder="xxxx xxxx xxxx xxxx"
+              />
+              <button
+                type="button"
+                onClick={() => setShowSmtpPass(!showSmtpPass)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+                title={showSmtpPass ? "Hide password" : "Show password"}
+              >
+                {showSmtpPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </Field>
 
           <button

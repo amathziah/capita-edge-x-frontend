@@ -165,25 +165,29 @@ export function SetupPage() {
             id: 'solopreneur',
             label: 'Freelancer / Consultant',
             desc: 'Invoice clients, auto GST + TDS, payment reminders — 90 seconds.',
-            icon: <Activity className="w-6 h-6" />
+            icon: <Activity className="w-6 h-6" />,
+            available: true
         },
         {
             id: 'services_firm',
             label: 'Service firm',
             desc: 'Multi-client invoicing, team approvals, smart collections.',
-            icon: <Globe className="w-6 h-6" />
+            icon: <Globe className="w-6 h-6" />,
+            available: false
         },
         {
             id: 'ecommerce',
             label: 'Ecommerce seller',
             desc: 'Amazon + Flipkart auto-invoicing, HSN GST, marketplace reconciliation.',
-            icon: <Database className="w-6 h-6" />
+            icon: <Database className="w-6 h-6" />,
+            available: false
         },
         {
             id: 'subscription',
             label: 'SaaS / Subscription',
             desc: 'MRR tracking, recurring billing, OIDAR rules for foreign buyers.',
-            icon: <Zap className="w-6 h-6" />
+            icon: <Zap className="w-6 h-6" />,
+            available: false
         },
     ];
 
@@ -333,22 +337,32 @@ export function SetupPage() {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.05 }}
-                                            onClick={() => setSelectedPersona(p.id as any)}
+                                            onClick={() => p.available && setSelectedPersona(p.id as any)}
+                                            disabled={!p.available}
                                             className={`flex items-center gap-4 p-4 rounded-xl border transition-all relative group
-                                                ${selectedPersona === p.id
+                                                ${!p.available ? 'opacity-40 grayscale-[0.5] cursor-not-allowed border-white/5 bg-white/[0.005]' :
+                                                  selectedPersona === p.id
                                                     ? 'border-teal-500/50 bg-teal-500/[0.03] shadow-sm'
                                                     : 'border-white/10 bg-white/[0.01] hover:border-white/20 hover:bg-white/[0.02]'}`}
                                         >
                                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border transition-all
-                                                ${selectedPersona === p.id
+                                                ${!p.available ? 'bg-white/5 border-white/5 text-gray-600' :
+                                                  selectedPersona === p.id
                                                     ? 'bg-teal-500/10 border-teal-500/20 text-teal-400'
                                                     : 'bg-white/5 border-white/5 text-gray-500'}`}>
                                                 {p.icon}
                                             </div>
                                             <div className="flex-1 text-left">
-                                                <h4 className={`font-bold text-sm tracking-tight ${selectedPersona === p.id ? 'text-teal-400' : 'text-white'}`}>
-                                                    {p.label}
-                                                </h4>
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className={`font-bold text-sm tracking-tight ${selectedPersona === p.id ? 'text-teal-400' : 'text-white'}`}>
+                                                        {p.label}
+                                                    </h4>
+                                                    {!p.available && (
+                                                        <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest text-gray-500">
+                                                            Soon
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="text-[10px] text-gray-500 font-medium leading-tight mt-0.5">
                                                     {p.desc}
                                                 </p>
