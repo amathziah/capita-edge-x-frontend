@@ -75,6 +75,10 @@
   perspective: 1000px;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* KEYFRAME DEFINITIONS (consolidated - no duplicates)                        */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
 @keyframes pulse-teal {
   0%, 100% {
     opacity: 0.5;
@@ -115,12 +119,38 @@
   }
 }
 
-/* ── Streaming cursor ─────────────────────────────────────────────────────── */
 @keyframes ai-cursor-blink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
 }
 
+@keyframes robot-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-5px); }
+}
+
+@keyframes eye-glow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* UTILITY CLASSES                                                            */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Streaming cursor for AI responses */
 .ai-streaming-cursor {
   display: inline-block;
   width: 2px;
@@ -132,14 +162,11 @@
   border-radius: 1px;
 }
 
-/* ── Robot float ──────────────────────────────────────────────────────────── */
-@keyframes robot-float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-5px); }
+/* Animation utility classes */
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-/* ── Eye glow ─────────────────────────────────────────────────────────────── */
-@keyframes eye-glow {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
