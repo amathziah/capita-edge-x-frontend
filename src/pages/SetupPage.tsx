@@ -61,6 +61,8 @@ export function SetupPage() {
     const [selectedPersona, setSelectedPersona] = useState<BusinessType>('solopreneur');
     const [error, setError] = useState<string | null>(null);
     const [calibrationLogs, setCalibrationLogs] = useState<string[]>([]);
+    
+    const initializedRef = useRef(false);
 
     useEffect(() => {
         if (step === 'calibrate') {
@@ -85,11 +87,13 @@ export function SetupPage() {
         }
     }, [step]);
 
+    // Pre-fill company name exactly once when user data becomes available
     useEffect(() => {
-        if (user?.user_metadata?.company_name && !companyName) {
+        if (user?.user_metadata?.company_name && !initializedRef.current) {
             setCompanyName(user.user_metadata.company_name);
+            initializedRef.current = true;
         }
-    }, [user, companyName]);
+    }, [user]);
 
     const handleProvisioning = async () => {
         if (!companyName.trim()) {

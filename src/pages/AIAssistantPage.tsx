@@ -467,8 +467,19 @@ export function AIAssistantPage() {
   useEffect(() => {
     if (!scrollRef.current) return;
     const el = scrollRef.current;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 140)
-      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    
+    const threshold = 300;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+    const lastMsg = messages[messages.length - 1];
+    const isUser = lastMsg?.sender === 'user';
+
+    // Scroll if we're near bottom, or if it's a direct user query, or if the bot just started typing
+    if (isNearBottom || isUser || isTyping) {
+      const scrollTimer = setTimeout(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      }, 100);
+      return () => clearTimeout(scrollTimer);
+    }
   }, [messages, isTyping]);
 
   // AI Step cycling
