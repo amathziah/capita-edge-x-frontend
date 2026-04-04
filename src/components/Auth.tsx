@@ -71,31 +71,33 @@ export default function AuthComponent() {
                 throw new Error(response.message || 'Failed to initialize account');
             }
         } catch (error: any) {
-            console.error(`[Auth] Signup error:`, error);
+            console.error(`[Auth] Signup error detected:`, error);
             
             const msg = (error.message || '').toLowerCase();
-            const isRegistered = msg.includes('already registered') || 
-                                msg.includes('already exists') || 
+            // Exhaustive check for any type of "account already here" message
+            const isRegistered = msg.includes('already') || 
+                                msg.includes('exists') || 
+                                msg.includes('regis') || 
                                 msg.includes('duplicate');
 
             if (isRegistered) {
-                console.log('[Auth] Self-healing initiated: Account exists, switching to OTP mode.');
-                // 1. Clear any existing error state
+                console.log('[Auth] Conflict recognized. Forcing handover to OTP screen...');
+                // 1. Wipe all local error states to clear the UI
                 setError(null);
-                // 2. Switch to OTP screen immediately
+                // 2. Force the transition to the OTP view
                 setShowOtpInput(true);
-                // 3. Set a helpful bridging message
-                setMessage('Welcome back! We are sending you a new verification code...');
+                // 3. Inform the user we're resuming
+                setMessage('Welcome back! Resuming your account setup...');
                 
-                // 4. Silently trigger a resend to ensure they have the latest code
+                // 4. Trigger the resend to ensure they have the latest code
                 try {
                     await api.post(ENDPOINTS.AUTH_RESEND, { email: normalizedEmail });
-                    console.log('[Auth] Automatic code resend successful.');
+                    console.log('[Auth] Resend triggered successfully.');
                 } catch (resendErr) {
-                    console.warn('[Auth] Automatic resend had an issue (might be redundant):', resendErr);
+                    console.warn('[Auth] Handover resend note:', resendErr);
                 }
             } else {
-                setError(error.message || 'Failed to sign up');
+                setError(error.message || 'Signup failed');
             }
         } finally {
             setLoading(false);
