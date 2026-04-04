@@ -8,8 +8,6 @@ import { aiService, delay } from '../services/aiService';
 import { usePersona } from '../contexts/PersonaContext';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
-import { api } from '../api/client';
-import { ENDPOINTS } from '../api/endpoints';
 import * as LucideIcons from 'lucide-react';
 import { GENERAL_CHAT_STEPS } from '../utils/aiLoadingSteps';
 
@@ -32,6 +30,8 @@ interface Message {
   sender: 'user' | 'bot';
   text: string;
   data?: any;
+  uiComponent?: string;
+  uiData?: any;
   timestamp: Date;
   status?: 'sending' | 'sent' | 'error';
   usage?: {
@@ -42,9 +42,12 @@ interface Message {
 }
 
 const TEAL = '#2dd4bf';
+
 const formatTime = (d: any) => {
   const date = d instanceof Date ? d : new Date(d);
-  return isNaN(date.getTime()) ? '--:--' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return isNaN(date.getTime())
+    ? '--:--'
+    : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 // ─── Markdown renderers ────────────────────────────────────────────────────────
@@ -96,7 +99,9 @@ const botMd: Components = {
     </thead>
   ),
   th: ({ children }) => <th className="px-4 py-3 whitespace-nowrap">{children}</th>,
-  tbody: ({ children }) => <tbody className="divide-y divide-white/[0.04]">{children}</tbody>,
+  tbody: ({ children }) => (
+    <tbody className="divide-y divide-white/[0.04]">{children}</tbody>
+  ),
   td: ({ children }) => <td className="px-4 py-2.5 text-gray-300">{children}</td>,
   tr: ({ children }) => (
     <tr className="hover:bg-white/[0.02] transition-colors duration-150">{children}</tr>
@@ -118,7 +123,9 @@ const botMd: Components = {
   code: ({ className, children }) =>
     /language-/.test(className || '') ? (
       <pre className="bg-[#0d1117] rounded-xl p-4 overflow-x-auto my-3 border border-white/[0.06] shadow-inner">
-        <code className="font-mono text-[11px] text-emerald-400/90 leading-relaxed">{children}</code>
+        <code className="font-mono text-[11px] text-emerald-400/90 leading-relaxed">
+          {children}
+        </code>
       </pre>
     ) : (
       <code className="bg-white/[0.08] px-1.5 py-0.5 rounded-md font-mono text-[11px] text-teal-300 border border-white/[0.06]">
@@ -128,15 +135,22 @@ const botMd: Components = {
 };
 
 const userMd: Components = {
-  p: ({ children }) => <p className="mb-0.5 leading-relaxed text-[13px]">{children}</p>,
+  p: ({ children }) => (
+    <p className="mb-0.5 leading-relaxed text-[13px]">{children}</p>
+  ),
   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
 };
 
 // ─── Robot SVG ─────────────────────────────────────────────────────────────────
 function RobotSVG({ size = 56, animate = false }: { size?: number; animate?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 56 56" fill="none"
-      style={animate ? { animation: 'robot-float 3s ease-in-out infinite' } : {}}>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 56 56"
+      fill="none"
+      style={animate ? { animation: 'robot-float 3s ease-in-out infinite' } : {}}
+    >
       <line x1="28" y1="2" x2="28" y2="10" stroke={TEAL} strokeWidth="2" strokeLinecap="round" />
       <circle cx="28" cy="2" r="2.5" fill={TEAL} />
       <rect x="10" y="10" width="36" height="28" rx="8" fill="rgba(255,255,255,0.06)" stroke={TEAL} strokeWidth="1.5" />
@@ -185,21 +199,20 @@ function SidebarActionCard({
         }
       `}
     >
-      {/* Left accent bar on hover */}
       {!disabled && (
-        <div
-          className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r bg-teal-400 opacity-0 group-hover:opacity-100 transition-opacity"
-        />
+        <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r bg-teal-400 opacity-0 group-hover:opacity-100 transition-opacity" />
       )}
-
       <div className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/15 group-hover:bg-teal-500/20 transition-colors shrink-0">
         <Icon size={11} className="text-teal-400" />
       </div>
-
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-1 mb-0.5">
-          <span className="text-[11px] font-semibold text-gray-200 truncate leading-tight">{action.label}</span>
-          <span className="text-[7px] font-black tracking-widest uppercase text-teal-500/60 shrink-0">{action.tag}</span>
+          <span className="text-[11px] font-semibold text-gray-200 truncate leading-tight">
+            {action.label}
+          </span>
+          <span className="text-[7px] font-black tracking-widest uppercase text-teal-500/60 shrink-0">
+            {action.tag}
+          </span>
         </div>
         {!disabled && (
           <span className="text-[9px] text-gray-600 group-hover:text-teal-500/70 transition-colors font-medium">
@@ -208,6 +221,135 @@ function SidebarActionCard({
         )}
       </div>
     </motion.button>
+  );
+}
+
+// Animation variants for generative components
+const genCardVariants = {
+  hidden: { opacity: 0, y: 10, scale: 0.98 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: {
+      type: 'spring' as const,
+      damping: 20,
+      stiffness: 250,
+      staggerChildren: 0.04,
+      delayChildren: 0.02
+    }
+  }
+};
+
+const genItemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.25, ease: 'easeOut' as const }
+  }
+};
+
+// ─── Generative UI Renderer ───────────────────────────────────────────────────
+function GenerativeUIRenderer({ component, data }: { component: string; data: any }) {
+  if (component === 'get_overdue_invoices') {
+    const invoices = data?.riskyInvoices || [];
+    const ageing = data?.ageing || {};
+    return (
+      <motion.div
+        variants={genCardVariants}
+        initial="hidden"
+        animate="visible"
+        className="mt-4 mb-2 p-4 rounded-2xl bg-gradient-to-br from-red-500/5 to-black/40 border border-red-500/20 shadow-lg shadow-black/20"
+      >
+        <motion.h4 variants={genItemVariants} className="text-[12px] font-bold text-red-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <LucideIcons.AlertTriangle size={14} /> At-Risk Receivables
+        </motion.h4>
+        <div className="grid grid-cols-3 gap-2 mb-4 text-center">
+          <motion.div variants={genItemVariants} className="bg-white/5 p-2 rounded-xl">
+            <div className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">30 Days</div>
+            <div className="text-[13px] font-mono text-amber-200">${ageing.current?.toLocaleString() || 0}</div>
+          </motion.div>
+          <motion.div variants={genItemVariants} className="bg-white/5 p-2 rounded-xl">
+            <div className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">60 Days</div>
+            <div className="text-[13px] font-mono text-orange-300">${ageing.near?.toLocaleString() || 0}</div>
+          </motion.div>
+          <motion.div variants={genItemVariants} className="bg-red-500/10 p-2 rounded-xl border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+            <div className="text-[9px] text-red-400 uppercase font-bold tracking-wider mb-1">90+ Days</div>
+            <div className="text-[14px] font-mono font-bold text-red-500">${ageing.critical?.toLocaleString() || 0}</div>
+          </motion.div>
+        </div>
+        <div className="space-y-2">
+          {invoices.map((inv: any) => (
+            <motion.div
+              key={inv.id}
+              variants={genItemVariants}
+              className="flex items-center justify-between p-3 rounded-xl border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+            >
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[13px] font-bold text-gray-200">#{inv.invoiceNumber}</span>
+                <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+                  Due: {new Date(inv.dueDate).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-[14px] font-mono text-white">${inv.total?.toLocaleString()}</span>
+                <button className="text-[9px] text-teal-400 hover:text-teal-300 bg-teal-400/10 hover:bg-teal-400/20 px-2 py-1 rounded font-bold uppercase tracking-widest transition-colors">
+                  Draft Email
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (component === 'get_financial_summary') {
+    const stats = data?.stats || {};
+    return (
+      <motion.div
+        variants={genCardVariants}
+        initial="hidden"
+        animate="visible"
+        className="mt-4 mb-2 p-4 rounded-2xl bg-gradient-to-br from-teal-500/5 to-black/40 border border-teal-500/20 shadow-lg shadow-black/20"
+      >
+        <motion.h4 variants={genItemVariants} className="text-[12px] font-bold text-teal-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <LucideIcons.Activity size={14} /> Financial Summary
+        </motion.h4>
+        <div className="grid grid-cols-2 gap-3">
+          <motion.div variants={genItemVariants} className="bg-white/5 p-4 rounded-xl border border-white/5 shadow-inner">
+            <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Total Revenue</div>
+            <div className="text-[20px] font-mono text-white font-black">
+              ${stats.total_revenue?.toLocaleString() || 0}
+            </div>
+          </motion.div>
+          <motion.div variants={genItemVariants} className="bg-teal-500/5 p-4 rounded-xl border border-teal-500/20 shadow-inner">
+            <div className="text-[9px] text-teal-500/70 font-bold uppercase tracking-widest mb-1.5">Net Profit</div>
+            <div className="text-[20px] font-mono text-teal-400 font-black">
+              ${stats.net_profit?.toLocaleString() || 0}
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Fallback
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-3 p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] text-gray-400 flex items-center gap-2.5 shadow-inner"
+    >
+      <div className="w-6 h-6 rounded-lg bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
+        <LucideIcons.Zap size={12} className="text-teal-400" />
+      </div>
+      <div>
+        <span className="font-bold text-teal-400">System Integration</span>
+        <span className="opacity-70 ml-2">Connected to business data ({component})</span>
+      </div>
+    </motion.div>
   );
 }
 
@@ -223,79 +365,111 @@ function ChatBubble({
 }) {
   const isBot = msg.sender === 'bot';
   const isPendingAction = msg.data?.type === 'action_prompt';
+  const isStreaming = isBot && msg.status === 'sending';
+  const displayText = isStreaming ? msg.text.replace(/▌$/, '') : msg.text;
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(msg.text);
+    navigator.clipboard.writeText(displayText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
       className={`flex items-end gap-2.5 w-full ${isBot ? 'flex-row' : 'flex-row-reverse'}`}
     >
       {/* Avatar */}
       {isBot ? (
-        <div className="relative w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
-          style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)' }}>
+        <div
+          className="relative w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
+          style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)' }}
+        >
           <RobotSVG size={18} />
-          {/* Pulse indicator */}
           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-teal-400 border border-[#0c0f1a]">
             <span className="absolute inset-0 rounded-full bg-teal-400 animate-ping opacity-60" />
           </span>
         </div>
       ) : (
-        <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div
+          className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
           <span className="text-[10px] text-gray-400 font-black font-mono">ME</span>
         </div>
       )}
 
       <div className={`flex flex-col gap-1 ${isBot ? 'items-start' : 'items-end'} max-w-[82%]`}>
         {/* Bubble */}
-        <div
-          className="relative rounded-2xl overflow-hidden"
-          style={isBot ? {
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
-          } : {
-            background: 'linear-gradient(135deg, rgba(45,212,191,0.18) 0%, rgba(6,182,212,0.12) 100%)',
-            border: '1px solid rgba(45,212,191,0.22)',
-            boxShadow: '0 4px 16px rgba(45,212,191,0.08)',
-          }}
+        <motion.div
+          className="relative rounded-2xl overflow-hidden shadow-2xl"
+          style={
+            isBot
+              ? {
+                  background: 'linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+                }
+              : {
+                  background: 'linear-gradient(135deg, rgba(45,212,191,0.18) 0%, rgba(6,182,212,0.12) 100%)',
+                  border: '1px solid rgba(45,212,191,0.22)',
+                  boxShadow: '0 4px 16px rgba(45,212,191,0.08)',
+                }
+          }
         >
           {/* Top shimmer line for bot */}
           {isBot && (
-            <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-              background: 'linear-gradient(90deg, rgba(45,212,191,0.4) 0%, rgba(45,212,191,0.15) 50%, transparent 100%)',
-            }} />
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1,
+                background:
+                  'linear-gradient(90deg, rgba(45,212,191,0.4) 0%, rgba(45,212,191,0.15) 50%, transparent 100%)',
+              }}
+            />
           )}
 
           {/* Bot header label */}
           {isBot && (
             <div className="px-4 pt-3 pb-1 flex items-center gap-1.5">
-              <span className="text-[9px] font-black tracking-[0.15em] uppercase text-teal-500/60">Capita</span>
+              <span className="text-[9px] font-black tracking-[0.15em] uppercase text-teal-500/60">
+                Capita
+              </span>
               <span className="text-[9px] text-white/10">·</span>
               <span className="text-[9px] text-white/25 font-medium">Strategic AI</span>
             </div>
           )}
 
           <div className={`px-4 ${isBot ? 'pt-0.5 pb-3.5' : 'py-2.5'}`}>
+            {msg.uiComponent && (
+              <div className="mb-4 mt-2">
+                <GenerativeUIRenderer component={msg.uiComponent} data={msg.uiData} />
+              </div>
+            )}
+
             <div className={isBot ? 'text-gray-300' : 'text-gray-100'}>
-              <ReactMarkdown components={isBot ? botMd : userMd}>{msg.text}</ReactMarkdown>
+              {!msg.uiComponent && isStreaming && displayText === '' ? (
+                <span className="text-[13px] text-gray-600 tracking-widest animate-pulse">…</span>
+              ) : displayText.length > 0 ? (
+                <ReactMarkdown components={isBot ? botMd : userMd}>{displayText}</ReactMarkdown>
+              ) : null}
+
+              {isStreaming && (displayText !== '' || msg.uiComponent) && (
+                <span className="ai-streaming-cursor" />
+              )}
             </div>
 
             {msg.data?.type === 'stat' && (
               <motion.div
-                initial={{ scale: 0.85, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.15 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
                 className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xl font-black text-teal-300"
                 style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)' }}
               >
@@ -315,14 +489,18 @@ function ChatBubble({
                 <button
                   onClick={onCancelAction}
                   className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all hover:bg-white/10"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: 'rgba(255,255,255,0.6)',
+                  }}
                 >
                   Cancel
                 </button>
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Footer: timestamp + copy */}
         <div className={`flex items-center gap-2 px-1 ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
@@ -362,12 +540,10 @@ function EmptyState() {
           <RobotSVG size={44} />
         </motion.div>
       </div>
-
       <h3 className="text-white font-bold text-[15px] mb-2 tracking-tight">Hey, I'm Capita</h3>
       <p className="text-gray-500 text-[12px] leading-relaxed max-w-xs">
         Ask me anything about your revenue, invoices, cash flow, or taxes.
       </p>
-
       <div className="mt-5 flex items-center gap-2">
         <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
         <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Ready to help</span>
@@ -387,10 +563,12 @@ export function AIAssistantPage() {
     try {
       const cached = localStorage.getItem(STORAGE_KEY);
       if (cached) return JSON.parse(cached);
-    } catch (e) { console.error('Cache read error:', e); }
+    } catch (e) {
+      console.error('Cache read error:', e);
+    }
     return { meta: { greeting: '', label: 'Finance', color: TEAL }, actions: [] };
   });
-  
+
   const [usageStats, setUsageStats] = useState({ usage: 0, limit: 0, percent: 0, remaining: 0 });
   const [conversations, setConversations] = useState<any[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
@@ -406,54 +584,49 @@ export function AIAssistantPage() {
   const [currentStep, setCurrentStep] = useState(GENERAL_CHAT_STEPS[0]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  // useRef instead of useState — only used for abort logic, not rendering
+  const streamingMsgIdRef = useRef<string | null>(null);
 
-  // Fetch usage & config (Staggered to avoid RPM limits)
+  // ── Helper: scroll to bottom ───────────────────────────────────────────────
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
+  };
+
+  // ── Init: load config, usage, sessions, history ────────────────────────────
   useEffect(() => {
     const init = async () => {
       try {
-        // 1. Priority: Load Persona Config
+        // 1. Persona config (priority)
         const config = await aiService.getConfig(businessType as string | undefined);
         setDynamicConfig(config as any);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-        
-        // 2. Stagger: Give Google a breather
+
         await delay(800);
 
-        // 3. Load Budget Status
-        try {
-          // const budgetRes = await aiService.getBudget();
-          // setBudget(budgetRes as any);
-        } catch { /* Budget endpoint optional */ }
-
-        await delay(300);
-        
-        // 4. Load Usage Stats
+        // 2. Usage stats
         const usage = await aiService.getUsage();
         setUsageStats(usage as any);
 
         await delay(200);
 
-        // 5. Load Session List
+        // 3. Session list
         setIsHistoryLoading(true);
         const sessions = await aiService.getConversations();
         setConversations(sessions as any[]);
         setIsHistoryLoading(false);
 
-        // 6. Load Latest Chat History (Fallback if no session selected)
+        // 4. Latest chat history
         if (!currentConversationId) {
           const history = await aiService.getHistory();
           if (Array.isArray(history) && history.length > 0) {
-            setMessages(history.map((m: any) => ({
-              ...m,
-              timestamp: new Date(m.timestamp)
-            })));
-            // Force scroll to bottom after hydration
-            setTimeout(() => {
-              if (scrollRef.current) {
-                scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'instant' });
-              }
-            }, 100);
+            setMessages(
+              history.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
+            );
+            // Jump to bottom instantly so user sees the latest exchange
+            setTimeout(() => scrollToBottom('instant'), 100);
           }
         }
       } catch (err) {
@@ -462,27 +635,20 @@ export function AIAssistantPage() {
       }
     };
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessType, STORAGE_KEY]);
 
+  // ── Auto-scroll while streaming (only if near bottom) ─────────────────────
   useEffect(() => {
-    if (!scrollRef.current) return;
     const el = scrollRef.current;
-    
-    const threshold = 300;
-    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
-    const lastMsg = messages[messages.length - 1];
-    const isUser = lastMsg?.sender === 'user';
-
-    // Scroll if we're near bottom, or if it's a direct user query, or if the bot just started typing
-    if (isNearBottom || isUser || isTyping) {
-      const scrollTimer = setTimeout(() => {
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-      }, 100);
-      return () => clearTimeout(scrollTimer);
+    if (!el) return;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (isNearBottom) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
-  }, [messages, isTyping]);
+  }, [messages]);
 
-  // AI Step cycling
+  // ── AI step label cycling ──────────────────────────────────────────────────
   useEffect(() => {
     if (!isTyping) {
       setCurrentStep(GENERAL_CHAT_STEPS[0]);
@@ -496,115 +662,211 @@ export function AIAssistantPage() {
     return () => clearInterval(interval);
   }, [isTyping]);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  // ── Focus input on mount ───────────────────────────────────────────────────
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
+  // ── Show/hide scroll-to-bottom button ─────────────────────────────────────
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
     const el = scrollRef.current;
     setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 200);
   }, []);
 
-  const scrollToBottom = () =>
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-
+  // ── Send message ───────────────────────────────────────────────────────────
   const handleSend = async (textOverride?: string) => {
-    if (isTyping) return;
     const text = (textOverride || query).trim();
     if (!text) return;
 
-    const userMsg: Message = { id: Date.now().toString(), sender: 'user', text, timestamp: new Date(), status: 'sent' };
+    // Abort any running stream
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      if (streamingMsgIdRef.current) {
+        setMessages(prev => prev.filter(m => m.id !== streamingMsgIdRef.current));
+        streamingMsgIdRef.current = null;
+      }
+    }
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      sender: 'user',
+      text,
+      timestamp: new Date(),
+      status: 'sent',
+    };
     setMessages(prev => [...prev, userMsg]);
     setQuery('');
     setIsTyping(true);
 
-    try {
-      // Build history context from current state EXCLUDING the user's latest message
-      // (Gemini expects history of PAST turns; the current query is sent separately)
-      const historyContext = messages.slice(-10).map(m => ({
+    // Optimistic bot message (skeleton state)
+    const botMsgId = `bot_${Date.now()}`;
+    streamingMsgIdRef.current = botMsgId;
+    setMessages(prev => [
+      ...prev,
+      { id: botMsgId, sender: 'bot', text: '', timestamp: new Date(), status: 'sending' },
+    ]);
+
+    // Scroll to bottom so user sees their question + the incoming response
+    setTimeout(() => scrollToBottom('smooth'), 100);
+
+    // Build conversation history for context
+    const rawHistory = messages
+      .filter(m => m.status !== 'sending' && m.status !== 'error' && m.text.trim().length > 0)
+      .slice(-10)
+      .map(m => ({
         role: m.sender === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }]
+        parts: [{ text: m.text.replace(/▌$/, '').trim() }],
       }));
+    while (rawHistory.length > 0 && rawHistory[0].role === 'model') rawHistory.shift();
 
-      const res = await api.post<any>(ENDPOINTS.AI_CHAT, { 
-        query: text, 
-        businessType: businessType || undefined, 
-        history: historyContext,
-        conversationId: currentConversationId || undefined
-      });
-      
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(), 
-        sender: 'bot',
-        text: res.text, 
-        data: res.data, 
-        usage: res.usage,
-        timestamp: new Date(),
-      };
+    const abort = new AbortController();
+    abortControllerRef.current = abort;
 
-      if (res.conversationId && !currentConversationId) {
-        setCurrentConversationId(res.conversationId);
-        // Refresh session list
-        const sessions = await aiService.getConversations();
-        setConversations(sessions as any[]);
+    try {
+      const stream = aiService.chatStream(
+        {
+          query: text,
+          businessType: businessType || undefined,
+          history: rawHistory,
+          conversationId: currentConversationId || undefined,
+        },
+        abort.signal
+      );
+
+      let accumulatedText = '';
+      let firstToken = true;
+
+      for await (const event of stream) {
+        if (abort.signal.aborted) break;
+
+        if (event.type === 'gen_ui') {
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === botMsgId
+                ? { ...m, uiComponent: event.component, uiData: event.data }
+                : m
+            )
+          );
+        } else if (event.type === 'token') {
+          accumulatedText += event.text;
+          if (firstToken) {
+            setIsTyping(false);
+            firstToken = false;
+          }
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === botMsgId
+                ? { ...m, text: accumulatedText + '▌', status: 'sending' }
+                : m
+            )
+          );
+        } else if (event.type === 'complete') {
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === botMsgId
+                ? {
+                    ...m,
+                    text: event.text,
+                    data: event.action ? { type: 'action_prompt' } : undefined,
+                    usage: event.usage,
+                    status: 'sent',
+                  }
+                : m
+            )
+          );
+
+          if (event.action) setPendingAction(event.action);
+
+          if (event.conversationId && !currentConversationId) {
+            setCurrentConversationId(event.conversationId);
+            const sessions = await aiService.getConversations();
+            setConversations(sessions as any[]);
+          }
+
+          if (event.usage?.totalTokenCount) {
+            aiService.getUsage().then(u => setUsageStats(u as any)).catch(() => {});
+          }
+        } else if (event.type === 'error') {
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === botMsgId
+                ? {
+                    ...m,
+                    text: `⚠️ ${event.message || 'An error occurred. Please try again.'}`,
+                    status: 'error',
+                  }
+                : m
+            )
+          );
+        }
       }
-
-      if (res.action) {
-        // Intercept action and ask for confirmation
-        setPendingAction(res.action);
-        botMsg.data = { ...botMsg.data, type: 'action_prompt' };
-      }
-
-      // Update usage if available
-      if (res.usage?.totalTokenCount) {
-        const updatedUsage = await aiService.getUsage();
-        setUsageStats(updatedUsage as any);
-      }
-      setMessages(prev => [...prev, botMsg]);
-
-      // Update budget from response if available
-      // if (res.budget) setBudget(res.budget);
-
     } catch (err: any) {
-      const errorMsg = 'I encountered an issue processing your request. Please try again in a moment.';
-        
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(), sender: 'bot',
-        text: errorMsg,
-        timestamp: new Date(), status: 'error',
-      }]);
+      if (err?.name === 'AbortError') return;
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === botMsgId
+            ? {
+                ...m,
+                text: '⚠️ I encountered an issue processing your request. Please try again.',
+                status: 'error',
+              }
+            : m
+        )
+      );
     } finally {
+      if (abortControllerRef.current === abort) abortControllerRef.current = null;
+      streamingMsgIdRef.current = null;
       setIsTyping(false);
     }
   };
 
+  // ── Confirm / cancel pending action ───────────────────────────────────────
   const handleConfirmAction = () => {
     if (!pendingAction) return;
-
     const { type, data, initialData } = pendingAction;
-    
-    // Execute the action
+
     if (type === 'open_invoice_modal' || type === 'EXECUTE_ACTION') {
-      const detail = data && type === 'EXECUTE_ACTION'
-        ? { buyer: { name: data.customer, phone: '' }, items: [{ description: data.description || 'Service', quantity: 1, price: data.amount, unit: 'Qty', discount: 0 }] }
-        : (initialData || data);
+      const detail =
+        data && type === 'EXECUTE_ACTION'
+          ? {
+              buyer: { name: data.customer, phone: '' },
+              items: [
+                {
+                  description: data.description || 'Service',
+                  quantity: 1,
+                  price: data.amount,
+                  unit: 'Qty',
+                  discount: 0,
+                },
+              ],
+            }
+          : initialData || data;
       window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail }));
     } else if (type === 'open_customer_modal') {
       window.dispatchEvent(new CustomEvent('open-customer-modal', { detail: data || initialData }));
     } else if (type === 'navigate' && data?.to) {
       let p = data.to;
-      if (p.startsWith('/') && !p.startsWith('/dashboard') && !['/login', '/setup', '/pricing'].includes(p))
+      if (
+        p.startsWith('/') &&
+        !p.startsWith('/dashboard') &&
+        !['/login', '/setup', '/pricing'].includes(p)
+      )
         p = `/dashboard${p === '/' ? '' : p}`;
       navigate(p);
     }
 
-    // Clear and acknowledge
     setPendingAction(null);
-    setMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      sender: 'bot',
-      text: 'Done! Executing the requested action now.',
-      timestamp: new Date()
-    }]);
+    setMessages(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        sender: 'bot',
+        text: 'Done! Executing the requested action now.',
+        timestamp: new Date(),
+      },
+    ]);
   };
 
   const handleCancelAction = () => {
@@ -615,26 +877,21 @@ export function AIAssistantPage() {
         id: Date.now().toString(),
         sender: 'bot',
         text: 'No problem. I will stay on this page.',
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      },
     ]);
   };
 
+  // ── Load a past conversation ───────────────────────────────────────────────
   const loadConversation = async (id: string) => {
     if (id === currentConversationId) return;
     setIsTyping(true);
     try {
       const msgs = await aiService.getConversationMessages(id);
-      setMessages((msgs as any[]).map(m => ({
-        ...m,
-        timestamp: new Date(m.timestamp)
-      })));
+      setMessages((msgs as any[]).map(m => ({ ...m, timestamp: new Date(m.timestamp) })));
       setCurrentConversationId(id);
-      setTimeout(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-        }
-      }, 100);
+      // Jump to bottom instantly — user switched context, smooth scroll would be jarring
+      setTimeout(() => scrollToBottom('instant'), 50);
     } catch (err) {
       console.error('Failed to load conversation:', err);
     } finally {
@@ -642,6 +899,7 @@ export function AIAssistantPage() {
     }
   };
 
+  // ── Clear chat ─────────────────────────────────────────────────────────────
   const clearChat = async () => {
     try {
       await aiService.deleteHistory();
@@ -654,32 +912,39 @@ export function AIAssistantPage() {
     }
   };
 
+  // ── Voice input ────────────────────────────────────────────────────────────
   const startListening = () => {
-    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SR: any =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { alert('Voice not supported.'); return; }
-    const r = new SR(); r.lang = 'en-US'; r.interimResults = false;
+    const r = new SR();
+    r.lang = 'en-US';
+    r.interimResults = false;
     r.onstart = () => setIsListening(true);
     r.onend = () => setIsListening(false);
     r.onerror = () => setIsListening(false);
-    r.onresult = (e: any) => { const t = e.results[0][0].transcript; setQuery(t); handleSend(t); };
+    r.onresult = (e: any) => {
+      const t = e.results[0][0].transcript;
+      setQuery(t);
+      handleSend(t);
+    };
     r.start();
   };
 
   const { actions } = dynamicConfig;
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col w-full max-w-[1400px] mx-auto h-full px-4 pb-4 pt-4 lg:pt-6 overflow-hidden">
 
-      {/* ── Outer shell ── */}
-      <div
-        className="
-          flex flex-col flex-1 min-h-0 overflow-hidden relative
-          bg-[#0c0f1a] rounded-2xl lg:rounded-3xl
-          border border-white/[0.07]
-          shadow-[0_0_60px_-15px_rgba(45,212,191,0.18)]
-          font-sans text-gray-300
-        "
-      >
+      {/* Outer shell */}
+      <div className="
+        flex flex-col flex-1 min-h-0 overflow-hidden relative
+        bg-[#0c0f1a] rounded-2xl lg:rounded-3xl
+        border border-white/[0.07]
+        shadow-[0_0_60px_-15px_rgba(45,212,191,0.18)]
+        font-sans text-gray-300
+      ">
         {/* Background glows */}
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
           <div
@@ -694,7 +959,6 @@ export function AIAssistantPage() {
 
         {/* ── TOP BAR ── */}
         <div className="relative z-20 shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#090c13]/80 backdrop-blur-sm">
-          {/* Identity */}
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shrink-0">
               <RobotSVG size={20} />
@@ -708,59 +972,32 @@ export function AIAssistantPage() {
             </div>
           </div>
 
-          {/* Greeting preview removed */}
-
-          {/* Controls */}
           <div className="flex items-center gap-2">
-            {/* Budget Indicator - Temporarily Disabled
-            {budget && (
-              <div className={`group relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-all ${
-                budget.isExhausted
-                  ? 'text-red-400 border-red-500/20 bg-red-500/10'
-                  : budget.userRemaining <= 2
-                    ? 'text-amber-400 border-amber-500/20 bg-amber-500/10'
-                    : 'text-teal-400 border-teal-500/20 bg-teal-500/10'
-              }`}>
-                <Zap size={9} />
-                <span>{budget.isExhausted ? 'Budget Used' : `${budget.userRemaining}/${budget.userMax} Left`}</span>
-                <div className="absolute top-full right-0 mt-1 w-44 p-2 bg-black/95 border border-white/10 rounded-lg text-[9px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 normal-case tracking-normal font-medium">
-                  {budget.isExhausted 
-                    ? 'Daily AI budget exhausted. Please upgrade to continue.'
-                    : `${budget.userRemaining} AI queries remaining today.`
-                  }
-                </div>
-              </div>
-            )}
-            */}
-            {/* Reset only */}
             <button
               onClick={clearChat}
               disabled={isTyping}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-colors
                 ${isTyping
                   ? 'opacity-40 cursor-not-allowed text-gray-600 border-gray-600/20 bg-gray-600/10'
-                  : 'text-teal-400 border-teal-500/20 bg-teal-500/10 hover:bg-teal-500/20'}`}
+                  : 'text-teal-400 border-teal-500/20 bg-teal-500/10 hover:bg-teal-500/20'
+                }`}
             >
               <RotateCcw size={9} /> Reset
             </button>
           </div>
         </div>
 
-        {/* ── BODY: sidebar + chat ── */}
+        {/* ── BODY ── */}
         <div className="flex flex-1 min-h-0 relative z-10 overflow-hidden">
 
           {/* ── LEFT SIDEBAR ── */}
           <div className="w-56 lg:w-64 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#07090f]/90 backdrop-blur-xl">
 
-            {/* Quick Actions */}
+            {/* Presets */}
             <div className="px-3 pt-3.5 pb-2.5 border-b border-white/[0.05]">
               <span className="text-[8px] font-black text-gray-500 tracking-widest uppercase">Presets</span>
             </div>
-
-            <div
-              className="max-h-[35%] overflow-y-auto py-2 px-2 space-y-1"
-              style={{ scrollbarWidth: 'none' }}
-            >
+            <div className="max-h-[35%] overflow-y-auto py-2 px-2 space-y-1" style={{ scrollbarWidth: 'none' }}>
               {actions.map((action: any, i: number) => (
                 <SidebarActionCard
                   key={i}
@@ -771,10 +1008,10 @@ export function AIAssistantPage() {
               ))}
             </div>
 
-            {/* History Section */}
+            {/* History */}
             <div className="px-3 pt-4 pb-2.5 border-t border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between">
               <span className="text-[8px] font-black text-teal-500/70 tracking-widest uppercase">Recent Advice</span>
-              <button 
+              <button
                 onClick={() => { setMessages([]); setCurrentConversationId(null); }}
                 className="text-[8px] font-black text-gray-500 hover:text-white transition-colors uppercase tracking-widest"
               >
@@ -788,7 +1025,7 @@ export function AIAssistantPage() {
                   <div key={i} className="h-10 mx-1 rounded-lg bg-white/[0.02] border border-white/[0.03] animate-pulse" />
                 ))
               ) : conversations.length > 0 ? (
-                conversations.map((conv) => (
+                conversations.map(conv => (
                   <button
                     key={conv.id}
                     onClick={() => loadConversation(conv.id)}
@@ -798,11 +1035,15 @@ export function AIAssistantPage() {
                         : 'border-transparent hover:bg-white/[0.03] grayscale hover:grayscale-0'
                     }`}
                   >
-                    <span className={`text-[10px] font-bold truncate ${currentConversationId === conv.id ? 'text-teal-400' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                    <span className={`text-[10px] font-bold truncate ${
+                      currentConversationId === conv.id ? 'text-teal-400' : 'text-gray-400 group-hover:text-gray-200'
+                    }`}>
                       {conv.title}
                     </span>
                     <span className="text-[7px] font-mono text-gray-600 uppercase tracking-tighter">
-                      {new Date(conv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' })}
+                      {new Date(conv.created_at).toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric',
+                      })}
                     </span>
                   </button>
                 ))
@@ -813,45 +1054,6 @@ export function AIAssistantPage() {
               )}
             </div>
 
-            {/* AI Credits Section - Temporarily Disabled
-            <div className="px-3 py-3.5 border-t border-white/[0.05] bg-black/20">
-              <div className="flex flex-col gap-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">AI Credits</span>
-                  <span className="text-[10px] font-mono font-bold text-teal-400">
-                    {usageStats.percent}%
-                  </span>
-                </div>
-                
-                <div className="h-1.5 w-full bg-white/[0.03] rounded-full overflow-hidden border border-white/5">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${usageStats.percent}%` }}
-                    className={`h-full rounded-full ${
-                      usageStats.percent > 90 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
-                      usageStats.percent > 70 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' :
-                      'bg-teal-500 shadow-[0_0_8px_rgba(45,212,191,0.5)]'
-                    }`}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-[8px] text-gray-600 font-bold uppercase tracking-wider">
-                    {usageStats.usage.toLocaleString()} / {usageStats.limit === Infinity ? '∞' : usageStats.limit.toLocaleString()}
-                  </span>
-                  {usageStats.limit !== Infinity && usageStats.remaining < 5000 && (
-                    <span className="text-[7px] font-black text-amber-500/80 animate-pulse uppercase">Low Credits</span>
-                  )}
-                </div>
-
-                <div className="pt-1 mt-1 border-t border-white/[0.03]">
-                  <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest opacity-60 italic leading-none">
-                    Finance engine · Encrypted
-                  </span>
-                </div>
-              </div>
-            </div>
-            */}
             <div className="px-3 py-3.5 border-t border-white/[0.05] bg-black/20">
               <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest opacity-60 italic leading-none">
                 Finance engine · Encrypted
@@ -859,10 +1061,10 @@ export function AIAssistantPage() {
             </div>
           </div>
 
-          {/* ── MAIN CHAT AREA ── */}
+          {/* ── CHAT AREA ── */}
           <div className="flex flex-col flex-1 min-w-0 min-h-0 relative">
 
-            {/* Scrollable messages */}
+            {/* Messages */}
             <div
               ref={scrollRef}
               onScroll={handleScroll}
@@ -872,44 +1074,65 @@ export function AIAssistantPage() {
               {messages.length === 0 ? (
                 <EmptyState />
               ) : (
-                <div className="max-w-3xl mx-auto px-5 py-5 space-y-5">
+                <div className="max-w-3xl mx-auto px-5 pb-12 space-y-6 pt-0">
                   <AnimatePresence initial={false}>
-                    {messages.map(msg => (
-                      <ChatBubble 
-                        key={msg.id} 
-                        msg={msg} 
-                        onConfirmAction={handleConfirmAction}
-                        onCancelAction={handleCancelAction}
-                      />
-                    ))}
-                  </AnimatePresence>
+                    {messages.map((msg, idx) => {
+                      // Show skeleton while waiting for first token
+                      const isWaitingForFirstChunk =
+                        msg.sender === 'bot' &&
+                        msg.status === 'sending' &&
+                        !msg.uiComponent &&
+                        (!msg.text || msg.text === '▌');
 
-                  {/* Typing indicator */}
-                  <AnimatePresence>
-                    {isTyping && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-end gap-2.5"
-                      >
-                        <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center bg-teal-500/10 border border-teal-500/20">
-                          <RobotSVG size={20} animate />
-                        </div>
-                        <div className="bg-white/[0.04] border border-teal-500/30 rounded-tr-2xl rounded-tl-sm rounded-b-2xl px-4 py-3 flex items-center gap-2.5 shadow-[0_0_15px_-3px_rgba(45,212,191,0.2)] animate-pulse">
-                          <div className="flex gap-1">
-                            {[0, 1, 2].map(i => (
-                              <div
-                                key={i}
-                                className="w-1.5 h-1.5 rounded-full animate-bounce"
-                                style={{ background: TEAL, animationDelay: `${i * 0.15}s` }}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{currentStep}</span>
-                        </div>
-                      </motion.div>
-                    )}
+                      // Divider before the latest user question (when there's prior history)
+                      const isFirstOfNewExchange =
+                        idx === messages.length - 2 &&
+                        msg.sender === 'user' &&
+                        messages.length > 2;
+
+                      return (
+                        <motion.div
+                          key={msg.id}
+                          id={`msg-${msg.id}`}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="w-full"
+                        >
+                          {isFirstOfNewExchange && (
+                            <div className="flex items-center gap-3 my-8 opacity-40 px-2">
+                              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-white/10" />
+                              <span className="text-[8px] uppercase tracking-[0.2em] text-gray-400 font-black">
+                                Latest Request
+                              </span>
+                              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/10 to-white/10" />
+                            </div>
+                          )}
+
+                          {isWaitingForFirstChunk ? (
+                            <div className="flex items-end gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/20 shrink-0 flex items-center justify-center">
+                                <RobotSVG size={18} animate />
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <div className="h-8 w-48 rounded-2xl bg-white/[0.03] border border-white/[0.06] animate-pulse" />
+                                <div className="flex items-center gap-1.5 px-1">
+                                  <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
+                                  <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest animate-pulse">
+                                    {currentStep}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <ChatBubble
+                              msg={msg}
+                              onConfirmAction={handleConfirmAction}
+                              onCancelAction={handleCancelAction}
+                            />
+                          )}
+                        </motion.div>
+                      );
+                    })}
                   </AnimatePresence>
 
                   {/* Voice indicator */}
@@ -938,19 +1161,19 @@ export function AIAssistantPage() {
                     )}
                   </AnimatePresence>
 
-                  <div className="h-2" />
+                  <div ref={messagesEndRef} className="h-4 pointer-events-none" />
                 </div>
               )}
             </div>
 
-            {/* Scroll-to-bottom button */}
+            {/* Scroll-to-bottom FAB */}
             <AnimatePresence>
               {showScrollBtn && (
                 <motion.button
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  onClick={scrollToBottom}
+                  onClick={() => scrollToBottom('smooth')}
                   className="absolute bottom-20 right-4 z-50 w-8 h-8 rounded-full bg-[#161a2b] border border-white/[0.1] flex items-center justify-center cursor-pointer shadow-xl hover:bg-white/[0.08] transition-colors"
                 >
                   <ChevronDown size={15} className="text-gray-400" />
@@ -969,10 +1192,11 @@ export function AIAssistantPage() {
                   }
                 `}
               >
-                {/* Capita label */}
                 <div className="shrink-0 flex items-center gap-1.5 pr-2.5 border-r border-white/[0.07]">
                   <Zap size={13} className="text-teal-400" />
-                  <span className="hidden sm:inline text-[9px] font-black uppercase text-teal-400 tracking-widest">Capita</span>
+                  <span className="hidden sm:inline text-[9px] font-black uppercase text-teal-400 tracking-widest">
+                    Capita
+                  </span>
                 </div>
 
                 <input
@@ -981,11 +1205,13 @@ export function AIAssistantPage() {
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
                   }}
                   onFocus={() => setInputFocused(true)}
                   onBlur={() => setInputFocused(false)}
-                  disabled={isTyping}
                   placeholder="Ask about revenue, invoices, cash flow…"
                   className="flex-1 bg-transparent border-none outline-none text-sm text-white py-1 px-1 placeholder-gray-600"
                 />
@@ -1011,16 +1237,20 @@ export function AIAssistantPage() {
                     whileHover={{ scale: query.trim() && !isTyping ? 1.08 : 1 }}
                     whileTap={{ scale: query.trim() && !isTyping ? 0.92 : 1 }}
                     onClick={() => handleSend()}
-                    disabled={!query.trim() || isTyping || (usageStats.limit !== Infinity && usageStats.usage >= usageStats.limit)}
+                    disabled={
+                      !query.trim() ||
+                      (usageStats.limit !== Infinity && usageStats.usage >= usageStats.limit)
+                    }
                     className="w-8 h-8 rounded-xl flex items-center justify-center transition-all relative overflow-hidden"
                     style={
-                      query.trim() && !isTyping && (usageStats.limit === Infinity || usageStats.usage < usageStats.limit)
+                      query.trim() &&
+                      (usageStats.limit === Infinity || usageStats.usage < usageStats.limit)
                         ? { background: `linear-gradient(135deg, ${TEAL}, #06b6d4)`, color: '#0a0d15' }
                         : { background: 'rgba(255,255,255,0.04)', color: '#374151', cursor: 'not-allowed' }
                     }
                   >
                     <Send size={13} />
-                    {(usageStats.limit !== Infinity && usageStats.usage >= usageStats.limit) && (
+                    {usageStats.limit !== Infinity && usageStats.usage >= usageStats.limit && (
                       <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center pointer-events-none">
                         <div className="w-1 h-1 rounded-full bg-red-500 animate-ping" />
                       </div>
@@ -1029,13 +1259,10 @@ export function AIAssistantPage() {
                 </div>
               </div>
 
-              {/* Footer hint */}
               <div className="mt-1.5 flex items-center justify-between px-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">
-                    Finance engine · Encrypted
-                  </span>
-                </div>
+                <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">
+                  Finance engine · Encrypted
+                </span>
                 {isListening && (
                   <div className="flex items-center gap-1.5">
                     <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
