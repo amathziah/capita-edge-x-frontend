@@ -72,7 +72,24 @@ export default function AuthComponent() {
             }
         } catch (error: any) {
             console.error(`[Auth] Signup error:`, error);
-            setError(error.message || 'Failed to sign up');
+            
+            // "Smart-Switch" Logic: If they are already registered but unverified, 
+            // the backend likely sent a 400 (or we just force them forward)
+            const msg = (error.message || '').toLowerCase();
+            if (msg.includes('already registered') || msg.includes('already exists')) {
+                console.log('[Auth] Registered user detected. Switching to OTP mode automatically.');
+                setError(null);
+                setMessage('Welcome back! Looking for your setup code...');
+                setShowOtpInput(true);
+                // Trigger a resend automatically to be sure they have a code
+                try {
+                   await api.post(ENDPOINTS.AUTH_RESEND_CONFIRMATION, { email: normalizedEmail });
+                } catch (resendErr) {
+                   console.log('[Auth] Automatic resend failed or redundant:', resendErr);
+                }
+            } else {
+                setError(error.message || 'Failed to sign up');
+            }
         } finally {
             setLoading(false);
         }
