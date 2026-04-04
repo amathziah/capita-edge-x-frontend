@@ -73,19 +73,26 @@ export default function AuthComponent() {
         } catch (error: any) {
             console.error(`[Auth] Signup error:`, error);
             
-            // "Smart-Switch" Logic: If they are already registered but unverified, 
-            // the backend likely sent a 400 (or we just force them forward)
             const msg = (error.message || '').toLowerCase();
-            if (msg.includes('already registered') || msg.includes('already exists')) {
-                console.log('[Auth] Registered user detected. Switching to OTP mode automatically.');
+            const isRegistered = msg.includes('already registered') || 
+                                msg.includes('already exists') || 
+                                msg.includes('duplicate');
+
+            if (isRegistered) {
+                console.log('[Auth] Self-healing initiated: Account exists, switching to OTP mode.');
+                // 1. Clear any existing error state
                 setError(null);
-                setMessage('Welcome back! Looking for your setup code...');
+                // 2. Switch to OTP screen immediately
                 setShowOtpInput(true);
-                // Trigger a resend automatically to be sure they have a code
+                // 3. Set a helpful bridging message
+                setMessage('Welcome back! We are sending you a new verification code...');
+                
+                // 4. Silently trigger a resend to ensure they have the latest code
                 try {
-                   await api.post(ENDPOINTS.AUTH_RESEND, { email: normalizedEmail });
+                    await api.post(ENDPOINTS.AUTH_RESEND, { email: normalizedEmail });
+                    console.log('[Auth] Automatic code resend successful.');
                 } catch (resendErr) {
-                   console.log('[Auth] Automatic resend failed or redundant:', resendErr);
+                    console.warn('[Auth] Automatic resend had an issue (might be redundant):', resendErr);
                 }
             } else {
                 setError(error.message || 'Failed to sign up');
