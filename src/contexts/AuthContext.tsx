@@ -21,7 +21,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const init = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          // If the token is invalid/not found, we should proactively clean up
+          if (error.message?.includes('Refresh Token Not Found') || error.message?.includes('Invalid Refresh Token')) {
+             console.warn('[AuthContext] Stale session detected, performing deep cleanup');
+             await supabase.auth.signOut({ scope: 'global' });
+             localStorage.clear();
+             if (mounted) {
+               setSession(null);
+               setUser(null);
+             }
+             return;
+          }
+          throw error;
+        }
         if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);

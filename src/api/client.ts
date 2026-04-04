@@ -15,8 +15,14 @@ export const API_URL = getBaseUrl();
 
 class ApiClient {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token ?? null;
+        let token: string | null = null;
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            token = session?.access_token ?? null;
+        } catch (e) {
+            console.warn('[ApiClient] Failed to fetch session token:', e);
+        }
+        
         const organizationId = localStorage.getItem('sb-org-id');
 
         const headers: HeadersInit = {
@@ -107,8 +113,14 @@ class ApiClient {
     }
 
     async getBlob(endpoint: string, options?: RequestInit): Promise<Blob> {
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token ?? null;
+        let token: string | null = null;
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            token = session?.access_token ?? null;
+        } catch (e) {
+            console.warn('[ApiClient] Failed to fetch session token for download:', e);
+        }
+        
         const organizationId = localStorage.getItem('sb-org-id');
 
         const headers: HeadersInit = {
