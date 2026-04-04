@@ -83,7 +83,7 @@ export default function AuthComponent() {
                 setShowOtpInput(true);
                 // Trigger a resend automatically to be sure they have a code
                 try {
-                   await api.post(ENDPOINTS.AUTH_RESEND_CONFIRMATION, { email: normalizedEmail });
+                   await api.post(ENDPOINTS.AUTH_RESEND, { email: normalizedEmail });
                 } catch (resendErr) {
                    console.log('[Auth] Automatic resend failed or redundant:', resendErr);
                 }
