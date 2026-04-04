@@ -46,12 +46,19 @@ export default function AuthComponent() {
         setLoading(true);
         setError(null);
         setMessage(null);
+        
+        const normalizedEmail = email.trim().toLowerCase();
+        
         try {
             // Call backend API instead of direct Supabase signup
-            // This ensures the confirmation email is sent via our SMTP service
-            const response = await api.post<any>(ENDPOINTS.AUTH_SIGNUP, { email, password, companyName });
+            const response = await api.post<any>(ENDPOINTS.AUTH_SIGNUP, { 
+                email: normalizedEmail, 
+                password, 
+                companyName 
+            });
 
             setMessage(response.message || 'Account created! Please check your email for the 6-digit verification code.');
+            setError(null); // Explicitly clear error if successful
             setShowOtpInput(true);
         } catch (error: any) {
             setError(error.message || 'Failed to sign up');
