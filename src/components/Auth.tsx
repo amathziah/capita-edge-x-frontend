@@ -39,28 +39,39 @@ export default function AuthComponent() {
 
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (loading) return; // Prevent double-clicks
         if (!companyName) {
             setError('Company Name is required for signup');
             return;
         }
+
         setLoading(true);
         setError(null);
         setMessage(null);
         
         const normalizedEmail = email.trim().toLowerCase();
+        console.log(`[Auth] Attempting signup for: ${normalizedEmail}...`);
         
         try {
-            // Call backend API instead of direct Supabase signup
             const response = await api.post<any>(ENDPOINTS.AUTH_SIGNUP, { 
                 email: normalizedEmail, 
                 password, 
                 companyName 
             });
 
-            setMessage(response.message || 'Account created! Please check your email for the 6-digit verification code.');
-            setError(null); // Explicitly clear error if successful
-            setShowOtpInput(true);
+            console.log(`[Auth] Signup response received:`, response);
+            
+            if (response.success || response.id) {
+                setMessage(response.message || 'Verification code sent!');
+                setError(null);
+                setShowOtpInput(true);
+                // Ensure view is set to signup if it was signin (to correctly show OTP flow)
+                setView('signup');
+            } else {
+                throw new Error(response.message || 'Failed to initialize account');
+            }
         } catch (error: any) {
+            console.error(`[Auth] Signup error:`, error);
             setError(error.message || 'Failed to sign up');
         } finally {
             setLoading(false);
