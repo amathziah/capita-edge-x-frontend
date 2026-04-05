@@ -603,7 +603,6 @@ export function AIAssistantPage() {
     return { meta: { greeting: '', label: 'Finance', color: TEAL }, actions: [] };
   });
 
-  const [usageStats, setUsageStats] = useState({ usage: 0, limit: 0, percent: 0, remaining: 0 });
   const [conversations, setConversations] = useState<any[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
@@ -652,12 +651,7 @@ export function AIAssistantPage() {
         setDynamicConfig(config as any);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 
-        await delay(800);
-
-        const usage = await aiService.getUsage();
-        setUsageStats(usage as any);
-
-        await delay(200);
+        await delay(1000);
 
         setIsHistoryLoading(true);
         const sessions = await aiService.getConversations();
@@ -878,10 +872,6 @@ export function AIAssistantPage() {
             setCurrentConversationId(event.conversationId);
             const sessions = await aiService.getConversations();
             setConversations(sessions as any[]);
-          }
-
-          if (event.usage?.totalTokenCount) {
-            aiService.getUsage().then(u => setUsageStats(u as any)).catch(() => { });
           }
 
         } else if (event.type === 'error') {
@@ -1369,11 +1359,7 @@ export function AIAssistantPage() {
                       whileHover={{ scale: query.trim() && !isBusy ? 1.08 : 1 }}
                       whileTap={{ scale: query.trim() && !isBusy ? 0.92 : 1 }}
                       onClick={() => handleSend()}
-                      disabled={
-                        !query.trim() ||
-                        isBusy ||
-                        (usageStats.limit !== 0 && usageStats.limit !== Infinity && usageStats.usage >= usageStats.limit)
-                      }
+                      disabled={!query.trim() || isBusy}
                       className="w-8 h-8 rounded-xl flex items-center justify-center transition-all relative overflow-hidden"
                       style={
                         query.trim() && !isBusy

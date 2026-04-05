@@ -18,12 +18,10 @@ import {
   Sparkles,
   ArrowUpRight,
   Crown,
-  CreditCard as BillingIcon,
 } from "lucide-react";
 import { useLanguage } from "../LanguageProvider";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePersona } from "../../contexts/PersonaContext";
-import { aiService } from "../../services/aiService";
 
 import { Logo } from "../common/Logo";
 
@@ -97,8 +95,6 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [aiBudget, setAiBudget] = useState<{ userUsed: number; userMax: number } | null>(null);
-
   const toggleSidebar = () => {
     setTransitioning(true);
     setCollapsed(c => !c);
@@ -120,19 +116,6 @@ export function Sidebar() {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [userMenuOpen]);
-
-  // Fetch AI budget on mount + refresh periodically
-  useEffect(() => {
-    const fetchBudget = () => {
-      aiService.getBudget()
-        .then((data: any) => setAiBudget(data))
-        .catch(() => {});
-    };
-    fetchBudget();
-    // Refresh every 30s so it stays current during active use
-    const interval = setInterval(fetchBudget, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   const getUserInitials = () => {
     if (!user?.email) return "U";
@@ -307,20 +290,15 @@ export function Sidebar() {
           );
         })}
 
-        {/* ── AI Quota + Upgrade ──────────────────────────────────── */}
+        {/* ── AI Plan + Upgrade ───────────────────────────────────── */}
         {!collapsed && (() => {
-          // Derive plan info from planTier
-          const tierMap: Record<string, { name: string; queries: number; color: string; isUpgradable: boolean }> = {
-            starter: { name: 'Free', queries: 25, color: 'teal', isUpgradable: true },
-            solo:    { name: 'Solo', queries: 150, color: 'teal', isUpgradable: true },
-            solo_pro:{ name: 'Solo Pro', queries: 500, color: 'violet', isUpgradable: false },
-            enterprise:{ name: 'Enterprise', queries: Infinity, color: 'violet', isUpgradable: false },
+          const tierMap: Record<string, { name: string; color: string; isUpgradable: boolean; subtitle: string }> = {
+            starter: { name: 'Free', color: 'teal', isUpgradable: true, subtitle: 'Capita AI enabled' },
+            solo: { name: 'Solo', color: 'teal', isUpgradable: true, subtitle: 'Capita AI enabled' },
+            solo_pro: { name: 'Solo Pro', color: 'violet', isUpgradable: false, subtitle: 'Priority AI access' },
+            enterprise: { name: 'Enterprise', color: 'violet', isUpgradable: false, subtitle: 'Premium AI access' },
           };
           const tier = tierMap[planTier ?? 'starter'] ?? tierMap.starter;
-          const usedQueries = aiBudget?.userUsed ?? 0;
-          const totalQueries = aiBudget?.userMax ?? tier.queries;
-          const pct = totalQueries === Infinity || totalQueries === 0 ? 0 : Math.min((usedQueries / totalQueries) * 100, 100);
-          const isLow = pct > 80;
 
           return (
             <div className="mt-6 px-3">
@@ -357,35 +335,8 @@ export function Sidebar() {
                         {tier.name}
                       </span>
                     </div>
-                    <span className="text-[9px] text-gray-500 font-medium">
-                      {tier.queries === Infinity ? '∞' : tier.queries} AI queries/mo
-                    </span>
+                    <span className="text-[9px] text-gray-500 font-medium">{tier.subtitle}</span>
                   </div>
-
-                  {/* Quota bar */}
-                  {tier.queries !== Infinity && (
-                    <>
-                      <div className="flex justify-between text-[9px] mb-1">
-                        <span className={isLow ? 'text-rose-400 font-semibold' : 'text-gray-500'}>
-                          {usedQueries} used
-                        </span>
-                        <span className="text-gray-600">{Math.max(0, totalQueries - usedQueries)} left</span>
-                      </div>
-                      <div className="h-1 rounded-full bg-white/[0.05] overflow-hidden mb-3">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${pct}%`,
-                            background: isLow
-                              ? 'linear-gradient(90deg, #f97316, #ef4444)'
-                              : tier.color === 'violet'
-                                ? 'linear-gradient(90deg, #a78bfa, #7c3aed)'
-                                : 'linear-gradient(90deg, #2dd4bf, #06b6d4)',
-                          }}
-                        />
-                      </div>
-                    </>
-                  )}
 
                   {/* Upgrade CTA */}
                   {tier.isUpgradable && (
