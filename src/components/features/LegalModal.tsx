@@ -39,7 +39,7 @@ const POLICY_CONTENT: Record<PolicyType, { title: string; content: React.ReactNo
                     </div>
                     <div>
                         <strong className="text-white block mb-1">Phone:</strong>
-                        +91 98765 43210 (Available Mon-Fri, 10 AM to 6 PM IST)
+                        +91 73065 18069, +91 7356463272 (Available Mon-Fri, 10 AM to 6 PM IST)
                     </div>
                 </div>
             </div>
