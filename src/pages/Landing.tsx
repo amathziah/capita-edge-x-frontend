@@ -434,6 +434,51 @@ function ReportsMock() {
     );
 }
 
+// ─── FAQ ────────────────────────────────────────────────────────────────
+function FaqSection() {
+    const [openIdx, setOpenIdx] = useState<number | null>(0);
+    const faqs = [
+        { q: "Who is CapitaEdgeX built for?", a: "Indian marketing agencies, freelancers, and small tech firms who need GST-compliant invoicing, automated payment tracking, and integrated expense management without paying massive enterprise fees." },
+        { q: "Do I need a Razorpay account to collect payments?", a: "Yes, CapitaEdgeX securely connects directly to your existing Razorpay account to process card and UPI payments instantly against your invoices. If you don't have one, you can still use our manual payment tracking tools!" },
+        { q: "Are the invoices generated GST compliant?", a: "Absolutely. All invoices generated through CapitaEdgeX automatically adhere to the latest Indian GST regulations, including field tracking for SGST, CGST, IGST, and proper HSN/SAC configurations." },
+        { q: "What happens if I cancel my subscription?", a: "You can cancel anytime with zero hidden fees. You will retain full access to your account and historical data until the end of your billing cycle. We don't lock your data—you can export everything to standard CSVs at any click." },
+        { q: "Is there a limit on how many invoices I can send?", a: "No! All of our premium plans offer unlimited invoicing and unlimited client profiles. Stop tracking arbitrary tier limits and focus purely on closing more business." }
+    ];
+
+    return (
+        <section id="faq" className="py-24 relative z-10">
+            <div className="max-w-4xl mx-auto px-6">
+                <div className="text-center mb-16">
+                    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                        <div className="text-teal-400 font-black uppercase tracking-[0.22em] text-[11px] mb-4">Clear Answers</div>
+                        <h2 className="display font-black text-white text-3xl md:text-5xl">Frequently Asked <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">Questions</span></h2>
+                    </motion.div>
+                </div>
+                <div className="space-y-3">
+                    {faqs.map((faq, i) => (
+                        <motion.div key={i} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                            className={`border ${openIdx === i ? 'bg-white/[0.04] border-teal-500/30' : 'bg-white/[0.02] border-white/[0.05] hover:border-white/[0.1] hover:bg-white/[0.03]'} rounded-2xl overflow-hidden transition-colors`}>
+                            <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="w-full px-6 py-5 flex items-center justify-between text-left">
+                                <span className={`font-bold text-[15px] ${openIdx === i ? 'text-teal-400' : 'text-slate-200'}`}>{faq.q}</span>
+                                <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${openIdx === i ? 'rotate-180 text-teal-400' : 'text-slate-500'}`} />
+                            </button>
+                            <AnimatePresence>
+                                {openIdx === i && (
+                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: 'easeInOut' }}>
+                                        <div className="px-6 pb-6 text-[14px] text-slate-400 leading-relaxed border-t border-white/[0.03] pt-4">
+                                            {faq.a}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
+
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.07 } } };
 const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } } };
 
@@ -780,6 +825,9 @@ export const Landing: React.FC = () => {
             <section id="pricing" className="relative z-20 w-full lg:max-w-5xl mx-auto px-4 md:px-6 pt-10 pb-20 scale-100 lg:scale-90 lg:origin-top">
                 <Pricing isEmbedded={true} />
             </section>
+
+            {/* FAQ */}
+            <FaqSection />
 
             {/* FINAL CTA */}
             <section className="py-28 lg:py-40 relative z-10 text-center overflow-hidden">
