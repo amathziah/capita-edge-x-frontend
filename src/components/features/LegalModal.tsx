@@ -29,9 +29,10 @@ const POLICY_CONTENT: Record<PolicyType, { title: string; content: React.ReactNo
                 <div className="bg-white/[0.04] p-4 rounded-lg border border-white/[0.08] mt-4 space-y-3">
                     <div>
                         <strong className="text-white block mb-1">Operating Address:</strong>
-                        123 Financial Hub, Tech Park Phase 2,<br/>
-                        Mumbai, Maharashtra 400001,<br/>
-                        India
+                        OLD LAKSHAM COLONY, MUNNAR,<br/>
+                        VTC: Kannan Devan Hills, PO: Munnar,<br/>
+                        District: Idukki, State: Kerala<br/>
+                        PIN Code: 685612, India
                     </div>
                     <div>
                         <strong className="text-white block mb-1">Email Support:</strong>
