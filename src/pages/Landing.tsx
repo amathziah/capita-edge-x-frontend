@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom';
 import { Logo } from '../components/common/Logo';
 import { Pricing } from './Pricing';
 import { CapitaCore } from '../components/landing/CapitaCore';
+import { LegalModal, PolicyType } from '../components/features/LegalModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 // ─── Magnetic Button ──────────────────────────────────────────────────────────
@@ -439,6 +440,7 @@ const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, tra
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export const Landing: React.FC = () => {
     const [scrolled, setScrolled] = useState(false);
+    const [legalModalType, setLegalModalType] = useState<PolicyType | null>(null);
     const [isAnnual, setIsAnnual] = useState(false);
     const heroRef = useRef<HTMLDivElement>(null);
     const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
@@ -812,20 +814,49 @@ export const Landing: React.FC = () => {
             </section>
 
             {/* FOOTER */}
-            <footer className="py-12 border-t border-white/[0.05] relative z-10">
-                <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex items-center gap-2.5">
-                        <div className="relative">
-                            <motion.div className="absolute inset-0 bg-teal-500 blur-md opacity-40 rounded-lg" animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 3, repeat: Infinity }} />
-                            <div className="relative w-7 h-7 bg-gradient-to-br from-teal-400 to-cyan-600 rounded-lg flex items-center justify-center"><Zap className="w-3.5 h-3.5 text-white" /></div>
+            <footer className="pb-12 pt-20 border-t border-white/[0.05] relative z-10">
+                <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+                    <div className="md:col-span-2 space-y-4">
+                        <div className="flex items-center gap-2.5">
+                            <div className="relative">
+                                <motion.div className="absolute inset-0 bg-teal-500 blur-md opacity-40 rounded-lg" animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 3, repeat: Infinity }} />
+                                <div className="relative w-7 h-7 bg-gradient-to-br from-teal-400 to-cyan-600 rounded-lg flex items-center justify-center"><Zap className="w-3.5 h-3.5 text-white" /></div>
+                            </div>
+                            <span className="display font-black text-white tracking-tight text-xl">CapitaEdgeX</span>
                         </div>
-                        <span className="display font-black text-white tracking-tight">CapitaEdgeX</span>
-                        <span className="text-slate-600 text-[12px] ml-1">— Create your invoice in 1 min</span>
+                        <p className="text-slate-400 text-[14px] leading-relaxed max-w-sm">
+                            The complete Financial OS for Indian marketing agencies and freelancers — bridging the gap between revenue generation and financial operations.
+                        </p>
                     </div>
 
-                    <div className="text-slate-600 text-[11px] font-semibold">© {new Date().getFullYear()} Laboratory Capita, Inc.</div>
+                    <div>
+                        <h4 className="font-black text-white text-[15px] mb-4">Platform</h4>
+                        <ul className="space-y-3">
+                            <li><a href="#features" className="text-[13px] text-slate-400 hover:text-white transition-colors">Features</a></li>
+                            <li><a href="#how-it-works" className="text-[13px] text-slate-400 hover:text-white transition-colors">How it Works</a></li>
+                            <li><a href="#pricing" className="text-[13px] text-slate-400 hover:text-white transition-colors">Pricing</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 className="font-black text-white text-[15px] mb-4">Compliance</h4>
+                        <ul className="space-y-3">
+                            <li><button onClick={() => setLegalModalType('about')} className="text-[13px] text-slate-400 hover:text-white transition-colors">About Us</button></li>
+                            <li><button onClick={() => setLegalModalType('contact')} className="text-[13px] text-slate-400 hover:text-white transition-colors">Contact Us</button></li>
+                            <li><button onClick={() => setLegalModalType('terms')} className="text-[13px] text-slate-400 hover:text-white transition-colors">Terms & Conditions</button></li>
+                            <li><button onClick={() => setLegalModalType('privacy')} className="text-[13px] text-slate-400 hover:text-white transition-colors">Privacy Policy</button></li>
+                            <li><button onClick={() => setLegalModalType('refund')} className="text-[13px] text-slate-400 hover:text-white transition-colors">Refund & Cancellations</button></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6 pt-8 border-t border-white/[0.05]">
+                    <div className="text-slate-500 text-[12px]">© {new Date().getFullYear()} Laboratory Capita, Inc. All rights reserved.</div>
+                    <div className="text-slate-500 text-[12px]">Made in India</div>
                 </div>
             </footer>
+            
+            <LegalModal isOpen={!!legalModalType} onClose={() => setLegalModalType(null)} type={legalModalType} />
         </div>
     );
 };
