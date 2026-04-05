@@ -630,12 +630,8 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                     <h2 className="text-2xl font-black tracking-tighter">PROFORMA</h2>
                                     <p className="text-[10px] font-bold opacity-80 mt-1 uppercase tracking-[0.2em]">{meta.number || 'P-0001'}</p>
                                 </div>
-                                {logo ? (
+                                {logo && (
                                     <img src={logo} alt="logo" className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md p-1 object-contain" />
-                                ) : (
-                                    <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-black text-xl italic text-white/40">
-                                        M
-                                    </div>
                                 )}
                             </div>
 
@@ -713,7 +709,6 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                             <div className="mt-8 relative overflow-hidden h-24 flex items-center justify-center">
                                 <div className="absolute inset-0 bg-teal-50 group-hover:bg-teal-100/50 transition-colors" />
                                 <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-teal-200 to-transparent" />
-                                <p className="text-[10px] font-black text-teal-900/20 uppercase tracking-[0.5em] relative z-10">Edge Flow Financial</p>
                                 <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-teal-400 opacity-20 blur-3xl rounded-full" />
                             </div>
                         </div>

@@ -3,7 +3,7 @@ import { LanguageProvider } from './components/LanguageProvider';
 import { DataProvider } from './contexts/DataContext';
 import { Layout } from './components/Layout/Layout';
 import { Invoices } from './pages/Invoices';
-import InvoiceGenerator from './components/InvoiceGenerator/InvoiceGenerator';
+import { CreateInvoice } from './pages/Invoices/Create';
 import { Customers } from './pages/Customers';
 import { Payments } from './pages/Payments';
 import { Expenses } from './pages/Expenses';
@@ -92,8 +92,8 @@ function App() {
                       <Route path="/dashboard" element={<Layout />}>
                         <Route index element={<ControlRoom />} />
                         <Route path="invoices" element={<Invoices />} />
-                        <Route path="invoices/new" element={<InvoiceGenerator />} />
-                        <Route path="invoices/:id/edit" element={<InvoiceGenerator />} />
+                        <Route path="invoices/new" element={<CreateInvoice />} />
+                        <Route path="invoices/:id/edit" element={<CreateInvoice />} />
                         <Route path="customers" element={<Customers />} />
                         <Route path="payments" element={<Payments />} />
                         <Route path="expenses" element={<Expenses />} />

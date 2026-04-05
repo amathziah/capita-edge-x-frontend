@@ -14,6 +14,8 @@ export function Layout() {
   const location = useLocation();
   const { refreshData } = useData();
   const isAIActive = location.pathname === '/dashboard/ai';
+  const isCreateInvoice = /^\/dashboard\/invoices\/([^\/]+\/edit|new)$/.test(location.pathname);
+  const isNoScrollPage = isAIActive || isCreateInvoice;
 
   // 0. Persona Gate: Prevent sub-component mount/fetch until context is ready
   if (personaLoading || !organizationId) {
@@ -54,8 +56,8 @@ export function Layout() {
       <div className="flex-1 flex flex-col min-w-0 pb-16 lg:pb-0">
         <Header sidebarOpen={false} setSidebarOpen={() => { }} />
 
-        <main className={`flex-1 overflow-x-hidden ${isAIActive ? 'overflow-y-hidden' : 'overflow-y-auto'}`}>
-          <div className={`mx-auto w-full ${isAIActive ? 'h-full p-0' : 'p-4 lg:p-8 max-w-7xl'}`}>
+        <main className={`flex-1 flex flex-col overflow-x-hidden ${isNoScrollPage ? 'overflow-y-hidden' : 'overflow-y-auto'}`}>
+          <div className={`mx-auto w-full flex-1 ${isNoScrollPage ? `flex flex-col h-full ${isCreateInvoice ? 'p-4 lg:p-6 max-w-[1400px]' : 'p-0'}` : 'p-4 lg:p-8 max-w-7xl'}`}>
             <Outlet />
           </div>
         </main>
