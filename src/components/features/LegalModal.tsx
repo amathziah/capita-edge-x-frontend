@@ -36,7 +36,8 @@ const POLICY_CONTENT: Record<PolicyType, { title: string; content: React.ReactNo
                     </div>
                     <div>
                         <strong className="text-white block mb-1">Email Support:</strong>
-                        <a href="mailto:akoshipa@gmail.com" className="text-teal-400 hover:underline">akoshipa@gmail.com</a>
+                        <a href="mailto:akoshipa@gmail.com" className="text-teal-400 hover:underline">akoshipa@gmail.com</a>,{' '}
+                        <a href="mailto:akashjerry788@gmail.com" className="text-teal-400 hover:underline">akashjerry788@gmail.com</a>
                     </div>
                     <div>
                         <strong className="text-white block mb-1">Phone:</strong>
