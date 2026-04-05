@@ -439,7 +439,6 @@ function FaqSection() {
     const [openIdx, setOpenIdx] = useState<number | null>(0);
     const faqs = [
         { q: "Who is CapitaEdgeX built for?", a: "Indian marketing agencies, freelancers, and small tech firms who need GST-compliant invoicing, automated payment tracking, and integrated expense management without paying massive enterprise fees." },
-        { q: "Do I need a Razorpay account to collect payments?", a: "Yes, CapitaEdgeX securely connects directly to your existing Razorpay account to process card and UPI payments instantly against your invoices. If you don't have one, you can still use our manual payment tracking tools!" },
         { q: "Are the invoices generated GST compliant?", a: "Absolutely. All invoices generated through CapitaEdgeX automatically adhere to the latest Indian GST regulations, including field tracking for SGST, CGST, IGST, and proper HSN/SAC configurations." },
         { q: "What happens if I cancel my subscription?", a: "You can cancel anytime with zero hidden fees. You will retain full access to your account and historical data until the end of your billing cycle. We don't lock your data—you can export everything to standard CSVs at any click." },
         { q: "Is there a limit on how many invoices I can send?", a: "No! All of our premium plans offer unlimited invoicing and unlimited client profiles. Stop tracking arbitrary tier limits and focus purely on closing more business." }
