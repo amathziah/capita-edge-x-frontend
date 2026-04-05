@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +19,29 @@ export default function AuthComponent() {
     const [showOtpInput, setShowOtpInput] = useState(false);
     const [otp, setOtp] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+
+    useEffect(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const authError =
+            searchParams.get('auth_error') ||
+            searchParams.get('error_description') ||
+            hashParams.get('error_description') ||
+            searchParams.get('error') ||
+            hashParams.get('error');
+
+        if (!authError) {
+            return;
+        }
+
+        const normalizedError = authError === 'User not found'
+            ? 'Google sign-in failed. This usually means the Google account does not exist in Supabase yet, or new OAuth signups are disabled in the Supabase project.'
+            : decodeURIComponent(authError);
+
+        setError(normalizedError);
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }, []);
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -145,7 +168,7 @@ export default function AuthComponent() {
                 const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: window.location.origin.replace(/\/$/, ''),
+                    redirectTo: `${window.location.origin}/login`,
                 },
             });
             if (error) throw error;

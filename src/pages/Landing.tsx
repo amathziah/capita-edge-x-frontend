@@ -58,10 +58,11 @@ function ParticleField() {
             });
         }
 
-        window.addEventListener('resize', () => {
+        const onResize = () => {
             W = canvas.width = window.innerWidth;
             H = canvas.height = window.innerHeight;
-        });
+        };
+        window.addEventListener('resize', onResize);
 
         let rotation = 0;
         const draw = () => {
@@ -69,17 +70,12 @@ function ParticleField() {
             rotation += 0.001;
 
             particles.forEach(p => {
-                // 3D Rotation along Y axis
                 let x = p.x;
-                let z = p.z - 2000; // Offset for depth
-                
+                let z = p.z - 2000;
                 const cos = Math.cos(rotation);
                 const sin = Math.sin(rotation);
-                
                 const rx = x * cos - z * sin;
                 const rz = x * sin + z * cos;
-                
-                // Removed mouse parallax for massive performance gain
                 const finalX = rx;
                 const finalY = p.y;
                 const finalZ = rz + 2000;
@@ -96,10 +92,14 @@ function ParticleField() {
                     ctx.fill();
                 }
             });
-            requestAnimationFrame(draw);
+            id = requestAnimationFrame(draw);
         };
-        draw();
-        return () => {};
+        
+        let id = requestAnimationFrame(draw);
+        return () => {
+            window.removeEventListener('resize', onResize);
+            cancelAnimationFrame(id);
+        };
     }, []);
     return <canvas ref={canvasRef} className="fixed inset-0 z-[1] pointer-events-none opacity-40" />;
 }
@@ -509,7 +509,7 @@ export const Landing: React.FC = () => {
     const tickerItems = ['GST-compliant invoicing', 'UPI & Razorpay integration', 'Automated collections', 'Real-time P&L', 'WhatsApp alerts', 'AI-powered follow-ups', 'Multi-client dashboard', 'Compliance tracking', 'Inventory management'];
 
     return (
-        <div className="min-h-screen bg-[#050810] text-white overflow-x-hidden selection:bg-teal-500/30"
+        <div className="relative min-h-screen bg-[#050810] text-white overflow-x-hidden selection:bg-teal-500/30"
             style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');

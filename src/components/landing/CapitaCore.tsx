@@ -8,8 +8,10 @@ const CoreGeometry = () => {
   const outerRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Group>(null);
 
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime();
+  const timeRef = useRef(0);
+  useFrame((state, delta) => {
+    timeRef.current += delta;
+    const t = timeRef.current;
     const { x, y } = state.mouse;
 
     if (meshRef.current) {
@@ -95,9 +97,18 @@ const CoreGeometry = () => {
 export const CapitaCore: React.FC = () => {
   return (
     <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden h-screen w-full opacity-60">
-      <Canvas>
+      <Canvas 
+        gl={{ 
+            antialias: false, 
+            powerPreference: 'high-performance',
+            preserveDrawingBuffer: false,
+            alpha: true 
+        }}
+        dpr={[1, 2]} 
+        performance={{ min: 0.5 }}
+      >
         <PerspectiveCamera makeDefault position={[0, 0, 10]} fov={45} />
-        <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+        <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
         <CoreGeometry />
       </Canvas>
     </div>

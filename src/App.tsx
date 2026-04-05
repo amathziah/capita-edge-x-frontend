@@ -30,10 +30,13 @@ import { ControlRoom } from './pages/ControlRoom';
 import { Landing } from './pages/Landing';
 import { Loader2 } from 'lucide-react';
 import { usePersona } from './contexts/PersonaContext';
+import { hasCompletedOnboarding } from './lib/authFlow';
+import { SharedInvoicePage } from './pages/SharedInvoicePage';
 
 const HomeLoader = () => {
   const { user, loading: loadingAuth } = useAuth();
   const { organizationId, businessType, loading: loadingPersona } = usePersona();
+  const isOnboarded = hasCompletedOnboarding(organizationId, businessType);
 
   // 1. Check for established user session directly
   const hasToken = !!user;
@@ -64,7 +67,7 @@ const HomeLoader = () => {
 
   // RULE 3: Routing Decisions (Only after isHydrating is false)
   if (user) {
-    if (organizationId && businessType) {
+    if (isOnboarded) {
       return <Navigate to="/dashboard" replace />;
     }
     return <Navigate to="/setup" replace />;
@@ -86,6 +89,7 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/update-password" element={<UpdatePassword />} />
                     <Route path="/setup" element={<SetupPage />} />
+                    <Route path="/invoice/share/:token" element={<SharedInvoicePage />} />
 
                     {/* Protected Routes */}
                     <Route element={<ProtectedRoute />}>

@@ -146,8 +146,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setState(prev => ({ ...prev, ...newData }));
     }, []);
 
-    const filteredInvoices = React.useMemo(() => 
-        state.invoices.filter(inv => !businessType || inv.persona === businessType),
+    const filteredInvoices = React.useMemo(
+        () => state.invoices.filter(inv => !businessType || !inv.persona || inv.persona === businessType),
         [state.invoices, businessType]
     );
 

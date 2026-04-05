@@ -3,18 +3,22 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usePersona } from '../contexts/PersonaContext';
+import { hasCompletedOnboarding } from '../lib/authFlow';
 
 export function LoginPage() {
-    const { user } = useAuth();
-    const { organizationId: organizationId, loading: personaLoading, refreshPersona } = usePersona();
+    const { user, loading: authLoading } = useAuth();
+    const { organizationId, businessType, loading: personaLoading } = usePersona();
     const navigate = useNavigate();
+    const isHydrating = authLoading || personaLoading;
+    const isOnboarded = hasCompletedOnboarding(organizationId, businessType);
 
-    // Redirect if already authenticated (context-driven)
     useEffect(() => {
-        if (user) {
-            navigate(organizationId ? '/dashboard' : '/setup', { replace: true });
+        if (isHydrating || !user) {
+            return;
         }
-    }, [user, organizationId, navigate]);
+
+        navigate(isOnboarded ? '/dashboard' : '/setup', { replace: true });
+    }, [isHydrating, isOnboarded, navigate, user]);
 
     return <AuthComponent />;
 }

@@ -50,9 +50,19 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const bType = (data?.business_type as Segment) ?? null;
       const orgId = data?.organization_id ?? null;
 
+      // Handle the "Fresh Auth" state (Logged in via Google but no public.profiles record yet)
+      if (!data && !error) {
+        console.log('[PersonaContext] First-time login detected (No profile yet). Ready for setup.');
+        setBusinessType(null);
+        setOrganizationId(null);
+        setOrgId(null);
+        setPlanTier(null);
+        markOrgReady();
+        return;
+      }
+
       // Handle both array and object return from Supabase join
-      const orgData = data?.organizations;
-      // @ts-ignore
+      const orgData = data?.organizations as any;
       const rawTier = Array.isArray(orgData)
         ? orgData[0]?.plan_tier
         : orgData?.plan_tier;

@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { dataService } from '../../services/dataService';
 import { API_URL } from '../../api/client';
 import { ENDPOINTS } from '../../api/endpoints';
 import { Invoice } from '../../types';
+import { invoiceService } from '../../services/invoiceService';
+import { usePersona } from '../../contexts/PersonaContext';
 import {
     ArrowLeft, Plus, Sparkles, Loader2, AlertCircle,
     Trash2, Eye, FileText, PenLine, RefreshCcw, CreditCard,
@@ -25,7 +27,6 @@ interface InvoiceForm extends Invoice {
     customerGstin: string;
     fromName: string;
     fromAddress: string;
-    fromPan: string;
     fromGstin: string;
     isGstRegistered: boolean;
     notes: string;
@@ -39,6 +40,7 @@ interface InvoiceForm extends Invoice {
     currencyCode: string;
     taxLabel: string;
     projectReference: string;
+    signatureName: string;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -242,9 +244,6 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                             />
                         </Field>
                     </div>
-                    <Field label="PAN">
-                        <input {...register('fromPan')} placeholder="ABCDE1234F" className={INP} />
-                    </Field>
                     <Field label="GSTIN (if any)">
                         <input {...register('fromGstin')} placeholder="27ABCDE1234F1Z5" className={INP} />
                     </Field>
@@ -617,6 +616,16 @@ function StepPayment({
 
                 <div className="h-px bg-[#3A3C42]" />
 
+                {isSig && (
+                    <Field label="Signature name">
+                        <input
+                            {...register('signatureName')}
+                            placeholder="e.g. Malika Rao"
+                            className={INP}
+                        />
+                    </Field>
+                )}
+
                 <div className="flex items-center justify-between py-1">
                     <div className="flex items-center gap-2.5">
                         <RefreshCcw size={14} className="text-[#6B6E76]" />
@@ -703,7 +712,6 @@ function InvoicePreview({
                             : <p className="text-sm text-gray-300 italic">Your name</p>
                         }
                         {w.fromAddress && <p className="text-xs text-gray-500 mt-0.5">{w.fromAddress}</p>}
-                        {w.fromPan     && <p className="text-xs text-gray-500 mt-0.5">PAN: {w.fromPan}</p>}
                         {w.fromGstin   && <p className="text-xs text-gray-500 mt-0.5">GSTIN: {w.fromGstin}</p>}
                     </div>
                     <div className="text-right">
@@ -823,9 +831,13 @@ function InvoicePreview({
                 {/* Signature */}
                 {w.includeSignature && (
                     <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
-                        <div className="border-t border-gray-400 pt-1 w-36 text-center">
-                            <p className="text-[9px] text-gray-400 font-medium">Authorised Signature</p>
-                            {w.fromName && <p className="text-[9px] text-gray-500 mt-0.5">{w.fromName}</p>}
+                        <div className="w-40 text-center">
+                            <p className="text-lg text-gray-700 italic" style={{ fontFamily: '"Times New Roman", serif' }}>
+                                {w.signatureName || w.fromName || 'Signature'}
+                            </p>
+                            <div className="border-t border-gray-400 pt-1 mt-2">
+                                <p className="text-[9px] text-gray-400 font-medium">Authorised Signature</p>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -899,15 +911,18 @@ function AuditPanel({
 ───────────────────────────────────────────────────────────── */
 export function CreateInvoice() {
     const navigate = useNavigate();
+    const { id: invoiceId } = useParams();
+    const { businessType } = usePersona();
     const [step, setStep]               = useState(0);
     const [saving, setSaving]           = useState(false);
     const [savedDraft, setSavedDraft]   = useState(false);
     const [analyzing, setAnalyzing]     = useState(false);
     const [auditResult, setAuditResult] = useState<{ riskScore: number; suggestions: string[] } | null>(null);
     const [showAudit, setShowAudit]     = useState(false);
+    const [loadingDefaults, setLoadingDefaults] = useState(true);
 
     const {
-        register, control, handleSubmit, watch, setValue, trigger,
+        register, control, handleSubmit, watch, setValue, trigger, reset,
         formState: { errors },
     } = useForm<InvoiceForm>({
         defaultValues: {
@@ -922,7 +937,6 @@ export function CreateInvoice() {
             customerGstin:      '',
             fromName:           '',
             fromAddress:        '',
-            fromPan:            '',
             fromGstin:          '',
             isGstRegistered:    false,
             notes:              '',
@@ -930,11 +944,106 @@ export function CreateInvoice() {
             currencyCode:       'INR',
             taxLabel:           'GST',
             projectReference:   '',
+            signatureName:      '',
             recurringFrequency: 'Monthly',
         },
     });
 
     const w = watch();
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadInvoice = async () => {
+            if (!invoiceId) {
+                return false;
+            }
+
+            const invoice = await dataService.getInvoice(invoiceId);
+            if (cancelled || !invoice) {
+                return true;
+            }
+
+            reset({
+                invoiceNumber: invoice.invoiceNumber,
+                date: (invoice.date || new Date().toISOString()).split('T')[0],
+                dueDate: (invoice.dueDate || new Date().toISOString()).split('T')[0],
+                status: invoice.status || 'draft',
+                items: (invoice.items || []).map((item: any) => ({
+                    description: item.description || '',
+                    quantity: Number(item.quantity) || 1,
+                    price: Number(item.price) || 0,
+                    unit: item.unit || 'Qty',
+                    productId: item.productId || item.product_id || undefined,
+                    sku: item.sku || '',
+                    sac_code: item.sac_code || '',
+                    hsn_code: item.hsn_code || '',
+                })),
+                customerName: invoice.buyer?.name || invoice.customers?.name || '',
+                customerEmail: invoice.buyer?.email || invoice.customers?.email || '',
+                customerAddress: invoice.buyer?.address || invoice.customers?.address || '',
+                customerGstin: invoice.buyer?.gstin || invoice.customers?.gstin || '',
+                fromName: invoice.seller?.name || '',
+                fromAddress: invoice.seller?.address || '',
+                fromGstin: invoice.seller?.gstin || '',
+                signatureName: invoice.seller?.signatureName || '',
+                isGstRegistered: invoice.isGstRegistered ?? invoice.is_gst_registered ?? false,
+                notes: invoice.notes || '',
+                terms: '',
+                discount: invoice.discount || 0,
+                shipping: invoice.shipping || 0,
+                currencyCode: (invoice as any).currencyCode || 'INR',
+                taxLabel: invoice.taxType || 'GST',
+                projectReference: invoice.projectName || invoice.project_name || '',
+                recurringFrequency: 'Monthly',
+                payments: [],
+                includeSignature: Boolean(invoice.seller?.includeSignature),
+                isRecurring: Boolean(invoice.is_recurring),
+            } as InvoiceForm);
+
+            return true;
+        };
+
+        const loadDefaults = async () => {
+            const handledEdit = await loadInvoice();
+            if (handledEdit) {
+                setLoadingDefaults(false);
+                return;
+            }
+
+            try {
+                const { nextNumber, defaults } = await invoiceService.getDraftDefaults();
+                if (cancelled) return;
+
+                const dueDate = new Date(Date.now() + defaults.dueDays * 24 * 60 * 60 * 1000)
+                    .toISOString()
+                    .split('T')[0];
+
+                setValue('invoiceNumber', nextNumber);
+                setValue('fromName', defaults.fromName);
+                setValue('fromAddress', defaults.fromAddress);
+                setValue('fromGstin', defaults.fromGstin);
+                setValue('notes', defaults.notes);
+                setValue('terms', defaults.terms);
+                setValue('currencyCode', defaults.currencyCode);
+                setValue('taxLabel', defaults.taxLabel);
+                setValue('dueDate', dueDate);
+                setValue('isGstRegistered', defaults.isGstRegistered);
+            } catch (error) {
+                console.error('Failed to load invoice defaults:', error);
+            } finally {
+                if (!cancelled) {
+                    setLoadingDefaults(false);
+                }
+            }
+        };
+
+        loadDefaults();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [invoiceId, reset, setValue]);
 
     /* ── Derived totals ── */
     const watchedItems    = (w.items || []) as any[];
@@ -972,22 +1081,24 @@ export function CreateInvoice() {
         setSaving(true);
         try {
             if (!data.customerName) { alert('Please enter a Client Name'); return; }
-            const customerRes = await dataService.saveCustomer({
-                name:         data.customerName,
-                email:        data.customerEmail || `client-${Date.now()}@example.com`,
-                id:           '',
-                phone:        '',
-                addressLine1: '',
-                tags:         [],
-                createdAt:    new Date().toISOString(),
-                updatedAt:    new Date().toISOString(),
-            } as any);
-            const customerId = customerRes.id;
-            if (!customerId) throw new Error('Failed to create customer');
             await dataService.saveInvoice({
                 ...data,
-                customerId,
-                buyer:     { name: data.customerName, email: data.customerEmail },
+                id: invoiceId || data.id,
+                persona: businessType || data.persona || 'solopreneur',
+                buyer: {
+                    name: data.customerName,
+                    email: data.customerEmail || null,
+                    address: data.customerAddress || null,
+                    gstin: data.customerGstin || null,
+                },
+                seller: {
+                    name: data.fromName || null,
+                    address: data.fromAddress || null,
+                    gstin: data.fromGstin || null,
+                    includeSignature: Boolean(data.includeSignature),
+                    signatureName: data.signatureName || data.fromName || null,
+                },
+                projectName: data.projectReference || null,
                 subtotal,
                 taxAmount,
                 total,
@@ -995,7 +1106,8 @@ export function CreateInvoice() {
             navigate('/invoices');
         } catch (err) {
             console.error(err);
-            alert('Failed to save invoice. Check console.');
+            const message = err instanceof Error ? err.message : 'Failed to save invoice.';
+            alert(message);
         } finally {
             setSaving(false);
         }
@@ -1041,6 +1153,14 @@ export function CreateInvoice() {
                 background: '#1A1B1E',
             }}
         >
+            {loadingDefaults && (
+                <div className="absolute inset-0 z-20 bg-[#1A1B1E]/80 backdrop-blur-sm flex items-center justify-center">
+                    <div className="flex items-center gap-3 text-[#F0F1F3] text-sm font-semibold">
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Loading organisation invoice defaults…</span>
+                    </div>
+                </div>
+            )}
             {/* ══ TOP BAR ══ */}
             <header className="shrink-0 flex items-center justify-between px-5 py-2.5 bg-[#212225] border-b border-[#3A3C42] z-10">
                 <div className="flex items-center gap-3">
@@ -1052,7 +1172,7 @@ export function CreateInvoice() {
                     </button>
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-[#F0F1F3] tracking-tight">Capita AI Integrity</span>
+                            <span className="text-sm font-black text-[#F0F1F3] tracking-tight">Create Invoice</span>
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                         </div>
                         <p className="text-[10px] font-bold text-[#6B6E76] uppercase tracking-[0.1em]">Financial Operations Control</p>

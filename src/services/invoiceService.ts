@@ -33,6 +33,24 @@ export const invoiceService = {
         return res.nextNumber;
     },
 
+    getDraftDefaults: () =>
+        api.get<{
+            nextNumber: string;
+            defaults: {
+                fromName: string;
+                fromAddress: string;
+                fromPan: string;
+                fromGstin: string;
+                notes: string;
+                terms: string;
+                currencyCode: string;
+                taxLabel: string;
+                dueDays: number;
+                isGstRegistered: boolean;
+                businessType: string;
+            };
+        }>('/invoices/defaults'),
+
     // Email Actions
     sendEmail: (invoiceId: string, to: string, pdfBase64?: string) =>
         api.post(ENDPOINTS.EMAIL_SEND_INVOICE, { invoiceId, to, pdfAttachment: pdfBase64 }),
@@ -43,7 +61,7 @@ export const invoiceService = {
     sendReminder: (id: string, to: string, pdfBase64?: string | null) =>
         api.post(ENDPOINTS.INVOICE_REMINDER(id), { to, pdfAttachment: pdfBase64 }),
 
-    getShareUrl: (token: string) => {
-        return `${API_URL}${ENDPOINTS.INVOICE_SHARE(token)}`;
-    }
+    getShareUrl: (token: string) => `${window.location.origin}/invoice/share/${token}`,
+
+    getShareDownloadUrl: (token: string) => `${API_URL}${ENDPOINTS.INVOICE_SHARE(token)}`,
 };

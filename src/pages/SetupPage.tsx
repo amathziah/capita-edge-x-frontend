@@ -5,6 +5,7 @@ import { usePersona, BusinessType } from '../contexts/PersonaContext';
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
 import { supabase } from '../supabaseClient';
+import { hasCompletedOnboarding } from '../lib/authFlow';
 import {
     Loader2,
     ShieldCheck,
@@ -28,6 +29,8 @@ export function SetupPage() {
     const { user, loading: authLoading } = useAuth();
     const { refreshPersona, businessType, organizationId: organizationId, loading: personaLoading } = usePersona();
     const navigate = useNavigate();
+    const isHydratingStatus = authLoading || personaLoading;
+    const isOnboarded = hasCompletedOnboarding(organizationId, businessType);
 
     const [step, setStep] = useState<Step>('calibrate');
     const isProvisioningRef = useRef(false);
@@ -45,17 +48,15 @@ export function SetupPage() {
     // Guard: redirect out of setup if already provisioned (Strict check)
     useEffect(() => {
         if (
-            !authLoading &&
-            !personaLoading &&
-            organizationId &&
-            businessType &&
+            !isHydratingStatus &&
+            isOnboarded &&
             !isProvisioningRef.current &&
             step !== 'processing' &&
             step !== 'done'
         ) {
             navigate('/dashboard', { replace: true });
         }
-    }, [authLoading, personaLoading, organizationId, businessType, step, navigate]);
+    }, [isHydratingStatus, isOnboarded, step, navigate]);
 
     const [companyName, setCompanyName] = useState(user?.user_metadata?.company_name || '');
     const [selectedPersona, setSelectedPersona] = useState<BusinessType>('solopreneur');
@@ -192,7 +193,6 @@ export function SetupPage() {
 
     // Guard: hydration check - stay in neutral theme until status is 100% stable
     // MOVED here to comply with Rules of Hooks (must be after all top-level hooks)
-    const isHydratingStatus = authLoading || personaLoading;
     if (isHydratingStatus) {
         return (
             <div className="flex items-center justify-center h-screen bg-[#040608]">

@@ -8,7 +8,7 @@ import { dataService } from '../services/dataService';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Tab = 'general' | 'branding' | 'payments' | 'compliance' | 'email';
+type Tab = 'general' | 'branding' | 'payments' | 'email';
 
 interface SectionHeaderProps {
   icon: React.ElementType;
@@ -17,6 +17,20 @@ interface SectionHeaderProps {
   iconColor?: string;
   iconBg?: string;
 }
+
+const parseLegacyBankDetails = (bankDetails?: string) => {
+  if (!bankDetails) return { bankName: '', bankAccountNumber: '', bankIfsc: '' };
+
+  const lines = bankDetails.split('\n').map(line => line.trim());
+  const findValue = (prefix: string) =>
+    lines.find(line => line.toLowerCase().startsWith(prefix.toLowerCase()))?.split(':').slice(1).join(':').trim() || '';
+
+  return {
+    bankName: findValue('Bank'),
+    bankAccountNumber: findValue('Account No'),
+    bankIfsc: findValue('IFSC'),
+  };
+};
 
 // ─── Shared primitives (Compact) ──────────────────────────────────────────────
 
@@ -133,6 +147,11 @@ function GeneralTab({ settings, onChange, onSave, saving }: TabProps) {
     'Writing & Content', 'Marketing & Growth', 'Video & Photography',
     'Finance & Accounting', 'Legal Services', 'Other'
   ];
+  const savedCategory = settings.freelanceCategory || '';
+  const isCustomCategory = Boolean(savedCategory) && !freelanceCategories.includes(savedCategory);
+  const categoryOptions = isCustomCategory
+    ? [...freelanceCategories.slice(0, -1), savedCategory, 'Other']
+    : freelanceCategories;
 
   return (
     <div className="space-y-4">
@@ -147,11 +166,25 @@ function GeneralTab({ settings, onChange, onSave, saving }: TabProps) {
             <input className={inputCls} value={settings.businessName || ''} onChange={e => onChange('businessName', e.target.value)} placeholder="e.g. Priya Design Studio" />
           </Field>
           <Field label="Freelance category" hint="Helps Capita give you relevant advice">
-            <select className={inputCls} value={settings.freelanceCategory || ''} onChange={e => onChange('freelanceCategory', e.target.value)}>
+            <select className={inputCls} value={savedCategory} onChange={e => onChange('freelanceCategory', e.target.value)}>
               <option value="">Select your category</option>
-              {freelanceCategories.map(c => <option key={c} value={c}>{c}</option>)}
+              {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </Field>
+          {(savedCategory === 'Other' || isCustomCategory) && (
+            <Field label="Custom category" hint="Saved exactly as entered and shown in this dropdown later">
+              <input
+                className={inputCls}
+                value={isCustomCategory ? savedCategory : (settings.customFreelanceCategory || '')}
+                onChange={e => {
+                  const value = e.target.value;
+                  onChange('customFreelanceCategory', value);
+                  onChange('freelanceCategory', value);
+                }}
+                placeholder="e.g. Architecture & Interiors"
+              />
+            </Field>
+          )}
           <Field label="Currency">
             <select className={inputCls} value={settings.currency || 'INR'} onChange={e => onChange('currency', e.target.value)}>
               <option value="INR">₹ Indian Rupee (INR)</option>
@@ -171,7 +204,7 @@ function GeneralTab({ settings, onChange, onSave, saving }: TabProps) {
             <input className={`${inputCls} font-mono uppercase`} value={settings.companyTaxId || ''} onChange={e => onChange('companyTaxId', e.target.value)} placeholder="27ABCDE1234F1Z5" />
           </Field>
         </div>
-        <SaveRow onClick={() => onSave(['owner_name', 'businessName', 'freelanceCategory', 'currency', 'dailyRate', 'companyTaxId'], 'Business identity')} saving={saving} />
+        <SaveRow onClick={() => onSave(['owner_name', 'businessName', 'freelanceCategory', 'customFreelanceCategory', 'currency', 'dailyRate', 'companyTaxId'], 'Business identity')} saving={saving} />
       </Card>
 
       {/* Contact */}
@@ -232,6 +265,11 @@ function BrandingTab({ onSave, saving, logoPreview, onLogoChange }: Omit<TabProp
 }
 
 function PaymentsTab({ settings, onChange, onSave, saving }: TabProps) {
+  const legacyBank = parseLegacyBankDetails(settings.bankDetails || '');
+  const bankName = settings.bankName || legacyBank.bankName;
+  const bankAccountNumber = settings.bankAccountNumber || legacyBank.bankAccountNumber;
+  const bankIfsc = settings.bankIfsc || legacyBank.bankIfsc;
+
   return (
     <div className="space-y-4">
       <Card>
@@ -269,82 +307,35 @@ function PaymentsTab({ settings, onChange, onSave, saving }: TabProps) {
           <input className={inputCls} value={settings.upiId || ''} onChange={e => onChange('upiId', e.target.value)} placeholder="yourname@upi" />
         </Field>
         <div className="grid md:grid-cols-2 gap-4">
-          <Field label="Bank account details" hint="For NEFT / RTGS transfers">
-            <textarea className={`${inputCls} resize-none font-mono text-xs`} rows={3} value={settings.bankDetails || ''} onChange={e => onChange('bankDetails', e.target.value)} placeholder={`Bank: HDFC Bank\nAccount No: 1234567890\nIFSC: HDFC0001234`} />
+          <Field label="Bank name" hint="Shown for NEFT / RTGS transfers">
+            <input
+              className={inputCls}
+              value={bankName}
+              onChange={e => onChange('bankName', e.target.value)}
+              placeholder="HDFC Bank"
+            />
+          </Field>
+          <Field label="Account number">
+            <input
+              className={`${inputCls} font-mono`}
+              value={bankAccountNumber}
+              onChange={e => onChange('bankAccountNumber', e.target.value)}
+              placeholder="1234567890"
+            />
+          </Field>
+          <Field label="IFSC code">
+            <input
+              className={`${inputCls} font-mono uppercase`}
+              value={bankIfsc}
+              onChange={e => onChange('bankIfsc', e.target.value.toUpperCase())}
+              placeholder="HDFC0001234"
+            />
           </Field>
           <Field label="Payment note" hint="e.g. Reference or instructions">
             <textarea className={`${inputCls} resize-none`} rows={3} value={settings.paymentInstructions || ''} onChange={e => onChange('paymentInstructions', e.target.value)} placeholder="Please include invoice number in the payment reference." />
           </Field>
         </div>
-        <SaveRow onClick={() => onSave(['upiId', 'bankDetails', 'paymentInstructions'], 'Payment details')} saving={saving} />
-      </Card>
-    </div>
-  );
-}
-
-function ComplianceTab({ settings, onChange, onSave, saving }: TabProps) {
-  const isOn = (key: string) => settings[key] === 'true' || settings[key] === true;
-  const toggleKey = (key: string) => onChange(key, isOn(key) ? 'false' : 'true');
-
-  // Only automation features relevant to solopreneurs
-  const automationToggles = [
-    { key: 'autoFollowUp', label: 'Auto follow-up emails', desc: 'Sends payment reminders when invoices go overdue' },
-    { key: 'weeklySummaryEnabled', label: 'Weekly cash summary', desc: 'Monday morning email with your cash position' },
-  ];
-
-  return (
-    <div className="space-y-4">
-      {/* Tax Identity — solopreneur essentials only */}
-      <Card>
-        <SectionHeader icon={Receipt} title="Tax identity" description="Required for GST-compliant invoices" />
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="GSTIN" hint="15-digit GST registration number">
-            <input className={`${inputCls} font-mono uppercase`} value={settings.gstin || ''} onChange={e => onChange('gstin', e.target.value)} placeholder="27ABCDE1234F1Z5" maxLength={15} />
-          </Field>
-          <Field label="PAN number" hint="Required for income tax compliance">
-            <input className={`${inputCls} font-mono uppercase`} value={settings.pan || ''} onChange={e => onChange('pan', e.target.value)} placeholder="ABCDE1234F" maxLength={10} />
-          </Field>
-          <Field label="MSME / Udyam number" hint="Optional — unlocks MSME protections for late payments">
-            <input className={inputCls} value={settings.msmeNumber || ''} onChange={e => onChange('msmeNumber', e.target.value)} placeholder="UDYAM-MH-00-00000" />
-          </Field>
-        </div>
-        <SaveRow onClick={() => onSave(['gstin', 'pan', 'msmeNumber'], 'Tax identity')} saving={saving} />
-      </Card>
-
-      {/* Automation — only solopreneur-relevant */}
-      <Card>
-        <SectionHeader icon={Settings2Icon} title="Capita automations" description="What Capita handles for you in the background" iconColor="text-purple-500" iconBg="bg-purple-50" />
-        <div className="space-y-2 mb-4">
-          {automationToggles.map(item => (
-            <div key={item.key} className="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <div>
-                <p className="text-[13px] font-semibold text-text-main leading-none">{item.label}</p>
-                <p className="text-[11px] text-text-muted mt-1">{item.desc}</p>
-              </div>
-              <Toggle checked={isOn(item.key)} onChange={() => toggleKey(item.key)} />
-            </div>
-          ))}
-        </div>
-
-        <div>
-          <p className="text-[13px] font-semibold text-text-main mb-2">Follow-up schedule (days after due date)</p>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { key: 'followUpDay1', label: 'Reminder 1', default: 7 },
-              { key: 'followUpDay2', label: 'Reminder 2', default: 14 },
-              { key: 'followUpDay3', label: 'Final notice', default: 30 },
-            ].map(f => (
-              <Field key={f.key} label={f.label}>
-                <input type="number" className={inputCls} value={settings[f.key] ?? f.default} onChange={e => onChange(f.key, e.target.value)} min={1} max={90} />
-              </Field>
-            ))}
-          </div>
-        </div>
-
-        <SaveRow
-          onClick={() => onSave(['autoFollowUp', 'weeklySummaryEnabled', 'followUpDay1', 'followUpDay2', 'followUpDay3'], 'Automation settings')}
-          saving={saving}
-        />
+        <SaveRow onClick={() => onSave(['upiId', 'bankName', 'bankAccountNumber', 'bankIfsc', 'paymentInstructions'], 'Payment details')} saving={saving} />
       </Card>
     </div>
   );
@@ -400,8 +391,28 @@ function EmailTab({ settings, onChange, isVerified, connectionChecked, testingCo
           {!connectionChecked && (
             <AlertBanner
               type="info"
-              title="Why connect Gmail?"
-              message="Higher delivery rates and replies land straight in your inbox."
+              title="Set up Gmail before connecting"
+              message="1. Turn on Google 2-Step Verification. 2. Generate a 16-digit App Password. 3. Paste your Gmail address and App Password here."
+              actions={
+                <>
+                  <a
+                    href="https://myaccount.google.com/security?utm_source=capitaedgex&utm_medium=settings&utm_campaign=gmail_setup#2sv"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-semibold text-blue-700 hover:underline"
+                  >
+                    Turn on 2-Step Verification
+                  </a>
+                  <a
+                    href="https://myaccount.google.com/apppasswords"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-semibold text-blue-700 hover:underline"
+                  >
+                    Generate App Password
+                  </a>
+                </>
+              }
             />
           )}
           {connectionChecked && testStatus.type === 'error' && (
@@ -414,9 +425,14 @@ function EmailTab({ settings, onChange, isVerified, connectionChecked, testingCo
 
           <Field label="App password" hint="Required because 2-Step Verification is enabled.">
             <div className="flex items-center justify-end mb-1">
-              <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noreferrer" className="text-[11px] text-primary font-medium hover:underline flex items-center">
-                How to generate? <ChevronRight className="w-3 h-3" />
-              </a>
+              <div className="flex items-center gap-3">
+                <a href="https://myaccount.google.com/security?utm_source=capitaedgex&utm_medium=settings&utm_campaign=gmail_setup#2sv" target="_blank" rel="noreferrer" className="text-[11px] text-primary font-medium hover:underline flex items-center">
+                  Enable 2-Step Verification <ChevronRight className="w-3 h-3" />
+                </a>
+                <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-[11px] text-primary font-medium hover:underline flex items-center">
+                  Generate App Password <ChevronRight className="w-3 h-3" />
+                </a>
+              </div>
             </div>
             <div className="relative">
               <input
@@ -553,7 +569,6 @@ export function Settings() {
     { id: 'general', label: 'General', icon: Building },
     { id: 'branding', label: 'Branding', icon: ImageIcon },
     { id: 'payments', label: 'Invoicing & payments', icon: CreditCard },
-    { id: 'compliance', label: 'GST & compliance', icon: Receipt },
     { id: 'email', label: 'Email', icon: Mail },
   ];
 
@@ -631,7 +646,6 @@ export function Settings() {
               {activeTab === 'general' && <GeneralTab {...tabProps} />}
               {activeTab === 'branding' && <BrandingTab {...tabProps} logoPreview={logoPreview} onLogoChange={handleLogoChange} />}
               {activeTab === 'payments' && <PaymentsTab {...tabProps} />}
-              {activeTab === 'compliance' && <ComplianceTab {...tabProps} />}
               {activeTab === 'email' && (
                 <EmailTab
                   settings={settings}
