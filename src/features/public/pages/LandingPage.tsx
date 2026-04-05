@@ -9,10 +9,10 @@ import {
     Sparkles, Play, Crown, MessageSquare, Mail, Bell
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Logo } from '../components/common/Logo';
-import { Pricing } from './Pricing';
-import { CapitaCore } from '../components/landing/CapitaCore';
-import { LegalModal, PolicyType } from '../components/features/LegalModal';
+import { Logo } from '@/components/common/Logo';
+import { Pricing } from '@/features/public/pages/PricingPage';
+import { CapitaCore } from '@/components/landing/CapitaCore';
+import { LegalModal, PolicyType } from '@/components/features/LegalModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 // ─── Magnetic Button ──────────────────────────────────────────────────────────

@@ -3,14 +3,14 @@ import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FileText, Download, Mail, Loader2, Eye, Printer, X, Plus, Search, Edit2, Trash2, DollarSign, CheckCircle, Share2 } from "lucide-react";
 import { pdf } from '@react-pdf/renderer';
-import InvoicePDF from '../components/PDF/InvoicePDF';
-import { dataService } from '../services/dataService';
-import { Invoice } from '../types';
-import { Toast, ToastType } from '../components/Toast';
-import RecordPaymentModal from '../components/Invoice/RecordPaymentModal';
-import { useData } from "../contexts/DataContext";
-import { usePersona } from "../contexts/PersonaContext";
-import { CustomSelect } from '../components/ui/CustomSelect';
+import InvoicePDF from '@/components/PDF/InvoicePDF';
+import { dataService } from '@/services/dataService';
+import { Invoice } from '@/types';
+import { Toast, ToastType } from '@/components/Toast';
+import RecordPaymentModal from '@/components/Invoice/RecordPaymentModal';
+import { useData } from "@/contexts/DataContext";
+import { usePersona } from "@/contexts/PersonaContext";
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 const STATUS_COLORS: Record<string, string> = {
   paid: "bg-status-success-bg text-status-success border-status-success/10",

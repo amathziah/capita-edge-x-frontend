@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
-import { usePersona } from '../contexts/PersonaContext';
+import { useData } from '@/contexts/DataContext';
+import { usePersona } from '@/contexts/PersonaContext';
 import {
     AlertTriangle,
     TrendingUp,
@@ -16,8 +16,8 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { InvoiceLifecycleMap } from '../components/Visualizations/InvoiceLifecycleMap';
-import { SYNC_STEPS } from '../utils/aiLoadingSteps';
+import { InvoiceLifecycleMap } from '@/components/Visualizations/InvoiceLifecycleMap';
+import { SYNC_STEPS } from '@/utils/aiLoadingSteps';
 
 
 export const ControlRoom = () => {

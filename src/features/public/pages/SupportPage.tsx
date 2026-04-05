@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Bug, Lightbulb, MessageSquare, CheckCircle2, History, ArrowRight, Loader2 } from 'lucide-react';
-import { dataService } from '../services/dataService';
-import { useData } from '../contexts/DataContext';
+import { dataService } from '@/services/dataService';
+import { useData } from '@/contexts/DataContext';
 
 type ReportType = 'bug' | 'feature_request' | 'feedback' | 'ui_issue';
 

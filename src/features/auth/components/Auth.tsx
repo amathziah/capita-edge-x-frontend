@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '@/supabaseClient';
 import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '../api/client';
-import { ENDPOINTS } from '../api/endpoints';
-import { Logo } from './common/Logo';
+import { api } from '@/api/client';
+import { ENDPOINTS } from '@/api/endpoints';
+import { Logo } from '@/components/common/Logo';
 
 type AuthView = 'signin' | 'signup' | 'forgot_password';
 

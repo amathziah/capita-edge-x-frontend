@@ -1,9 +1,9 @@
 import AuthComponent from '../components/Auth';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { usePersona } from '../contexts/PersonaContext';
-import { hasCompletedOnboarding } from '../lib/authFlow';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePersona } from '@/contexts/PersonaContext';
+import { hasCompletedOnboarding } from '@/lib/authFlow';
 
 export function LoginPage() {
     const { user, loading: authLoading } = useAuth();
