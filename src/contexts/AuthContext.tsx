@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 
+const AUTH_STORAGE_KEYS = ['sb-access-token', 'sb-refresh-token', 'sb-auth-token', 'supabase.auth.token', 'sb-org-id'];
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
@@ -26,9 +28,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // If the token is invalid/not found, we should proactively clean up
           if (error.message?.includes('Refresh Token Not Found') || error.message?.includes('Invalid Refresh Token')) {
              console.warn('[AuthContext] Stale session detected, performing deep cleanup');
-             await supabase.auth.signOut({ scope: 'global' });
-             localStorage.clear();
-             if (mounted) {
+              await supabase.auth.signOut({ scope: 'global' });
+              
+              // Targeted cleanup instead of localStorage.clear()
+              AUTH_STORAGE_KEYS.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+              });
+
+              if (mounted) {
                setSession(null);
                setUser(null);
              }
@@ -68,7 +76,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem('sb-org-id');
+    
+    // Perform targeted cleanup to prevent state bleeding
+    AUTH_STORAGE_KEYS.forEach(key => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
   }, []);
 
   return (

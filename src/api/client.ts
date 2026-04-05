@@ -1,5 +1,19 @@
 import { supabase } from '../supabaseClient';
 
+let _orgId: string | null = null;
+export const setOrgId = (id: string | null) => { _orgId = id; };
+export const getOrgId = () => _orgId;
+
+let _resolveReady: () => void;
+const _ready = new Promise<void>((resolve) => {
+    _resolveReady = resolve;
+});
+
+export const markOrgReady = () => _resolveReady?.();
+
+// Safety timeout: ensure API is never blocked indefinitely if PersonaContext fails
+setTimeout(() => markOrgReady(), 5000);
+
 export const getBaseUrl = () => {
     let url = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
     // Ensure it doesn't end with a trailing slash for consistency
@@ -14,7 +28,12 @@ export const getBaseUrl = () => {
 export const API_URL = getBaseUrl();
 
 class ApiClient {
+    public wait() {
+        return _ready;
+    }
+
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+        await _ready;
         let token: string | null = null;
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -23,7 +42,7 @@ class ApiClient {
             console.warn('[ApiClient] Failed to fetch session token:', e);
         }
         
-        const organizationId = localStorage.getItem('sb-org-id');
+        const organizationId = getOrgId();
 
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
@@ -113,6 +132,7 @@ class ApiClient {
     }
 
     async getBlob(endpoint: string, options?: RequestInit): Promise<Blob> {
+        await _ready;
         let token: string | null = null;
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -121,7 +141,7 @@ class ApiClient {
             console.warn('[ApiClient] Failed to fetch session token for download:', e);
         }
         
-        const organizationId = localStorage.getItem('sb-org-id');
+        const organizationId = getOrgId();
 
         const headers: HeadersInit = {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),

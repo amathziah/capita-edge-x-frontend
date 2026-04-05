@@ -7,11 +7,22 @@ import { RefreshingIndicator } from '../ui/RefreshingIndicator';
 import InvoiceGenerator from '../InvoiceGenerator/InvoiceGenerator';
 import { AddClientDrawer } from '../shared/AddClientDrawer';
 import { useData } from '../../contexts/DataContext';
+import { usePersona } from '../../contexts/PersonaContext';
 
 export function Layout() {
+  const { loading: personaLoading, organizationId } = usePersona();
   const location = useLocation();
   const { refreshData } = useData();
   const isAIActive = location.pathname === '/dashboard/ai';
+
+  // 0. Persona Gate: Prevent sub-component mount/fetch until context is ready
+  if (personaLoading || !organizationId) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#040608]">
+        <div className="w-10 h-10 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // Modal States
   const [invoiceModal, setInvoiceModal] = useState<{ open: boolean; data?: any }>({ open: false });

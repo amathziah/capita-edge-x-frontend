@@ -106,18 +106,10 @@ export function SetupPage() {
         setStep('processing');
         setError(null);
         try {
-            // 0. Wait for Supabase session to be ready (PKCE exchange can take a moment after OAuth redirect)
-            let session = null;
-            for (let attempt = 0; attempt < 17; attempt++) {
-                const { data } = await supabase.auth.getSession();
-                if (data.session?.access_token) {
-                    session = data.session;
-                    break;
-                }
-                await new Promise(resolve => setTimeout(resolve, 300));
-            }
-            if (!session?.access_token) {
-                throw new Error('Authentication session not ready. Please refresh and try again.');
+            // 0. Ensure session is ready before proceeding (Fix Bug: Provisioning Race)
+            const { data } = await supabase.auth.getSession();
+            if (!data.session?.access_token) {
+                throw new Error('Session expired. Please sign in again.');
             }
 
             // 1. Call backend to provision organization
@@ -151,14 +143,17 @@ export function SetupPage() {
                 friendlyError = 'Backend server unreachable. Please ensure the server is running on port 3000.';
             } else if (msg.includes('already belongs') || msg.includes('already provisioned')) {
                 friendlyError = 'Your account is already set up. Redirecting...';
-            } else if (msg.includes('session not ready') || msg.includes('authentication')) {
+            } else if (msg.includes('session not ready') || msg.includes('session expired') || msg.includes('authentication')) {
                 friendlyError = 'Sign-in timed out. Please refresh and try again.';
             } else if (msg.includes('company name') || msg.includes('required')) {
                 friendlyError = 'Please enter your business name.';
+            } else if (msg.includes('provisioning failed') || msg.includes('seeding') || msg.includes('synchronization') || msg.includes('initialization')) {
+                friendlyError = 'Setup was interrupted. Your account is safe — please click Initialize Protocol to try again.';
             }
             
             setError(friendlyError);
-            setStep(organizationId ? 'persona' : 'identity');
+            // Move back to persona step to allow retry, unless we don't even have an identity
+            setStep(organizationId ? 'persona' : (companyName ? 'persona' : 'identity'));
         } finally {
             isProvisioningRef.current = false;
         }

@@ -1,4 +1,4 @@
-import { api, API_URL } from '../api/client';
+import { api, API_URL, getOrgId } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
 import { supabase } from '../supabaseClient';
 
@@ -31,13 +31,14 @@ export const aiService = {
     },
     signal?: AbortSignal
   ): AsyncGenerator<{ type: string; [key: string]: any }> {
+    await api.wait(); // Wait for hydration
     let token: string | null = null;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       token = session?.access_token ?? null;
     } catch { /* ignore */ }
 
-    const organizationId = localStorage.getItem('sb-org-id');
+    const organizationId = getOrgId();
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

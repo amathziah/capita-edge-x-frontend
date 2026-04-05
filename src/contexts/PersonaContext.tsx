@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '../supabaseClient';
 import { useAuth } from './AuthContext';
 import { PERSONA_CONFIGS } from '../lib/config/persona.config';
+import { setOrgId, markOrgReady } from '../api/client';
 import type { PersonaConfig, Segment, PlanTier } from '../lib/config/persona.config';
 
 export type BusinessType = Segment;
@@ -59,6 +60,8 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setBusinessType(bType);
       setOrganizationId(orgId);
+      setOrgId(orgId); // Sync with API client memory
+      markOrgReady(); // Signal hydration complete
       setPlanTier(orgId ? resolvedTier : null);
     } catch (err) {
       console.error('[PersonaContext] fetchPersona error:', err);
@@ -73,18 +76,12 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     else {
       setBusinessType(null);
       setOrganizationId(null);
+      setOrgId(null);
+      markOrgReady(); // Allow unauthenticated flows to proceed
       setLoading(false);
     }
   }, [user, fetchPersona]);
 
-  // Sync organizationId with localStorage for API client
-  useEffect(() => {
-    if (organizationId) {
-      localStorage.setItem('sb-org-id', organizationId);
-    } else {
-      localStorage.removeItem('sb-org-id');
-    }
-  }, [organizationId]);
 
   const config = businessType ? (PERSONA_CONFIGS[businessType] ?? null) : null;
 
