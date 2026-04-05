@@ -337,21 +337,9 @@ function GenerativeUIRenderer({ component, data }: { component: string; data: an
     );
   }
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mt-3 p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] text-gray-400 flex items-center gap-2.5 shadow-inner"
-    >
-      <div className="w-6 h-6 rounded-lg bg-teal-500/10 flex items-center justify-center border border-teal-500/20">
-        <LucideIcons.Zap size={12} className="text-teal-400" />
-      </div>
-      <div>
-        <span className="font-bold text-teal-400">System Integration</span>
-        <span className="opacity-70 ml-2">Connected to business data ({component})</span>
-      </div>
-    </motion.div>
-  );
+  // For tools without a dedicated UI card (get_recent_transactions, get_customer_insights, etc.),
+  // the AI's text response already contains the formatted answer — no extra card needed.
+  return null;
 }
 
 // ─── Streaming cursor — rendered as a React element, never injected into text ─
@@ -1008,8 +996,7 @@ export function AIAssistantPage() {
 
   // ── Load past conversation ────────────────────────────────────────────────
   const loadConversation = async (id: string) => {
-    if (id === currentConversationId) return;
-    setIsThinking(true);
+    if (id === currentConversationId || isBusy) return;
     try {
       const msgs = await aiService.getConversationMessages(id);
       setMessages((msgs as any[]).map(m => ({ ...m, timestamp: new Date(m.timestamp) })));
@@ -1017,8 +1004,6 @@ export function AIAssistantPage() {
       setTimeout(() => scrollToBottom(), 50);
     } catch (err) {
       console.error('Failed to load conversation:', err);
-    } finally {
-      setIsThinking(false);
     }
   };
 
@@ -1078,10 +1063,13 @@ export function AIAssistantPage() {
         }
       `}</style>
 
-      <div className="flex flex-col w-full max-w-[1400px] mx-auto h-full px-4 pb-4 pt-4 lg:pt-6 overflow-hidden">
+      <div 
+        className="flex flex-col w-full max-w-[1400px] mx-auto h-full px-4 pb-4 pt-4 lg:pt-6 overflow-hidden cursor-pointer"
+        onClick={(e) => { if (e.target === e.currentTarget) navigate('/dashboard'); }}
+      >
         {/* Outer shell */}
         <div className="
-          flex flex-col flex-1 min-h-0 overflow-hidden relative
+          flex flex-col flex-1 min-h-0 overflow-hidden relative cursor-default
           bg-[#0c0f1a] rounded-2xl lg:rounded-3xl
           border border-white/[0.07]
           shadow-[0_0_60px_-15px_rgba(45,212,191,0.18)]
@@ -1126,6 +1114,14 @@ export function AIAssistantPage() {
               >
                 <RotateCcw size={9} /> Reset
               </button>
+
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-gray-500 hover:text-white hover:bg-white/[0.08] transition-all"
+                title="Close AI Assistant"
+              >
+                <LucideIcons.X size={14} />
+              </button>
             </div>
           </div>
 
@@ -1157,8 +1153,11 @@ export function AIAssistantPage() {
               <div className="px-3 pt-3.5 pb-2.5 border-t border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between shrink-0">
                 <span className="text-[8px] font-black text-teal-500/70 tracking-widest uppercase">Recent Advice</span>
                 <button
-                  onClick={() => { setMessages([]); setCurrentConversationId(null); }}
-                  className="text-[8px] font-black text-gray-500 hover:text-white transition-colors uppercase tracking-widest"
+                  onClick={() => { if (!isBusy) { setMessages([]); setCurrentConversationId(null); } }}
+                  disabled={isBusy}
+                  className={`text-[8px] font-black uppercase tracking-widest transition-colors ${
+                    isBusy ? 'text-gray-700 cursor-not-allowed' : 'text-gray-500 hover:text-white pointer-events-auto'
+                  }`}
                 >
                   + New
                 </button>
@@ -1173,8 +1172,11 @@ export function AIAssistantPage() {
                   conversations.map(conv => (
                     <button
                       key={conv.id}
-                      onClick={() => loadConversation(conv.id)}
-                      className={`w-full text-left p-2.5 rounded-xl border transition-all group flex flex-col gap-1 ${currentConversationId === conv.id
+                      onClick={() => !isBusy && loadConversation(conv.id)}
+                      disabled={isBusy}
+                      className={`w-full text-left p-2.5 rounded-xl border transition-all group flex flex-col gap-1 ${
+                        isBusy ? 'opacity-40 cursor-not-allowed' : ''
+                      } ${currentConversationId === conv.id
                         ? 'bg-teal-500/10 border-teal-500/30 ring-1 ring-teal-500/20'
                         : 'border-transparent hover:bg-white/[0.03] grayscale hover:grayscale-0'
                         }`}
@@ -1219,7 +1221,7 @@ export function AIAssistantPage() {
                 ) : (
                   <div className="max-w-3xl mx-auto px-5 pb-12 space-y-6 pt-4">
                     <AnimatePresence initial={false}>
-                      {messages.map((msg, idx) => {
+                      {messages.map((msg) => {
                         const isFirstOfNewExchange = false;
 
                         return (

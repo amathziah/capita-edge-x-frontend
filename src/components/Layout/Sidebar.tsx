@@ -23,6 +23,7 @@ import {
 import { useLanguage } from "../LanguageProvider";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePersona } from "../../contexts/PersonaContext";
+import { aiService } from "../../services/aiService";
 
 import { Logo } from "../common/Logo";
 
@@ -96,6 +97,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [aiBudget, setAiBudget] = useState<{ userUsed: number; userMax: number } | null>(null);
 
   const toggleSidebar = () => {
     setTransitioning(true);
@@ -118,6 +120,19 @@ export function Sidebar() {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [userMenuOpen]);
+
+  // Fetch AI budget on mount + refresh periodically
+  useEffect(() => {
+    const fetchBudget = () => {
+      aiService.getBudget()
+        .then((data: any) => setAiBudget(data))
+        .catch(() => {});
+    };
+    fetchBudget();
+    // Refresh every 30s so it stays current during active use
+    const interval = setInterval(fetchBudget, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const getUserInitials = () => {
     if (!user?.email) return "U";
@@ -302,9 +317,9 @@ export function Sidebar() {
             enterprise:{ name: 'Enterprise', queries: Infinity, color: 'violet', isUpgradable: false },
           };
           const tier = tierMap[planTier ?? 'starter'] ?? tierMap.starter;
-          // Placeholder usage: 0 until real tracking is wired up
-          const usedQueries = 0;
-          const pct = tier.queries === Infinity ? 0 : Math.min((usedQueries / tier.queries) * 100, 100);
+          const usedQueries = aiBudget?.userUsed ?? 0;
+          const totalQueries = aiBudget?.userMax ?? tier.queries;
+          const pct = totalQueries === Infinity || totalQueries === 0 ? 0 : Math.min((usedQueries / totalQueries) * 100, 100);
           const isLow = pct > 80;
 
           return (
@@ -354,7 +369,7 @@ export function Sidebar() {
                         <span className={isLow ? 'text-rose-400 font-semibold' : 'text-gray-500'}>
                           {usedQueries} used
                         </span>
-                        <span className="text-gray-600">{tier.queries - usedQueries} left</span>
+                        <span className="text-gray-600">{Math.max(0, totalQueries - usedQueries)} left</span>
                       </div>
                       <div className="h-1 rounded-full bg-white/[0.05] overflow-hidden mb-3">
                         <div

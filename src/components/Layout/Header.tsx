@@ -38,7 +38,7 @@ export function Header(_props: HeaderProps) {
         {/* Right: Actions */}
         <div className="flex items-center space-x-3 lg:space-x-4">
           <NavLink 
-            to="/dashboard/ai"
+            to={isAIActive ? "/dashboard" : "/dashboard/ai"}
             className={({ isActive }) => 
               `relative flex items-center justify-center gap-2 px-5 py-2 rounded-full transition-all duration-300 font-bold overflow-hidden group ${
                 isActive 
