@@ -232,7 +232,7 @@ export function Invoices() {
           setData({
             invoices: invoices.map(item =>
               item.id === inv.id && item.status === 'draft'
-                ? { ...item, status: 'sent' }
+                ? { ...item, status: 'pending' }
                 : item
             )
           });
@@ -274,7 +274,7 @@ export function Invoices() {
       setData({
         invoices: invoices.map(item =>
           item.id === inv.id && item.status === 'draft'
-            ? { ...item, status: 'sent' }
+            ? { ...item, status: 'pending' }
             : item
         )
       });
@@ -381,7 +381,7 @@ export function Invoices() {
                 setFilterStatus(val);
                 setPage(1);
               }}
-              options={(["All", "paid", "overdue", "sent", "draft", "cancelled", "recurring"]).map((s) => ({
+              options={(["All", "paid", "pending", "overdue", "draft", "cancelled", "recurring"]).map((s) => ({
                 value: s,
                 label: s === "All" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)
               }))}
@@ -538,10 +538,14 @@ export function Invoices() {
                       }
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize border ${STATUS_COLORS[inv.status] || 'bg-gray-100 text-gray-600 border-gray-200'
-                        }`}>
-                        {inv.status.replace(/_/g, ' ')}
-                      </span>
+                      {(() => {
+                        const dispStatus = (inv.status === 'pending' && new Date(inv.dueDate || inv.date) < new Date()) ? 'overdue' : inv.status;
+                        return (
+                          <span className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize border ${STATUS_COLORS[dispStatus as keyof typeof STATUS_COLORS] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                            {dispStatus.replace(/_/g, ' ')}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -731,9 +735,14 @@ export function Invoices() {
                     <div>
                       <div className="flex items-center gap-3 mb-1">
                         <h1 className="text-3xl font-bold text-text-main">INVOICE</h1>
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide border ${STATUS_COLORS[viewInvoice.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                          {viewInvoice.status.replace(/_/g, ' ')}
-                        </span>
+                        {(() => {
+                          const dispStatus = (viewInvoice.status === 'pending' && new Date(viewInvoice.dueDate || viewInvoice.date) < new Date()) ? 'overdue' : viewInvoice.status;
+                          return (
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide border ${STATUS_COLORS[dispStatus as keyof typeof STATUS_COLORS] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                              {dispStatus.replace(/_/g, ' ')}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <p className="text-text-muted text-lg tracking-tight">#{viewInvoice.invoiceNumber}</p>
                       {viewInvoice.projectName && (
@@ -1008,12 +1017,12 @@ export function Invoices() {
                       setData({
                         invoices: invoices.map(item =>
                           item.id === viewInvoice.id && item.status === 'draft'
-                            ? { ...item, status: 'sent' }
+                            ? { ...item, status: 'pending' }
                             : item
                         )
                       });
                       if (viewInvoice.status === 'draft') {
-                        setViewInvoice(prev => prev ? { ...prev, status: 'sent' } : null);
+                        setViewInvoice(prev => prev ? { ...prev, status: 'pending' } : null);
                       }
 
                       setViewInvoiceId(null);
@@ -1036,7 +1045,7 @@ export function Invoices() {
                 {emailSending ? 'Sending...' : (viewInvoice?.status === 'paid' ? 'Email Receipt' : 'Email Customer')}
               </button>
 
-              {viewInvoice?.status === 'overdue' && (
+              {(viewInvoice?.status === 'pending' && new Date(viewInvoice.dueDate || viewInvoice.date) < new Date()) && (
                 <button
                   onClick={async () => {
                     const offer = await dataService.generateSettlementOffer(viewInvoice.id) as any;

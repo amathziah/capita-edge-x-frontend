@@ -144,9 +144,7 @@ export interface Invoice {
   courierTracking?: string;
   dispatchDate?: string;
   // Status and tracking
-  status: 'draft' | 'sent' | 'viewed' | 'paid' |
-          'partially_paid' | 'overdue' |
-          'cancelled' | 'escalated';
+  status: 'draft' | 'pending' | 'paid' | 'cancelled';
   type?: string;
   is_recurring?: boolean;
   notes?: string;

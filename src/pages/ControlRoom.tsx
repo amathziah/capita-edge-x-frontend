@@ -51,7 +51,7 @@ export const ControlRoom = () => {
 
 
     const metrics = useMemo(() => {
-        const overdue = Array.isArray(invoices) ? invoices.filter(i => i.status === 'overdue' || i.status === 'escalated') : [];
+        const overdue = Array.isArray(invoices) ? invoices.filter(i => (i.status === 'pending' && i.dueDate && new Date(i.dueDate) < new Date())) : [];
 
         // SaaS Specifics
         const monthlyExpenses = Array.isArray(expenses) ? expenses.reduce((sum: number, e: any) => sum + e.amount, 0) : 0;
@@ -60,10 +60,10 @@ export const ControlRoom = () => {
 
         return {
             overdueInvoices: overdue,
-            totalPending: stats.pending_payments || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent').reduce((sum, i) => sum + i.total, 0) : 0),
+            totalPending: stats.pending_payments || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'pending').reduce((sum, i) => sum + i.total, 0) : 0),
             totalOverdue: stats.overdue_revenue || overdue.reduce((sum, i) => sum + i.total, 0),
             totalCollected: collected,
-            pendingCount: stats.pending_invoices || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent').length : 0),
+            pendingCount: stats.pending_invoices || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'pending').length : 0),
             overdueCount: stats.overdue_invoices || overdue.length,
             // SaaS Extensions
             growthRate: 8.4, // Fallback placeholder but ideally calculated from historical stats
@@ -94,7 +94,7 @@ export const ControlRoom = () => {
     const activityFeed = useMemo(() => {
         return {
             recentPayments: Array.isArray(payments) ? payments.slice(0, 3) : [],
-            recentInvoices: Array.isArray(invoices) ? invoices.filter(i => i.status !== 'overdue').slice(0, 3) : []
+            recentInvoices: Array.isArray(invoices) ? invoices.filter(i => !(i.status === 'pending' && i.dueDate && new Date(i.dueDate) < new Date())).slice(0, 3) : []
         };
     }, [payments, invoices]);
 
@@ -119,29 +119,36 @@ export const ControlRoom = () => {
         const monthlyInvoices = invoices.filter(i => isInCurrentMonth(i.date) && i.status !== 'draft');
         const totalInvoicedMonth = monthlyInvoices.reduce((sum, i) => sum + (i.total || 0), 0);
 
-        // 2. Overdue
-        const overdueList = invoices.filter(i => 
-            i.status === 'overdue' || 
-            (i.status === 'sent' && i.dueDate && i.dueDate < todayStr)
-        );
+        // 2. Overdue - Inclusive of Today for precise action tracing
+        const overdueList = invoices.filter(i => {
+            const status = (i.status || '').toLowerCase().trim();
+            const isUnpaid = ['overdue', 'pending', 'sent'].includes(status);
+            if (!isUnpaid || !i.dueDate) return false;
+            
+            const dueStr = i.dueDate.split('T')[0];
+            return dueStr <= todayStr;
+        });
         const totalOverdueAmount = overdueList.reduce((sum, i) => sum + (i.total || 0), 0);
-
+        
         // 3. Cash Collected (This Month)
         const monthlyPayments = payments.filter(p => isInCurrentMonth(p.date || p.createdAt));
         const totalCollectedMonth = monthlyPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
         
-        // Collection rate should be (Collected / (Overdue + Sent + Paid this month)) or just matching user's request
-        const totalOutstanding = invoices.filter(i => ['sent', 'overdue'].includes(i.status)).reduce((sum, i) => sum + (i.total || 0), 0);
+        // Collection rate calculation
         const collectionRate = totalInvoicedMonth > 0 ? Math.round((totalCollectedMonth / totalInvoicedMonth) * 100) : 0;
 
-        // 4. Net Receivable (Sent + Overdue)
-        const pendingInvoices = invoices.filter(i => ['sent', 'overdue'].includes(i.status));
-        const netReceivableTotal = pendingInvoices.reduce((sum, i) => sum + (Number(i.netReceivable) || i.total || 0), 0);
+        // 4. Net Receivable (Total Unpaid Pipeline)
+        const unpaidInvoices = invoices.filter(i => {
+            const status = (i.status || '').toLowerCase().trim();
+            return ['pending', 'sent', 'overdue'].includes(status);
+        });
+        const netReceivableTotal = unpaidInvoices.reduce((sum, i) => sum + (i.total || 0), 0);
 
-        // Who Owes Me
+        // Who Owes Me - Full accurate list
         const whoOwesMe = [...overdueList]
             .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))
-            .slice(0, 5);
+            .slice(0, 10); // Expanded for better visibility
+
 
         return {
             totalInvoicedMonth,

@@ -122,25 +122,36 @@ export function Customers() {
     setShowCustomerModal(true);
   };
 
-  const handleDeleteCustomer = async () => {
-    if (!selectedCustomer) return;
-    if (!window.confirm(`Are you sure you want to delete ${selectedCustomer.name}?`)) return;
-
-    const toDelete = selectedCustomer;
-    setData({ customers: customers.filter(c => c.id !== toDelete.id) });
-    setSelectedCustomer(null);
-    setCustomerInsights(null);
-    setCustomerInvoices([]);
-
+  const handleDeleteCustomer = async (id?: string, name?: string) => {
+    const targetId = id || selectedCustomer?.id;
+    const targetName = name || selectedCustomer?.name || 'this client';
+    if (!targetId) return;
+    
+    if (!window.confirm(`Are you sure you want to delete ${targetName}? This action cannot be undone.`)) return;
+    
     try {
-      await dataService.deleteCustomer(toDelete.id);
-    } catch (error) {
-      console.error("Failed to delete customer", error);
-      alert("Failed to delete customer");
+      // 1. Optimistically update local state so the item vanishes instantly
+      setData({ customers: customers.filter(c => c.id !== targetId) });
+      if (selectedCustomer?.id === targetId) {
+        setSelectedCustomer(null);
+        setCustomerInsights(null);
+        setCustomerInvoices([]);
+      }
+      
+      // 2. Perform actual deletion
+      await dataService.deleteCustomer(targetId);
+      
+      // 3. Force a refresh in the background to sync stats (client counts)
+      refreshData(['customers', 'stats'], true);
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete client: " + (err as Error).message);
+      // Revert if it fails
       refreshData(['customers'], true);
-      setSelectedCustomer(toDelete);
     }
   };
+
+
 
   // ── Loading ────────────────────────────────────────────────────────────
   if (loading && customers.length === 0) {
@@ -167,6 +178,8 @@ export function Customers() {
     );
   }
 
+
+
   // ────────────────────────────────────────────────────────────────────────
   // RENDER
   // ────────────────────────────────────────────────────────────────────────
@@ -185,8 +198,26 @@ export function Customers() {
           onClose={() => { setShowCustomerModal(false); setIsEditing(false); }}
           isEditing={isEditing}
           initialData={selectedCustomer}
-          onSaveSuccess={() => {
-            refreshData();
+          onSaveSuccess={(newCust) => {
+            // 1. Force a background refresh of the server data to keep things in total sync
+            refreshData(['customers', 'stats'], true);
+            
+            // 2. Optimistically update the local state for instant UI feedback
+            if (isEditing) {
+              setData({ 
+                customers: customers.map(c => c.id === newCust.id ? newCust : c) 
+              });
+              
+              // If we are currently viewing this customer's profile, update it instantly
+              if (selectedCustomer?.id === newCust.id) {
+                setSelectedCustomer(newCust);
+                // Clear insights to trigger the re-fetch effect and show the fresh AI intelligence
+                setCustomerInsights(null); 
+              }
+            } else {
+              setData({ customers: [newCust, ...customers] });
+            }
+
             setShowCustomerModal(false);
             setIsEditing(false);
           }}
@@ -218,10 +249,10 @@ export function Customers() {
                 </h1>
               </div>
               <div className="ml-auto flex gap-2 items-center">
-                <button onClick={handleEditCustomer} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+                <button onClick={() => handleEditCustomer()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
                   <Edit size={15} /> Edit
                 </button>
-                <button onClick={handleDeleteCustomer} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
+                <button onClick={() => handleDeleteCustomer()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
                   <Trash2 size={15} /> Delete
                 </button>
                 {(() => {
@@ -613,7 +644,7 @@ export function Customers() {
                               </button>
                               <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); /* Delete handler placeholder */ }}
+                                onClick={(e) => { e.stopPropagation(); handleDeleteCustomer(cust.id, cust.name); }}
                                 className="p-1.5 hover:bg-red-50 rounded-lg transition"
                                 title="Delete"
                               >
@@ -727,6 +758,14 @@ export function Customers() {
                               </div>
                             </td>
                             <td className="px-6 py-3.5 text-gray-400 text-xs">{new Date(cust.createdAt as any).toLocaleDateString()}</td>
+                            <td className="px-6 py-3.5 text-right">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteCustomer(cust.id, cust.name); }}
+                                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>

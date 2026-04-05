@@ -3,7 +3,11 @@ import { ENDPOINTS } from '../api/endpoints';
 import { Expense, Payment } from '../types';
 
 export const expenseService = {
-    getExpenses: () => api.get<Expense[]>(ENDPOINTS.EXPENSES),
+    getExpenses: (params?: { limit?: number }) => {
+        let url = ENDPOINTS.EXPENSES;
+        if (params?.limit) url += `?limit=${params.limit}`;
+        return api.get<Expense[]>(url);
+    },
     saveExpense: (expense: Expense) => api.post<{ id: string }>(ENDPOINTS.EXPENSES, expense),
     deleteExpense: (id: string) => api.delete<void>(ENDPOINTS.EXPENSE(id))
 };

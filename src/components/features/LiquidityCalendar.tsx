@@ -58,12 +58,23 @@ interface CalendarEvent {
 ───────────────────────────────────────────── */
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function normaliseStatus(status: string): 'paid' | 'pending' | 'overdue' | 'draft' {
-    if (status === 'paid') return 'paid';
-    if (status === 'overdue') return 'overdue';
-    if (['sent', 'viewed', 'partially_paid'].includes(status)) return 'pending';
+function normaliseStatus(status: string, dueDate?: string): 'paid' | 'pending' | 'overdue' | 'draft' {
+    const s = (status || '').toLowerCase().trim();
+    if (s === 'paid') return 'paid';
+    if (s === 'draft') return 'draft';
+    
+    // Date-based overdue detection for the calendar
+    if (dueDate) {
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const dueStr = dueDate.split('T')[0];
+        if (dueStr <= todayStr) return 'overdue';
+    }
+
+    if (['sent', 'viewed', 'partially_paid', 'pending', 'overdue'].includes(s)) return 'pending';
     return 'draft';
 }
+
 
 const STATUS_CONFIG = {
     paid: {
@@ -168,7 +179,7 @@ function StatCard({
    Event Pill (inside calendar cell)
 ───────────────────────────────────────────── */
 function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
-    const s = normaliseStatus(event.status);
+    const s = normaliseStatus(event.status, event.raw?.dueDate);
     const cfg = STATUS_CONFIG[s];
     return (
         <button
@@ -176,6 +187,7 @@ function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => vo
             className={`w-full text-left flex items-center gap-1.5 px-2 py-[3px] rounded-md text-[10px] font-semibold truncate border-l-2 ${cfg.pill} hover:brightness-95 transition-all duration-150 group/pill`}
             style={{ borderLeftColor: s === 'paid' ? '#34d399' : s === 'overdue' ? '#f87171' : s === 'pending' ? '#fbbf24' : '#94a3b8' }}
         >
+
             <span className={`shrink-0 w-[5px] h-[5px] rounded-full ${cfg.dot}`} />
             <span className="truncate">{event.customerName.split(' ')[0]}</span>
             <span className="ml-auto shrink-0 font-bold opacity-70">{fmt(event.amount)}</span>
@@ -249,8 +261,9 @@ function DayCell({
    List View Row
 ───────────────────────────────────────────── */
 function ListRow({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
-    const s = normaliseStatus(event.status);
+    const s = normaliseStatus(event.status, event.raw?.dueDate);
     const cfg = STATUS_CONFIG[s];
+
     const Icon = cfg.icon;
     return (
         <motion.button
@@ -416,7 +429,7 @@ export function LiquidityCalendar() {
 
     const filteredEvents = useMemo(() => {
         return allEvents.filter((ev) => {
-            const ns = normaliseStatus(ev.status);
+            const ns = normaliseStatus(ev.status, ev.raw?.dueDate);
             const matchSearch =
                 ev.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 ev.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
@@ -427,16 +440,18 @@ export function LiquidityCalendar() {
         });
     }, [allEvents, searchTerm, filterStatus]);
 
+
     /* ── Stats ── */
     const stats = useMemo(() => {
         const monthEvs = allEvents.filter((e) => isSameMonth(e.date, currentDate));
         return {
             projected: monthEvs.reduce((s, e) => s + e.amount, 0),
-            collected: monthEvs.filter((e) => e.status === 'paid').reduce((s, e) => s + e.amount, 0),
-            pending: monthEvs.filter((e) => ['sent', 'viewed', 'partially_paid'].includes(e.status)).reduce((s, e) => s + e.amount, 0),
-            overdue: monthEvs.filter((e) => e.status === 'overdue').reduce((s, e) => s + e.amount, 0),
+            collected: monthEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'paid').reduce((s, e) => s + e.amount, 0),
+            pending: monthEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'pending').reduce((s, e) => s + e.amount, 0),
+            overdue: monthEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'overdue').reduce((s, e) => s + e.amount, 0),
         };
     }, [allEvents, currentDate]);
+
 
     /* ── Calendar grid days ── */
     const calendarDays = useMemo(() => {

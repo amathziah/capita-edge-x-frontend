@@ -16,7 +16,6 @@ import {
     AlertTriangle,
     Zap,
     CheckCircle2,
-    DollarSign,
     Wallet,
 } from 'lucide-react';
 
@@ -42,7 +41,7 @@ const NODE_STYLES: Record<string, NodeStyleConfig> = {
         glow: '',
         textColor: 'text-gray-300',
     },
-    sent: {
+    pending: {
         bg: 'bg-indigo-500/5',
         border: 'border-indigo-500/20',
         iconBg: 'bg-indigo-500/10',
@@ -50,13 +49,14 @@ const NODE_STYLES: Record<string, NodeStyleConfig> = {
         glow: 'shadow-indigo-500/10',
         textColor: 'text-indigo-300',
     },
-    partially_paid: {
+    viewed: {
         bg: 'bg-cyan-500/5',
         border: 'border-cyan-500/20',
         iconBg: 'bg-cyan-500/10',
         iconColor: 'text-cyan-400',
-        glow: 'shadow-cyan-500/10',
+        glow: 'shadow-cyan-400/20',
         textColor: 'text-cyan-300',
+        badge: 'TRACKED',
     },
     overdue: {
         bg: 'bg-red-500/5',
@@ -65,15 +65,7 @@ const NODE_STYLES: Record<string, NodeStyleConfig> = {
         iconColor: 'text-red-400',
         glow: 'shadow-red-500/10',
         textColor: 'text-red-300',
-        badge: 'ALERT',
-    },
-    escalated: {
-        bg: 'bg-orange-500/5',
-        border: 'border-orange-500/20',
-        iconBg: 'bg-orange-500/10',
-        iconColor: 'text-orange-400',
-        glow: 'shadow-orange-500/10',
-        textColor: 'text-orange-300',
+        badge: 'LATE',
     },
     paid: {
         bg: 'bg-teal-500/5',
@@ -83,6 +75,14 @@ const NODE_STYLES: Record<string, NodeStyleConfig> = {
         glow: 'shadow-teal-500/10',
         textColor: 'text-teal-300',
     },
+    cancelled: {
+        bg: 'bg-gray-500/5',
+        border: 'border-gray-500/20',
+        iconBg: 'bg-gray-500/10',
+        iconColor: 'text-gray-500',
+        glow: '',
+        textColor: 'text-gray-500',
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -90,11 +90,11 @@ const NODE_STYLES: Record<string, NodeStyleConfig> = {
 // ---------------------------------------------------------------------------
 const ICON_MAP: Record<string, any> = {
     draft: FileText,
-    sent: Send,
-    partially_paid: DollarSign,
+    pending: Send,
+    viewed: Zap,
     overdue: AlertTriangle,
-    escalated: Zap,
     paid: CheckCircle2,
+    cancelled: FileText,
 };
 
 // ---------------------------------------------------------------------------
@@ -107,6 +107,7 @@ const StatusNode = ({ data }: {
         value: number;
         styleKey: string;
         subtitle?: string;
+        badge?: string;
     }
 }) => {
     const style = NODE_STYLES[data.styleKey] || NODE_STYLES.draft;
@@ -116,9 +117,9 @@ const StatusNode = ({ data }: {
         <div className={`relative px-5 py-4 rounded-2xl border backdrop-blur-md min-w-[170px] transition-all duration-300 hover:scale-105 cursor-pointer ${style.bg} ${style.border} ${style.glow ? `shadow-lg ${style.glow}` : 'shadow-sm'}`}>
             <Handle type="target" position={Position.Left} className="!bg-gray-600 !w-2 !h-2 !border !border-white/10" />
 
-            {data.styleKey === 'overdue' && (
-                <div className="absolute -top-2.5 -right-2.5 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md bg-red-500 text-white animate-pulse">
-                    ● ALERT
+            {data.badge && (
+                <div className={`absolute -top-2.5 -right-2.5 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md ${data.styleKey === 'overdue' ? 'bg-red-500 text-white animate-pulse' : 'bg-cyan-400 text-black'}`}>
+                    ● {data.badge}
                 </div>
             )}
 
@@ -194,86 +195,115 @@ const InvoiceLifecycleMapBase: React.FC<InvoiceLifecycleMapProps> = ({ invoices,
     const stats = useMemo(() => {
         const initialStats: Record<string, { count: number; value: number }> = {
             draft: { count: 0, value: 0 },
-            sent: { count: 0, value: 0 },
-            partially_paid: { count: 0, value: 0 },
+            pending: { count: 0, value: 0 },
+            viewed: { count: 0, value: 0 },
             overdue: { count: 0, value: 0 },
-            escalated: { count: 0, value: 0 },
             paid: { count: 0, value: 0 },
+            cancelled: { count: 0, value: 0 },
         };
+
+        const now = new Date();
 
         invoices.forEach((inv) => {
             const status = inv.status;
-            if (initialStats[status]) {
-                initialStats[status].count++;
-                initialStats[status].value += inv.total;
+            
+            // Map core statuses
+            if (status === 'draft') {
+                initialStats.draft.count++;
+                initialStats.draft.value += inv.total;
+            } else if (status === 'paid') {
+                initialStats.paid.count++;
+                initialStats.paid.value += inv.total;
+            } else if (status === 'cancelled') {
+                initialStats.cancelled.count++;
+                initialStats.cancelled.value += inv.total;
+            } else if (status === 'pending') {
+                // Determine if it's Viewed or Overdue (sub-states of pending)
+                const isOverdue = inv.dueDate && new Date(inv.dueDate) < now;
+                const isViewed = !!(inv.shareViewedAt || (inv as any).share_viewed_at);
+
+                if (isOverdue) {
+                    initialStats.overdue.count++;
+                    initialStats.overdue.value += inv.total;
+                } else if (isViewed) {
+                    initialStats.viewed.count++;
+                    initialStats.viewed.value += inv.total;
+                } else {
+                    initialStats.pending.count++;
+                    initialStats.pending.value += inv.total;
+                }
             }
         });
         return initialStats;
     }, [invoices]);
 
     const totalPipeline = invoices.reduce((s, i) => s + i.total, 0);
-    const overdueCount = stats.overdue.count + stats.escalated.count;
+    const overdueCount = stats.overdue.count;
 
     // ── Nodes ─────────────────────────────────────────────────────────────────
     const nodes: Node[] = useMemo(() => [
-        // Row 1: Invoice lifecycle (left to right)
+        // Row 1: Invoice creation
         {
             id: 'draft', type: 'statusNode',
             position: { x: 50, y: 120 },
-            data: { label: 'Draft', count: stats.draft.count, value: stats.draft.value, styleKey: 'draft', subtitle: 'Created' },
+            data: { label: 'Draft', count: stats.draft.count, value: stats.draft.value, styleKey: 'draft', subtitle: 'Prepared' },
         },
+        // Dispatched stage
         {
-            id: 'sent', type: 'statusNode',
+            id: 'pending', type: 'statusNode',
             position: { x: 280, y: 40 },
-            data: { label: 'Sent', count: stats.sent.count, value: stats.sent.value, styleKey: 'sent', subtitle: 'Delivered' },
+            data: { label: 'Pending', count: stats.pending.count, value: stats.pending.value, styleKey: 'pending', subtitle: 'Dispatched' },
+        },
+        // Engagement stage
+        {
+            id: 'viewed', type: 'statusNode',
+            position: { x: 280, y: 220 },
+            data: { label: 'Viewed', count: stats.viewed.count, value: stats.viewed.value, styleKey: 'viewed', subtitle: 'Client Engagement', badge: 'TRACKED' },
         },
 
         // Hub node (center)
         {
             id: 'hub', type: 'hubNode',
-            position: { x: 520, y: 100 },
+            position: { x: 520, y: 120 },
             data: { label: 'Revenue Hub', total: totalPipeline },
         },
 
-        // Right side: outcomes
-        {
-            id: 'partially_paid', type: 'statusNode',
-            position: { x: 770, y: 0 },
-            data: { label: 'Partial Pay', count: stats.partially_paid.count, value: stats.partially_paid.value, styleKey: 'partially_paid', subtitle: 'In progress' },
-        },
+        // Outcomes
         {
             id: 'paid', type: 'statusNode',
-            position: { x: 1040, y: 0 },
-            data: { label: 'Closed', count: stats.paid.count, value: stats.paid.value, styleKey: 'paid', subtitle: '✓ Settled' },
+            position: { x: 770, y: 0 },
+            data: { label: 'Collected', count: stats.paid.count, value: stats.paid.value, styleKey: 'paid', subtitle: '✓ Settled' },
         },
         {
             id: 'overdue', type: 'statusNode',
             position: { x: 770, y: 165 },
-            data: { label: 'Overdue', count: stats.overdue.count, value: stats.overdue.value, styleKey: 'overdue', subtitle: `${Math.floor((stats.overdue.value / (totalPipeline || 1)) * 100)}% at risk` },
+            data: { label: 'Overdue', count: stats.overdue.count, value: stats.overdue.value, styleKey: 'overdue', subtitle: `${Math.floor((stats.overdue.value / (totalPipeline || 1)) * 100)}% at risk`, badge: 'LATE' },
         },
         {
-            id: 'escalated', type: 'statusNode',
+            id: 'cancelled', type: 'statusNode',
             position: { x: 770, y: 330 },
-            data: { label: 'Escalated', count: stats.escalated.count, value: stats.escalated.value, styleKey: 'escalated', subtitle: 'Critical' },
+            data: { label: 'Voided', count: stats.cancelled.count, value: stats.cancelled.value, styleKey: 'cancelled', subtitle: 'Cancelled' },
         },
     ], [stats, totalPipeline]);
 
     // ── Edges ─────────────────────────────────────────────────────────────────
     const edges: Edge[] = useMemo(() => [
-        // Lifecycle flow
-        { id: 'draft-sent', source: 'draft', target: 'sent', animated: true, style: { stroke: '#818cf8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#818cf8' } },
-        { id: 'sent-hub', source: 'sent', target: 'hub', animated: true, style: { stroke: '#2dd4bf', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#2dd4bf' } },
+        // Creation to Dispatch
+        { id: 'draft-pending', source: 'draft', target: 'pending', animated: true, style: { stroke: '#818cf8', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#818cf8' } },
+        
+        // Dispatch to Engagement
+        { id: 'pending-viewed', source: 'pending', target: 'viewed', animated: true, style: { stroke: '#22d3ee', strokeWidth: 2, strokeDasharray: '4,4' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#22d3ee' } },
+        
+        // Paths to Revenue Hub
+        { id: 'pending-hub', source: 'pending', target: 'hub', animated: true, style: { stroke: '#2dd4bf', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#2dd4bf' } },
+        { id: 'viewed-hub', source: 'viewed', target: 'hub', animated: true, style: { stroke: '#2dd4bf', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#2dd4bf' } },
 
-        // Hub to outcomes
-        { id: 'hub-partial', source: 'hub', target: 'partially_paid', animated: true, style: { stroke: '#22d3ee', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#22d3ee' } },
-        { id: 'hub-overdue', source: 'hub', target: 'overdue', animated: true, style: { stroke: '#f87171', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#f87171' }, label: '⚠', labelStyle: { fontSize: 14, fill: '#f87171' } },
+        // Hub to terminal states
+        { id: 'hub-overdue', source: 'hub', target: 'overdue', animated: true, style: { stroke: '#f87171', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#f87171' }, label: '⚠ Late', labelStyle: { fontSize: 10, fill: '#f87171', fontWeight: 900 } },
         { id: 'hub-paid', source: 'hub', target: 'paid', animated: true, style: { stroke: '#2dd4bf', strokeWidth: 2.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#2dd4bf' } },
+        { id: 'hub-cancelled', source: 'hub', target: 'cancelled', style: { stroke: '#9ca3af', strokeWidth: 1.5 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#9ca3af' } },
 
-        // Partial → Paid
-        { id: 'partial-paid', source: 'partially_paid', target: 'paid', animated: true, style: { stroke: '#2dd4bf', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#2dd4bf' } },
-
-        // Overdue paths
-        { id: 'overdue-escalated', source: 'overdue', target: 'escalated', animated: true, style: { stroke: '#ef4444', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' } },
+        // Recovery path
         { id: 'overdue-paid', source: 'overdue', target: 'paid', style: { stroke: '#2dd4bf', strokeWidth: 1.5, strokeDasharray: '5,5' }, markerEnd: { type: MarkerType.ArrowClosed, color: '#2dd4bf' }, label: 'Recovery', labelStyle: { fontSize: 10, fill: '#2dd4bf', fontWeight: 700 } },
     ], []);
 

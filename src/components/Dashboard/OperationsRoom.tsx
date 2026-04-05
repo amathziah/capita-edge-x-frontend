@@ -24,25 +24,52 @@ export function OperationsRoom() {
     const { invoices, payments, stats, loading, refreshData } = useData();
 
     const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+    const { organizationId } = useAuth(); // Using this for the identity check
 
     useEffect(() => {
-        if (user) refreshData();
+        // Force a hard sync on entry to ignore the 5min cache TTL
+        if (user) refreshData(true);
     }, [user, refreshData]);
 
-    // Metrics Calculation - Shifted to use backend-provided stats for the primary totals
+
+    // Metrics Calculation - Definitive Sync with Dashboard Map
     const metrics = useMemo(() => {
-        const overdue = Array.isArray(invoices) ? invoices.filter(i => i.status === 'overdue' || i.status === 'escalated') : [];
+        // Use YYYY-MM-DD local format for precise "Today" detection
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        
+        const overdue = Array.isArray(invoices) ? invoices.filter(i => {
+          const status = (i.status || '').toLowerCase().trim();
+          const isUnpaid = ['overdue', 'pending', 'sent'].includes(status);
+          if (!isUnpaid || !i.dueDate) return false;
+          
+          // String comparison on clean YYYY-MM-DD strings
+          const dueStr = i.dueDate.split('T')[0];
+          return dueStr <= todayStr;
+        }) : [];
 
         return {
             overdueInvoices: overdue,
-            // Use backend stats if they exist, fallback to client-side calculation if list is not truncated
-            totalPending: stats.pending_payments || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent').reduce((sum, i) => sum + i.total, 0) : 0),
-            totalOverdue: stats.overdue_revenue || overdue.reduce((sum, i) => sum + i.total, 0),
-            totalCollected: stats.total_revenue || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.total, 0) : 0),
-            pendingCount: stats.pending_invoices || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'sent').length : 0),
-            overdueCount: stats.overdue_invoices || overdue.length
+            totalPending: stats.pending_payments || (Array.isArray(invoices) ? invoices.filter(i => {
+                const s = (i.status || '').toLowerCase().trim();
+                return s === 'pending' || s === 'sent';
+            }).reduce((sum, i) => sum + (i.total || 0), 0) : 0),
+            totalOverdue: overdue.reduce((sum, i) => sum + (i.total || 0), 0),
+            totalCollected: stats.total_revenue || (Array.isArray(invoices) ? invoices.filter(i => (i.status || '').toLowerCase().trim() === 'paid').reduce((sum, i) => sum + (i.total || 0), 0) : 0),
+            pendingCount: stats.pending_invoices || (Array.isArray(invoices) ? invoices.filter(i => {
+                const s = (i.status || '').toLowerCase().trim();
+                return s === 'pending' || s === 'sent';
+            }).length : 0),
+            overdueCount: overdue.length
         };
     }, [invoices, stats]);
+
+
+
+
 
     const { overdueInvoices, totalPending, totalOverdue, totalCollected, pendingCount, overdueCount } = metrics;
 
@@ -99,16 +126,18 @@ export function OperationsRoom() {
                     transition={{ duration: 0.4 }}
                     className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between"
                 >
-                    <div>
-                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
-                            Mission Control
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <div>
+                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
+                                Mission Control
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span className="ml-2 text-[10px] text-emerald-400/60 lowercase font-normal italic">(capita live sync: v1.0.5)</span>
+                            </div>
+                            <h1 className="mt-2 text-3xl font-semibold text-gray-900 font-display tracking-tight">Control Room</h1>
+                            <p className="text-gray-600 mt-2 max-w-xl">
+                                A live operational view of revenue health, collections, and status flow.
+                            </p>
                         </div>
-                        <h1 className="mt-2 text-3xl font-semibold text-gray-900 font-display tracking-tight">Control Room</h1>
-                        <p className="text-gray-600 mt-2 max-w-xl">
-                            A live operational view of revenue health, collections, and status flow.
-                        </p>
-                    </div>
+
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="bg-white p-1 rounded-xl border border-gray-200 flex items-center shadow-sm mr-2">
                             <button
