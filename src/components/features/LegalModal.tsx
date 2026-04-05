@@ -17,7 +17,7 @@ const POLICY_CONTENT: Record<PolicyType, { title: string; content: React.ReactNo
             <div className="space-y-4 text-sm text-slate-300 leading-relaxed">
                 <p>Welcome to CapitaEdgeX. We are a dedicated financial technology platform designed specifically for Indian marketing agencies, freelancers, and small businesses.</p>
                 <p>Our mission is to simplify invoice management, payment collections, and financial compliance, ensuring that creative professionals can focus on their work rather than their accounts.</p>
-                <p>Founded by Laboratory Capita, Inc., we strive to provide a seamlessly integrated Revenue OS that brings enterprise-level financial controls to growing agencies across India.</p>
+                <p>We strive to provide a seamlessly integrated Revenue OS that brings enterprise-level financial controls to growing agencies across India.</p>
             </div>
         )
     },
@@ -72,7 +72,7 @@ const POLICY_CONTENT: Record<PolicyType, { title: string; content: React.ReactNo
         title: "Privacy Policy",
         content: (
             <div className="space-y-4 text-sm text-slate-300 leading-relaxed max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
-                <p>Your privacy is important to us. This policy outlines how Laboratory Capita, Inc. collects, uses, and protects your data.</p>
+                <p>Your privacy is important to us. This policy outlines how CapitaEdgeX collects, uses, and protects your data.</p>
                 
                 <h4 className="text-white font-bold mt-4">1. Data Collection</h4>
                 <p>We collect essential business information, contact details, and transaction data required to process invoices and payments effectively via partners like Razorpay.</p>

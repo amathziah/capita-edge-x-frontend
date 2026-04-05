@@ -898,7 +898,7 @@ export const Landing: React.FC = () => {
                 </div>
 
                 <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6 pt-8 border-t border-white/[0.05]">
-                    <div className="text-slate-500 text-[12px]">© {new Date().getFullYear()} Laboratory Capita, Inc. All rights reserved.</div>
+                    <div className="text-slate-500 text-[12px]">© {new Date().getFullYear()} CapitaEdgeX. All rights reserved.</div>
                     <div className="text-slate-500 text-[12px]">Made in India</div>
                 </div>
             </footer>
