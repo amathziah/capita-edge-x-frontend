@@ -179,7 +179,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         orderNumber, setOrderNumber,
         isGstRegistered, setIsGstRegistered,
         dispatchDate, setDispatchDate,
-        items, setItems, taxRate, setTaxRate,
+        items, setItems, taxRate, setTaxRate, shipping,
         subtotal, taxAmount, total, tdsAmount, netReceivable,
         activeAction, loading,
         isEmailModalOpen, setIsEmailModalOpen, emailTo, setEmailTo,
