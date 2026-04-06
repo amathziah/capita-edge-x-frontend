@@ -15,10 +15,9 @@ export function Layout() {
   const { refreshData } = useData();
   const isAIActive = location.pathname === '/dashboard/ai';
   const isCreateInvoice = /^\/dashboard\/invoices\/([^\/]+\/edit|new)$/.test(location.pathname);
-  const isIntegrityPage = location.pathname === '/dashboard/integrity';
   const isCompliancePage = location.pathname === '/dashboard/compliance';
   const isReportsPage = location.pathname === '/dashboard/reports';
-  const isNoScrollPage = isAIActive || isCreateInvoice || isIntegrityPage || isCompliancePage || isReportsPage;
+  const isNoScrollPage = isAIActive || isCreateInvoice || isCompliancePage || isReportsPage;
 
   // 0. Persona Gate: Prevent sub-component mount/fetch until context is ready
   if (personaLoading || !organizationId) {

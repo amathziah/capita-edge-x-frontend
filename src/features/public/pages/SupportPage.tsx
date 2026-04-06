@@ -57,7 +57,7 @@ export function Support() {
     };
 
     return (
-        <div className="h-full min-h-0 p-3 lg:p-4 max-w-7xl mx-auto flex flex-col gap-4 overflow-hidden">
+        <div className="h-full min-h-0 flex flex-col gap-4">
             {/* Header */}
             <div className="space-y-1 shrink-0">
                 <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.2em] text-primary">
@@ -161,20 +161,21 @@ export function Support() {
                     </div>
                     <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar min-h-0">
                         {loadingReports ? (
-                            <div className="space-y-3 animate-pulse">
-                                {[...Array(4)].map((_, i) => (
-                                    <div key={i} className="p-3 rounded-2xl border border-gray-100 bg-gray-50/30 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-12 h-3 bg-gray-100 rounded" />
-                                                <div className="w-16 h-2 bg-gray-100/50 rounded" />
-                                            </div>
-                                            <div className="w-2 h-2 rounded-full bg-gray-100" />
-                                        </div>
-                                        <div className="w-3/4 h-4 bg-gray-100 rounded" />
-                                        <div className="w-full h-3 bg-gray-100/50 rounded" />
+                            <div className="flex h-full min-h-[260px] flex-col items-center justify-center gap-4 text-center">
+                                <div className="relative">
+                                    <div className="h-14 w-14 animate-spin rounded-full border-4 border-dotted border-emerald-400 [animation-duration:3s]" />
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="h-8 w-8 animate-ping rounded-full bg-emerald-500 opacity-10 [animation-duration:1.5s]" />
                                     </div>
-                                ))}
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[12px] font-black uppercase tracking-[0.2em] text-emerald-700">
+                                        Loading reports
+                                    </p>
+                                    <p className="text-[12px] font-medium text-gray-400">
+                                        Fetching your latest integrity submissions.
+                                    </p>
+                                </div>
                             </div>
                         ) : reports.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-center space-y-3 p-6">

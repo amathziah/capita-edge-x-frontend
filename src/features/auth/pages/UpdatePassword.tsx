@@ -3,6 +3,7 @@ import { supabase } from '@/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Lock, ArrowRight, Loader2, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+const MIN_PASSWORD_LENGTH = 12;
 
 export function UpdatePassword() {
     const [password, setPassword] = useState('');
@@ -22,8 +23,8 @@ export function UpdatePassword() {
             return;
         }
 
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters');
+        if (password.length < MIN_PASSWORD_LENGTH) {
+            setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
             return;
         }
 

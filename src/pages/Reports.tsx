@@ -182,15 +182,23 @@ export function Reports() {
 
   if (loading && reportData.trends.length === 0) {
     return (
-      <div className="flex h-full min-h-0 flex-col items-center justify-center bg-gray-50/50">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center bg-gray-50/50 space-y-4">
         <div className="relative mb-8">
           <div className="h-20 w-20 animate-spin rounded-full border-4 border-dotted border-emerald-400 [animation-duration:3s]" />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="h-12 w-12 animate-ping rounded-full bg-emerald-500 opacity-10 [animation-duration:1.5s]" />
           </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-3 w-3 rounded-full bg-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+          </div>
         </div>
         <div className="space-y-2 text-center">
           <h3 className="text-sm font-semibold uppercase tracking-widest text-emerald-800">Preparing your monthly report</h3>
+          <div className="flex justify-center gap-1">
+            <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+            <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+            <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce"></span>
+          </div>
         </div>
       </div>
     );

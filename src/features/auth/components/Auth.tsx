@@ -7,6 +7,7 @@ import { ENDPOINTS } from '@/api/endpoints';
 import { Logo } from '@/components/common/Logo';
 
 type AuthView = 'signin' | 'signup' | 'forgot_password';
+const MIN_PASSWORD_LENGTH = 12;
 
 export default function AuthComponent() {
     const [view, setView] = useState<AuthView>('signin');
@@ -65,6 +66,10 @@ export default function AuthComponent() {
         if (loading) return; // Prevent double-clicks
         if (!companyName) {
             setError('Company Name is required for signup');
+            return;
+        }
+        if (password.length < MIN_PASSWORD_LENGTH) {
+            setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
             return;
         }
 
@@ -365,6 +370,12 @@ export default function AuthComponent() {
                             )}
                         </button>
                     </form>
+
+                    {view === 'signup' && !showOtpInput && (
+                        <p className="mt-3 text-center text-[12px] text-slate-500">
+                            Use at least {MIN_PASSWORD_LENGTH} characters.
+                        </p>
+                    )}
 
                     {/* Divider */}
                     {view !== 'forgot_password' && !showOtpInput && (

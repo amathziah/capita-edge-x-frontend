@@ -384,8 +384,9 @@ function EmailTab({ settings, onChange, isVerified, connectionChecked, testingCo
   onDisconnect: () => void;
 }) {
   const [showSmtpPass, setShowSmtpPass] = useState(false);
+  const canTestConnection = Boolean(settings.smtp_user && settings.smtp_pass);
   const handleConnect = async () => {
-    if (!settings.smtp_user || !settings.smtp_pass) return;
+    if (!canTestConnection) return;
     try {
       await dataService.saveSetting('smtp_user', settings.smtp_user);
       await dataService.saveSetting('smtp_pass', settings.smtp_pass);
@@ -405,7 +406,11 @@ function EmailTab({ settings, onChange, isVerified, connectionChecked, testingCo
             message={testingConnection ? 'Please wait while we verify your credentials.' : `Sending as ${settings.smtp_user}`}
             actions={!testingConnection ? (
               <>
-                <button onClick={() => onVerify(settings.smtp_user, settings.smtp_pass)} className="text-[11px] font-semibold text-emerald-700 hover:underline">
+                <button
+                  onClick={() => canTestConnection && onVerify(settings.smtp_user, settings.smtp_pass)}
+                  disabled={!canTestConnection}
+                  className="text-[11px] font-semibold text-emerald-700 hover:underline disabled:opacity-50 disabled:no-underline"
+                >
                   Test connection
                 </button>
                 <button onClick={onDisconnect} className="text-[11px] font-semibold text-gray-500 hover:underline">
@@ -532,7 +537,7 @@ export function Settings() {
       setSettings(data);
       if (data.logoFilename) setLogoPreview(dataService.getLogoUrl(data.logoFilename));
       if (data.paymentQrFilename) setPaymentQrPreview(dataService.getPaymentQrUrl(data.paymentQrFilename));
-      if (data.smtp_user && data.smtp_pass) { setIsVerified(true); setConnectionChecked(true); }
+      if (data.smtp_user && data.smtpConfigured) { setIsVerified(true); setConnectionChecked(true); }
     } catch (err) {
       console.error('Failed to load settings:', err);
     } finally {
