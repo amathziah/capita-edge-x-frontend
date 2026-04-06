@@ -15,6 +15,7 @@ export const ENDPOINTS = {
     INVOICE: (id: string) => `/invoices/${id}`,
     INVOICE_PDF: (id: string) => `/invoices/${id}/pdf`,
     INVOICE_DUPLICATE: (id: string) => `/invoices/${id}/duplicate`,
+    INVOICE_SHARE_MARK: (id: string) => `/invoices/${id}/share`,
     INVOICE_SEND: (id: string) => `/invoices/${id}/send`,
     INVOICE_REMINDER: (id: string) => `/invoices/${id}/reminder`,
     INVOICE_SHARE: (tok: string) => `/invoices/share/${tok}`,

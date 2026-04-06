@@ -13,6 +13,7 @@ import { Logo } from '@/components/common/Logo';
 import { Pricing } from '@/features/public/pages/PricingPage';
 import { CapitaCore } from '@/components/landing/CapitaCore';
 import { LegalModal, PolicyType } from '@/components/features/LegalModal';
+import { brandProfile } from '@/shared/lib/config/brandProfile';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 // ─── Magnetic Button ──────────────────────────────────────────────────────────
@@ -442,7 +443,7 @@ function ReportsMock() {
 function FaqSection() {
     const [openIdx, setOpenIdx] = useState<number | null>(0);
     const faqs = [
-        { q: "Who is CapitaEdgeX built for?", a: "Indian marketing agencies, freelancers, and small tech firms who need GST-compliant invoicing, automated payment tracking, and integrated expense management without paying massive enterprise fees." },
+        { q: `Who is ${brandProfile.name} built for?`, a: brandProfile.faqBuiltFor },
         { q: "Are the invoices generated GST compliant?", a: "Absolutely. All invoices generated through CapitaEdgeX automatically adhere to the latest Indian GST regulations, including field tracking for SGST, CGST, IGST, and proper HSN/SAC configurations." },
         { q: "What happens if I cancel my subscription?", a: "You can cancel anytime with zero hidden fees. You will retain full access to your account and historical data until the end of your billing cycle. We don't lock your data—you can export everything to standard CSVs at any click." },
         { q: "Is there a limit on how many invoices I can send?", a: "No! All of our premium plans offer unlimited invoicing and unlimited client profiles. Stop tracking arbitrary tier limits and focus purely on closing more business." }
@@ -604,7 +605,7 @@ export const Landing: React.FC = () => {
 
                         <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75, delay: 0.35 }}
                             className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-                            CapitaEdgeX is the complete Financial OS for Indian marketing agencies and freelancers — invoicing, collections, payments, compliance, and reporting in one place.
+                            {brandProfile.heroDescription}
                         </motion.p>
 
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.5 }}
@@ -875,7 +876,7 @@ export const Landing: React.FC = () => {
                             <span className="display font-black text-white tracking-tight text-xl">CapitaEdgeX</span>
                         </div>
                         <p className="text-slate-400 text-[14px] leading-relaxed max-w-sm">
-                            The complete Financial OS for Indian marketing agencies and freelancers — bridging the gap between revenue generation and financial operations.
+                            {brandProfile.footerDescription}
                         </p>
                     </div>
 

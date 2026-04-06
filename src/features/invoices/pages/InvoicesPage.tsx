@@ -9,6 +9,7 @@ import { Toast, ToastType } from '@/components/Toast';
 import RecordPaymentModal from '@/components/Invoice/RecordPaymentModal';
 import { useData } from "@/contexts/DataContext";
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { downloadCsv } from '@/shared/lib/export';
 
 const STATUS_COLORS: Record<string, string> = {
   paid: "bg-status-success-bg text-status-success border-status-success/10",
@@ -18,6 +19,8 @@ const STATUS_COLORS: Record<string, string> = {
   sent: "bg-status-info-bg text-status-info border-status-info/10",
   viewed: "bg-blue-50 text-blue-600 border-blue-100",
   draft: "bg-gray-100 text-gray-600 border-gray-200",
+  void: "bg-red-50 text-red-500 border-red-100",
+  write_off: "bg-slate-100 text-slate-600 border-slate-200",
   cancelled: "bg-red-50 text-red-500 border-red-100",
   escalated: "bg-purple-50 text-purple-600 border-purple-100",
 };
@@ -191,28 +194,17 @@ export function Invoices() {
   };
 
   const exportCSV = (rows: Invoice[]) => {
-    const header = ["Number", "Customer", "Total", "Status", "Date"];
-    const csvRows = [
-      header.join(","),
-      ...rows.map((r) =>
-        [
-          r.invoiceNumber,
-          `"${(r.buyer?.name || "").replace(/"/g, '""')}"`,
-          r.total,
-          r.status,
-          r.date || new Date(r.createdAt || Date.now()).toLocaleDateString(),
-        ].join(",")
-      ),
-    ];
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `invoices_export_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadCsv(
+      `invoices_export_${new Date().toISOString().slice(0, 10)}.csv`,
+      ["Number", "Customer", "Total", "Status", "Date"],
+      rows.map((invoice) => [
+        invoice.invoiceNumber,
+        invoice.buyer?.name || "",
+        invoice.total || 0,
+        invoice.status,
+        invoice.date || new Date(invoice.createdAt || Date.now()).toLocaleDateString(),
+      ])
+    );
   };
 
   const bulkSendReminder = async () => {
@@ -249,7 +241,7 @@ export function Invoices() {
           setData({
             invoices: invoices.map(item =>
               item.id === inv.id && item.status === 'draft'
-                ? { ...item, status: 'pending' }
+                ? { ...item, status: 'sent' }
                 : item
             )
           });
@@ -281,7 +273,7 @@ export function Invoices() {
       setData({
         invoices: invoices.map(item =>
           item.id === inv.id && item.status === 'draft'
-            ? { ...item, status: 'pending' }
+            ? { ...item, status: 'sent' }
             : item
         )
       });
@@ -388,9 +380,9 @@ export function Invoices() {
                 setFilterStatus(val);
                 setPage(1);
               }}
-              options={(["All", "paid", "pending", "overdue", "draft", "cancelled", "recurring"]).map((s) => ({
+              options={(["All", "paid", "sent", "partially_paid", "overdue", "draft", "void", "write_off", "recurring"]).map((s) => ({
                 value: s,
-                label: s === "All" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)
+                label: s === "All" ? "All Statuses" : s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
               }))}
               className="w-full"
             />
@@ -546,7 +538,7 @@ export function Invoices() {
                     </td>
                     <td className="px-6 py-4">
                       {(() => {
-                        const dispStatus = (inv.status === 'pending' && new Date(inv.dueDate || inv.date) < new Date()) ? 'overdue' : inv.status;
+                        const dispStatus = inv.status;
                         return (
                           <span className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize border ${STATUS_COLORS[dispStatus as keyof typeof STATUS_COLORS] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                             {dispStatus.replace(/_/g, ' ')}
@@ -599,14 +591,26 @@ export function Invoices() {
                           )}
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             if (!inv.share_token) {
                               showToast("Share link not available for this invoice.", 'error');
                               return;
                             }
-                            const url = dataService.getShareUrl(inv.share_token);
-                            navigator.clipboard.writeText(url);
-                            showToast("Share link copied to clipboard!", 'success');
+                            try {
+                              const result = await dataService.markInvoiceShared(inv.id);
+                              const nextInvoice = result?.invoice;
+                              if (nextInvoice) {
+                                setData({
+                                  invoices: invoices.map(item => item.id === inv.id ? nextInvoice : item)
+                                });
+                              }
+                              const url = dataService.getShareUrl(result?.shareToken || inv.share_token);
+                              await navigator.clipboard.writeText(url);
+                              showToast("Share link copied to clipboard!", 'success');
+                            } catch (e) {
+                              console.error(e);
+                              showToast("Failed to prepare share link", 'error');
+                            }
                           }}
                           className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary-light transition"
                           title="Copy Share Link"
@@ -795,14 +799,27 @@ export function Invoices() {
                 <Download className="w-4 h-4" /> PDF
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (!viewInvoice?.share_token) {
                     showToast("Share link not available.", 'error');
                     return;
                   }
-                  const url = dataService.getShareUrl(viewInvoice.share_token);
-                  navigator.clipboard.writeText(url);
-                  showToast("Share link copied to clipboard!", 'success');
+                  try {
+                    const result = await dataService.markInvoiceShared(viewInvoice.id);
+                    const nextInvoice = result?.invoice;
+                    if (nextInvoice) {
+                      setViewInvoice(nextInvoice as any);
+                      setData({
+                        invoices: invoices.map(item => item.id === viewInvoice.id ? nextInvoice : item)
+                      });
+                    }
+                    const url = dataService.getShareUrl(result?.shareToken || viewInvoice.share_token);
+                    await navigator.clipboard.writeText(url);
+                    showToast("Share link copied to clipboard!", 'success');
+                  } catch (e) {
+                    console.error(e);
+                    showToast("Failed to prepare share link", 'error');
+                  }
                 }}
                 className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition"
               >
@@ -826,12 +843,12 @@ export function Invoices() {
                       setData({
                         invoices: invoices.map(item =>
                           item.id === viewInvoice.id && item.status === 'draft'
-                            ? { ...item, status: 'pending' }
+                            ? { ...item, status: 'sent' }
                             : item
                         )
                       });
                       if (viewInvoice.status === 'draft') {
-                        setViewInvoice(prev => prev ? { ...prev, status: 'pending' } : null);
+                        setViewInvoice(prev => prev ? { ...prev, status: 'sent' } : null);
                       }
 
                       setViewInvoiceId(null);
@@ -854,7 +871,7 @@ export function Invoices() {
                 {emailSending ? 'Sending...' : (viewInvoice?.status === 'paid' ? 'Email Receipt' : 'Email Customer')}
               </button>
 
-              {(viewInvoice?.status === 'pending' && new Date(viewInvoice.dueDate || viewInvoice.date) < new Date()) && (
+              {(viewInvoice?.status === 'overdue') && (
                 <button
                   onClick={async () => {
                     const offer = await dataService.generateSettlementOffer(viewInvoice.id) as any;

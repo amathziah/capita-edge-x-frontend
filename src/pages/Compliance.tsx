@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   Search,
-  Download,
   ArrowUpDown,
   Plus,
   X,
@@ -48,6 +47,23 @@ const statusConfig = {
     icon: AlertTriangle
   },
 };
+
+const auditTypeOptions = [
+  { value: "GST Return", label: "GST Return", description: "Monthly or quarterly GST filing" },
+  { value: "TDS Payment", label: "TDS Payment", description: "Deposit tax deducted at source" },
+  { value: "E-Way Bill", label: "E-Way Bill", description: "Movement and dispatch documentation" },
+  { value: "Annual Return", label: "Annual Return", description: "Year-end statutory submission" },
+  { value: "Tax Audit", label: "Tax Audit", description: "Prepare and track audit deliverables" },
+  { value: "ROC Filing", label: "ROC Filing", description: "Registrar of Companies filing" },
+  { value: "PF/ESI", label: "PF/ESI Payment", description: "Payroll compliance payment" },
+  { value: "Other", label: "Other", description: "A custom compliance work item" }
+] as const;
+
+const quickScopeHints = [
+  "Attach the return period, owner, and documents needed before filing.",
+  "Mention the regulator, exact due date, and what must be submitted.",
+  "Capture dependencies like reconciliations, challans, or customer confirmations."
+];
 
 export function Compliance() {
   const { complianceTasks: tasks, loading, refreshData } = useData();
@@ -132,21 +148,6 @@ export function Compliance() {
     }
   };
 
-  // Export CSV
-  const exportCSV = () => {
-    const headers = ["Type", "Description", "Due Date", "Status", "Priority"];
-    const rows = tasks.map((i: ComplianceTask) => [i.type, i.description, i.due_date, i.status, i.priority]);
-    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "compliance_tasks.csv";
-    link.click();
-  };
-
   const handleSaveTask = async (taskData: Partial<ComplianceTask>) => {
     try {
       if (selectedTask) {
@@ -198,7 +199,7 @@ export function Compliance() {
   }
 
   return (
-    <div className="relative h-full min-h-0 p-3 lg:p-4 flex flex-col gap-4 overflow-hidden">
+    <div className="relative mx-auto h-full min-h-0 w-full max-w-[1600px] px-4 py-4 sm:px-5 lg:px-6 lg:py-5 flex flex-col gap-4 overflow-hidden">
       {/* Premium Background */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_#e8f5e9_0%,_#f1f8f6_45%,_#f6fbf7_100%)]" />
       <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-emerald-100/40 blur-3xl -z-10" />
@@ -270,7 +271,7 @@ export function Compliance() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)] gap-4 flex-1 min-h-0 overflow-hidden">
+      <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-4 flex-1 min-h-0 overflow-hidden">
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-emerald-100/60 p-4 flex flex-col gap-3 shrink-0">
           <div>
             <div className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Action Queue</div>
@@ -297,13 +298,6 @@ export function Compliance() {
             </p>
           </div>
           <div className="mt-auto flex gap-2">
-            <button
-              onClick={exportCSV}
-              className="p-3 bg-white text-gray-400 rounded-2xl shadow-sm border border-gray-100 hover:text-emerald-600 hover:border-emerald-600/30 hover:shadow-md transition-all duration-300"
-              title="Export Report"
-            >
-              <Download className="w-5 h-5" />
-            </button>
             <button
               onClick={() => {
                 setSelectedTask(undefined);
@@ -537,19 +531,21 @@ function ComplianceTaskModal({
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          className="relative z-10 w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-emerald-50 overflow-hidden"
+          className="relative z-10 my-4 w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl border border-emerald-50 bg-white shadow-2xl sm:my-6 sm:max-h-[calc(100vh-3rem)]"
         >
           {/* Header */}
-          <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-gray-50/95 px-5 py-5 backdrop-blur sm:px-7">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-500 rounded-xl text-white shadow-lg shadow-emerald-500/20">
                 <Shield className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-lg font-black text-gray-900 tracking-tight">
-                  {initialData ? "Modify Audit Task" : "Declare Audit Node"}
+                  {initialData ? "Edit Compliance Task" : "Create Compliance Task"}
                 </h3>
-                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Compliance Intelligence</p>
+                <p className="text-[11px] text-emerald-700 font-semibold">
+                  {initialData ? "Update the filing or audit details below." : "Log a filing, audit, or statutory task with a clear owner-ready brief."}
+                </p>
               </div>
             </div>
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 transition-colors">
@@ -562,30 +558,29 @@ function ComplianceTaskModal({
               e.preventDefault();
               onSave(formData);
             }}
-            className="p-8 space-y-6"
+            className="space-y-6 px-5 py-5 sm:px-7 sm:py-6"
           >
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">What this should contain</div>
+              <p className="mt-2 text-sm text-gray-700">
+                Add the exact filing or audit type, when it is due, and the minimum scope someone needs to complete it without follow-up.
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="col-span-1 relative z-50">
                 <CustomSelect
-                  label="Audit Type"
+                  label="Task Type"
                   value={formData.type}
                   onChange={(val: string) => setFormData({ ...formData, type: val })}
-                  options={[
-                    { value: "GST Return", label: "GST Return" },
-                    { value: "TDS Payment", label: "TDS Payment" },
-                    { value: "E-Way Bill", label: "E-Way Bill" },
-                    { value: "Annual Return", label: "Annual Return" },
-                    { value: "Tax Audit", label: "Tax Audit" },
-                    { value: "ROC Filing", label: "ROC Filing" },
-                    { value: "PF/ESI", label: "PF/ESI Payment" },
-                    { value: "Other", label: "Other Protocol" }
-                  ]}
-                  placeholder="Select Protocol"
+                  options={[...auditTypeOptions]}
+                  placeholder="Select task type"
                 />
+                <p className="mt-2 text-xs text-gray-500">Choose the statutory activity you need to track.</p>
               </div>
 
               <div className="col-span-1">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Maturity Date</label>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Due Date</label>
                 <input
                   required
                   type="date"
@@ -593,6 +588,27 @@ function ComplianceTaskModal({
                   value={formData.due_date}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                 />
+                <p className="mt-2 text-xs text-gray-500">Use the actual statutory deadline, not an internal reminder date.</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Common Tasks</label>
+              <div className="flex flex-wrap gap-2">
+                {auditTypeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, type: option.value })}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
+                      formData.type === option.value
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-emerald-200 hover:text-emerald-700"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -600,22 +616,37 @@ function ComplianceTaskModal({
               <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Task Scope</label>
               <textarea
                 className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-sm font-semibold transition-all outline-none min-h-[80px] resize-none"
-                placeholder="Describe the regulatory requirement..."
+                placeholder="Describe the filing period, documents needed, reviewer, and submission outcome..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+              <div className="mt-2 flex flex-col gap-1">
+                {quickScopeHints.map((hint) => (
+                  <p key={hint} className="text-xs text-gray-500">{hint}</p>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Notes</label>
+              <textarea
+                className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-sm font-medium transition-all outline-none min-h-[96px] resize-y"
+                placeholder="Optional: add owner, portal reference, challan number, or blockers."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Priority</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {(['low', 'medium', 'high', 'critical'] as const).map((lvl) => (
                     <button
                       key={lvl}
                       type="button"
                       onClick={() => setFormData({ ...formData, priority: lvl })}
-                      className={`py-2 px-1 rounded-xl text-[8px] font-black uppercase tracking-tighter border-2 transition-all ${formData.priority === lvl
+                      className={`py-2.5 px-2 rounded-xl text-[10px] font-black uppercase tracking-wide border-2 transition-all ${formData.priority === lvl
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                         : 'border-gray-100 text-gray-400 hover:border-emerald-200'
                         }`}
@@ -626,14 +657,14 @@ function ComplianceTaskModal({
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Node Status</label>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Status</label>
                 <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl">
                   {(['pending', 'completed'] as const).map((s) => (
                     <button
                       key={s}
                       type="button"
                       onClick={() => setFormData({ ...formData, status: s })}
-                      className={`flex-1 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${formData.status === s
+                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.status === s
                         ? 'bg-white text-slate-900 shadow-sm'
                         : 'text-gray-400'
                         }`}
@@ -649,15 +680,16 @@ function ComplianceTaskModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors"
+                className="flex-1 rounded-2xl border border-gray-200 px-6 py-3 text-sm font-bold text-gray-600 hover:border-gray-300 hover:text-gray-900 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-[2] px-6 py-3 bg-slate-900 text-white rounded-2xl text-sm font-black tracking-widest uppercase shadow-xl shadow-slate-200 hover:shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                disabled={!formData.type.trim()}
+                className="flex-[2] rounded-2xl bg-slate-900 px-6 py-3 text-sm font-black tracking-widest uppercase text-white shadow-xl shadow-slate-200 transition-all hover:shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
               >
-                {initialData ? "Commit Modifications" : "Initialize Audit Node"}
+                {initialData ? "Save Changes" : "Create Task"}
               </button>
             </div>
           </form>

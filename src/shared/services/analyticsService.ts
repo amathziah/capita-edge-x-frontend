@@ -27,10 +27,12 @@ export const analyticsService = {
         if (!res.ok) throw new Error('Failed to export');
 
         const blob = await res.blob();
+        const disposition = res.headers.get('Content-Disposition') || '';
+        const matchedFilename = disposition.match(/filename="?([^"]+)"?/i)?.[1];
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${type}_export_${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = matchedFilename || `${type}_export_${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(a);
         a.click();
         setTimeout(() => {

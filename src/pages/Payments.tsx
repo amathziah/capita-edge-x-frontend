@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService } from '../services/dataService';
 import { useData } from "../contexts/DataContext";
+import { downloadCsv } from '@/shared/lib/export';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -151,20 +152,11 @@ export function Payments() {
 
   // ── Actions ────────────────────────────────────────────────────────
   const exportCSV = (rows: PaymentView[]) => {
-    const header = ["Invoice", "Method", "Amount", "Date", "Reconciled"];
-    const lines = [
-      header.join(","),
-      ...rows.map(r => [r.invoice, r.method, r.amount, r.date, r.reconciled ? "Yes" : "No"].join(","))
-    ].join("\n");
-    const blob = new Blob([lines], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `payments_export.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadCsv(
+      "payments_export.csv",
+      ["Invoice", "Method", "Amount", "Date", "Reconciled"],
+      rows.map((r) => [r.invoice, r.method, r.amount, r.date, r.reconciled ? "Yes" : "No"])
+    );
   };
 
   const markReconciled = async (paymentId: string) => {
@@ -989,13 +981,9 @@ export function Payments() {
 
             {/* Footer */}
             <div className="px-6 py-4 border-t border-teal-100/60 bg-white">
-              <button
-                onClick={() => exportCSV(payments.filter(p => p.invoice === selectedInvoice))}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-xl font-semibold text-sm transition shadow-md"
-                style={{ backgroundColor: '#0d9488', boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)' }}
-              >
-                <Download size={16} /> Export Transaction
-              </button>
+              <div className="text-center text-xs font-medium text-slate-500">
+                Transaction details are available in the payment ledger.
+              </div>
             </div>
           </motion.div>
         </div>

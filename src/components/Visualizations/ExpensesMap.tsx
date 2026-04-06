@@ -17,7 +17,6 @@ import { Expense } from '../../types';
 import { TotalNode } from './nodes/TotalNode';
 import { CategoryNode } from './nodes/CategoryNode';
 import { InsightNode } from './nodes/InsightNode';
-import { ExportNode } from './nodes/ExportNode';
 import { ElasticEdge } from './ElasticEdge';
 import {
 } from 'lucide-react';
@@ -26,7 +25,6 @@ const nodeTypes = {
     total: TotalNode,
     category: CategoryNode,
     insight: InsightNode,
-    export: ExportNode,
 };
 
 const edgeTypes = {
@@ -52,8 +50,6 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
         if (node.type === 'total') { width = 280; height = 280; }
         if (node.type === 'category') { width = 240; height = 140; }
         if (node.type === 'insight') { width = 200; height = 90; }
-        if (node.type === 'export') { width = 160; height = 60; }
-
         dagreGraph.setNode(node.id, { width, height });
     });
 
@@ -81,10 +77,9 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 
 interface ExpensesMapProps {
     expenses: Expense[];
-    onExport: () => void;
 }
 
-export function ExpensesMap({ expenses, onExport }: ExpensesMapProps) {
+export function ExpensesMap({ expenses }: ExpensesMapProps) {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
@@ -193,25 +188,8 @@ export function ExpensesMap({ expenses, onExport }: ExpensesMapProps) {
             });
         }
 
-
-        // ── 5. Export Node ───────────────────────────────────────────────────
-        _nodes.push({
-            id: 'export',
-            type: 'export',
-            data: { onExport },
-            position: { x: 0, y: 0 },
-        });
-
-        _edges.push({
-            id: 'e-total-export',
-            source: 'total',
-            target: 'export',
-            type: 'elastic',
-            style: { stroke: '#d1d5db', strokeWidth: 1.5, strokeDasharray: '4,4', opacity: 0.4 },
-        });
-
         return getLayoutedElements(_nodes, _edges);
-    }, [expenses, onExport]);
+    }, [expenses]);
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);

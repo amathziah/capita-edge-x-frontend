@@ -3,7 +3,6 @@ import {
     Calendar as CalendarIcon,
     ChevronLeft,
     ChevronRight,
-    Download,
     Plus,
     Clock,
     CheckCircle2,
@@ -39,15 +38,16 @@ import { Invoice } from '../../types';
 /* ─────────────────────────────────────────────
    Types
 ───────────────────────────────────────────── */
-type FilterStatus = 'all' | 'paid' | 'pending' | 'overdue';
+type FilterStatus = 'all' | 'paid' | 'pending' | 'due_today' | 'overdue';
 type ViewMode = 'month' | 'list';
+type NormalizedCalendarStatus = 'paid' | 'pending' | 'due_today' | 'overdue' | 'draft' | 'closed';
 
 interface CalendarEvent {
     id: string;
     title: string;
     date: Date;
     amount: number;
-    status: 'paid' | 'sent' | 'viewed' | 'partially_paid' | 'overdue' | 'draft';
+    status: 'paid' | 'sent' | 'partially_paid' | 'overdue' | 'draft' | 'void' | 'write_off';
     customerName: string;
     invoiceNumber: string;
     raw: any;
@@ -58,20 +58,26 @@ interface CalendarEvent {
 ───────────────────────────────────────────── */
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function normaliseStatus(status: string, dueDate?: string): 'paid' | 'pending' | 'overdue' | 'draft' {
+function getBalanceDue(invoice: any) {
+    const explicitBalance = invoice.balance_due ?? invoice.balanceDue;
+    if (explicitBalance !== undefined && explicitBalance !== null) return Number(explicitBalance) || 0;
+    const totalAmount = Number(invoice.netReceivable ?? invoice.net_receivable ?? invoice.total ?? 0);
+    const amountPaid = Number(invoice.amountPaid ?? invoice.amount_paid ?? 0);
+    return Math.max(totalAmount - amountPaid, 0);
+}
+
+function normaliseStatus(status: string, dueDate?: string): NormalizedCalendarStatus {
     const s = (status || '').toLowerCase().trim();
     if (s === 'paid') return 'paid';
     if (s === 'draft') return 'draft';
-    
-    // Date-based overdue detection for the calendar
-    if (dueDate) {
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const dueStr = dueDate.split('T')[0];
-        if (dueStr <= todayStr) return 'overdue';
+    if (s === 'overdue') return 'overdue';
+    if (s === 'void' || s === 'write_off' || s === 'cancelled') return 'closed';
+    if (dueDate && ['sent', 'partially_paid', 'pending', 'viewed'].includes(s)) {
+        const dueStr = new Date(dueDate).toISOString().split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (dueStr === todayStr) return 'due_today';
     }
-
-    if (['sent', 'viewed', 'partially_paid', 'pending', 'overdue'].includes(s)) return 'pending';
+    if (['sent', 'partially_paid', 'pending', 'viewed'].includes(s)) return 'pending';
     return 'draft';
 }
 
@@ -96,6 +102,16 @@ const STATUS_CONFIG = {
         badge: 'bg-amber-50 text-amber-600 ring-1 ring-amber-200',
         icon: Clock,
         iconColor: 'text-amber-500',
+    },
+    due_today: {
+        label: 'Due Today',
+        pill: 'bg-sky-50 text-sky-700 border border-sky-200',
+        dot: 'bg-sky-500',
+        bar: 'bg-sky-500',
+        card: 'border-l-sky-400',
+        badge: 'bg-sky-50 text-sky-600 ring-1 ring-sky-200',
+        icon: AlertCircle,
+        iconColor: 'text-sky-500',
     },
     overdue: {
         label: 'Overdue',
@@ -185,7 +201,7 @@ function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => vo
         <button
             onClick={(e) => { e.stopPropagation(); onClick(); }}
             className={`w-full text-left flex items-center gap-1.5 px-2 py-[3px] rounded-md text-[10px] font-semibold truncate border-l-2 ${cfg.pill} hover:brightness-95 transition-all duration-150 group/pill`}
-            style={{ borderLeftColor: s === 'paid' ? '#34d399' : s === 'overdue' ? '#f87171' : s === 'pending' ? '#fbbf24' : '#94a3b8' }}
+            style={{ borderLeftColor: s === 'paid' ? '#34d399' : s === 'overdue' ? '#f87171' : s === 'due_today' ? '#0ea5e9' : s === 'pending' ? '#fbbf24' : '#94a3b8' }}
         >
 
             <span className={`shrink-0 w-[5px] h-[5px] rounded-full ${cfg.dot}`} />
@@ -403,6 +419,10 @@ export function LiquidityCalendar() {
         invoices.map((inv: any) => {
             // Default to due date for liquidity projection
             let eventDate = new Date(inv.dueDate || inv.date || Date.now());
+            const normalizedStatus = normaliseStatus(inv.status, inv.dueDate);
+            if (normalizedStatus === 'closed') {
+                return null;
+            }
             
             // If paid, show on the actual payment date (recorded date)
             if (inv.status === 'paid') {
@@ -417,13 +437,13 @@ export function LiquidityCalendar() {
                 id: inv.id,
                 title: inv.buyer?.name || 'Unknown',
                 date: eventDate,
-                amount: inv.total || 0,
+                amount: normalizedStatus === 'paid' ? Number(inv.total || 0) : getBalanceDue(inv),
                 status: inv.status,
                 customerName: inv.buyer?.name || 'Unknown',
                 invoiceNumber: inv.invoiceNumber || '—',
                 raw: inv,
             };
-        }),
+        }).filter(Boolean) as CalendarEvent[],
         [invoices, payments]
     );
 
@@ -435,7 +455,7 @@ export function LiquidityCalendar() {
                 ev.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
             const matchFilter =
                 filterStatus === 'all' ||
-                (filterStatus === 'pending' ? ns === 'pending' : ns === filterStatus);
+                (filterStatus === 'pending' ? ns === 'pending' || ns === 'due_today' : ns === filterStatus);
             return matchSearch && matchFilter;
         });
     }, [allEvents, searchTerm, filterStatus]);
@@ -447,7 +467,11 @@ export function LiquidityCalendar() {
         return {
             projected: monthEvs.reduce((s, e) => s + e.amount, 0),
             collected: monthEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'paid').reduce((s, e) => s + e.amount, 0),
-            pending: monthEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'pending').reduce((s, e) => s + e.amount, 0),
+            pending: monthEvs.filter((e) => {
+                const status = normaliseStatus(e.status, e.raw?.dueDate);
+                return status === 'pending' || status === 'due_today';
+            }).reduce((s, e) => s + e.amount, 0),
+            dueToday: monthEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'due_today').reduce((s, e) => s + e.amount, 0),
             overdue: monthEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'overdue').reduce((s, e) => s + e.amount, 0),
         };
     }, [allEvents, currentDate]);
@@ -487,6 +511,7 @@ export function LiquidityCalendar() {
         { key: 'all', label: 'All' },
         { key: 'paid', label: 'Paid' },
         { key: 'pending', label: 'Pending' },
+        { key: 'due_today', label: 'Due Today' },
         { key: 'overdue', label: 'Overdue' },
     ];
 
@@ -505,9 +530,6 @@ export function LiquidityCalendar() {
                     </h1>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                    <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-                        <Download size={13} /> Export
-                    </button>
                     <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition-all shadow-lg shadow-slate-900/20">
                         <Plus size={13} /> Add Forecast
                     </button>
@@ -537,7 +559,7 @@ export function LiquidityCalendar() {
                 <StatCard
                     label="Upcoming"
                     value={fmtFull(stats.pending)}
-                    sub="Awaiting payment"
+                    sub={stats.dueToday > 0 ? `${fmtFull(stats.dueToday)} due today` : "Awaiting payment"}
                     accent="bg-gradient-to-r from-amber-400 to-orange-400"
                     icon={Clock}
                     iconClass="text-amber-500"
@@ -665,7 +687,7 @@ export function LiquidityCalendar() {
 
                         {/* legend */}
                         <div className="flex items-center justify-end gap-5 px-5 py-3 border-t border-slate-50">
-                            {(['paid', 'pending', 'overdue', 'draft'] as const).map((s) => (
+                            {(['paid', 'pending', 'due_today', 'overdue', 'draft'] as const).map((s) => (
                                 <div key={s} className="flex items-center gap-1.5">
                                     <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG[s].dot}`} />
                                     <span className="text-[10px] font-bold text-slate-400 capitalize">{STATUS_CONFIG[s].label}</span>

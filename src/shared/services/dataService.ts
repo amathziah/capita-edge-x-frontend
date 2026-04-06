@@ -45,6 +45,7 @@ class DataService {
   saveInvoice = invoiceService.saveInvoice;
   deleteInvoice = invoiceService.deleteInvoice;
   duplicateInvoice = invoiceService.duplicateInvoice;
+  markInvoiceShared = invoiceService.markShared;
   getShareUrl = invoiceService.getShareUrl;
 
   // Dashboard Stats

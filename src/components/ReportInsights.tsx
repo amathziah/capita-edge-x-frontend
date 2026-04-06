@@ -1,234 +1,180 @@
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Trophy, Target, TrendingDown, Lightbulb, X } from "lucide-react";
+import { AlertTriangle, Lightbulb, TrendingUp, Wallet, X } from "lucide-react";
 import { useMemo } from "react";
 
 interface ReportInsightsProps {
-    data: any[];
-    aiInsights: any[];
-    isOpen: boolean;
-    onClose: () => void;
+  data: any[];
+  aiInsights: any[];
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 interface Insight {
-    id: string;
-    title: string;
-    value: string;
-    subtitle: string;
-    icon: any;
-    color: string;
-    bg: string;
-    gradient: string;
-    description: string;
-    segmentColor: string;
+  id: string;
+  title: string;
+  value: string;
+  description: string;
+  icon: any;
+  tone: string;
+  iconBg: string;
 }
 
-const TYPE_THEMES: Record<string, { icon: any, color: string, bg: string, gradient: string, segmentColor: string, border: string }> = {
-    success: {
-        icon: Trophy,
-        color: "text-teal-400",
-        bg: "bg-teal-500/10",
-        gradient: "from-teal-500/20 to-emerald-500/10",
-        segmentColor: "#14b8a6",
-        border: "border-teal-500/20"
-    },
-    warning: {
-        icon: TrendingDown,
-        color: "text-amber-400",
-        bg: "bg-amber-500/10",
-        gradient: "from-amber-500/20 to-orange-500/10",
-        segmentColor: "#f59e0b",
-        border: "border-amber-500/20"
-    },
-    critical: {
-        icon: Target,
-        color: "text-rose-400",
-        bg: "bg-rose-500/10",
-        gradient: "from-rose-500/20 to-red-500/10",
-        segmentColor: "#f43f5e",
-        border: "border-rose-500/20"
-    },
-    info: {
-        icon: Lightbulb,
-        color: "text-cyan-400",
-        bg: "bg-cyan-500/10",
-        gradient: "from-cyan-500/20 to-sky-500/10",
-        segmentColor: "#06b6d4",
-        border: "border-cyan-500/20"
-    }
-};
+function formatCurrency(value: number) {
+  return `₹${Math.round(value || 0).toLocaleString()}`;
+}
 
 export function ReportInsights({ data, aiInsights, isOpen, onClose }: ReportInsightsProps) {
-    // Reusing logic from ReportFlashcards to generate insights
-    const insights = useMemo<Insight[]>(() => {
-        // Preference: Real AI Insights
-        if (aiInsights && aiInsights.length > 0) {
-            return aiInsights.map(ai => {
-                const theme = TYPE_THEMES[ai.type] || TYPE_THEMES.info;
-                return {
-                    id: ai.id,
-                    title: ai.title,
-                    value: ai.value,
-                    subtitle: ai.subtitle,
-                    description: ai.description,
-                    icon: theme.icon,
-                    color: theme.color,
-                    bg: theme.bg,
-                    gradient: theme.gradient,
-                    segmentColor: theme.segmentColor
-                };
-            });
-        }
-
-        // Fallback: Calculated Insights if AI is not present
-        if (!data || data.length === 0) return [];
-
-        const sortedByRevenue = [...data].sort((a, b) => b.revenue - a.revenue);
-
-        const efficientMonths = data.filter(d => d.revenue > 0)
-            .sort((a, b) => (a.expenses / a.revenue) - (b.expenses / b.revenue));
-        const efficientMonth = efficientMonths[0];
-
-        const totalRevenue = data.reduce((acc, curr) => acc + curr.revenue, 0);
-        const avgRevenue = totalRevenue / data.length;
-
-        const lastMonth = data[data.length - 1];
-        const performanceVsAvg = lastMonth ? ((lastMonth.revenue - avgRevenue) / avgRevenue) * 100 : 0;
-
-        return [
-            {
-                id: "best-month",
-                title: "Star Performer",
-                value: sortedByRevenue[0] ? sortedByRevenue[0].month : "N/A",
-                subtitle: `Highest revenue: ₹${sortedByRevenue[0]?.revenue.toLocaleString()}`,
-                icon: Trophy,
-                color: "text-teal-400",
-                bg: "bg-teal-500/10",
-                gradient: "from-teal-500/20 to-emerald-500/10",
-                description: "This month set the record for highest earnings.",
-                segmentColor: "#14b8a6"
-            },
-            {
-                id: "efficiency",
-                title: "Efficiency King",
-                value: efficientMonth ? efficientMonth.month : "N/A",
-                subtitle: efficientMonth
-                    ? `Lowest expense ratio (${((efficientMonth.expenses / efficientMonth.revenue) * 100).toFixed(1)}%)`
-                    : "N/A",
-                icon: Target,
-                color: "text-teal-400",
-                bg: "bg-teal-500/10",
-                gradient: "from-teal-500/20 to-emerald-500/10",
-                description: "You managed your costs most effectively during this period.",
-                segmentColor: "#14b8a6"
-            },
-            {
-                id: "trend",
-                title: "Recent Momentum",
-                value: `${performanceVsAvg > 0 ? '+' : ''}${performanceVsAvg.toFixed(1)}%`,
-                subtitle: `${performanceVsAvg >= 0 ? "Above" : "Below"} average`,
-                icon: TrendingDown,
-                color: performanceVsAvg >= 0 ? "text-teal-400" : "text-rose-400",
-                bg: performanceVsAvg >= 0 ? "bg-teal-500/10" : "bg-rose-500/10",
-                gradient: performanceVsAvg >= 0 ? "from-teal-500/20 to-emerald-500/10" : "from-rose-500/20 to-red-500/10",
-                description: performanceVsAvg >= 0 ? "Great job! You're trending upwards." : "A bit of a dip, let's turn it around.",
-                segmentColor: performanceVsAvg >= 0 ? "#14b8a6" : "#f43f5e"
-            },
-            {
-                id: "insight",
-                title: "Smart Insight",
-                value: "Optimization",
-                subtitle: "Reduce expenses in low months.",
-                icon: Lightbulb,
-                color: "text-teal-400",
-                bg: "bg-teal-500/10",
-                gradient: "from-teal-500/20 to-sky-500/10",
-                description: "Actionable advice to improve your bottom line.",
-                segmentColor: "#14b8a6"
-            }
+  const insights = useMemo<Insight[]>(() => {
+    if (aiInsights && aiInsights.length > 0) {
+      return aiInsights.slice(0, 3).map((item, index) => {
+        const tones = [
+          { icon: TrendingUp, tone: "text-emerald-700", iconBg: "bg-emerald-100" },
+          { icon: Wallet, tone: "text-sky-700", iconBg: "bg-sky-100" },
+          { icon: AlertTriangle, tone: "text-amber-700", iconBg: "bg-amber-100" }
         ];
-    }, [data, aiInsights]);
+        const theme = tones[index] || tones[0];
 
+        return {
+          id: item.id || `ai-${index}`,
+          title: item.title || "Insight",
+          value: item.value || item.subtitle || "Review this",
+          description: item.description || item.subtitle || "Useful guidance for your report.",
+          icon: theme.icon,
+          tone: theme.tone,
+          iconBg: theme.iconBg
+        };
+      });
+    }
 
-    if (!isOpen || !data || data.length === 0) return null;
+    if (!data || data.length === 0) return [];
 
-    return createPortal(
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        onClick={onClose}
-                    />
+    const totalRevenue = data.reduce((sum, row) => sum + (row.revenue || 0), 0);
+    const totalExpenses = data.reduce((sum, row) => sum + (row.expenses || 0), 0);
+    const totalProfit = totalRevenue - totalExpenses;
+    const latest = data[data.length - 1];
+    const previous = data[data.length - 2];
+    const revenueDelta = previous?.revenue > 0
+      ? Math.round((((latest?.revenue || 0) - previous.revenue) / previous.revenue) * 100)
+      : 0;
+    const bestMonth = [...data].sort((a, b) => (b.profit || 0) - (a.profit || 0))[0];
+    const latestPending = Number(latest?.pending || 0) + Number(latest?.overdue || 0);
 
-                    {/* Main Container */}
-                    <motion.div
-                        initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                        className="relative w-full max-w-4xl bg-[#0c0f1a] rounded-[2.5rem] border border-white/[0.08] shadow-2xl overflow-hidden max-h-[85vh] md:max-h-[90vh] flex flex-col mx-4 md:mx-0"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <div className="px-8 py-6 border-b border-white/[0.06] flex items-center justify-between bg-gradient-to-r from-teal-500/5 to-transparent gap-4">
-                            <div className="min-w-0">
-                                <h2 className="text-lg md:text-xl font-black text-white tracking-tight">Key Business Insights</h2>
-                                <p className="text-teal-400/60 text-[12px] uppercase font-bold tracking-[0.2em]">Performance highlights and actionable intelligence.</p>
-                            </div>
-                            <button
-                                onClick={onClose}
-                                className="p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] transition-all shrink-0"
-                            >
-                                <X className="w-5 h-5 text-gray-500" />
-                            </button>
-                        </div>
+    return [
+      {
+        id: "money-left",
+        title: "What you kept",
+        value: formatCurrency(totalProfit),
+        description: totalProfit >= 0
+          ? "This is what stayed after expenses across the report period."
+          : "Expenses are running ahead of income in the current report period.",
+        icon: Wallet,
+        tone: totalProfit >= 0 ? "text-emerald-700" : "text-rose-700",
+        iconBg: totalProfit >= 0 ? "bg-emerald-100" : "bg-rose-100"
+      },
+      {
+        id: "momentum",
+        title: "Recent movement",
+        value: revenueDelta === 0 ? "Flat" : `${revenueDelta > 0 ? "+" : ""}${revenueDelta}%`,
+        description: revenueDelta >= 0
+          ? "Income is moving in the right direction compared with the previous month."
+          : "Income dipped versus the previous month, so watch collections closely.",
+        icon: TrendingUp,
+        tone: revenueDelta >= 0 ? "text-sky-700" : "text-amber-700",
+        iconBg: revenueDelta >= 0 ? "bg-sky-100" : "bg-amber-100"
+      },
+      {
+        id: "watch-now",
+        title: "What needs attention",
+        value: latestPending > 0 ? formatCurrency(latestPending) : "No unpaid pressure",
+        description: latestPending > 0
+          ? "This amount is still unpaid in the latest period and should be followed up first."
+          : bestMonth
+            ? `Your strongest month was ${bestMonth.label || bestMonth.period || "recently"}.`
+            : "No urgent payment issue is visible right now.",
+        icon: AlertTriangle,
+        tone: latestPending > 0 ? "text-amber-700" : "text-emerald-700",
+        iconBg: latestPending > 0 ? "bg-amber-100" : "bg-emerald-100"
+      }
+    ];
+  }, [data, aiInsights]);
 
-                        {/* Content Grid */}
-                        <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                {insights.map((insight, idx) => (
-                                    <motion.div
-                                        key={insight.id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.1 }}
-                                        className="relative p-5 rounded-[2.5rem] border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-teal-500/30 transition-all duration-500 group overflow-hidden"
-                                    >
-                                        {/* Inner Glass Glow */}
-                                        <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${insight.gradient} blur-[40px] opacity-20 group-hover:opacity-40 transition-opacity`} />
+  if (!isOpen || !data || data.length === 0) return null;
 
-                                        <div className="relative flex items-start gap-4">
-                                            <div className={`p-4 rounded-2xl shrink-0 ${insight.bg} ${insight.color} border border-white/[0.05] group-hover:scale-110 transition-all duration-500`}>
-                                                <insight.icon className="w-6 h-6" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="text-[11px] font-black text-teal-400 uppercase tracking-[0.2em] mb-1">{insight.title}</h3>
-                                                <div className="text-xl font-black text-white mb-0.5 truncate tracking-tight">
-                                                    {insight.value}
-                                                </div>
-                                                <p className={`text-[12px] font-bold ${insight.color} mb-3 opacity-90`}>{insight.subtitle}</p>
-                                                <div className="bg-white/[0.03] p-4 rounded-[1.5rem] border border-white/[0.05] group-hover:border-teal-500/20 transition-colors">
-                                                    <p className="text-[12px] text-gray-400 leading-relaxed font-medium">
-                                                        {insight.description}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </div>
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-slate-900/35 backdrop-blur-sm"
+            onClick={onClose}
+          />
 
-                        {/* Footer Decoration */}
-                        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-teal-500/20 to-transparent" />
-                    </motion.div>
+          <motion.div
+            initial={{ scale: 0.96, opacity: 0, y: 16 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.96, opacity: 0, y: 16 }}
+            className="relative mx-4 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-5 sm:px-6">
+              <div className="min-w-0">
+                <h2 className="text-lg font-black tracking-tight text-slate-900">Simple insights</h2>
+                <p className="mt-1 text-sm text-gray-500">Three quick takeaways from your report.</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-xl border border-gray-200 bg-white p-2 text-gray-400 transition-all hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-5 sm:p-6">
+              <div className="mb-5 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-emerald-100 p-2 text-emerald-700">
+                    <Lightbulb className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-800">Keep this screen practical.</div>
+                    <p className="mt-1 text-sm leading-6 text-gray-600">
+                      Use these notes to decide what to follow up, what to protect, and whether this month is improving.
+                    </p>
+                  </div>
                 </div>
-            )}
-        </AnimatePresence>,
-        document.body
-    );
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {insights.map((insight, index) => (
+                  <motion.div
+                    key={insight.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.08 }}
+                    className="rounded-2xl border border-gray-100 bg-slate-50/70 p-4"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`rounded-xl p-3 ${insight.iconBg}`}>
+                        <insight.icon className={`h-5 w-5 ${insight.tone}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">{insight.title}</div>
+                        <div className={`mt-1 text-xl font-black tracking-tight ${insight.tone}`}>{insight.value}</div>
+                        <p className="mt-2 text-sm leading-6 text-gray-600">{insight.description}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
 }

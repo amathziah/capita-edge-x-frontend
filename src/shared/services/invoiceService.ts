@@ -63,6 +63,9 @@ export const invoiceService = {
     sendReminder: (id: string, to: string, pdfBase64?: string | null) =>
         api.post(ENDPOINTS.INVOICE_REMINDER(id), { to, pdfAttachment: pdfBase64 }),
 
+    markShared: (id: string) =>
+        api.post<{ success: boolean; invoice: Invoice; shareToken?: string }>(ENDPOINTS.INVOICE_SHARE_MARK(id), {}),
+
     getShareUrl: (token: string) => `${window.location.origin}/invoice/share/${token}`,
 
     getShareDownloadUrl: (token: string) => `${API_URL}${ENDPOINTS.INVOICE_SHARE(token)}`,

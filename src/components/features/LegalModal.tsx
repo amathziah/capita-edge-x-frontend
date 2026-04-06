@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { brandProfile } from '@/shared/lib/config/brandProfile';
 
 export type PolicyType = 'about' | 'contact' | 'terms' | 'privacy' | 'refund';
 
@@ -15,9 +16,9 @@ const POLICY_CONTENT: Record<PolicyType, { title: string; content: React.ReactNo
         title: "About Us",
         content: (
             <div className="space-y-4 text-sm text-slate-300 leading-relaxed">
-                <p>Welcome to CapitaEdgeX. We are a dedicated financial technology platform designed specifically for Indian marketing agencies, freelancers, and small businesses.</p>
-                <p>Our mission is to simplify invoice management, payment collections, and financial compliance, ensuring that creative professionals can focus on their work rather than their accounts.</p>
-                <p>We strive to provide a seamlessly integrated Revenue OS that brings enterprise-level financial controls to growing agencies across India.</p>
+                {brandProfile.aboutParagraphs.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                ))}
             </div>
         )
     },

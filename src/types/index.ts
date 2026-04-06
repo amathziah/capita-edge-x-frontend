@@ -116,6 +116,8 @@ export interface Invoice {
   shipping?: number;
   total: number;
   amountPaid?: number;
+  balance_due?: number;
+  balanceDue?: number;
   // GST split
   cgstAmount?: number;
   sgstAmount?: number;
@@ -144,7 +146,15 @@ export interface Invoice {
   courierTracking?: string;
   dispatchDate?: string;
   // Status and tracking
-  status: 'draft' | 'pending' | 'paid' | 'cancelled';
+  status: 'draft' | 'sent' | 'partially_paid' | 'paid' | 'overdue' | 'void' | 'write_off' | 'pending' | 'cancelled';
+  document_status?: 'draft' | 'issued' | 'void' | 'written_off';
+  documentStatus?: 'draft' | 'issued' | 'void' | 'written_off';
+  payment_status?: 'unpaid' | 'partially_paid' | 'paid';
+  paymentStatus?: 'unpaid' | 'partially_paid' | 'paid';
+  collection_status?: 'current' | 'due_today' | 'overdue' | 'closed';
+  collectionStatus?: 'current' | 'due_today' | 'overdue' | 'closed';
+  days_overdue?: number;
+  daysOverdue?: number;
   type?: string;
   is_recurring?: boolean;
   notes?: string;

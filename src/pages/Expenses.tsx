@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Search, DollarSign, Tag, Loader2, X, Calendar, Receipt, Trash2, Edit2, Download, Grid, Map as MapIcon, Network, Shield } from "lucide-react";
+import { Plus, Search, DollarSign, Tag, Loader2, X, Calendar, Receipt, Trash2, Edit2, Grid, Map as MapIcon, Network, Shield } from "lucide-react";
 import { motion } from 'framer-motion';
 import { dataService } from '../services/dataService';
 import { Expense } from '../types';
@@ -129,27 +129,6 @@ export function Expenses() {
     }
   };
 
-  const downloadCSV = () => {
-    const header = ["Date", "Category", "Description", "Amount", "GST"];
-    const rows = expenses.map((e) => [
-      new Date(e.date).toLocaleDateString(),
-      e.category,
-      e.description,
-      e.amount.toString(),
-      (e.gstAmount || 0).toString()
-    ]);
-    const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "expenses.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
   // Computed values
   const filteredExpenses = useMemo(() => {
     return expenses
@@ -244,13 +223,6 @@ export function Expenses() {
           <p className="text-sm text-text-muted mt-1">Track and manage your business expenses.</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={downloadCSV}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-medium text-text-muted hover:bg-gray-50 shadow-sm transition"
-          >
-            <Download className="w-4 h-4" />
-            Export CSV
-          </button>
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-medium shadow-soft transition"
@@ -416,7 +388,7 @@ export function Expenses() {
                 No expenses to visualize.
               </div>
             ) : (
-              <ExpensesMap expenses={expenses} onExport={downloadCSV} />
+              <ExpensesMap expenses={expenses} />
             )}
           </div>
         </motion.div>

@@ -13,11 +13,30 @@ import {
     CreditCard,
     LayoutGrid,
     Network,
-    AlertCircle
+    AlertCircle,
+    ChevronDown,
+    Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InvoiceLifecycleMap } from '@/components/Visualizations/InvoiceLifecycleMap';
 import { SYNC_STEPS } from '@/utils/aiLoadingSteps';
+
+const getInvoiceBalanceDue = (invoice: any) => {
+    const explicitBalance = invoice.balance_due ?? invoice.balanceDue;
+    if (explicitBalance !== undefined && explicitBalance !== null) {
+        return Number(explicitBalance) || 0;
+    }
+
+    const totalAmount = Number(invoice.netReceivable ?? invoice.net_receivable ?? invoice.total ?? 0);
+    const amountPaid = Number(invoice.amountPaid ?? invoice.amount_paid ?? 0);
+    return Math.max(totalAmount - amountPaid, 0);
+};
+
+const isOpenInvoiceStatus = (status?: string) =>
+    ['sent', 'partially_paid', 'overdue'].includes((status || '').toLowerCase().trim());
+
+const isOverdueInvoiceStatus = (status?: string) =>
+    (status || '').toLowerCase().trim() === 'overdue';
 
 
 export const ControlRoom = () => {
@@ -26,11 +45,18 @@ export const ControlRoom = () => {
     const { invoices, payments, customers, expenses, stats, loading, refreshData } = useData();
     const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
     const [currentStep, setCurrentStep] = useState(SYNC_STEPS[0]);
+    const [showQuickActions, setShowQuickActions] = useState(false);
 
 
     useEffect(() => {
         refreshData(['invoices', 'stats', 'payments', 'customers', 'expenses']);
     }, [refreshData]);
+
+    useEffect(() => {
+        const closeMenu = () => setShowQuickActions(false);
+        window.addEventListener('click', closeMenu);
+        return () => window.removeEventListener('click', closeMenu);
+    }, []);
 
     // Sync Step cycling
     useEffect(() => {
@@ -51,28 +77,28 @@ export const ControlRoom = () => {
 
 
     const metrics = useMemo(() => {
-        const overdue = Array.isArray(invoices) ? invoices.filter(i => (i.status === 'pending' && i.dueDate && new Date(i.dueDate) < new Date())) : [];
+        const overdue = Array.isArray(invoices) ? invoices.filter(i => isOverdueInvoiceStatus(i.status)) : [];
 
         // SaaS Specifics
         const monthlyExpenses = Array.isArray(expenses) ? expenses.reduce((sum: number, e: any) => sum + e.amount, 0) : 0;
-        const collected = stats.total_revenue || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'paid').reduce((sum: number, i: any) => sum + i.total, 0) : 0);
+        const collected = stats.total_revenue ?? (Array.isArray(invoices) ? invoices.filter(i => i.status === 'paid').reduce((sum: number, i: any) => sum + i.total, 0) : 0);
         const runway = monthlyExpenses > 0 ? Math.floor(collected / (monthlyExpenses / 3 || 1)) : 12;
 
         return {
             overdueInvoices: overdue,
-            totalPending: stats.pending_payments || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'pending').reduce((sum, i) => sum + i.total, 0) : 0),
-            totalOverdue: stats.overdue_revenue || overdue.reduce((sum, i) => sum + i.total, 0),
+            totalPending: stats.pending_payments ?? (Array.isArray(invoices) ? invoices.filter(i => isOpenInvoiceStatus(i.status)).reduce((sum, i) => sum + getInvoiceBalanceDue(i), 0) : 0),
+            totalOverdue: stats.overdue_revenue ?? overdue.reduce((sum, i) => sum + getInvoiceBalanceDue(i), 0),
             totalCollected: collected,
-            pendingCount: stats.pending_invoices || (Array.isArray(invoices) ? invoices.filter(i => i.status === 'draft' || i.status === 'pending').length : 0),
-            overdueCount: stats.overdue_invoices || overdue.length,
+            pendingCount: stats.pending_invoices ?? (Array.isArray(invoices) ? invoices.filter(i => isOpenInvoiceStatus(i.status)).length : 0),
+            overdueCount: stats.overdue_invoices ?? overdue.length,
             // SaaS Extensions
             growthRate: 8.4, // Fallback placeholder but ideally calculated from historical stats
             churnRate: 1.2,
             cashRunway: Math.min(runway || 12, 24),
-            activeSubscriptions: stats.total_customers || (Array.isArray(customers) ? customers.length : 0),
+            activeSubscriptions: stats.total_customers ?? (Array.isArray(customers) ? customers.length : 0),
             // Agency Extensions
             retainerUsage: 78,
-            unbilledHours: (stats.pending_invoices || 0) * 8
+            unbilledHours: (stats.pending_invoices ?? 0) * 8
         };
     }, [invoices, stats, expenses, customers]);
 
@@ -94,11 +120,18 @@ export const ControlRoom = () => {
     const activityFeed = useMemo(() => {
         return {
             recentPayments: Array.isArray(payments) ? payments.slice(0, 3) : [],
-            recentInvoices: Array.isArray(invoices) ? invoices.filter(i => !(i.status === 'pending' && i.dueDate && new Date(i.dueDate) < new Date())).slice(0, 3) : []
+            recentInvoices: Array.isArray(invoices) ? invoices.filter(i => i.status !== 'overdue').slice(0, 3) : []
         };
     }, [payments, invoices]);
 
     const { recentPayments, recentInvoices } = activityFeed;
+
+    const quickActions = [
+        { label: 'Create Invoice', href: '/dashboard/invoices/new' },
+        { label: 'Record Payment', href: '/dashboard/payments' },
+        { label: 'Add Customer', href: '/dashboard/customers' },
+        { label: 'Log Expense', href: '/dashboard/expenses' },
+    ];
 
     const solopreneurMetrics = useMemo(() => {
         if (!isSolopreneur) return null;
@@ -113,22 +146,13 @@ export const ControlRoom = () => {
             return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
         };
 
-        const todayStr = now.toISOString().split('T')[0];
-
         // 1. Total Invoiced (This Month)
         const monthlyInvoices = invoices.filter(i => isInCurrentMonth(i.date) && i.status !== 'draft');
         const totalInvoicedMonth = monthlyInvoices.reduce((sum, i) => sum + (i.total || 0), 0);
 
-        // 2. Overdue - Inclusive of Today for precise action tracing
-        const overdueList = invoices.filter(i => {
-            const status = (i.status || '').toLowerCase().trim();
-            const isUnpaid = ['overdue', 'pending', 'sent'].includes(status);
-            if (!isUnpaid || !i.dueDate) return false;
-            
-            const dueStr = i.dueDate.split('T')[0];
-            return dueStr <= todayStr;
-        });
-        const totalOverdueAmount = overdueList.reduce((sum, i) => sum + (i.total || 0), 0);
+        // 2. True overdue list based on resolved invoice status from API
+        const overdueList = invoices.filter(i => isOverdueInvoiceStatus(i.status));
+        const totalOverdueAmount = overdueList.reduce((sum, i) => sum + getInvoiceBalanceDue(i), 0);
         
         // 3. Cash Collected (This Month)
         const monthlyPayments = payments.filter(p => isInCurrentMonth(p.date || p.createdAt));
@@ -138,11 +162,8 @@ export const ControlRoom = () => {
         const collectionRate = totalInvoicedMonth > 0 ? Math.round((totalCollectedMonth / totalInvoicedMonth) * 100) : 0;
 
         // 4. Net Receivable (Total Unpaid Pipeline)
-        const unpaidInvoices = invoices.filter(i => {
-            const status = (i.status || '').toLowerCase().trim();
-            return ['pending', 'sent', 'overdue'].includes(status);
-        });
-        const netReceivableTotal = unpaidInvoices.reduce((sum, i) => sum + (i.total || 0), 0);
+        const unpaidInvoices = invoices.filter(i => isOpenInvoiceStatus(i.status));
+        const netReceivableTotal = unpaidInvoices.reduce((sum, i) => sum + getInvoiceBalanceDue(i), 0);
 
         // Who Owes Me - Full accurate list
         const whoOwesMe = [...overdueList]
@@ -210,6 +231,11 @@ export const ControlRoom = () => {
                         <p className="text-gray-500 mt-1 font-bold text-xs tracking-wide">
                             {isSolopreneur ? "Your financial overview" : `${businessType || 'New'} Persona Matrix Active`}
                         </p>
+                        {isSolopreneur && (
+                            <p className="text-[11px] text-gray-400 mt-2 font-medium">
+                                Monthly cards show this month. Overdue shows unpaid late invoices across your workspace right now.
+                            </p>
+                        )}
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="bg-white p-1 rounded-xl border border-gray-200 flex items-center shadow-sm">
@@ -229,12 +255,39 @@ export const ControlRoom = () => {
                                 </button>
                         </div>
 
-                        <button
-                            onClick={() => navigate('/dashboard/invoices/new')}
-                            className="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
-                        >
-                            Quick Action
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    setShowQuickActions((value) => !value);
+                                }}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
+                            >
+                                <Plus size={16} />
+                                Quick Action
+                                <ChevronDown size={16} className={`transition-transform ${showQuickActions ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {showQuickActions && (
+                                <div
+                                    onClick={(event) => event.stopPropagation()}
+                                    className="absolute right-0 top-[calc(100%+10px)] z-20 w-56 rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl shadow-slate-900/10"
+                                >
+                                    {quickActions.map((action) => (
+                                        <button
+                                            key={action.label}
+                                            onClick={() => {
+                                                setShowQuickActions(false);
+                                                navigate(action.href);
+                                            }}
+                                            className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                                        >
+                                            {action.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </motion.div>
 
@@ -461,9 +514,9 @@ export const ControlRoom = () => {
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Invoiced</p>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Invoiced This Month</p>
                                                     <h3 className="text-2xl font-black text-gray-900 tracking-tight">₹{solopreneurMetrics.totalInvoicedMonth.toLocaleString()}</h3>
-                                                    <p className="text-xs text-gray-500 mt-2 font-medium">This month</p>
+                                                    <p className="text-xs text-gray-500 mt-2 font-medium">Invoices dated in the current month</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -480,9 +533,9 @@ export const ControlRoom = () => {
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Overdue</p>
+                                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Total Overdue Now</p>
                                                     <h3 className="text-2xl font-black text-gray-900 tracking-tight">₹{solopreneurMetrics.totalOverdueAmount.toLocaleString()}</h3>
-                                                    <p className="text-xs text-amber-600 mt-2 font-bold">{solopreneurMetrics.overdueCount} invoices overdue</p>
+                                                    <p className="text-xs text-amber-600 mt-2 font-bold">{solopreneurMetrics.overdueCount} late invoices still unpaid</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -499,9 +552,9 @@ export const ControlRoom = () => {
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Cash Collected</p>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Collected This Month</p>
                                                     <h3 className="text-2xl font-black text-gray-900 tracking-tight">₹{solopreneurMetrics.totalCollectedMonth.toLocaleString()}</h3>
-                                                    <p className="text-xs text-emerald-600 mt-2 font-medium">{solopreneurMetrics.collectionRate}% collection rate</p>
+                                                    <p className="text-xs text-emerald-600 mt-2 font-medium">{solopreneurMetrics.collectionRate}% of this month&apos;s invoiced amount</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -660,7 +713,7 @@ export const ControlRoom = () => {
                                                         </div>
                                                         <div className="flex items-center gap-6">
                                                             <div className="text-right">
-                                                                <div className="text-sm font-black text-gray-900">₹{inv.total.toLocaleString()}</div>
+                                                                <div className="text-sm font-black text-gray-900">₹{getInvoiceBalanceDue(inv).toLocaleString()}</div>
                                                                 <div className="text-[10px] text-amber-500 font-bold uppercase">Overdue</div>
                                                             </div>
                                                             <button 
@@ -684,7 +737,7 @@ export const ControlRoom = () => {
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <div className="text-sm font-bold text-gray-900">₹{inv.total.toLocaleString()}</div>
+                                                        <div className="text-sm font-bold text-gray-900">₹{getInvoiceBalanceDue(inv).toLocaleString()}</div>
                                                         <div className="text-xs text-amber-500 group-hover:font-medium">Overdue</div>
                                                     </div>
                                                 </div>
