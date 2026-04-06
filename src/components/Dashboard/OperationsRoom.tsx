@@ -24,7 +24,6 @@ export function OperationsRoom() {
     const { invoices, payments, stats, loading, refreshData } = useData();
 
     const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
-    const { organizationId } = useAuth(); // Using this for the identity check
 
     useEffect(() => {
         // Force a hard sync on entry to ignore the 5min cache TTL
@@ -77,7 +76,7 @@ export function OperationsRoom() {
     const activityFeed = useMemo(() => {
         return {
             recentPayments: Array.isArray(payments) ? payments.slice(0, 3) : [],
-            recentInvoices: Array.isArray(invoices) ? invoices.filter(i => i.status !== 'overdue').slice(0, 3) : []
+            recentInvoices: Array.isArray(invoices) ? invoices.filter(i => (i.status as string) !== 'overdue').slice(0, 3) : []
         };
     }, [payments, invoices]);
 
@@ -157,13 +156,13 @@ export function OperationsRoom() {
                         </div>
 
                         <button
-                            onClick={() => navigate('/invoices')}
+                            onClick={() => navigate('/dashboard/invoices')}
                             className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:border-gray-300 hover:text-gray-900 transition"
                         >
                             Review Overdue
                         </button>
                         <button
-                            onClick={() => navigate('/customers')}
+                            onClick={() => navigate('/dashboard/customers')}
                             className="px-4 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition"
                         >
                             Add Client
@@ -212,7 +211,7 @@ export function OperationsRoom() {
 
                             {/* Card 1: Pending Revenue */}
                             <div
-                                onClick={() => navigate('/invoices')}
+                                onClick={() => navigate('/dashboard/invoices')}
                                 className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-card cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                             >
                                 <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
@@ -235,7 +234,7 @@ export function OperationsRoom() {
 
                             {/* Card 2: Overdue */}
                             <div
-                                onClick={() => navigate('/invoices')}
+                                onClick={() => navigate('/dashboard/invoices')}
                                 className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-card cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                             >
                                 <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
@@ -259,7 +258,7 @@ export function OperationsRoom() {
 
                             {/* Card 3: Cash Flow Health */}
                             <div
-                                onClick={() => navigate('/payments')}
+                                onClick={() => navigate('/dashboard/payments')}
                                 className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-card cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                             >
                                 <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
@@ -282,7 +281,7 @@ export function OperationsRoom() {
 
                             {/* Card 4: Active Clients */}
                             <div
-                                onClick={() => navigate('/customers')}
+                                onClick={() => navigate('/dashboard/customers')}
                                 className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-card cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                             >
                                 <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
@@ -511,7 +510,7 @@ export function OperationsRoom() {
                                   </div>
                                 </div>
                                 <button
-                                  onClick={() => navigate('/invoices')}
+                                  onClick={() => navigate('/dashboard/invoices')}
                                   className="text-xs font-semibold text-amber-700 bg-amber-50 
                                     border border-amber-200 px-3 py-1.5 rounded-lg 
                                     hover:bg-amber-100 transition flex items-center gap-1"
@@ -553,7 +552,7 @@ export function OperationsRoom() {
                                 {topItems.map(inv => (
                                   <div
                                     key={inv.id}
-                                    onClick={() => navigate('/invoices')}
+                                    onClick={() => navigate('/dashboard/invoices')}
                                     className="flex items-center justify-between px-4 py-2.5 
                                       rounded-xl border border-gray-100 hover:bg-gray-50 
                                       cursor-pointer transition group"
@@ -626,14 +625,14 @@ export function OperationsRoom() {
                                             <div>
                                                 <h3 className="text-sm font-bold text-gray-900">Payment Received</h3>
                                                 <p className="text-sm text-gray-500 mt-0.5">Received ₹{pay.amount.toLocaleString()} via {pay.method}.</p>
-                                                <span className="text-xs text-emerald-500 mt-2 block">{new Date(pay.createdAt).toLocaleTimeString()}</span>
+                                                <span className="text-xs text-emerald-500 mt-2 block">{new Date(pay.createdAt || 0).toLocaleTimeString()}</span>
                                             </div>
                                         </div>
                                     ))}
 
                                     {/* Overdue Alerts */}
                                     {overdueInvoices.slice(0, 2).map((inv) => (
-                                        <div key={inv.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-amber-100 hover:border-amber-200 transition-colors cursor-pointer shadow-sm group" onClick={() => navigate('/invoices')}>
+                                        <div key={inv.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-amber-100 hover:border-amber-200 transition-colors cursor-pointer shadow-sm group" onClick={() => navigate('/dashboard/invoices')}>
                                             <div className="p-2 bg-amber-100 text-amber-600 rounded-lg shrink-0 group-hover:scale-110 transition-transform">
                                                 <AlertTriangle size={16} />
                                             </div>

@@ -104,13 +104,10 @@ function numberToWords(num: number): string {
    SHARED UI PRIMITIVES
 ───────────────────────────────────────────────────────────── */
 const INP = [
-    'w-full px-3 py-2 rounded-lg border bg-[#212225] text-[#F0F1F3]',
-    'border-[#3A3C42] text-sm font-medium placeholder-[#6B6E76]',
-    'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500',
-    'transition-colors',
+    "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] font-medium text-gray-900 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-teal-500/10 outline-none transition-shadow duration-200",
 ].join(' ');
-const INP_ERR = ' !border-red-500 !ring-1 !ring-red-500';
-const LBL = 'block text-[10px] font-bold text-[#6B6E76] uppercase tracking-wider mb-1.5';
+const INP_ERR = ' !border-red-400 !ring-red-500/10';
+const LBL = 'block text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-1.5';
 
 function Field({
     label, required, error, children,
@@ -128,9 +125,10 @@ function Field({
     );
 }
 
-function SectionCard({ children }: { children: React.ReactNode }) {
+function SectionCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className="bg-[#26282C] border border-[#3A3C42] rounded-xl p-4 space-y-3">
+        <div className={`relative bg-white rounded-2xl p-5 border border-gray-200 shadow-sm ${className}`}>
+             <div className="absolute top-0 left-6 right-6 h-[1.5px] rounded-b-full bg-teal-600/20" />
             {children}
         </div>
     );
@@ -138,9 +136,13 @@ function SectionCard({ children }: { children: React.ReactNode }) {
 
 function SectionHead({ icon: Icon, label }: { icon: React.FC<any>; label: string }) {
     return (
-        <div className="flex items-center gap-2 mb-3">
-            <Icon size={11} className="text-[#6B6E76]" />
-            <span className="text-[10px] font-bold text-[#6B6E76] uppercase tracking-widest">{label}</span>
+        <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-sm">
+                <Icon size={12} className="text-white" />
+            </div>
+            <span className="text-xs font-bold text-gray-800 uppercase tracking-widest" style={{ fontFamily: 'Sora, sans-serif' }}>
+                {label}
+            </span>
         </div>
     );
 }
@@ -168,35 +170,35 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 ───────────────────────────────────────────────────────────── */
 function StepperHeader({ current }: { current: number }) {
     return (
-        <div className="flex items-center justify-between px-3 xl:px-6 py-3 bg-[#26282C] border-b border-[#3A3C42] flex-shrink-0">
+        <div className="flex items-center justify-between px-3 xl:px-6 py-4 bg-gray-50/50 border-b border-gray-200 flex-shrink-0">
             {STEPS.map((s, i) => {
                 const done   = i < current;
                 const active = i === current;
                 return (
                     <React.Fragment key={s.id}>
-                        <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
-                            <div className={`w-5 h-5 xl:w-6 xl:h-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                        <div className="flex flex-col xl:flex-row items-center gap-1.5 xl:gap-2.5 min-w-0">
+                            <div className={`w-6 h-6 xl:w-7 xl:h-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold transition-all shadow-sm ${
                                 done
-                                    ? 'bg-emerald-600 text-white'
+                                    ? 'bg-emerald-500 text-white shadow-emerald-500/20'
                                     : active
-                                        ? 'bg-[#F0F1F3] text-[#1A1B1E]'
-                                        : 'bg-[#3A3C42] text-[#6B6E76]'
+                                        ? 'bg-white border border-teal-500 text-teal-600 ring-4 ring-teal-500/10'
+                                        : 'bg-white border border-gray-200 text-gray-400'
                             }`}>
-                                {done ? <Check size={11} /> : i + 1}
+                                {done ? <Check size={12} /> : i + 1}
                             </div>
-                            <span className={`text-[9px] xl:text-xs font-semibold leading-tight break-words text-center ${
+                            <span className={`text-[10px] xl:text-[11px] font-bold uppercase tracking-wider transition-colors ${
                                 active
-                                    ? 'text-[#F0F1F3]'
+                                    ? 'text-gray-900'
                                     : done
-                                        ? 'text-emerald-400'
-                                        : 'text-[#6B6E76]'
-                            }`}>
+                                        ? 'text-emerald-600'
+                                        : 'text-gray-400'
+                            }`} style={{ fontFamily: 'Sora, sans-serif' }}>
                                 {s.label}
                             </span>
                         </div>
                         {i < STEPS.length - 1 && (
-                            <div className={`flex-1 min-w-[4px] xl:min-w-[1rem] h-px mx-1 xl:mx-3 transition-colors ${
-                                done ? 'bg-emerald-700' : 'bg-[#3A3C42]'
+                            <div className={`flex-1 min-w-[4px] xl:min-w-[1.5rem] h-[1.5px] mx-1 xl:mx-4 rounded-full transition-colors ${
+                                done ? 'bg-emerald-500/30' : 'bg-gray-200'
                             }`} />
                         )}
                     </React.Fragment>
@@ -402,15 +404,15 @@ function StepItems({ register, control, watch }: { register: any; control: any; 
                 </div>
 
                 {/* Table header */}
-                <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-[#2E3035] rounded-t-lg border border-b-0 border-[#3A3C42]">
-                    <div className="col-span-6 text-[10px] font-bold text-[#6B6E76] uppercase tracking-wider">Description</div>
-                    <div className="col-span-2 text-[10px] font-bold text-[#6B6E76] uppercase tracking-wider text-center">Qty</div>
-                    <div className="col-span-3 text-[10px] font-bold text-[#6B6E76] uppercase tracking-wider text-right">Rate ₹</div>
+                <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-gray-50/50 rounded-t-2xl border border-[#e2e8f0]">
+                    <div className="col-span-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">Description</div>
+                    <div className="col-span-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] text-center">Qty</div>
+                    <div className="col-span-3 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] text-right">Rate ₹</div>
                     <div className="col-span-1" />
                 </div>
 
                 {/* Table rows */}
-                <div className="border border-[#3A3C42] rounded-b-lg overflow-hidden">
+                <div className="border border-[#e2e8f0] border-t-0 rounded-b-2xl overflow-hidden bg-white">
                     {fields.length === 0 ? (
                         <div className="py-8 text-center bg-[#212225]">
                             <p className="text-xs text-[#6B6E76] italic">No items yet — click "Add item" above</p>
@@ -418,36 +420,36 @@ function StepItems({ register, control, watch }: { register: any; control: any; 
                     ) : fields.map((field, i) => {
                         const amt = (watchedItems[i]?.quantity || 0) * (watchedItems[i]?.price || 0);
                         return (
-                            <div key={field.id} className="border-b border-[#3A3C42] last:border-0 hover:bg-[#26282C] group bg-[#212225]">
-                                <div className="grid grid-cols-12 gap-2 px-3 py-2.5 items-center">
+                            <div key={field.id} className="border-b border-[#f1f5f9] last:border-0 hover:bg-teal-50/30 group bg-white transition-colors">
+                                <div className="grid grid-cols-12 gap-2 px-6 py-4 items-center">
                                     <div className="col-span-6">
                                         <input
                                             {...register(`items.${i}.description` as const)}
                                             placeholder="Item description"
-                                            className="w-full text-sm font-medium text-[#F0F1F3] bg-transparent focus:outline-none placeholder-[#6B6E76]"
+                                            className="w-full text-[13px] font-semibold text-gray-900 bg-transparent focus:outline-none placeholder-gray-300"
                                         />
                                     </div>
                                     <div className="col-span-2">
                                         <input
                                             type="number"
                                             {...register(`items.${i}.quantity` as const, { valueAsNumber: true })}
-                                            className="w-full text-sm font-medium text-[#A8AAAF] text-center bg-transparent focus:outline-none"
+                                            className="w-full text-[13px] font-semibold text-gray-600 text-center bg-transparent focus:outline-none"
                                         />
                                     </div>
                                     <div className="col-span-3">
                                         <input
                                             type="number"
                                             {...register(`items.${i}.price` as const, { valueAsNumber: true })}
-                                            className="w-full text-sm font-medium text-[#A8AAAF] text-right bg-transparent focus:outline-none"
+                                            className="w-full text-[13px] font-bold text-gray-900 text-right bg-transparent focus:outline-none"
                                         />
                                     </div>
                                     <div className="col-span-1 flex justify-end">
                                         <button
                                             type="button"
                                             onClick={() => remove(i)}
-                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-[#6B6E76] hover:text-red-400 rounded transition"
+                                            className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 rounded-xl transition-all hover:bg-red-50"
                                         >
-                                            <Trash2 size={12} />
+                                            <Trash2 size={14} />
                                         </button>
                                     </div>
                                 </div>
@@ -482,9 +484,9 @@ function StepItems({ register, control, watch }: { register: any; control: any; 
                         />
                     </Field>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-[#3A3C42]">
-                    <span className="text-xs text-[#6B6E76]">Subtotal after discount</span>
-                    <span className="text-sm font-semibold text-[#F0F1F3]">
+                <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Subtotal after adjustments</span>
+                    <span className="text-sm font-black text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>
                         ₹{(subtotal - discountAmt + watchedShipping).toFixed(2)}
                     </span>
                 </div>
@@ -503,8 +505,8 @@ function StepGst({ register, watch, setValue }: { register: any; watch: any; set
             <SectionCard>
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-semibold text-[#F0F1F3]">GST registered</p>
-                        <p className="text-xs text-[#6B6E76] mt-0.5">Apply 18% GST on all line items</p>
+                        <p className="text-[13px] font-bold text-gray-900">GST registered</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5 font-medium">Apply 18% GST on all line items</p>
                     </div>
                     <Toggle
                         checked={!!isGst}
@@ -512,9 +514,9 @@ function StepGst({ register, watch, setValue }: { register: any; watch: any; set
                     />
                 </div>
                 {isGst && (
-                    <div className="mt-3 pt-3 border-t border-[#3A3C42] flex items-center gap-2">
-                        <Shield size={12} className="text-emerald-400" />
-                        <span className="text-xs text-emerald-400 font-semibold">
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+                        <Shield size={12} className="text-teal-600" />
+                        <span className="text-[11px] text-teal-600 font-bold uppercase tracking-wider">
                             18% GST will be calculated on all items
                         </span>
                     </div>
@@ -584,8 +586,8 @@ function StepPayment({
                                 onClick={() => togglePayment(id)}
                                 className={`px-3 py-2 rounded-lg border text-xs font-semibold transition ${
                                     selected
-                                        ? 'bg-emerald-900/30 border-emerald-600 text-emerald-400'
-                                        : 'bg-[#2E3035] border-[#454850] text-[#A8AAAF] hover:border-[#6B6E76]'
+                                        ? 'bg-teal-50 border-teal-200 text-teal-700 shadow-sm'
+                                        : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
                                 }`}
                             >
                                 {selected && <Check size={10} className="inline mr-1" />}
@@ -650,34 +652,34 @@ function StepPayment({
             </SectionCard>
 
             {/* Summary */}
-            <div className="bg-[#212225] border border-[#3A3C42] rounded-xl p-4">
-                <p className="text-[10px] font-bold text-[#6B6E76] uppercase tracking-widest mb-3">Summary</p>
-                <div className="space-y-1.5 text-sm">
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-4">Summary</p>
+                <div className="space-y-2.5 text-sm">
                     <div className="flex justify-between">
-                        <span className="text-[#A8AAAF]">Subtotal</span>
-                        <span className="font-semibold text-[#F0F1F3]">₹{subtotal.toFixed(2)}</span>
+                        <span className="text-[13px] font-medium text-gray-500">Subtotal</span>
+                        <span className="font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-[#A8AAAF]">GST ({w.isGstRegistered ? '18%' : '0%'})</span>
-                        <span className="font-semibold text-[#F0F1F3]">₹{taxAmount.toFixed(2)}</span>
+                        <span className="text-[13px] font-medium text-gray-500">GST ({w.isGstRegistered ? '18%' : '0%'})</span>
+                        <span className="font-bold text-gray-900">₹{taxAmount.toFixed(2)}</span>
                     </div>
                     {discountAmt > 0 && (
                         <div className="flex justify-between">
-                            <span className="text-red-400">Discount ({w.discount}%)</span>
-                            <span className="font-semibold text-red-400">−₹{discountAmt.toFixed(2)}</span>
+                            <span className="text-[13px] font-bold text-red-500">Discount ({w.discount}%)</span>
+                            <span className="font-bold text-red-500">−₹{discountAmt.toFixed(2)}</span>
                         </div>
                     )}
                     {watchedShipping > 0 && (
                         <div className="flex justify-between">
-                            <span className="text-[#A8AAAF]">Shipping</span>
-                            <span className="font-semibold text-[#F0F1F3]">₹{watchedShipping.toFixed(2)}</span>
+                            <span className="text-[13px] font-medium text-gray-500">Shipping</span>
+                            <span className="font-bold text-gray-900">₹{watchedShipping.toFixed(2)}</span>
                         </div>
                     )}
-                    <div className="flex justify-between pt-2.5 border-t-2 border-[#F0F1F3] mt-1">
-                        <span className="font-bold text-[#F0F1F3] text-base">Total</span>
-                        <span className="font-black text-emerald-400 text-xl">₹{total.toFixed(2)}</span>
+                    <div className="flex justify-between pt-4 border-t-2 border-gray-900 mt-2">
+                        <span className="font-black text-gray-900 text-base uppercase tracking-tight">Total Amount</span>
+                        <span className="font-black text-teal-600 text-2xl tracking-tighter">₹{total.toFixed(2)}</span>
                     </div>
-                    <p className="text-right text-[11px] text-[#6B6E76] italic leading-tight">
+                    <p className="text-right text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-1">
                         {numberToWords(total)}
                     </p>
                 </div>
@@ -857,14 +859,14 @@ function AuditPanel({
     onClose: () => void;
 }) {
     return (
-        <div className="absolute inset-y-0 right-0 w-80 bg-[#1A1B1E] border-l border-[#3A3C42] shadow-2xl flex flex-col z-20">
-            <div className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-[#3A3C42]">
+        <div className="absolute inset-y-0 right-0 w-80 bg-white border-l border-gray-200 shadow-2xl flex flex-col z-20">
+            <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2.5">
                     <Sparkles size={16} className="text-violet-400" />
                     <span className="text-base font-bold text-violet-300">AI Audit Report</span>
                 </div>
-                <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#26282C] transition">
-                    <X size={16} className="text-[#6B6E76]" />
+                <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition">
+                    <X size={16} />
                 </button>
             </div>
 
@@ -878,24 +880,24 @@ function AuditPanel({
                     <>
                         <div className="mb-5">
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-bold text-[#F0F1F3]">Risk Score</span>
-                                <span className={`text-lg font-black ${auditResult.riskScore > 50 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Risk Score</span>
+                                <span className={`text-lg font-black ${auditResult.riskScore > 50 ? 'text-red-500' : 'text-teal-600'}`}>
                                     {auditResult.riskScore}
-                                    <span className="text-sm font-semibold text-[#6B6E76]">/100</span>
+                                    <span className="text-sm font-bold text-gray-400">/100</span>
                                 </span>
                             </div>
-                            <div className="w-full h-2 bg-[#26282C] rounded-full overflow-hidden">
+                            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                                 <div
-                                    className={`h-full rounded-full transition-all duration-700 ${auditResult.riskScore > 50 ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                    className={`h-full rounded-full transition-all duration-700 ${auditResult.riskScore > 50 ? 'bg-red-500' : 'bg-teal-500'}`}
                                     style={{ width: `${auditResult.riskScore}%` }}
                                 />
                             </div>
                         </div>
                         <div className="space-y-2.5">
                             {auditResult.suggestions.map((s, i) => (
-                                <div key={i} className="flex gap-2.5 bg-[#1E1A2E] border border-[#4A3A8A] p-3 rounded-lg">
-                                    <AlertCircle size={15} className="text-violet-400 mt-0.5 shrink-0" />
-                                    <span className="text-sm font-medium text-[#A8AAAF] leading-snug">{s}</span>
+                                <div key={i} className="flex gap-2.5 bg-violet-50/50 border border-violet-100 p-3.5 rounded-xl">
+                                    <AlertCircle size={15} className="text-violet-500 mt-0.5 shrink-0" />
+                                    <span className="text-[13px] font-medium text-violet-900 leading-snug">{s}</span>
                                 </div>
                             ))}
                         </div>
@@ -1103,7 +1105,7 @@ export function CreateInvoice() {
                 taxAmount,
                 total,
             });
-            navigate('/invoices');
+            navigate('/dashboard/invoices');
         } catch (err) {
             console.error(err);
             const message = err instanceof Error ? err.message : 'Failed to save invoice.';
@@ -1147,10 +1149,10 @@ export function CreateInvoice() {
     ───────────────────────────────────────────────────────────── */
     return (
         <div
-            className="h-full w-full overflow-hidden flex flex-col relative rounded-2xl border border-[#3A3C42] shadow-2xl"
+            className="h-full w-full overflow-hidden flex flex-col relative rounded-2xl border border-gray-200 shadow-2xl"
             style={{
-                fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
-                background: '#1A1B1E',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                background: '#f8fafc',
             }}
         >
             {loadingDefaults && (
@@ -1162,20 +1164,20 @@ export function CreateInvoice() {
                 </div>
             )}
             {/* ══ TOP BAR ══ */}
-            <header className="shrink-0 flex items-center justify-between px-5 py-2.5 bg-[#212225] border-b border-[#3A3C42] z-10">
+            <header className="shrink-0 flex items-center justify-between px-5 py-4 bg-white/80 backdrop-blur-md border-b border-gray-200 z-10">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="p-1.5 rounded-md text-[#6B6E76] hover:bg-[#26282C] hover:text-[#F0F1F3] transition"
+                        className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 border border-gray-200 hover:bg-gray-50 transition"
                     >
                         <ArrowLeft size={16} />
                     </button>
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-[#F0F1F3] tracking-tight">Create Invoice</span>
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="text-[17px] font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>Create Invoice</span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-teal-500" />
                         </div>
-                        <p className="text-[10px] font-bold text-[#6B6E76] uppercase tracking-[0.1em]">Financial Operations Control</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Financial Operations Control</p>
                     </div>
                 </div>
 
@@ -1203,9 +1205,9 @@ export function CreateInvoice() {
                         type="button"
                         onClick={handleSubmit(onSave)}
                         disabled={saving}
-                        className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-black text-white bg-emerald-700/80 backdrop-blur-sm border border-emerald-500/50 rounded-lg hover:bg-emerald-600 disabled:opacity-60 shadow-lg shadow-emerald-900/20 transition"
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-teal-600 border border-gray-200 text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-teal-500/20"
                     >
-                        {saving && <Loader2 size={12} className="animate-spin" />}
+                        {saving && <Loader2 size={14} className="animate-spin" />}
                         Generate Proforma
                     </button>
                 </div>
@@ -1215,7 +1217,7 @@ export function CreateInvoice() {
             <div className="flex flex-1 min-h-0 overflow-hidden">
 
                 {/* ── LEFT: Wizard ── */}
-                <div className="w-[60%] flex flex-col border-r border-[#3A3C42] bg-[#212225] min-h-0">
+                <div className="w-[60%] flex flex-col border-r border-gray-200 bg-white min-h-0">
 
                     <StepperHeader current={step} />
 
@@ -1245,44 +1247,44 @@ export function CreateInvoice() {
                     </div>
 
                     {/* Step nav — pinned bottom */}
-                    <div className="shrink-0 flex items-center justify-between px-5 py-3.5 border-t border-[#3A3C42] bg-[#212225]">
+                    <div className="shrink-0 flex items-center justify-between px-5 py-4 border-t border-gray-200 bg-gray-50/50">
                         <button
                             type="button"
                             onClick={goPrev}
                             disabled={step === 0}
-                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#A8AAAF] border border-[#3A3C42] rounded-lg hover:bg-[#26282C] disabled:opacity-30 disabled:cursor-not-allowed transition"
+                            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                         >
-                            <ChevronLeft size={13} /> Previous
+                            <ChevronLeft size={14} /> Previous
                         </button>
-
-                        <span className="text-[11px] text-[#6B6E76] font-medium">
+ 
+                        <span className="text-[11px] text-gray-400 font-bold uppercase tracking-widest">
                             Step {step + 1} of {STEPS.length}
                         </span>
-
+ 
                         {isLastStep ? (
                             <button
                                 type="button"
                                 onClick={handleSubmit(onSave)}
                                 disabled={saving}
-                                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-700 rounded-lg hover:bg-emerald-600 disabled:opacity-60 transition"
+                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-teal-500/20"
                             >
-                                {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                                 Create invoice
                             </button>
                         ) : (
                             <button
                                 type="button"
                                 onClick={goNext}
-                                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#1A1B1E] bg-[#F0F1F3] rounded-lg hover:bg-white transition"
+                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/10"
                             >
-                                Next <ChevronRight size={13} />
+                                Next Step <ChevronRight size={14} />
                             </button>
                         )}
                     </div>
                 </div>
 
                 {/* ── RIGHT: Live Preview ── */}
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden" style={{ background: '#ECEEF1' }}>
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden" style={{ background: '#f1f5f9' }}>
                     <div className="shrink-0 flex items-center justify-between px-5 py-2.5 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Preview</span>
                         <button className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg bg-white hover:bg-gray-50 transition shadow-sm">

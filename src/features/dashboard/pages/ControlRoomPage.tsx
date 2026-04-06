@@ -279,7 +279,7 @@ export const ControlRoom = () => {
                                     <>
                                         {/* Card 1: MRR */}
                                         <div
-                                            onClick={() => navigate('/invoices')}
+                                            onClick={() => navigate('/dashboard/invoices')}
                                             className="relative bg-gradient-to-br from-white to-indigo-50/30 p-6 rounded-2xl border border-indigo-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-indigo-100/40 rounded-full blur-2xl" />
@@ -302,7 +302,7 @@ export const ControlRoom = () => {
 
                                         {/* Card 2: Churn Rate */}
                                         <div
-                                            onClick={() => navigate('/customers')}
+                                            onClick={() => navigate('/dashboard/customers')}
                                             className="relative bg-gradient-to-br from-white to-rose-50/30 p-6 rounded-2xl border border-rose-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-rose-200 transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-rose-100/40 rounded-full blur-2xl" />
@@ -344,7 +344,7 @@ export const ControlRoom = () => {
 
                                         {/* Card 4: Active Subs */}
                                         <div
-                                            onClick={() => navigate('/customers')}
+                                            onClick={() => navigate('/dashboard/customers')}
                                             className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
@@ -366,7 +366,7 @@ export const ControlRoom = () => {
                                     <>
                                         {/* Agency Card 1: Pending Revenue */}
                                         <div
-                                            onClick={() => navigate('/invoices')}
+                                            onClick={() => navigate('/dashboard/invoices')}
                                             className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
@@ -386,7 +386,7 @@ export const ControlRoom = () => {
 
                                         {/* Agency Card 2: Cash Collected */}
                                         <div
-                                            onClick={() => navigate('/payments')}
+                                            onClick={() => navigate('/dashboard/payments')}
                                             className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
@@ -512,7 +512,7 @@ export const ControlRoom = () => {
                                     <>
                                         {/* Default Card 1: Pending Revenue */}
                                         <div
-                                            onClick={() => navigate('/invoices')}
+                                            onClick={() => navigate('/dashboard/invoices')}
                                             className="relative bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
@@ -532,7 +532,7 @@ export const ControlRoom = () => {
 
                                         {/* Default Card 2: Action Required */}
                                         <div
-                                            onClick={() => navigate('/invoices')}
+                                            onClick={() => navigate('/dashboard/invoices')}
                                             className="relative bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
@@ -553,7 +553,7 @@ export const ControlRoom = () => {
 
                                         {/* Default Card 3: Collected */}
                                         <div
-                                            onClick={() => navigate('/payments')}
+                                            onClick={() => navigate('/dashboard/payments')}
                                             className="relative bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
@@ -602,7 +602,7 @@ export const ControlRoom = () => {
                                                 </div>
                                             ))}
                                             {overdueInvoices.slice(0, 2).map((inv) => (
-                                                <div key={inv.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-amber-100 hover:border-amber-200 transition-colors cursor-pointer shadow-sm group" onClick={() => navigate('/invoices')}>
+                                                <div key={inv.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-amber-100 hover:border-amber-200 transition-colors cursor-pointer shadow-sm group" onClick={() => navigate('/dashboard/invoices')}>
                                                     <div className="p-2 bg-amber-100 text-amber-600 rounded-lg shrink-0 group-hover:scale-110 transition-transform"><AlertTriangle size={16} /></div>
                                                     <div>
                                                         <h3 className="text-sm font-bold text-gray-900">Collection Alert</h3>
@@ -675,7 +675,7 @@ export const ControlRoom = () => {
                                             })
                                         ) : overdueInvoices.length > 0 ? (
                                             overdueInvoices.map((inv) => (
-                                                <div key={inv.id} className="flex items-center justify-between p-3 rounded-2xl border border-gray-100 hover:bg-amber-50/50 hover:border-amber-100 transition cursor-pointer group" onClick={() => navigate('/invoices')}>
+                                                <div key={inv.id} className="flex items-center justify-between p-3 rounded-2xl border border-gray-100 hover:bg-amber-50/50 hover:border-amber-100 transition cursor-pointer group" onClick={() => navigate('/dashboard/invoices')}>
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500 group-hover:scale-125 transition-transform"></div>
                                                         <div>
