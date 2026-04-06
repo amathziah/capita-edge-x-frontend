@@ -4,7 +4,7 @@ import {
   Send, Mic, MicOff, Zap, RotateCcw, ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { aiService, delay } from '@/services/aiService';
+import { aiService } from '@/services/aiService';
 import { usePersona } from '@/contexts/PersonaContext';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
@@ -254,6 +254,9 @@ const genItemVariants = {
 
 // ─── Generative UI Renderer ───────────────────────────────────────────────────
 function GenerativeUIRenderer({ component, data }: { component: string; data: any }) {
+  const formatMoney = (value: number | undefined | null) =>
+    `$${Number(value || 0).toLocaleString()}`;
+
   if (component === 'get_overdue_invoices') {
     const invoices = data?.riskyInvoices || [];
     const ageing = data?.ageing || {};
@@ -337,8 +340,143 @@ function GenerativeUIRenderer({ component, data }: { component: string; data: an
     );
   }
 
-  // For tools without a dedicated UI card (get_recent_transactions, get_customer_insights, etc.),
-  // the AI's text response already contains the formatted answer — no extra card needed.
+  if (component === 'get_recent_transactions') {
+    const invoices = data?.invoices || [];
+    const payments = data?.payments || [];
+    const expenses = data?.expenses || [];
+
+    return (
+      <motion.div
+        variants={genCardVariants}
+        initial="hidden"
+        animate="visible"
+        className="mt-4 mb-2 p-4 rounded-2xl bg-gradient-to-br from-sky-500/5 to-black/40 border border-sky-500/20 shadow-lg shadow-black/20"
+      >
+        <motion.h4 variants={genItemVariants} className="text-[12px] font-bold text-sky-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <LucideIcons.Clock3 size={14} /> Recent Activity
+        </motion.h4>
+        <div className="grid md:grid-cols-3 gap-3">
+          <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
+            <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-2">Invoices</div>
+            <div className="space-y-2">
+              {invoices.slice(0, 3).map((inv: any) => (
+                <div key={inv.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-gray-200 truncate">#{inv.invoiceNumber}</div>
+                    <div className="text-gray-500 uppercase">{inv.status || 'unknown'}</div>
+                  </div>
+                  <div className="font-mono text-white shrink-0">{formatMoney(inv.total)}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+          <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
+            <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-2">Payments</div>
+            <div className="space-y-2">
+              {payments.slice(0, 3).map((payment: any) => (
+                <div key={payment.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-gray-200 truncate">{payment.customers?.name || 'Payment received'}</div>
+                    <div className="text-gray-500 uppercase">{payment.method || payment.payment_mode || 'payment'}</div>
+                  </div>
+                  <div className="font-mono text-emerald-300 shrink-0">{formatMoney(payment.amount)}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+          <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
+            <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-2">Expenses</div>
+            <div className="space-y-2">
+              {expenses.slice(0, 3).map((expense: any) => (
+                <div key={expense.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-gray-200 truncate">{expense.title || expense.category || 'Expense'}</div>
+                    <div className="text-gray-500 uppercase">{expense.date ? new Date(expense.date).toLocaleDateString() : 'recent'}</div>
+                  </div>
+                  <div className="font-mono text-rose-300 shrink-0">{formatMoney(expense.amount)}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (component === 'get_customer_insights') {
+    const customers = data?.customers || [];
+
+    return (
+      <motion.div
+        variants={genCardVariants}
+        initial="hidden"
+        animate="visible"
+        className="mt-4 mb-2 p-4 rounded-2xl bg-gradient-to-br from-violet-500/5 to-black/40 border border-violet-500/20 shadow-lg shadow-black/20"
+      >
+        <motion.h4 variants={genItemVariants} className="text-[12px] font-bold text-violet-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <LucideIcons.Users size={14} /> Customer Portfolio
+        </motion.h4>
+        <div className="space-y-2.5">
+          {customers.slice(0, 4).map((customer: any) => (
+            <motion.div
+              key={customer.id}
+              variants={genItemVariants}
+              className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[13px] font-bold text-gray-100 truncate">{customer.name}</div>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">
+                    {customer.health_label || 'Regular'} · churn risk {customer.churn_risk || 0}%
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-[13px] font-mono text-white font-bold">{formatMoney(customer.total_revenue)}</div>
+                  <div className="text-[10px] text-amber-300">{formatMoney(customer.pending_amount)} pending</div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (component === 'get_customer_details') {
+    const intelligence = data?.intelligence || {};
+
+    return (
+      <motion.div
+        variants={genCardVariants}
+        initial="hidden"
+        animate="visible"
+        className="mt-4 mb-2 p-4 rounded-2xl bg-gradient-to-br from-amber-500/5 to-black/40 border border-amber-500/20 shadow-lg shadow-black/20"
+      >
+        <motion.h4 variants={genItemVariants} className="text-[12px] font-bold text-amber-300 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <LucideIcons.ShieldCheck size={14} /> Customer Intelligence
+        </motion.h4>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
+            <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Health Score</div>
+            <div className="text-[20px] font-black text-white">{intelligence.healthScore || 0}</div>
+            <div className="text-[10px] text-emerald-300 mt-1">{intelligence.healthLabel || 'Unknown'}</div>
+          </motion.div>
+          <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
+            <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Churn Risk</div>
+            <div className="text-[20px] font-black text-white">{intelligence.churnRisk || 0}%</div>
+            <div className="text-[10px] text-amber-300 mt-1">{intelligence.nextPurchase || 'No forecast'}</div>
+          </motion.div>
+        </div>
+        <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
+          <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Recommended Action</div>
+          <div className="text-[12px] text-gray-200 leading-relaxed">
+            {intelligence.recommendedAction || 'No action recommended.'}
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  }
+
   return null;
 }
 
@@ -606,6 +744,8 @@ export function AIAssistantPage() {
   const [conversations, setConversations] = useState<any[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [isConversationLoading, setIsConversationLoading] = useState(false);
+  const [isChatReady, setIsChatReady] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
@@ -629,6 +769,7 @@ export function AIAssistantPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamingMsgIdRef = useRef<string | null>(null);
+  const historyLoadRequestRef = useRef(0);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   const scrollToBottom = useCallback(() => {
@@ -646,31 +787,40 @@ export function AIAssistantPage() {
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
+      const requestId = ++historyLoadRequestRef.current;
       try {
+        setIsChatReady(false);
+        setIsHistoryLoading(true);
         const config = await aiService.getConfig(businessType as string | undefined);
+        if (historyLoadRequestRef.current !== requestId) return;
         setDynamicConfig(config as any);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 
-        await delay(1000);
-
-        setIsHistoryLoading(true);
         const sessions = await aiService.getConversations();
+        if (historyLoadRequestRef.current !== requestId) return;
         setConversations(sessions as any[]);
-        setIsHistoryLoading(false);
 
         if (!currentConversationId) {
           const history = await aiService.getHistory();
+          if (historyLoadRequestRef.current !== requestId) return;
           if (Array.isArray(history) && history.length > 0) {
             setMessages(
               history.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
             );
             // Scroll to bottom after setting messages
             setTimeout(() => scrollToBottom(), 100);
+          } else {
+            setMessages([]);
           }
         }
       } catch (err) {
         console.error('Failed to init AI page:', err);
-        setIsHistoryLoading(false);
+      }
+      finally {
+        if (historyLoadRequestRef.current === requestId) {
+          setIsHistoryLoading(false);
+          setIsChatReady(true);
+        }
       }
     };
     init();
@@ -713,7 +863,7 @@ export function AIAssistantPage() {
   // ── Send message ──────────────────────────────────────────────────────────
   const handleSend = async (textOverride?: string) => {
     const text = (textOverride || query).trim();
-    if (!text) return;
+    if (!text || !isChatReady || isHistoryLoading || isConversationLoading) return;
 
     // Abort running stream + remove its optimistic bubble
     if (abortControllerRef.current) {
@@ -773,34 +923,21 @@ export function AIAssistantPage() {
       let accumulatedText = '';
       let botMsgId: string | null = null;
       let firstToken = true;
+      let pendingUiComponent: string | null = null;
+      let pendingUiData: any = null;
 
       for await (const event of stream) {
         if (abort.signal.aborted) break;
 
         if (event.type === 'gen_ui') {
-          // If we haven't created the bot bubble yet, create it now
-          if (!botMsgId) {
-            botMsgId = `bot_${Date.now()}_${Math.random()}`;
-            streamingMsgIdRef.current = botMsgId;
-            setIsThinking(false);
-            setMessages(prev => [
-              ...prev,
-              {
-                id: botMsgId!,
-                sender: 'bot',
-                text: '',
-                timestamp: new Date(),
-                status: 'streaming',
-                uiComponent: event.component,
-                uiData: event.data,
-              },
-            ]);
-            setTimeout(() => scrollToBottom(), 50);
-          } else {
+          pendingUiComponent = event.component;
+          pendingUiData = event.data;
+
+          if (botMsgId) {
             setMessages(prev =>
               prev.map(m =>
                 m.id === botMsgId
-                  ? { ...m, uiComponent: event.component, uiData: event.data }
+                  ? { ...m, uiComponent: pendingUiComponent || undefined, uiData: pendingUiData }
                   : m
               )
             );
@@ -825,13 +962,23 @@ export function AIAssistantPage() {
                   text: accumulatedText,
                   timestamp: new Date(),
                   status: 'streaming',
+                  uiComponent: pendingUiComponent || undefined,
+                  uiData: pendingUiData,
                 },
               ]);
               setTimeout(() => scrollToBottom(), 50);
             } else {
               setMessages(prev =>
                 prev.map(m =>
-                  m.id === botMsgId ? { ...m, text: accumulatedText, status: 'streaming' } : m
+                  m.id === botMsgId
+                    ? {
+                        ...m,
+                        text: accumulatedText,
+                        status: 'streaming',
+                        uiComponent: pendingUiComponent || m.uiComponent,
+                        uiData: pendingUiData ?? m.uiData,
+                      }
+                    : m
                 )
               );
             }
@@ -855,13 +1002,15 @@ export function AIAssistantPage() {
 
           setMessages(prev =>
             prev.map(m =>
-              m.id === botMsgId
-                ? {
+                m.id === botMsgId
+                  ? {
                   ...m,
                   text: event.text ?? accumulatedText,
                   data: event.action ? { type: 'action_prompt' } : undefined,
                   usage: event.usage,
                   status: 'sent',
+                  uiComponent: pendingUiComponent || m.uiComponent,
+                  uiData: pendingUiData ?? m.uiData,
                 }
                 : m
             )
@@ -987,14 +1136,30 @@ export function AIAssistantPage() {
 
   // ── Load past conversation ────────────────────────────────────────────────
   const loadConversation = async (id: string) => {
-    if (id === currentConversationId || isBusy) return;
+    if (id === currentConversationId || isBusy || isConversationLoading) return;
+    const requestId = ++historyLoadRequestRef.current;
     try {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      streamingMsgIdRef.current = null;
+      setPendingAction(null);
+      setIsThinking(false);
+      setIsConversationLoading(true);
+      setMessages([]);
       const msgs = await aiService.getConversationMessages(id);
+      if (historyLoadRequestRef.current !== requestId) return;
       setMessages((msgs as any[]).map(m => ({ ...m, timestamp: new Date(m.timestamp) })));
       setCurrentConversationId(id);
       setTimeout(() => scrollToBottom(), 50);
     } catch (err) {
       console.error('Failed to load conversation:', err);
+    }
+    finally {
+      if (historyLoadRequestRef.current === requestId) {
+        setIsConversationLoading(false);
+      }
     }
   };
 
@@ -1207,7 +1372,15 @@ export function AIAssistantPage() {
                 className="flex-1 overflow-y-auto"
                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
               >
-                {messages.length === 0 && !isThinking ? (
+                {isConversationLoading ? (
+                  <div className="max-w-3xl mx-auto px-5 pb-12 space-y-4 pt-6">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
+                        <div className="w-full max-w-[75%] h-16 rounded-2xl bg-white/[0.03] border border-white/[0.05] animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                ) : messages.length === 0 && !isThinking ? (
                   <EmptyState />
                 ) : (
                   <div className="max-w-3xl mx-auto px-5 pb-12 space-y-6 pt-4">
@@ -1336,7 +1509,7 @@ export function AIAssistantPage() {
                     onBlur={() => setInputFocused(false)}
                     placeholder="Ask about revenue, invoices, cash flow…"
                     className="flex-1 bg-transparent border-none outline-none text-sm text-white py-1 px-1 placeholder-gray-600"
-                    disabled={isBusy}
+                    disabled={isBusy || isHistoryLoading || isConversationLoading || !isChatReady}
                   />
 
                   <div className="flex items-center gap-1 shrink-0">
@@ -1344,11 +1517,11 @@ export function AIAssistantPage() {
                       whileHover={!isBusy ? { scale: 1.08 } : {}}
                       whileTap={!isBusy ? { scale: 0.92 } : {}}
                       onClick={startListening}
-                      disabled={isBusy}
+                      disabled={isBusy || isHistoryLoading || isConversationLoading || !isChatReady}
                       className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors
                         ${isListening
                           ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                          : isBusy
+                          : (isBusy || isHistoryLoading || isConversationLoading || !isChatReady)
                             ? 'opacity-30 cursor-not-allowed text-gray-600'
                             : 'text-gray-500 hover:bg-white/[0.06] hover:text-gray-300'
                         }`}
@@ -1360,10 +1533,10 @@ export function AIAssistantPage() {
                       whileHover={{ scale: query.trim() && !isBusy ? 1.08 : 1 }}
                       whileTap={{ scale: query.trim() && !isBusy ? 0.92 : 1 }}
                       onClick={() => handleSend()}
-                      disabled={!query.trim() || isBusy}
+                      disabled={!query.trim() || isBusy || isHistoryLoading || isConversationLoading || !isChatReady}
                       className="w-8 h-8 rounded-xl flex items-center justify-center transition-all relative overflow-hidden"
                       style={
-                        query.trim() && !isBusy
+                        query.trim() && !isBusy && !isHistoryLoading && !isConversationLoading && isChatReady
                           ? { background: `linear-gradient(135deg, ${TEAL}, #06b6d4)`, color: '#0a0d15' }
                           : { background: 'rgba(255,255,255,0.04)', color: '#374151', cursor: 'not-allowed' }
                       }
@@ -1375,7 +1548,11 @@ export function AIAssistantPage() {
 
                 <div className="mt-1.5 flex items-center justify-between px-1">
                   <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">
-                    Finance engine · Encrypted
+                    {isConversationLoading
+                      ? 'Loading conversation…'
+                      : isHistoryLoading || !isChatReady
+                        ? 'Preparing chat history…'
+                        : 'Finance engine · Encrypted'}
                   </span>
                   {isListening && (
                     <div className="flex items-center gap-1.5">
