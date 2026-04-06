@@ -770,6 +770,17 @@ export function AIAssistantPage() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamingMsgIdRef = useRef<string | null>(null);
   const historyLoadRequestRef = useRef(0);
+  const activeStreamRequestRef = useRef(0);
+  const messagesRef = useRef<Message[]>([]);
+  const currentConversationIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    currentConversationIdRef.current = currentConversationId;
+  }, [currentConversationId]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   const scrollToBottom = useCallback(() => {
@@ -783,6 +794,30 @@ export function AIAssistantPage() {
     const el = scrollRef.current;
     return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
   };
+
+  const cancelActiveStream = useCallback(() => {
+    activeStreamRequestRef.current += 1;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    const streamingId = streamingMsgIdRef.current;
+    if (streamingId) {
+      setMessages(prev => prev.filter(m => m.id !== streamingId));
+      streamingMsgIdRef.current = null;
+    }
+    setIsThinking(false);
+  }, []);
+
+  const resetChatContext = useCallback(() => {
+    cancelActiveStream();
+    historyLoadRequestRef.current += 1;
+    setPendingAction(null);
+    setMessages([]);
+    messagesRef.current = [];
+    setCurrentConversationId(null);
+    currentConversationIdRef.current = null;
+  }, [cancelActiveStream]);
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -865,16 +900,8 @@ export function AIAssistantPage() {
     const text = (textOverride || query).trim();
     if (!text || !isChatReady || isHistoryLoading || isConversationLoading) return;
 
-    // Abort running stream + remove its optimistic bubble
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-      if (streamingMsgIdRef.current) {
-        const id = streamingMsgIdRef.current;
-        setMessages(prev => prev.filter(m => m.id !== id));
-        streamingMsgIdRef.current = null;
-      }
-    }
+    cancelActiveStream();
+    const streamRequestId = activeStreamRequestRef.current;
 
     const userMsg: Message = {
       id: `user_${Date.now()}_${Math.random()}`,
@@ -896,7 +923,7 @@ export function AIAssistantPage() {
     }, 50);
 
     // Build conversation history for the AI context window
-    const rawHistory = messages
+    const rawHistory = messagesRef.current
       .filter(m => m.status !== 'streaming' && m.status !== 'error' && m.text.trim().length > 0)
       .slice(-10)
       .map(m => ({
@@ -915,7 +942,7 @@ export function AIAssistantPage() {
           businessType: businessType || undefined,
           persona: businessType || undefined,
           history: rawHistory,
-          conversationId: currentConversationId || undefined,
+          conversationId: currentConversationIdRef.current || undefined,
         },
         abort.signal
       );
@@ -927,7 +954,7 @@ export function AIAssistantPage() {
       let pendingUiData: any = null;
 
       for await (const event of stream) {
-        if (abort.signal.aborted) break;
+        if (abort.signal.aborted || activeStreamRequestRef.current !== streamRequestId) break;
 
         if (event.type === 'gen_ui') {
           pendingUiComponent = event.component;
@@ -1001,27 +1028,45 @@ export function AIAssistantPage() {
           }
 
           setMessages(prev =>
-            prev.map(m =>
-                m.id === botMsgId
-                  ? {
-                  ...m,
-                  text: event.text ?? accumulatedText,
-                  data: event.action ? { type: 'action_prompt' } : undefined,
-                  usage: event.usage,
-                  status: 'sent',
-                  uiComponent: pendingUiComponent || m.uiComponent,
-                  uiData: pendingUiData ?? m.uiData,
-                }
-                : m
-            )
+            prev.some(m => m.id === botMsgId)
+              ? prev.map(m =>
+                  m.id === botMsgId
+                    ? {
+                        ...m,
+                        text: event.text ?? accumulatedText,
+                        data: event.action ? { type: 'action_prompt' } : undefined,
+                        usage: event.usage,
+                        status: 'sent',
+                        uiComponent: pendingUiComponent || m.uiComponent,
+                        uiData: pendingUiData ?? m.uiData,
+                      }
+                    : m
+                )
+              : [
+                  ...prev,
+                  {
+                    id: botMsgId,
+                    sender: 'bot',
+                    text: event.text ?? accumulatedText,
+                    timestamp: new Date(),
+                    status: 'sent',
+                    data: event.action ? { type: 'action_prompt' } : undefined,
+                    usage: event.usage,
+                    uiComponent: pendingUiComponent || undefined,
+                    uiData: pendingUiData,
+                  },
+                ]
           );
 
           if (event.action) setPendingAction(event.action);
 
-          if (event.conversationId && !currentConversationId) {
+          if (event.conversationId && !currentConversationIdRef.current) {
+            currentConversationIdRef.current = event.conversationId;
             setCurrentConversationId(event.conversationId);
             const sessions = await aiService.getConversations();
-            setConversations(sessions as any[]);
+            if (activeStreamRequestRef.current === streamRequestId) {
+              setConversations(sessions as any[]);
+            }
           }
 
         } else if (event.type === 'error') {
@@ -1053,6 +1098,7 @@ export function AIAssistantPage() {
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') return;
+      if (activeStreamRequestRef.current !== streamRequestId) return;
       setIsThinking(false);
       const fallbackId = `bot_err_${Date.now()}_${Math.random()}`;
       setMessages(prev => [
@@ -1066,9 +1112,11 @@ export function AIAssistantPage() {
         },
       ]);
     } finally {
-      if (abortControllerRef.current === abort) abortControllerRef.current = null;
-      streamingMsgIdRef.current = null;
-      setIsThinking(false);
+      if (activeStreamRequestRef.current === streamRequestId) {
+        if (abortControllerRef.current === abort) abortControllerRef.current = null;
+        streamingMsgIdRef.current = null;
+        setIsThinking(false);
+      }
     }
   };
 
@@ -1139,19 +1187,16 @@ export function AIAssistantPage() {
     if (id === currentConversationId || isBusy || isConversationLoading) return;
     const requestId = ++historyLoadRequestRef.current;
     try {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
-      }
-      streamingMsgIdRef.current = null;
+      cancelActiveStream();
       setPendingAction(null);
-      setIsThinking(false);
       setIsConversationLoading(true);
       setMessages([]);
+      messagesRef.current = [];
       const msgs = await aiService.getConversationMessages(id);
       if (historyLoadRequestRef.current !== requestId) return;
       setMessages((msgs as any[]).map(m => ({ ...m, timestamp: new Date(m.timestamp) })));
       setCurrentConversationId(id);
+      currentConversationIdRef.current = id;
       setTimeout(() => scrollToBottom(), 50);
     } catch (err) {
       console.error('Failed to load conversation:', err);
@@ -1166,9 +1211,8 @@ export function AIAssistantPage() {
   // ── Clear chat ────────────────────────────────────────────────────────────
   const clearChat = async () => {
     try {
+      resetChatContext();
       await aiService.deleteHistory();
-      setMessages([]);
-      setCurrentConversationId(null);
       const sessions = await aiService.getConversations();
       setConversations(sessions as any[]);
     } catch (err) {
@@ -1309,7 +1353,7 @@ export function AIAssistantPage() {
               <div className="px-3 pt-3.5 pb-2.5 border-t border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between shrink-0">
                 <span className="text-[8px] font-black text-teal-500/70 tracking-widest uppercase">Recent Advice</span>
                 <button
-                  onClick={() => { if (!isBusy) { setMessages([]); setCurrentConversationId(null); } }}
+                  onClick={() => { if (!isBusy) { resetChatContext(); } }}
                   disabled={isBusy}
                   className={`text-[8px] font-black uppercase tracking-widest transition-colors ${
                     isBusy ? 'text-gray-700 cursor-not-allowed' : 'text-gray-500 hover:text-white pointer-events-auto'
