@@ -94,6 +94,12 @@ export function Compliance() {
   const pending = tasks.filter((i: ComplianceTask) => i.status === "pending").length;
   const overdue = tasks.filter((i: ComplianceTask) => i.status === "overdue").length;
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const upcoming = filteredTasks.filter((task) => {
+    if (task.status !== "pending") return false;
+    const diff = Math.ceil((new Date(task.due_date).getTime() - Date.now()) / 86400000);
+    return diff >= 0 && diff <= 7;
+  });
+  const nextDeadline = filteredTasks.find((task) => task.status !== "completed");
 
   // Mark as complete
   const handleMarkComplete = async (id: string) => {
@@ -176,23 +182,23 @@ export function Compliance() {
 
   if (loading && tasks.length === 0) {
     return (
-      <div className="p-6 space-y-8 bg-gray-50 min-h-screen animate-pulse">
+      <div className="h-full min-h-0 p-4 space-y-4 bg-gray-50 animate-pulse overflow-hidden">
         <div className="space-y-2">
           <div className="h-7 w-64 bg-gray-200 rounded-lg"></div>
           <div className="h-4 w-96 bg-gray-100 rounded-lg"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="bg-white p-4 rounded-xl border border-gray-100 h-24"></div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white p-4 rounded-xl border border-gray-100 h-20"></div>
           ))}
         </div>
-        <div className="h-[400px] w-full bg-white rounded-xl border border-gray-100"></div>
+        <div className="flex-1 min-h-0 bg-white rounded-xl border border-gray-100"></div>
       </div>
     );
   }
 
   return (
-    <div className="relative p-6 space-y-8 min-h-screen">
+    <div className="relative h-full min-h-0 p-3 lg:p-4 flex flex-col gap-4 overflow-hidden">
       {/* Premium Background */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_#e8f5e9_0%,_#f1f8f6_45%,_#f6fbf7_100%)]" />
       <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-emerald-100/40 blur-3xl -z-10" />
@@ -203,22 +209,22 @@ export function Compliance() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+        className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between shrink-0"
       >
         <div>
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-emerald-600 mb-2">
             Compliance Monitoring
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
-          <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
-            Compliance Dashboard
+          <h2 className="text-2xl lg:text-[28px] font-semibold text-gray-900 tracking-tight leading-none">
+            Compliance Taskboard
           </h2>
-          <p className="text-gray-600 mt-1.5">⚖️ Tracking regulatory deadlines & financial compliance tasks.</p>
+          <p className="text-gray-600 mt-1 text-sm">Track due dates, risk, and completion status for your compliance tasks.</p>
         </div>
         <div className="flex items-center gap-2">
           <div 
             className="bg-white/80 backdrop-blur rounded-xl border border-emerald-200/50 shadow-sm px-4 py-2 text-center"
-            title="Compliance health — based on GST filing status and advance tax payments"
+            title="Task completion ratio based on compliance tasks recorded in your workspace"
           >
             <div className="text-[10px] text-emerald-600 font-bold uppercase">Health Score</div>
             <div className="text-lg font-black text-gray-900">{completionRate}%</div>
@@ -227,13 +233,12 @@ export function Compliance() {
       </motion.div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
         {[
-          { label: 'Total Tasks', value: total, icon: Boxes, gradient: 'from-emerald-500 to-teal-600', glow: 'shadow-emerald-200/60', accent: 'text-emerald-600', delay: 0 },
-          { label: 'Pending', value: pending, icon: Clock, gradient: 'from-amber-400 to-orange-500', glow: 'shadow-amber-200/60', accent: 'text-amber-600', delay: 0.04 },
-          { label: 'Overdue', value: overdue, icon: AlertTriangle, gradient: 'from-rose-500 to-red-600', glow: 'shadow-rose-200/60', accent: 'text-rose-600', delay: 0.08, pulse: overdue > 0 },
-          { label: 'Completed', value: completed, icon: CheckCircle2, gradient: 'from-emerald-400 to-emerald-600', glow: 'shadow-emerald-200/60', accent: 'text-emerald-600', delay: 0.12 },
-          { label: 'Security', value: 'Shielded', icon: Shield, gradient: 'from-slate-700 to-slate-900', glow: 'shadow-slate-200/60', accent: 'text-slate-700', delay: 0.16 },
+          { label: 'Total Tasks', value: total, icon: Boxes, gradient: 'from-emerald-500 to-teal-600', glow: 'shadow-emerald-200/60', delay: 0 },
+          { label: 'Pending', value: pending, icon: Clock, gradient: 'from-amber-400 to-orange-500', glow: 'shadow-amber-200/60', delay: 0.04 },
+          { label: 'Overdue', value: overdue, icon: AlertTriangle, gradient: 'from-rose-500 to-red-600', glow: 'shadow-rose-200/60', delay: 0.08, pulse: overdue > 0 },
+          { label: 'Due in 7 Days', value: upcoming.length, icon: Shield, gradient: 'from-slate-700 to-slate-900', glow: 'shadow-slate-200/60', delay: 0.12 },
         ].map((card) => (
           <motion.div
             key={card.label}
@@ -241,17 +246,17 @@ export function Compliance() {
             whileHover={{ y: -5, scale: 1.02 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.4, delay: card.delay, ease: [0.23, 1, 0.32, 1] }}
-            className="relative bg-white/90 backdrop-blur-2xl p-5 rounded-3xl border border-emerald-50 shadow-sm group overflow-hidden"
+            className="relative bg-white/90 backdrop-blur-2xl p-4 rounded-3xl border border-emerald-50 shadow-sm group overflow-hidden min-h-[88px]"
           >
             <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${card.gradient} opacity-[0.03] rounded-full -mr-16 -mt-16 group-hover:opacity-[0.08] transition-opacity duration-700`} />
-            <div className="flex items-center gap-4">
-              <div className={`flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br ${card.gradient} text-white shadow-xl ${card.glow} group-hover:scale-110 transition-transform duration-500`}>
-                <card.icon size={20} strokeWidth={2.5} />
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br ${card.gradient} text-white shadow-xl ${card.glow} group-hover:scale-110 transition-transform duration-500`}>
+                <card.icon size={18} strokeWidth={2.5} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{card.label}</p>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-2xl font-black text-gray-900 tracking-tight truncate">{card.value}</h3>
+                  <h3 className="text-xl lg:text-2xl font-black text-gray-900 tracking-tight truncate">{card.value}</h3>
                   {card.pulse && (
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-60" />
@@ -265,9 +270,59 @@ export function Compliance() {
         ))}
       </div>
 
-      {/* Filters + Actions */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)] gap-4 flex-1 min-h-0 overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-emerald-100/60 p-4 flex flex-col gap-3 shrink-0">
+          <div>
+            <div className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Action Queue</div>
+            <h3 className="text-lg font-black text-gray-900 tracking-tight">What needs attention</h3>
+          </div>
+          <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-3">
+            <div className="text-[10px] font-black uppercase tracking-widest text-rose-600">Overdue</div>
+            <div className="text-2xl font-black text-gray-900 mt-1">{overdue}</div>
+            <p className="text-xs text-gray-600 mt-1">Tasks already past due and needing follow-up.</p>
+          </div>
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3">
+            <div className="text-[10px] font-black uppercase tracking-widest text-amber-600">Next Deadline</div>
+            <div className="text-sm font-black text-gray-900 mt-1 truncate">{nextDeadline?.type || 'No open tasks'}</div>
+            <p className="text-xs text-gray-600 mt-1">
+              {nextDeadline
+                ? new Date(nextDeadline.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'You are currently clear.'}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-600">Backend Scope</div>
+            <p className="text-xs text-gray-600 leading-relaxed mt-1">
+              This module currently manages task records with due date, status, priority, notes, and overdue normalization. It is not yet a filing engine or automated regulator sync.
+            </p>
+          </div>
+          <div className="mt-auto flex gap-2">
+            <button
+              onClick={exportCSV}
+              className="p-3 bg-white text-gray-400 rounded-2xl shadow-sm border border-gray-100 hover:text-emerald-600 hover:border-emerald-600/30 hover:shadow-md transition-all duration-300"
+              title="Export Report"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => {
+                setSelectedTask(undefined);
+                setCreateModalOpen(true);
+              }}
+              className="group relative flex-1 px-5 py-2.5 bg-slate-900 text-white rounded-2xl shadow-xl shadow-slate-200 hover:shadow-emerald-500/30 transition-all duration-400 active:scale-95 flex items-center justify-center gap-2 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative flex items-center gap-2 text-sm font-black tracking-wide">
+                <Plus className="w-4 h-4" />
+                Add Task
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Filters + Table */}
+        <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shrink-0">
           <div className="flex-1 w-full flex flex-col md:flex-row gap-3">
             <div className="relative flex-1 group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
@@ -294,38 +349,14 @@ export function Compliance() {
               ))}
             </div>
           </div>
-
-          <div className="flex gap-2 shrink-0">
-            <button
-              onClick={exportCSV}
-              className="p-3 bg-white text-gray-400 rounded-2xl shadow-sm border border-gray-100 hover:text-emerald-600 hover:border-emerald-600/30 hover:shadow-md transition-all duration-300"
-              title="Export Report"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => {
-                setSelectedTask(undefined);
-                setCreateModalOpen(true);
-              }}
-              className="group relative px-6 py-2.5 bg-slate-900 text-white rounded-2xl shadow-xl shadow-slate-200 hover:shadow-emerald-500/30 transition-all duration-400 active:scale-95 flex items-center gap-2 overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative flex items-center gap-2 text-sm font-black tracking-wide">
-                <Plus className="w-4 h-4" />
-                Declare Task
-              </div>
-            </button>
-          </div>
         </div>
-      </div>
 
       {/* Compliance Table */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.15 }}
-        className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm overflow-hidden border border-emerald-100/60 flex flex-col h-[calc(100vh-360px)] min-h-[400px]"
+        className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm overflow-hidden border border-emerald-100/60 flex flex-col flex-1 min-h-0"
       >
         <div className="flex-1 overflow-auto scroll-smooth">
           <table className="min-w-full text-sm text-left relative border-separate border-spacing-0">
@@ -347,12 +378,12 @@ export function Compliance() {
               {filteredTasks.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-20 text-center text-gray-500">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="p-4 bg-emerald-50 rounded-3xl mb-4">
-                        <Activity className="w-10 h-10 text-emerald-400" />
-                      </div>
-                      <p className="font-bold text-gray-900 text-lg">All clear</p>
-                      <p className="text-sm mt-1 max-w-[240px]">No pending compliance tasks. GST filing deadlines and advance tax reminders will appear here automatically.</p>
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="p-4 bg-emerald-50 rounded-3xl mb-4">
+                          <Activity className="w-10 h-10 text-emerald-400" />
+                        </div>
+                        <p className="font-bold text-gray-900 text-lg">All clear</p>
+                      <p className="text-sm mt-1 max-w-[280px]">No open compliance tasks are currently recorded for this workspace.</p>
                     </div>
                   </td>
                 </tr>
@@ -431,6 +462,8 @@ export function Compliance() {
           </table>
         </div>
       </motion.div>
+      </div>
+      </div>
 
       {/* Compliance Task Modal */}
       <ComplianceTaskModal
