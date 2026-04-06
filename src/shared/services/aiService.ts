@@ -103,7 +103,7 @@ export const aiService = {
 
   sendCommand: (command: string) => api.post(ENDPOINTS.AI_COMMAND, { command }),
 
-  generateSettlementOffer: (id: string) => api.post(ENDPOINTS.AI_SETTLEMENT, { id }),
+  generateSettlementOffer: (invoiceId: string) => api.post(ENDPOINTS.AI_SETTLEMENT, { invoiceId }),
 
   // Helper for converting blob to base64 if needed for other AI tasks
   blobToBase64: (blob: Blob): Promise<string> => {

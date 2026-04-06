@@ -763,6 +763,7 @@ export function AIAssistantPage() {
         {
           query: text,
           businessType: businessType || undefined,
+          persona: businessType || undefined,
           history: rawHistory,
           conversationId: currentConversationId || undefined,
         },
