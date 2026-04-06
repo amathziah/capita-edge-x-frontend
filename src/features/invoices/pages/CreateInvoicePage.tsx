@@ -26,9 +26,15 @@ interface InvoiceForm extends Invoice {
     customerAddress: string;
     customerGstin: string;
     fromName: string;
+    fromTitle: string;
     fromAddress: string;
     fromGstin: string;
     isGstRegistered: boolean;
+    tdsRate: number;
+    bankName: string;
+    accountNumber: string;
+    ifscCode: string;
+    upiId: string;
     notes: string;
     terms: string;
     discount: number;
@@ -41,6 +47,7 @@ interface InvoiceForm extends Invoice {
     taxLabel: string;
     projectReference: string;
     signatureName: string;
+    isInterstate: boolean;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -246,6 +253,11 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                             />
                         </Field>
                     </div>
+                    <div className="col-span-2">
+                        <Field label="Professional Title / Designation">
+                            <input {...register('fromTitle')} placeholder="e.g. Full Stack Developer" className={INP} />
+                        </Field>
+                    </div>
                     <Field label="GSTIN (if any)">
                         <input {...register('fromGstin')} placeholder="27ABCDE1234F1Z5" className={INP} />
                     </Field>
@@ -369,25 +381,10 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
 /* ─────────────────────────────────────────────────────────────
    STEP 2 — Line Items
 ───────────────────────────────────────────────────────────── */
-function StepItems({ register, control, watch }: { register: any; control: any; watch: any }) {
+function StepItems({ register, control, watch, calcResult }: { register: any; control: any; watch: any; calcResult: any }) {
     const { fields, append, remove } = useFieldArray({ control, name: 'items' });
-    const w               = watch();
-    const watchedItems    = w.items || [];
-    const watchedDiscount = w.discount || 0;
-    const watchedShipping = w.shipping || 0;
+    const watchedItems = watch('items') || [];
 
-    const calcResult = InvoiceCalculator.calculate({
-        line_items: watchedItems.map((item: any) => ({
-            quantity:      item.quantity || 0,
-            unit_price:    item.price    || 0,
-            tax_rate:      w.isGstRegistered ? 18 : 0,
-            is_interstate: false,
-        })),
-        shipping_charges: 0,
-    });
-
-    const subtotal    = parseFloat(calcResult.subtotal);
-    const discountAmt = (subtotal * watchedDiscount) / 100;
 
     return (
         <div className="space-y-4">
@@ -487,7 +484,7 @@ function StepItems({ register, control, watch }: { register: any; control: any; 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Subtotal after adjustments</span>
                     <span className="text-sm font-black text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>
-                        ₹{(subtotal - discountAmt + watchedShipping).toFixed(2)}
+                        ₹{parseFloat(calcResult.subtotal).toFixed(2)}
                     </span>
                 </div>
             </SectionCard>
@@ -498,7 +495,7 @@ function StepItems({ register, control, watch }: { register: any; control: any; 
 /* ─────────────────────────────────────────────────────────────
    STEP 3 — GST, Notes & Terms
 ───────────────────────────────────────────────────────────── */
-function StepGst({ register, watch, setValue }: { register: any; watch: any; setValue: any }) {
+function StepGst({ register, watch, setValue, calcResult }: { register: any; watch: any; setValue: any; calcResult: any }) {
     const isGst = watch('isGstRegistered');
     return (
         <div className="space-y-4">
@@ -514,13 +511,48 @@ function StepGst({ register, watch, setValue }: { register: any; watch: any; set
                     />
                 </div>
                 {isGst && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
-                        <Shield size={12} className="text-teal-600" />
-                        <span className="text-[11px] text-teal-600 font-bold uppercase tracking-wider">
-                            18% GST will be calculated on all items
-                        </span>
-                    </div>
+                    <>
+                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                            <div>
+                                <p className="text-[12px] font-bold text-gray-700">Inter-state Transaction?</p>
+                                <p className="text-[10px] text-gray-400">Bills as IGST instead of CGST/SGST</p>
+                            </div>
+                            <Toggle
+                                checked={!!watch('isInterstate')}
+                                onChange={v => setValue('isInterstate', v, { shouldDirty: true })}
+                            />
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+                            <Shield size={12} className="text-teal-600" />
+                            <span className="text-[11px] text-teal-600 font-bold uppercase tracking-wider">
+                                18% {watch('isInterstate') ? 'IGST' : 'CGST + SGST'} will be calculated
+                            </span>
+                        </div>
+                    </>
                 )}
+            </SectionCard>
+
+            <SectionCard>
+                <SectionHead icon={Landmark} label="Direct Tax (TDS)" />
+                <div className="grid grid-cols-2 gap-3 items-end">
+                    <Field label="TDS Rate (%)">
+                        <div className="relative">
+                            <input
+                                type="number"
+                                {...register('tdsRate', { valueAsNumber: true, min: 0, max: 100 })}
+                                placeholder="0"
+                                className={INP + ' pr-8'}
+                            />
+                            <Percent size={12} className="absolute right-3 top-2.5 text-gray-400" />
+                        </div>
+                    </Field>
+                    <div className="pb-2.5">
+                       <p className="text-[10px] text-gray-400 font-medium">Estimated deduction: <span className="font-bold text-red-500">₹{parseFloat(calcResult.tds_amount).toFixed(2)}</span></p>
+                    </div>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-3 bg-gray-50 p-3 rounded-lg border border-gray-100 italic">
+                    Solopreneurs under Section 44ADA often have 1% or 10% TDS deducted. This estimation will be reflected in your final payable amount.
+                </p>
             </SectionCard>
 
             <SectionCard>
@@ -552,13 +584,17 @@ function StepGst({ register, watch, setValue }: { register: any; watch: any; set
    STEP 4 — Payment, Signature & Recurring
 ───────────────────────────────────────────────────────────── */
 function StepPayment({
-    register, watch, setValue,
-    subtotal, taxAmount, discountAmt, total, watchedShipping,
+    register, watch, setValue, calcResult
 }: {
-    register: any; watch: any; setValue: any;
-    subtotal: number; taxAmount: number; discountAmt: number;
-    total: number; watchedShipping: number;
+    register: any; watch: any; setValue: any; calcResult: any;
 }) {
+    const subtotal = parseFloat(calcResult.subtotal);
+    const taxAmount = parseFloat(calcResult.total_tax);
+    const discountAmt = parseFloat(calcResult.total_discount);
+    const total = parseFloat(calcResult.payable_amount);
+    const tdsAmount = parseFloat(calcResult.tds_amount);
+    const watchedShipping = parseFloat(calcResult.shipping_charges);
+
     const payments    = watch('payments') || [];
     const isRecurring = watch('isRecurring');
     const isSig       = watch('includeSignature');
@@ -651,6 +687,32 @@ function StepPayment({
                 )}
             </SectionCard>
 
+            {/* Bank Details */}
+            <SectionCard>
+                <SectionHead icon={Landmark} label="Bank & UPI Details" />
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                        <Field label="Bank Name">
+                            <input {...register('bankName')} placeholder="e.g. HDFC Bank" className={INP} />
+                        </Field>
+                    </div>
+                    <Field label="Account Number">
+                        <input {...register('accountNumber')} placeholder="0000 1234 5678" className={INP} />
+                    </Field>
+                    <Field label="IFSC Code">
+                        <input {...register('ifscCode')} placeholder="HDFC0001234" className={INP} />
+                    </Field>
+                    <div className="col-span-2">
+                        <Field label="UPI ID (for easy payment)">
+                            <div className="relative">
+                                <input {...register('upiId')} placeholder="yourname@upi" className={INP + ' pr-8'} />
+                                <Coins size={12} className="absolute right-3 top-2.5 text-gray-400" />
+                            </div>
+                        </Field>
+                    </div>
+                </div>
+            </SectionCard>
+
             {/* Summary */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-4">Summary</p>
@@ -659,10 +721,30 @@ function StepPayment({
                         <span className="text-[13px] font-medium text-gray-500">Subtotal</span>
                         <span className="font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="text-[13px] font-medium text-gray-500">GST ({w.isGstRegistered ? '18%' : '0%'})</span>
-                        <span className="font-bold text-gray-900">₹{taxAmount.toFixed(2)}</span>
-                    </div>
+                    
+                    {/* GST Breakdown */}
+                    {w.isGstRegistered && (
+                        <>
+                            {w.isInterstate ? (
+                                <div className="flex justify-between">
+                                    <span className="text-[13px] font-medium text-gray-500">IGST (18%)</span>
+                                    <span className="font-bold text-gray-900">₹{taxAmount.toFixed(2)}</span>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex justify-between">
+                                        <span className="text-[13px] font-medium text-gray-500">CGST (9%)</span>
+                                        <span className="font-bold text-gray-900">₹{(taxAmount / 2).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-[13px] font-medium text-gray-500">SGST (9%)</span>
+                                        <span className="font-bold text-gray-900">₹{(taxAmount / 2).toFixed(2)}</span>
+                                    </div>
+                                </>
+                            )}
+                        </>
+                    )}
+
                     {discountAmt > 0 && (
                         <div className="flex justify-between">
                             <span className="text-[13px] font-bold text-red-500">Discount ({w.discount}%)</span>
@@ -675,12 +757,18 @@ function StepPayment({
                             <span className="font-bold text-gray-900">₹{watchedShipping.toFixed(2)}</span>
                         </div>
                     )}
+                    {tdsAmount > 0 && (
+                        <div className="flex justify-between">
+                            <span className="text-[13px] font-bold text-amber-600">TDS Deduction ({w.tdsRate}%)</span>
+                            <span className="font-bold text-amber-600">−₹{tdsAmount.toFixed(2)}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between pt-4 border-t-2 border-gray-900 mt-2">
                         <span className="font-black text-gray-900 text-base uppercase tracking-tight">Total Amount</span>
                         <span className="font-black text-teal-600 text-2xl tracking-tighter">₹{total.toFixed(2)}</span>
                     </div>
                     <p className="text-right text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-1">
-                        {numberToWords(total)}
+                        {numberToWords(Math.floor(total))}
                     </p>
                 </div>
             </div>
@@ -692,12 +780,18 @@ function StepPayment({
    LIVE PREVIEW — right panel (white invoice doc on dark bg)
 ───────────────────────────────────────────────────────────── */
 function InvoicePreview({
-    w, subtotal, taxAmount, discountAmt, total, watchedShipping,
+    w, calcResult
 }: {
     w: InvoiceForm;
-    subtotal: number; taxAmount: number; discountAmt: number;
-    total: number; watchedShipping: number;
+    calcResult: any;
 }) {
+    const subtotal = parseFloat(calcResult.subtotal);
+    const taxAmount = parseFloat(calcResult.total_tax);
+    const discountAmt = parseFloat(calcResult.total_discount);
+    const total = parseFloat(calcResult.payable_amount);
+    const tdsAmount = parseFloat(calcResult.tds_amount);
+    const watchedShipping = parseFloat(calcResult.shipping_charges);
+
     const watchedItems    = (w.items || []) as any[];
     const watchedDiscount = w.discount || 0;
     const hasItems        = watchedItems.some(i => i.description);
@@ -713,6 +807,7 @@ function InvoicePreview({
                             ? <p className="text-base font-bold text-gray-900">{w.fromName}</p>
                             : <p className="text-sm text-gray-300 italic">Your name</p>
                         }
+                        {w.fromTitle && <p className="text-[10px] font-bold text-teal-600 uppercase tracking-wider mb-1">{w.fromTitle}</p>}
                         {w.fromAddress && <p className="text-xs text-gray-500 mt-0.5">{w.fromAddress}</p>}
                         {w.fromGstin   && <p className="text-xs text-gray-500 mt-0.5">GSTIN: {w.fromGstin}</p>}
                     </div>
@@ -789,10 +884,27 @@ function InvoicePreview({
                         <span className="text-xs text-gray-400">Subtotal</span>
                         <span className="text-xs font-medium text-gray-700">₹{subtotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">GST ({w.isGstRegistered ? '18%' : '0%'})</span>
-                        <span className="text-xs font-medium text-gray-700">₹{taxAmount.toFixed(2)}</span>
-                    </div>
+                    {w.isGstRegistered && (
+                        <>
+                            {w.isInterstate ? (
+                                <div className="flex justify-between">
+                                    <span className="text-xs text-gray-400">IGST (18%)</span>
+                                    <span className="text-xs font-medium text-gray-700">₹{taxAmount.toFixed(2)}</span>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-gray-400">CGST (9%)</span>
+                                        <span className="text-xs font-medium text-gray-700">₹{(taxAmount / 2).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-xs text-gray-400">SGST (9%)</span>
+                                        <span className="text-xs font-medium text-gray-700">₹{(taxAmount / 2).toFixed(2)}</span>
+                                    </div>
+                                </>
+                            )}
+                        </>
+                    )}
                     {discountAmt > 0 && (
                         <div className="flex justify-between">
                             <span className="text-xs text-red-400">Discount ({watchedDiscount}%)</span>
@@ -805,6 +917,12 @@ function InvoicePreview({
                             <span className="text-xs font-medium text-gray-700">₹{watchedShipping.toFixed(2)}</span>
                         </div>
                     )}
+                    {tdsAmount > 0 && (
+                        <div className="flex justify-between">
+                            <span className="text-xs text-amber-500 font-medium">TDS ({w.tdsRate}%)</span>
+                            <span className="text-xs font-medium text-amber-500">−₹{tdsAmount.toFixed(2)}</span>
+                        </div>
+                    )}
                     <div className="border-t-2 border-gray-900 pt-2 flex justify-between items-baseline">
                         <span className="text-sm font-bold text-gray-900">Total</span>
                         <span className="text-2xl font-black text-emerald-600">₹{total.toFixed(2)}</span>
@@ -813,6 +931,33 @@ function InvoicePreview({
                         {numberToWords(Math.floor(total))}
                     </p>
                 </div>
+
+                {/* Bank / Payment Instructions */}
+                {(w.bankName || w.upiId) && (
+                    <div className="mt-8 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Payment Instructions</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            {w.bankName && (
+                                <div className="space-y-1">
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Bank Transfer</p>
+                                    <p className="text-[11px] font-bold text-gray-800">{w.bankName}</p>
+                                    <p className="text-[10px] text-gray-500">A/C: {w.accountNumber}</p>
+                                    <p className="text-[10px] text-gray-500">IFSC: {w.ifscCode}</p>
+                                </div>
+                            )}
+                            {w.upiId && (
+                                <div className="space-y-1">
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">UPI Payment</p>
+                                    <p className="text-[11px] font-bold text-emerald-600">{w.upiId}</p>
+                                    <div className="flex items-center gap-1.5 pt-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        <p className="text-[9px] text-gray-400 font-medium">Instant Clearance</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Notes */}
                 {w.notes && (
@@ -938,16 +1083,25 @@ export function CreateInvoice() {
             customerAddress:    '',
             customerGstin:      '',
             fromName:           '',
+            fromTitle:          '',
             fromAddress:        '',
             fromGstin:          '',
             isGstRegistered:    false,
+            tdsRate:            0,
+            bankName:           '',
+            accountNumber:      '',
+            ifscCode:           '',
+            upiId:              '',
             notes:              '',
             terms:              '',
+            discount:           0,
+            shipping:           0,
             currencyCode:       'INR',
             taxLabel:           'GST',
             projectReference:   '',
             signatureName:      '',
             recurringFrequency: 'Monthly',
+            isInterstate:       false,
         },
     });
 
@@ -967,6 +1121,7 @@ export function CreateInvoice() {
             }
 
             reset({
+                ...invoice,
                 invoiceNumber: invoice.invoiceNumber,
                 date: (invoice.date || new Date().toISOString()).split('T')[0],
                 dueDate: (invoice.dueDate || new Date().toISOString()).split('T')[0],
@@ -976,31 +1131,38 @@ export function CreateInvoice() {
                     quantity: Number(item.quantity) || 1,
                     price: Number(item.price) || 0,
                     unit: item.unit || 'Qty',
-                    productId: item.productId || item.product_id || undefined,
+                    productId: item.productId || undefined,
                     sku: item.sku || '',
                     sac_code: item.sac_code || '',
                     hsn_code: item.hsn_code || '',
                 })),
-                customerName: invoice.buyer?.name || invoice.customers?.name || '',
-                customerEmail: invoice.buyer?.email || invoice.customers?.email || '',
-                customerAddress: invoice.buyer?.address || invoice.customers?.address || '',
-                customerGstin: invoice.buyer?.gstin || invoice.customers?.gstin || '',
+                customerName: invoice.buyer?.name || '',
+                customerEmail: invoice.buyer?.email || '',
+                customerAddress: invoice.buyer?.address || '',
+                customerGstin: invoice.buyer?.gstin || '',
                 fromName: invoice.seller?.name || '',
+                fromTitle: (invoice as any).seller?.title || '',
                 fromAddress: invoice.seller?.address || '',
                 fromGstin: invoice.seller?.gstin || '',
                 signatureName: invoice.seller?.signatureName || '',
-                isGstRegistered: invoice.isGstRegistered ?? invoice.is_gst_registered ?? false,
+                isGstRegistered: invoice.isGstRegistered || false,
                 notes: invoice.notes || '',
                 terms: '',
                 discount: invoice.discount || 0,
                 shipping: invoice.shipping || 0,
                 currencyCode: (invoice as any).currencyCode || 'INR',
                 taxLabel: invoice.taxType || 'GST',
-                projectReference: invoice.projectName || invoice.project_name || '',
+                projectReference: invoice.projectName || '',
                 recurringFrequency: 'Monthly',
                 payments: [],
                 includeSignature: Boolean(invoice.seller?.includeSignature),
                 isRecurring: Boolean(invoice.is_recurring),
+                tdsRate: (invoice as any).tdsRate || 0,
+                bankName: (invoice as any).seller?.bankName || '',
+                accountNumber: (invoice as any).seller?.accountNumber || '',
+                ifscCode: (invoice as any).seller?.ifscCode || '',
+                upiId: (invoice as any).seller?.upiId || '',
+                isInterstate: (invoice as any).isInterstate || false,
             } as InvoiceForm);
 
             return true;
@@ -1051,21 +1213,24 @@ export function CreateInvoice() {
     const watchedItems    = (w.items || []) as any[];
     const watchedDiscount = w.discount || 0;
     const watchedShipping = w.shipping || 0;
+    const watchedTdsRate  = w.tdsRate || 0;
 
     const calcResult = InvoiceCalculator.calculate({
         line_items: watchedItems.map((item: any) => ({
             quantity:      item.quantity || 0,
             unit_price:    item.price    || 0,
             tax_rate:      w.isGstRegistered ? 18 : 0,
-            is_interstate: false,
+            is_interstate: w.isInterstate || false,
         })),
-        shipping_charges: 0,
+        document_discount: { type: 'percentage', value: watchedDiscount },
+        shipping_charges: watchedShipping,
+        tds_rate: watchedTdsRate,
     });
 
     const subtotal    = parseFloat(calcResult.subtotal);
     const taxAmount   = parseFloat(calcResult.total_tax);
-    const discountAmt = (subtotal * watchedDiscount) / 100;
-    const total       = parseFloat(calcResult.grand_total) - discountAmt + watchedShipping;
+    const total       = parseFloat(calcResult.payable_amount);
+    const tdsAmount   = parseFloat(calcResult.tds_amount);
 
     /* ── Step navigation ── */
     const goNext = useCallback(async () => {
@@ -1095,16 +1260,23 @@ export function CreateInvoice() {
                 },
                 seller: {
                     name: data.fromName || null,
+                    title: data.fromTitle || null,
                     address: data.fromAddress || null,
                     gstin: data.fromGstin || null,
                     includeSignature: Boolean(data.includeSignature),
                     signatureName: data.signatureName || data.fromName || null,
+                    bankName: data.bankName || null,
+                    accountNumber: data.accountNumber || null,
+                    ifscCode: data.ifscCode || null,
+                    upiId: data.upiId || null,
                 },
                 projectName: data.projectReference || null,
                 subtotal,
                 taxAmount,
                 total,
-            });
+                tdsRate: data.tdsRate || 0,
+                tdsAmount,
+            } as any);
             navigate('/dashboard/invoices');
         } catch (err) {
             console.error(err);
@@ -1227,21 +1399,17 @@ export function CreateInvoice() {
                             <StepClient register={register} errors={errors} watch={watch} setValue={setValue} />
                         )}
                         {step === 1 && (
-                            <StepItems register={register} control={control} watch={watch} />
+                            <StepItems register={register} control={control} watch={watch} calcResult={calcResult} />
                         )}
                         {step === 2 && (
-                            <StepGst register={register} watch={watch} setValue={setValue} />
+                            <StepGst register={register} watch={watch} setValue={setValue} calcResult={calcResult} />
                         )}
                         {step === 3 && (
                             <StepPayment
                                 register={register}
                                 watch={watch}
                                 setValue={setValue}
-                                subtotal={subtotal}
-                                taxAmount={taxAmount}
-                                discountAmt={discountAmt}
-                                total={total}
-                                watchedShipping={watchedShipping}
+                                calcResult={calcResult}
                             />
                         )}
                     </div>
@@ -1296,11 +1464,7 @@ export function CreateInvoice() {
                         <div className="h-full rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                             <InvoicePreview
                                 w={w as InvoiceForm}
-                                subtotal={subtotal}
-                                taxAmount={taxAmount}
-                                discountAmt={discountAmt}
-                                total={total}
-                                watchedShipping={watchedShipping}
+                                calcResult={calcResult}
                             />
                         </div>
                     </div>

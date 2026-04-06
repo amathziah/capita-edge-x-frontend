@@ -118,61 +118,61 @@ function PlanCard({ plan, annual, currentPlan, onUpgrade }: {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className={`relative flex flex-col rounded-2xl border bg-white overflow-hidden ${plan.badge ? 'shadow-xl ring-2 ' + c.ring : 'shadow-sm border-gray-100'}`}
+      className={`relative flex flex-col rounded-2xl border bg-white overflow-hidden transition-transform active:scale-[0.98] ${plan.badge ? 'shadow-xl ring-2 ' + c.ring : 'shadow-sm border-gray-100'}`}
       style={plan.badge ? { boxShadow: c.glow } : {}}
     >
       {/* Popular badge */}
       {plan.badge && (
-        <div className={`absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${c.badge}`}>
+        <div className={`absolute top-3 right-3 md:top-4 md:right-4 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full text-[9px] md:text-[10px] font-black tracking-widest uppercase ${c.badge}`}>
           {plan.badge}
         </div>
       )}
 
       {/* Gradient header */}
-      <div className={`bg-gradient-to-br ${plan.gradient} px-6 pt-6 pb-5 border-b border-gray-50`}>
-        <div className="flex items-center gap-2.5 mb-3">
+      <div className={`bg-gradient-to-br ${plan.gradient} px-5 md:px-6 pt-5 md:pt-6 pb-4 md:pb-5 border-b border-gray-50`}>
+        <div className="flex items-center gap-2.5 mb-2 md:mb-3">
           <div className={`p-1.5 rounded-lg ${plan.color === 'teal' ? 'bg-teal-500/15' : plan.color === 'violet' ? 'bg-violet-500/15' : 'bg-gray-100'}`}>
-            <Icon className={`w-4 h-4 ${plan.color === 'teal' ? 'text-teal-600' : plan.color === 'violet' ? 'text-violet-600' : 'text-gray-500'}`} />
+            <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${plan.color === 'teal' ? 'text-teal-600' : plan.color === 'violet' ? 'text-violet-600' : 'text-gray-500'}`} />
           </div>
-          <span className="text-sm font-black text-gray-900">{plan.name}</span>
+          <span className="text-xs md:text-sm font-black text-gray-900">{plan.name}</span>
         </div>
-        <p className="text-[12px] text-gray-500 mb-4 leading-snug">{plan.tagline}</p>
+        <p className="text-[11px] md:text-[12px] text-gray-500 mb-3 md:mb-4 leading-snug">{plan.tagline}</p>
 
         {/* Price */}
         <div className="flex items-end gap-1 mb-1">
           {price === 0 ? (
-            <span className="text-3xl font-black text-gray-900">Free</span>
+            <span className="text-2xl md:text-3xl font-black text-gray-900">Free</span>
           ) : (
             <>
-              <span className="text-xs text-gray-400 mb-1.5">₹</span>
-              <span className="text-3xl font-black text-gray-900">{price.toLocaleString('en-IN')}</span>
-              <span className="text-xs text-gray-400 mb-1.5">/mo</span>
+              <span className="text-[10px] md:text-xs text-gray-400 mb-1.5">₹</span>
+              <span className="text-2xl md:text-3xl font-black text-gray-900">{price.toLocaleString('en-IN')}</span>
+              <span className="text-[10px] md:text-xs text-gray-400 mb-1.5">/mo</span>
             </>
           )}
         </div>
 
         {annual && plan.annualSavings > 0 && (
-          <p className="text-[11px] text-emerald-600 font-semibold">Save ₹{plan.annualSavings.toLocaleString('en-IN')}/yr with annual</p>
+          <p className="text-[9px] md:text-[11px] text-emerald-600 font-semibold">Save ₹{plan.annualSavings.toLocaleString('en-IN')}/yr with annual</p>
         )}
         {plan.trialNote && (
-          <p className="text-[11px] text-blue-600 font-semibold mt-0.5">{plan.trialNote}</p>
+          <p className="text-[9px] md:text-[11px] text-blue-600 font-semibold mt-0.5">{plan.trialNote}</p>
         )}
 
-        {/* AI query chip */}
-        <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/70 border border-gray-100 text-[11px] font-semibold text-gray-600">
-          <Sparkles className={`w-3 h-3 ${plan.color === 'teal' ? 'text-teal-500' : plan.color === 'violet' ? 'text-violet-500' : 'text-gray-400'}`} />
+        {/* AI query chip - "Search components" small on mobile */}
+        <div className="mt-2 md:mt-3 inline-flex items-center gap-1 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full bg-white/70 border border-gray-100 text-[9px] md:text-[11px] font-semibold text-gray-600">
+          <Sparkles className={`w-2.5 h-2.5 md:w-3 md:h-3 ${plan.color === 'teal' ? 'text-teal-500' : plan.color === 'violet' ? 'text-violet-500' : 'text-gray-400'}`} />
           {plan.aiQueries === Infinity ? 'Unlimited' : plan.aiQueries} AI queries / month
         </div>
       </div>
 
       {/* Features */}
-      <div className="px-6 py-5 flex-1">
-        <ul className="space-y-2.5">
+      <div className="px-5 md:px-6 py-4 md:py-5 flex-1">
+        <ul className="space-y-1.5 md:space-y-2.5">
           {plan.features.map((f, i) => (
-            <li key={i} className={`flex items-start gap-2.5 text-[12.5px] ${f.included ? 'text-gray-700' : 'text-gray-300'}`}>
+            <li key={i} className={`flex items-start gap-2 md:gap-2.5 text-[11.5px] md:text-[12.5px] ${f.included ? 'text-gray-700' : 'text-gray-300'}`}>
               {f.included
-                ? <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${c.check}`} />
-                : <X className="w-3.5 h-3.5 shrink-0 mt-0.5 text-gray-200" />
+                ? <Check className={`w-3 md:w-3.5 h-3 md:h-3.5 shrink-0 mt-0.5 ${c.check}`} />
+                : <X className="w-3 md:w-3.5 h-3 md:h-3.5 shrink-0 mt-0.5 text-gray-200" />
               }
               {f.label}
             </li>

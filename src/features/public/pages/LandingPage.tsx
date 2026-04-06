@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence, useMotionValue, useSpring, useInView } from 'framer-motion';
 import {
     Zap, Target, BarChart3, ArrowRight, Shield,
-    CheckCircle2, ChevronRight, Globe, Lock,
+    CheckCircle2, ChevronRight, Lock,
     ChevronDown, Clock, TrendingUp, Users,
     FileText, CreditCard, Calendar, Package,
-    AlertTriangle, Activity, Star, Building2,
-    Sparkles, Play, Crown, MessageSquare, Mail, Bell
+    AlertTriangle, Activity,
+    Sparkles, Play
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Logo } from '@/components/common/Logo';
@@ -255,15 +255,19 @@ function DashboardMockup() {
                 <div className="bg-[#0d1117]/90 border-b border-white/[0.05] px-5 py-3 flex items-center gap-2 backdrop-blur">
                     <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-rose-400/70" /><div className="w-3 h-3 rounded-full bg-yellow-400/70" /><div className="w-3 h-3 rounded-full bg-emerald-400/70" /></div>
                     <div className="flex-1 flex justify-center">
-                        <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
+                        <div className="hidden sm:flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-1.5">
                             <motion.div className="w-1.5 h-1.5 rounded-full bg-teal-400" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }} />
                             <span className="text-[11px] text-slate-400 font-mono">app.capita.ai/dashboard</span>
                             <Lock className="w-2.5 h-2.5 text-teal-500 ml-1" />
                         </div>
+                        <div className="flex sm:hidden items-center gap-2">
+                             <div className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+                             <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Capita AI Dashboard</span>
+                        </div>
                     </div>
                 </div>
-                <div className="flex" style={{ minHeight: 440 }}>
-                    <div className="w-44 flex-shrink-0 bg-[#070b14] border-r border-white/[0.04] p-4 flex flex-col gap-1">
+                <div className="flex flex-col md:flex-row" style={{ minHeight: 440 }}>
+                    <div className="hidden md:flex w-44 flex-shrink-0 bg-[#070b14] border-r border-white/[0.04] p-4 flex-col gap-1">
                         <div className="flex items-center gap-2 mb-5"><Logo size={26} /><div><div className="text-[12px] font-bold text-white">Capita</div><div className="text-[9px] text-slate-500">Financial OS</div></div></div>
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-700 mb-1.5 px-2">Headquarters</div>
                         {[{ label: 'Control Room', icon: Activity, active: true }, { label: 'Calendar', icon: Calendar }].map(item => (
@@ -294,7 +298,7 @@ function DashboardMockup() {
                                 <button className="px-3 py-1.5 text-[10px] font-semibold text-teal-400 border border-teal-500/30 rounded-lg bg-teal-500/8">Add Client</button>
                             </div>
                         </div>
-                        <div className="grid grid-cols-4 gap-2.5 mb-3.5">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3.5">
                             {[
                                 { label: 'PENDING REVENUE', val: '₹27.03L', sub: '500 invoices pending', icon: FileText, color: 'teal' },
                                 { label: 'ACTION REQUIRED', val: '₹13.03L', sub: '250 overdue payments', icon: AlertTriangle, color: 'orange', dot: true },
@@ -313,8 +317,8 @@ function DashboardMockup() {
                                 </motion.div>
                             ))}
                         </div>
-                        <div className="grid grid-cols-3 gap-2.5">
-                            <div className="col-span-2 bg-white/[0.02] border border-white/[0.04] rounded-xl p-3.5">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                            <div className="col-span-1 md:col-span-2 bg-white/[0.02] border border-white/[0.04] rounded-xl p-3.5">
                                 <div className="flex items-center justify-between mb-2.5">
                                     <div className="flex items-center gap-1.5 text-[11px] font-bold text-white"><Activity className="w-3.5 h-3.5 text-teal-400" />Live Monitoring</div>
                                     <div className="flex items-center gap-1.5 text-[9px] font-semibold text-emerald-400">
@@ -479,13 +483,12 @@ function FaqSection() {
 }
 
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.07 } } };
-const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } } };
+const fadeUp = { hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as any } } };
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export const Landing: React.FC = () => {
     const [scrolled, setScrolled] = useState(false);
     const [legalModalType, setLegalModalType] = useState<PolicyType | null>(null);
-    const [isAnnual, setIsAnnual] = useState(false);
     const heroRef = useRef<HTMLDivElement>(null);
     const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
     const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
@@ -592,7 +595,7 @@ export const Landing: React.FC = () => {
                                         initial={{ y: 60, opacity: 0, filter: 'blur(8px)' }}
                                         animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
                                         exit={{ y: -60, opacity: 0, filter: 'blur(8px)' }}
-                                        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}>
+                                        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as any }}>
                                         {words[wIdx]}
                                     </motion.span>
                                 </AnimatePresence>
@@ -681,7 +684,7 @@ export const Landing: React.FC = () => {
                     </motion.div>
 
                     {/* Invoice */}
-                    <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} className="grid lg:grid-cols-2 gap-16 items-center">
+                    <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] as any }} className="grid lg:grid-cols-2 gap-16 items-center">
                         <div>
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-400 text-[11px] font-black uppercase tracking-[0.18em] mb-5">Invoice Management</div>
                             <h3 className="display font-black text-white text-3xl md:text-4xl mb-4 leading-tight">Every invoice. Every status. <span className="text-teal-400">Total control.</span></h3>
@@ -702,7 +705,7 @@ export const Landing: React.FC = () => {
                     </motion.div>
 
                     {/* Control Room */}
-                    <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} className="grid lg:grid-cols-2 gap-16 items-center">
+                    <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] as any }} className="grid lg:grid-cols-2 gap-16 items-center">
                         <div className="lg:order-2">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-400 text-[11px] font-black uppercase tracking-[0.18em] mb-5">Live Monitoring</div>
                             <h3 className="display font-black text-white text-3xl md:text-4xl mb-4 leading-tight">Your revenue <span className="text-teal-400">command centre.</span></h3>
