@@ -9,17 +9,25 @@ export default function SafeToSpendCard() {
         totalRevenue: number;
         taxes: number;
         overdueRisk: number;
+        currency?: string;
+        reserves?: {
+            gst?: number;
+            incomeTax?: number;
+            atRisk?: number;
+        };
     } | null>(null);
 
     const [isHovered, setIsHovered] = useState(false);
 
     useEffect(() => {
         dataService.getSafeToSpend().then((res) => {
+            const taxes = Number(res?.reserves?.gst || 0) + Number(res?.reserves?.incomeTax || 0);
+            const overdueRisk = Number(res?.reserves?.atRisk || 0);
             setData({
                 safeToSpend: res.safeToSpend,
-                totalRevenue: res.totalRevenue || res.safeToSpend * 1.4,
-                taxes: (res.totalRevenue || res.safeToSpend * 1.4) * 0.28,
-                overdueRisk: (res.totalRevenue || res.safeToSpend * 1.4) * 0.1,
+                totalRevenue: res.totalRevenue || 0,
+                taxes,
+                overdueRisk,
                 ...res
             });
         });
@@ -27,7 +35,10 @@ export default function SafeToSpendCard() {
 
     if (!data) return <div className="animate-pulse h-48 bg-gray-100 rounded-2xl"></div>;
 
-    const percentage = Math.min((data.safeToSpend / data.totalRevenue) * 100, 100) || 0;
+    const currencySymbol = data.currency === 'USD' ? '$' : '₹';
+    const percentage = data.totalRevenue > 0
+        ? Math.min((data.safeToSpend / data.totalRevenue) * 100, 100)
+        : 0;
 
     return (
         <motion.div
@@ -48,7 +59,7 @@ export default function SafeToSpendCard() {
                         </h3>
                         <div className="flex items-baseline gap-2 mt-1">
                             <span className="text-3xl font-bold text-gray-900">
-                                ₹{data.safeToSpend.toLocaleString()}
+                                {currencySymbol}{data.safeToSpend.toLocaleString()}
                             </span>
                             <motion.span
                                 className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full"
@@ -110,11 +121,11 @@ export default function SafeToSpendCard() {
                             >
                                 <div className="flex items-center gap-1.5 text-gray-500">
                                     <div className="w-2 h-2 rounded-full bg-gray-400" />
-                                    <span>Taxes: ₹{data.taxes.toLocaleString()} (Locked)</span>
+                                    <span>Taxes: {currencySymbol}{data.taxes.toLocaleString()} (Locked)</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 text-rose-500">
                                     <AlertTriangle className="w-3 h-3" />
-                                    <span>Risk: ₹{data.overdueRisk.toLocaleString()}</span>
+                                    <span>Risk: {currencySymbol}{data.overdueRisk.toLocaleString()}</span>
                                 </div>
                             </motion.div>
                         )}

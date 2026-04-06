@@ -98,6 +98,9 @@ export const aiService = {
   deleteHistory: () => api.delete(ENDPOINTS.AI_HISTORY),
   getConversations: () => api.get(ENDPOINTS.AI_CONVERSATIONS),
   getConversationMessages: (id: string) => api.get(ENDPOINTS.AI_CONVERSATION_MESSAGES(id)),
+  getTraces: (limit?: number) => api.get(limit ? `${ENDPOINTS.AI_TRACES}?limit=${limit}` : ENDPOINTS.AI_TRACES),
+  getTrace: (traceId: string) => api.get(ENDPOINTS.AI_TRACE(traceId)),
+  executeAction: (action: any) => api.post(ENDPOINTS.AI_ACTION_EXECUTE, { action }),
 
   predictRevenue: (historicalData: any[]) => api.post(ENDPOINTS.AI_PREDICT_REVENUE, { historicalData }),
 

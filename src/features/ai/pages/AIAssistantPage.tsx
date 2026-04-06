@@ -254,8 +254,10 @@ const genItemVariants = {
 
 // ─── Generative UI Renderer ───────────────────────────────────────────────────
 function GenerativeUIRenderer({ component, data }: { component: string; data: any }) {
+  const currencyCode = data?.currency || 'INR';
+  const currencySymbol = currencyCode === 'USD' ? '$' : '₹';
   const formatMoney = (value: number | undefined | null) =>
-    `$${Number(value || 0).toLocaleString()}`;
+    `${currencySymbol}${Number(value || 0).toLocaleString()}`;
 
   if (component === 'get_overdue_invoices') {
     const invoices = data?.riskyInvoices || [];
@@ -273,15 +275,15 @@ function GenerativeUIRenderer({ component, data }: { component: string; data: an
         <div className="grid grid-cols-3 gap-2 mb-4 text-center">
           <motion.div variants={genItemVariants} className="bg-white/5 p-2 rounded-xl">
             <div className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">30 Days</div>
-            <div className="text-[13px] font-mono text-amber-200">${ageing.current?.toLocaleString() || 0}</div>
+            <div className="text-[13px] font-mono text-amber-200">{formatMoney(ageing.current)}</div>
           </motion.div>
           <motion.div variants={genItemVariants} className="bg-white/5 p-2 rounded-xl">
             <div className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">60 Days</div>
-            <div className="text-[13px] font-mono text-orange-300">${ageing.near?.toLocaleString() || 0}</div>
+            <div className="text-[13px] font-mono text-orange-300">{formatMoney(ageing.near)}</div>
           </motion.div>
           <motion.div variants={genItemVariants} className="bg-red-500/10 p-2 rounded-xl border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
             <div className="text-[9px] text-red-400 uppercase font-bold tracking-wider mb-1">90+ Days</div>
-            <div className="text-[14px] font-mono font-bold text-red-500">${ageing.critical?.toLocaleString() || 0}</div>
+            <div className="text-[14px] font-mono font-bold text-red-500">{formatMoney(ageing.critical)}</div>
           </motion.div>
         </div>
         <div className="space-y-2">
@@ -298,7 +300,7 @@ function GenerativeUIRenderer({ component, data }: { component: string; data: an
                 </span>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <span className="text-[14px] font-mono text-white">${inv.total?.toLocaleString()}</span>
+                <span className="text-[14px] font-mono text-white">{formatMoney(inv.balanceDue ?? inv.total)}</span>
                 <button className="text-[9px] text-teal-400 hover:text-teal-300 bg-teal-400/10 hover:bg-teal-400/20 px-2 py-1 rounded font-bold uppercase tracking-widest transition-colors">
                   Draft Email
                 </button>
@@ -326,13 +328,13 @@ function GenerativeUIRenderer({ component, data }: { component: string; data: an
           <motion.div variants={genItemVariants} className="bg-white/5 p-4 rounded-xl border border-white/5 shadow-inner">
             <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Total Revenue</div>
             <div className="text-[20px] font-mono text-white font-black">
-              ${stats.total_revenue?.toLocaleString() || 0}
+              {formatMoney(stats.total_revenue)}
             </div>
           </motion.div>
           <motion.div variants={genItemVariants} className="bg-teal-500/5 p-4 rounded-xl border border-teal-500/20 shadow-inner">
             <div className="text-[9px] text-teal-500/70 font-bold uppercase tracking-widest mb-1.5">Net Profit</div>
             <div className="text-[20px] font-mono text-teal-400 font-black">
-              ${stats.net_profit?.toLocaleString() || 0}
+              {formatMoney(stats.net_profit)}
             </div>
           </motion.div>
         </div>
@@ -761,6 +763,10 @@ export function AIAssistantPage() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pendingAction, setPendingAction] = useState<any>(null);
   const [currentStep, setCurrentStep] = useState(GENERAL_CHAT_STEPS[0]);
+  const [showTracePanel, setShowTracePanel] = useState(false);
+  const [recentTraces, setRecentTraces] = useState<any[]>([]);
+  const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
+  const [traceRecords, setTraceRecords] = useState<any[]>([]);
 
   // Derived convenience flag
   const isBusy = isThinking || messages.some(m => m.status === 'streaming');
@@ -819,6 +825,25 @@ export function AIAssistantPage() {
     currentConversationIdRef.current = null;
   }, [cancelActiveStream]);
 
+  const loadRecentTraces = useCallback(async () => {
+    try {
+      const traces = await aiService.getTraces(20);
+      setRecentTraces(Array.isArray(traces) ? traces : []);
+    } catch (error) {
+      console.error('Failed to load AI traces:', error);
+    }
+  }, []);
+
+  const loadTraceDetails = useCallback(async (traceId: string) => {
+    try {
+      const rows = await aiService.getTrace(traceId);
+      setSelectedTraceId(traceId);
+      setTraceRecords(Array.isArray(rows) ? rows : []);
+    } catch (error) {
+      console.error('Failed to load AI trace:', error);
+    }
+  }, []);
+
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
@@ -861,6 +886,11 @@ export function AIAssistantPage() {
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessType, STORAGE_KEY]);
+
+  useEffect(() => {
+    if (!showTracePanel) return;
+    loadRecentTraces();
+  }, [showTracePanel, loadRecentTraces]);
 
   // ── Auto-scroll on new messages ──────────────────────────────────────────
   useEffect(() => {
@@ -1034,7 +1064,9 @@ export function AIAssistantPage() {
                     ? {
                         ...m,
                         text: event.text ?? accumulatedText,
-                        data: event.action ? { type: 'action_prompt' } : undefined,
+                        data: event.action
+                          ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
+                          : event.data,
                         usage: event.usage,
                         status: 'sent',
                         uiComponent: pendingUiComponent || m.uiComponent,
@@ -1050,7 +1082,9 @@ export function AIAssistantPage() {
                     text: event.text ?? accumulatedText,
                     timestamp: new Date(),
                     status: 'sent',
-                    data: event.action ? { type: 'action_prompt' } : undefined,
+                    data: event.action
+                      ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
+                      : event.data,
                     usage: event.usage,
                     uiComponent: pendingUiComponent || undefined,
                     uiData: pendingUiData,
@@ -1059,6 +1093,12 @@ export function AIAssistantPage() {
           );
 
           if (event.action) setPendingAction(event.action);
+          if (showTracePanel) {
+            loadRecentTraces();
+            if (event.traceId) {
+              loadTraceDetails(event.traceId);
+            }
+          }
 
           if (event.conversationId && !currentConversationIdRef.current) {
             currentConversationIdRef.current = event.conversationId;
@@ -1123,49 +1163,90 @@ export function AIAssistantPage() {
   // ── Confirm / cancel pending action ──────────────────────────────────────
   const handleConfirmAction = () => {
     if (!pendingAction) return;
-    const { type, data, initialData } = pendingAction;
+    const { type, data, initialData, requiresServerExecution } = pendingAction;
 
-    if (type === 'open_invoice_modal' || type === 'EXECUTE_ACTION') {
-      const detail =
-        data && type === 'EXECUTE_ACTION'
-          ? {
-            buyer: { name: data.customer, phone: '' },
-            items: [
-              {
-                description: data.description || 'Service',
-                quantity: 1,
-                price: data.amount,
-                unit: 'Qty',
-                discount: 0,
-              },
-            ],
-          }
-          : initialData || data;
-      window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail }));
-    } else if (type === 'open_customer_modal') {
-      window.dispatchEvent(new CustomEvent('open-customer-modal', { detail: data || initialData }));
-    } else if (type === 'navigate' && data?.to) {
-      let p = data.to;
-      if (
-        p.startsWith('/') &&
-        !p.startsWith('/dashboard') &&
-        !['/login', '/setup', '/pricing'].includes(p)
-      )
-        p = `/dashboard${p === '/' ? '' : p}`;
-      navigate(p);
-    }
+    const run = async () => {
+      if (requiresServerExecution) {
+        const execution = await aiService.executeAction(pendingAction);
+        const result = (execution as any)?.result;
+        if (showTracePanel) {
+          await loadRecentTraces();
+          const traceId = pendingAction?.data?.traceHint;
+          if (traceId) await loadTraceDetails(traceId);
+        }
 
-    setPendingAction(null);
-    setMessages(prev => [
-      ...prev,
-      {
-        id: `action_done_${Date.now()}`,
-        sender: 'bot',
-        text: 'Done! Executing the requested action now.',
-        timestamp: new Date(),
-        status: 'sent',
-      },
-    ]);
+        setPendingAction(null);
+        setMessages(prev => [
+          ...prev.filter(m => m.data?.type !== 'action_prompt'),
+          {
+            id: `action_done_${Date.now()}`,
+            sender: 'bot',
+            text: result?.message || 'Action executed successfully.',
+            timestamp: new Date(),
+            status: 'sent',
+            data: result,
+          },
+        ]);
+        return;
+      }
+
+      if (type === 'open_invoice_modal' || type === 'EXECUTE_ACTION') {
+        const detail =
+          data && type === 'EXECUTE_ACTION'
+            ? {
+                buyer: { name: data.customer, phone: '' },
+                items: [
+                  {
+                    description: data.description || 'Service',
+                    quantity: 1,
+                    price: data.amount,
+                    unit: 'Qty',
+                    discount: 0,
+                  },
+                ],
+              }
+            : initialData || data;
+        window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail }));
+      } else if (type === 'open_customer_modal') {
+        window.dispatchEvent(new CustomEvent('open-customer-modal', { detail: data || initialData }));
+      } else if (type === 'navigate' && data?.to) {
+        let p = data.to;
+        if (
+          p.startsWith('/') &&
+          !p.startsWith('/dashboard') &&
+          !['/login', '/setup', '/pricing'].includes(p)
+        )
+          p = `/dashboard${p === '/' ? '' : p}`;
+        navigate(p);
+      }
+
+      setPendingAction(null);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `action_done_${Date.now()}`,
+          sender: 'bot',
+          text: 'Done! Executing the requested action now.',
+          timestamp: new Date(),
+          status: 'sent',
+        },
+      ]);
+    };
+
+    run().catch((error) => {
+      console.error('AI action execution failed:', error);
+      setPendingAction(null);
+      setMessages(prev => [
+        ...prev.filter(m => m.data?.type !== 'action_prompt'),
+        {
+          id: `action_err_${Date.now()}`,
+          sender: 'bot',
+          text: 'I could not execute that action. Please try again.',
+          timestamp: new Date(),
+          status: 'error',
+        },
+      ]);
+    });
   };
 
   const handleCancelAction = () => {
@@ -1275,6 +1356,76 @@ export function AIAssistantPage() {
           shadow-[0_0_60px_-15px_rgba(45,212,191,0.18)]
           font-sans text-gray-300
         ">
+          <button
+            type="button"
+            onClick={() => setShowTracePanel(prev => !prev)}
+            className="absolute top-4 right-4 z-30 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.18em] border border-white/10 bg-white/5 text-teal-300 hover:bg-white/10 transition-colors"
+          >
+            {showTracePanel ? 'Hide Trace' : 'AI Trace'}
+          </button>
+
+          {showTracePanel && (
+            <div className="absolute top-14 right-4 z-30 w-[380px] max-w-[calc(100%-2rem)] max-h-[70vh] overflow-hidden rounded-2xl border border-white/10 bg-[#0a0d16]/95 shadow-2xl shadow-black/50 backdrop-blur">
+              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-300">Agent Trace</div>
+                  <div className="text-[11px] text-gray-500 mt-1">Plan, tools, and final output</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => loadRecentTraces()}
+                  className="text-[10px] text-gray-400 hover:text-white transition-colors"
+                >
+                  refresh
+                </button>
+              </div>
+
+              <div className="grid grid-cols-[140px_1fr] min-h-[320px] max-h-[calc(70vh-56px)]">
+                <div className="border-r border-white/10 overflow-y-auto">
+                  {recentTraces.length === 0 ? (
+                    <div className="p-3 text-[11px] text-gray-500">No traces loaded.</div>
+                  ) : (
+                    recentTraces.map((trace: any) => (
+                      <button
+                        key={trace.id}
+                        type="button"
+                        onClick={() => loadTraceDetails(trace.trace_id)}
+                        className={`w-full text-left px-3 py-2 border-b border-white/[0.06] transition-colors ${selectedTraceId === trace.trace_id ? 'bg-teal-500/10' : 'hover:bg-white/[0.04]'}`}
+                      >
+                        <div className="text-[10px] font-bold text-gray-200 uppercase tracking-wider">{trace.stage}</div>
+                        <div className="text-[10px] text-gray-500 mt-1 truncate">{trace.tool_id || trace.trace_id}</div>
+                        <div className="text-[9px] text-gray-600 mt-1">{formatTime(trace.created_at)}</div>
+                      </button>
+                    ))
+                  )}
+                </div>
+
+                <div className="overflow-y-auto p-3">
+                  {traceRecords.length === 0 ? (
+                    <div className="text-[11px] text-gray-500">Select a trace to inspect its records.</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {traceRecords.map((record: any) => (
+                        <div key={record.id} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+                          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-300">{record.stage}</div>
+                          {record.tool_id && (
+                            <div className="text-[10px] text-gray-500 mt-1">{record.tool_id}</div>
+                          )}
+                          {record.query && (
+                            <div className="text-[11px] text-gray-300 mt-2 leading-relaxed">{record.query}</div>
+                          )}
+                          <pre className="mt-3 overflow-x-auto text-[10px] leading-relaxed text-gray-400 whitespace-pre-wrap break-words">
+                            {JSON.stringify({ input: record.input, output: record.output }, null, 2)}
+                          </pre>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Background glows */}
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
             <div
