@@ -1,3 +1,3 @@
-import brandProfile from '../../../../../shared/brandProfile.json';
+import brandProfile from './brandProfile.json';
 
 export { brandProfile };
