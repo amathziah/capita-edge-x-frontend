@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import * as LucideIcons from 'lucide-react';
 import { GENERAL_CHAT_STEPS } from '@/utils/aiLoadingSteps';
+import { AIWorkspaceRenderer } from '../components/AIWorkspaceRenderer';
 
 const IconMap: Record<string, any> = {
   TrendingUp: LucideIcons.TrendingUp,
@@ -31,6 +32,7 @@ interface Message {
   /** Raw text — never contains the ▌ cursor character */
   text: string;
   data?: any;
+  uiBlocks?: Array<{ component: string; data: any }>;
   uiComponent?: string;
   uiData?: any;
   timestamp: Date;
@@ -226,260 +228,9 @@ function SidebarActionCard({
   );
 }
 
-// ─── Generative UI variants ───────────────────────────────────────────────────
-const genCardVariants = {
-  hidden: { opacity: 0, y: 10, scale: 0.98 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: 'spring' as const,
-      damping: 20,
-      stiffness: 250,
-      staggerChildren: 0.04,
-      delayChildren: 0.02,
-    },
-  },
-};
-
-const genItemVariants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.25, ease: 'easeOut' as const },
-  },
-};
-
 // ─── Generative UI Renderer ───────────────────────────────────────────────────
 function GenerativeUIRenderer({ component, data }: { component: string; data: any }) {
-  const currencyCode = data?.currency || 'INR';
-  const currencySymbol = currencyCode === 'USD' ? '$' : '₹';
-  const formatMoney = (value: number | undefined | null) =>
-    `${currencySymbol}${Number(value || 0).toLocaleString()}`;
-
-  if (component === 'get_overdue_invoices') {
-    const invoices = data?.riskyInvoices || [];
-    const ageing = data?.ageing || {};
-    return (
-      <motion.div
-        variants={genCardVariants}
-        initial="hidden"
-        animate="visible"
-        className="mt-4 mb-2 p-4 rounded-2xl bg-gradient-to-br from-red-500/5 to-black/40 border border-red-500/20 shadow-lg shadow-black/20"
-      >
-        <motion.h4 variants={genItemVariants} className="text-[12px] font-bold text-red-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <LucideIcons.AlertTriangle size={14} /> At-Risk Receivables
-        </motion.h4>
-        <div className="grid grid-cols-3 gap-2 mb-4 text-center">
-          <motion.div variants={genItemVariants} className="bg-white/5 p-2 rounded-xl">
-            <div className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">30 Days</div>
-            <div className="text-[13px] font-mono text-amber-200">{formatMoney(ageing.current)}</div>
-          </motion.div>
-          <motion.div variants={genItemVariants} className="bg-white/5 p-2 rounded-xl">
-            <div className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">60 Days</div>
-            <div className="text-[13px] font-mono text-orange-300">{formatMoney(ageing.near)}</div>
-          </motion.div>
-          <motion.div variants={genItemVariants} className="bg-red-500/10 p-2 rounded-xl border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
-            <div className="text-[9px] text-red-400 uppercase font-bold tracking-wider mb-1">90+ Days</div>
-            <div className="text-[14px] font-mono font-bold text-red-500">{formatMoney(ageing.critical)}</div>
-          </motion.div>
-        </div>
-        <div className="space-y-2">
-          {invoices.map((inv: any) => (
-            <motion.div
-              key={inv.id}
-              variants={genItemVariants}
-              className="flex items-center justify-between p-3 rounded-xl border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
-            >
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[13px] font-bold text-gray-200">#{inv.invoiceNumber}</span>
-                <span className="text-[10px] text-gray-500 uppercase tracking-wider">
-                  Due: {new Date(inv.dueDate).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <span className="text-[14px] font-mono text-white">{formatMoney(inv.balanceDue ?? inv.total)}</span>
-                <button className="text-[9px] text-teal-400 hover:text-teal-300 bg-teal-400/10 hover:bg-teal-400/20 px-2 py-1 rounded font-bold uppercase tracking-widest transition-colors">
-                  Draft Email
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (component === 'get_financial_summary') {
-    const stats = data?.stats || {};
-    return (
-      <motion.div
-        variants={genCardVariants}
-        initial="hidden"
-        animate="visible"
-        className="mt-4 mb-2 p-4 rounded-2xl bg-gradient-to-br from-teal-500/5 to-black/40 border border-teal-500/20 shadow-lg shadow-black/20"
-      >
-        <motion.h4 variants={genItemVariants} className="text-[12px] font-bold text-teal-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <LucideIcons.Activity size={14} /> Financial Summary
-        </motion.h4>
-        <div className="grid grid-cols-2 gap-3">
-          <motion.div variants={genItemVariants} className="bg-white/5 p-4 rounded-xl border border-white/5 shadow-inner">
-            <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Total Revenue</div>
-            <div className="text-[20px] font-mono text-white font-black">
-              {formatMoney(stats.total_revenue)}
-            </div>
-          </motion.div>
-          <motion.div variants={genItemVariants} className="bg-teal-500/5 p-4 rounded-xl border border-teal-500/20 shadow-inner">
-            <div className="text-[9px] text-teal-500/70 font-bold uppercase tracking-widest mb-1.5">Net Profit</div>
-            <div className="text-[20px] font-mono text-teal-400 font-black">
-              {formatMoney(stats.net_profit)}
-            </div>
-          </motion.div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (component === 'get_recent_transactions') {
-    const invoices = data?.invoices || [];
-    const payments = data?.payments || [];
-    const expenses = data?.expenses || [];
-
-    return (
-      <motion.div
-        variants={genCardVariants}
-        initial="hidden"
-        animate="visible"
-        className="mt-4 mb-2 p-4 rounded-2xl bg-gradient-to-br from-sky-500/5 to-black/40 border border-sky-500/20 shadow-lg shadow-black/20"
-      >
-        <motion.h4 variants={genItemVariants} className="text-[12px] font-bold text-sky-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <LucideIcons.Clock3 size={14} /> Recent Activity
-        </motion.h4>
-        <div className="grid md:grid-cols-3 gap-3">
-          <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
-            <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-2">Invoices</div>
-            <div className="space-y-2">
-              {invoices.slice(0, 3).map((inv: any) => (
-                <div key={inv.id} className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-gray-200 truncate">#{inv.invoiceNumber}</div>
-                    <div className="text-gray-500 uppercase">{inv.status || 'unknown'}</div>
-                  </div>
-                  <div className="font-mono text-white shrink-0">{formatMoney(inv.total)}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-          <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
-            <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-2">Payments</div>
-            <div className="space-y-2">
-              {payments.slice(0, 3).map((payment: any) => (
-                <div key={payment.id} className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-gray-200 truncate">{payment.customers?.name || 'Payment received'}</div>
-                    <div className="text-gray-500 uppercase">{payment.method || payment.payment_mode || 'payment'}</div>
-                  </div>
-                  <div className="font-mono text-emerald-300 shrink-0">{formatMoney(payment.amount)}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-          <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
-            <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-2">Expenses</div>
-            <div className="space-y-2">
-              {expenses.slice(0, 3).map((expense: any) => (
-                <div key={expense.id} className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-gray-200 truncate">{expense.title || expense.category || 'Expense'}</div>
-                    <div className="text-gray-500 uppercase">{expense.date ? new Date(expense.date).toLocaleDateString() : 'recent'}</div>
-                  </div>
-                  <div className="font-mono text-rose-300 shrink-0">{formatMoney(expense.amount)}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (component === 'get_customer_insights') {
-    const customers = data?.customers || [];
-
-    return (
-      <motion.div
-        variants={genCardVariants}
-        initial="hidden"
-        animate="visible"
-        className="mt-4 mb-2 p-4 rounded-2xl bg-gradient-to-br from-violet-500/5 to-black/40 border border-violet-500/20 shadow-lg shadow-black/20"
-      >
-        <motion.h4 variants={genItemVariants} className="text-[12px] font-bold text-violet-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <LucideIcons.Users size={14} /> Customer Portfolio
-        </motion.h4>
-        <div className="space-y-2.5">
-          {customers.slice(0, 4).map((customer: any) => (
-            <motion.div
-              key={customer.id}
-              variants={genItemVariants}
-              className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-[13px] font-bold text-gray-100 truncate">{customer.name}</div>
-                  <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">
-                    {customer.health_label || 'Regular'} · churn risk {customer.churn_risk || 0}%
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="text-[13px] font-mono text-white font-bold">{formatMoney(customer.total_revenue)}</div>
-                  <div className="text-[10px] text-amber-300">{formatMoney(customer.pending_amount)} pending</div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (component === 'get_customer_details') {
-    const intelligence = data?.intelligence || {};
-
-    return (
-      <motion.div
-        variants={genCardVariants}
-        initial="hidden"
-        animate="visible"
-        className="mt-4 mb-2 p-4 rounded-2xl bg-gradient-to-br from-amber-500/5 to-black/40 border border-amber-500/20 shadow-lg shadow-black/20"
-      >
-        <motion.h4 variants={genItemVariants} className="text-[12px] font-bold text-amber-300 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <LucideIcons.ShieldCheck size={14} /> Customer Intelligence
-        </motion.h4>
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
-            <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Health Score</div>
-            <div className="text-[20px] font-black text-white">{intelligence.healthScore || 0}</div>
-            <div className="text-[10px] text-emerald-300 mt-1">{intelligence.healthLabel || 'Unknown'}</div>
-          </motion.div>
-          <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
-            <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Churn Risk</div>
-            <div className="text-[20px] font-black text-white">{intelligence.churnRisk || 0}%</div>
-            <div className="text-[10px] text-amber-300 mt-1">{intelligence.nextPurchase || 'No forecast'}</div>
-          </motion.div>
-        </div>
-        <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
-          <div className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mb-1">Recommended Action</div>
-          <div className="text-[12px] text-gray-200 leading-relaxed">
-            {intelligence.recommendedAction || 'No action recommended.'}
-          </div>
-        </motion.div>
-      </motion.div>
-    );
-  }
-
-  return null;
+  return <AIWorkspaceRenderer component={component} data={data} />;
 }
 
 // ─── Streaming cursor — rendered as a React element, never injected into text ─
@@ -510,7 +261,7 @@ function ChatBubble({
 
   // Determine whether we're waiting for the very first token
   const isWaitingForFirstToken =
-    isStreaming && !msg.uiComponent && msg.text.trim().length === 0;
+    isStreaming && !(msg.uiBlocks?.length || msg.uiComponent) && msg.text.trim().length === 0;
 
   return (
     <motion.div
@@ -583,7 +334,15 @@ function ChatBubble({
 
           <div className={`px-4 ${isBot ? 'pt-0.5 pb-3.5' : 'py-2.5'}`}>
             {/* Generative UI card */}
-            {msg.uiComponent && (
+            {msg.uiBlocks && msg.uiBlocks.length > 0 && (
+              <div className="mb-4 mt-2 space-y-3">
+                {msg.uiBlocks.map((block, index) => (
+                  <GenerativeUIRenderer key={`${block.component}_${index}`} component={block.component} data={block.data} />
+                ))}
+              </div>
+            )}
+
+            {!msg.uiBlocks?.length && msg.uiComponent && (
               <div className="mb-4 mt-2">
                 <GenerativeUIRenderer component={msg.uiComponent} data={msg.uiData} />
               </div>
@@ -602,7 +361,7 @@ function ChatBubble({
                   {/* Cursor is a React element — never touches the markdown string */}
                   {isStreaming && <StreamingCursor />}
                 </>
-              ) : msg.uiComponent ? (
+              ) : (msg.uiBlocks?.length || msg.uiComponent) ? (
                 // UI component rendered above, text is empty — still show cursor if streaming
                 isStreaming ? <StreamingCursor /> : null
               ) : null}
@@ -716,7 +475,7 @@ function EmptyState() {
       </div>
       <h3 className="text-white font-bold text-[15px] mb-2 tracking-tight">Hey, I'm Capita</h3>
       <p className="text-gray-500 text-[12px] leading-relaxed max-w-xs">
-        Ask me anything about your revenue, invoices, cash flow, or taxes.
+        Ask about invoices, payments, expenses, or compliance and I will answer from your live workspace data.
       </p>
       <div className="mt-5 flex items-center gap-2">
         <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
@@ -763,10 +522,6 @@ export function AIAssistantPage() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [pendingAction, setPendingAction] = useState<any>(null);
   const [currentStep, setCurrentStep] = useState(GENERAL_CHAT_STEPS[0]);
-  const [showTracePanel, setShowTracePanel] = useState(false);
-  const [recentTraces, setRecentTraces] = useState<any[]>([]);
-  const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
-  const [traceRecords, setTraceRecords] = useState<any[]>([]);
 
   // Derived convenience flag
   const isBusy = isThinking || messages.some(m => m.status === 'streaming');
@@ -825,25 +580,6 @@ export function AIAssistantPage() {
     currentConversationIdRef.current = null;
   }, [cancelActiveStream]);
 
-  const loadRecentTraces = useCallback(async () => {
-    try {
-      const traces = await aiService.getTraces(20);
-      setRecentTraces(Array.isArray(traces) ? traces : []);
-    } catch (error) {
-      console.error('Failed to load AI traces:', error);
-    }
-  }, []);
-
-  const loadTraceDetails = useCallback(async (traceId: string) => {
-    try {
-      const rows = await aiService.getTrace(traceId);
-      setSelectedTraceId(traceId);
-      setTraceRecords(Array.isArray(rows) ? rows : []);
-    } catch (error) {
-      console.error('Failed to load AI trace:', error);
-    }
-  }, []);
-
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
@@ -886,11 +622,6 @@ export function AIAssistantPage() {
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessType, STORAGE_KEY]);
-
-  useEffect(() => {
-    if (!showTracePanel) return;
-    loadRecentTraces();
-  }, [showTracePanel, loadRecentTraces]);
 
   // ── Auto-scroll on new messages ──────────────────────────────────────────
   useEffect(() => {
@@ -980,21 +711,24 @@ export function AIAssistantPage() {
       let accumulatedText = '';
       let botMsgId: string | null = null;
       let firstToken = true;
-      let pendingUiComponent: string | null = null;
-      let pendingUiData: any = null;
+      let pendingUiBlocks: Array<{ component: string; data: any }> = [];
 
       for await (const event of stream) {
         if (abort.signal.aborted || activeStreamRequestRef.current !== streamRequestId) break;
 
         if (event.type === 'gen_ui') {
-          pendingUiComponent = event.component;
-          pendingUiData = event.data;
+          pendingUiBlocks = [...pendingUiBlocks, { component: event.component, data: event.data }];
 
           if (botMsgId) {
             setMessages(prev =>
               prev.map(m =>
                 m.id === botMsgId
-                  ? { ...m, uiComponent: pendingUiComponent || undefined, uiData: pendingUiData }
+                  ? {
+                      ...m,
+                      uiBlocks: pendingUiBlocks,
+                      uiComponent: pendingUiBlocks[0]?.component,
+                      uiData: pendingUiBlocks[0]?.data,
+                    }
                   : m
               )
             );
@@ -1019,8 +753,9 @@ export function AIAssistantPage() {
                   text: accumulatedText,
                   timestamp: new Date(),
                   status: 'streaming',
-                  uiComponent: pendingUiComponent || undefined,
-                  uiData: pendingUiData,
+                  uiBlocks: pendingUiBlocks,
+                  uiComponent: pendingUiBlocks[0]?.component,
+                  uiData: pendingUiBlocks[0]?.data,
                 },
               ]);
               setTimeout(() => scrollToBottom(), 50);
@@ -1032,8 +767,9 @@ export function AIAssistantPage() {
                         ...m,
                         text: accumulatedText,
                         status: 'streaming',
-                        uiComponent: pendingUiComponent || m.uiComponent,
-                        uiData: pendingUiData ?? m.uiData,
+                        uiBlocks: pendingUiBlocks.length > 0 ? pendingUiBlocks : m.uiBlocks,
+                        uiComponent: pendingUiBlocks[0]?.component || m.uiComponent,
+                        uiData: pendingUiBlocks[0]?.data ?? m.uiData,
                       }
                     : m
                 )
@@ -1069,8 +805,9 @@ export function AIAssistantPage() {
                           : event.data,
                         usage: event.usage,
                         status: 'sent',
-                        uiComponent: pendingUiComponent || m.uiComponent,
-                        uiData: pendingUiData ?? m.uiData,
+                        uiBlocks: pendingUiBlocks.length > 0 ? pendingUiBlocks : m.uiBlocks,
+                        uiComponent: pendingUiBlocks[0]?.component || m.uiComponent,
+                        uiData: pendingUiBlocks[0]?.data ?? m.uiData,
                       }
                     : m
                 )
@@ -1086,19 +823,14 @@ export function AIAssistantPage() {
                       ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
                       : event.data,
                     usage: event.usage,
-                    uiComponent: pendingUiComponent || undefined,
-                    uiData: pendingUiData,
+                    uiBlocks: pendingUiBlocks,
+                    uiComponent: pendingUiBlocks[0]?.component,
+                    uiData: pendingUiBlocks[0]?.data,
                   },
                 ]
           );
 
           if (event.action) setPendingAction(event.action);
-          if (showTracePanel) {
-            loadRecentTraces();
-            if (event.traceId) {
-              loadTraceDetails(event.traceId);
-            }
-          }
 
           if (event.conversationId && !currentConversationIdRef.current) {
             currentConversationIdRef.current = event.conversationId;
@@ -1169,12 +901,6 @@ export function AIAssistantPage() {
       if (requiresServerExecution) {
         const execution = await aiService.executeAction(pendingAction);
         const result = (execution as any)?.result;
-        if (showTracePanel) {
-          await loadRecentTraces();
-          const traceId = pendingAction?.data?.traceHint;
-          if (traceId) await loadTraceDetails(traceId);
-        }
-
         setPendingAction(null);
         setMessages(prev => [
           ...prev.filter(m => m.data?.type !== 'action_prompt'),
@@ -1356,76 +1082,6 @@ export function AIAssistantPage() {
           shadow-[0_0_60px_-15px_rgba(45,212,191,0.18)]
           font-sans text-gray-300
         ">
-          <button
-            type="button"
-            onClick={() => setShowTracePanel(prev => !prev)}
-            className="absolute top-4 right-4 z-30 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.18em] border border-white/10 bg-white/5 text-teal-300 hover:bg-white/10 transition-colors"
-          >
-            {showTracePanel ? 'Hide Trace' : 'AI Trace'}
-          </button>
-
-          {showTracePanel && (
-            <div className="absolute top-14 right-4 z-30 w-[380px] max-w-[calc(100%-2rem)] max-h-[70vh] overflow-hidden rounded-2xl border border-white/10 bg-[#0a0d16]/95 shadow-2xl shadow-black/50 backdrop-blur">
-              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-300">Agent Trace</div>
-                  <div className="text-[11px] text-gray-500 mt-1">Plan, tools, and final output</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => loadRecentTraces()}
-                  className="text-[10px] text-gray-400 hover:text-white transition-colors"
-                >
-                  refresh
-                </button>
-              </div>
-
-              <div className="grid grid-cols-[140px_1fr] min-h-[320px] max-h-[calc(70vh-56px)]">
-                <div className="border-r border-white/10 overflow-y-auto">
-                  {recentTraces.length === 0 ? (
-                    <div className="p-3 text-[11px] text-gray-500">No traces loaded.</div>
-                  ) : (
-                    recentTraces.map((trace: any) => (
-                      <button
-                        key={trace.id}
-                        type="button"
-                        onClick={() => loadTraceDetails(trace.trace_id)}
-                        className={`w-full text-left px-3 py-2 border-b border-white/[0.06] transition-colors ${selectedTraceId === trace.trace_id ? 'bg-teal-500/10' : 'hover:bg-white/[0.04]'}`}
-                      >
-                        <div className="text-[10px] font-bold text-gray-200 uppercase tracking-wider">{trace.stage}</div>
-                        <div className="text-[10px] text-gray-500 mt-1 truncate">{trace.tool_id || trace.trace_id}</div>
-                        <div className="text-[9px] text-gray-600 mt-1">{formatTime(trace.created_at)}</div>
-                      </button>
-                    ))
-                  )}
-                </div>
-
-                <div className="overflow-y-auto p-3">
-                  {traceRecords.length === 0 ? (
-                    <div className="text-[11px] text-gray-500">Select a trace to inspect its records.</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {traceRecords.map((record: any) => (
-                        <div key={record.id} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
-                          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-300">{record.stage}</div>
-                          {record.tool_id && (
-                            <div className="text-[10px] text-gray-500 mt-1">{record.tool_id}</div>
-                          )}
-                          {record.query && (
-                            <div className="text-[11px] text-gray-300 mt-2 leading-relaxed">{record.query}</div>
-                          )}
-                          <pre className="mt-3 overflow-x-auto text-[10px] leading-relaxed text-gray-400 whitespace-pre-wrap break-words">
-                            {JSON.stringify({ input: record.input, output: record.output }, null, 2)}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Background glows */}
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
             <div
@@ -1702,7 +1358,7 @@ export function AIAssistantPage() {
                     }}
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
-                    placeholder="Ask about revenue, invoices, cash flow…"
+                    placeholder="Ask about invoices, payments, expenses, or compliance…"
                     className="flex-1 bg-transparent border-none outline-none text-sm text-white py-1 px-1 placeholder-gray-600"
                     disabled={isBusy || isHistoryLoading || isConversationLoading || !isChatReady}
                   />
