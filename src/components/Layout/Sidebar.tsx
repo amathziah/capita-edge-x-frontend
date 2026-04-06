@@ -417,7 +417,7 @@ export function Sidebar() {
               >
                 {({ isActive }) => (
                   <>
-                    <BillingIcon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-teal-400" : "text-gray-500"}`} strokeWidth={1.8} />
+                    <CreditCard className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-teal-400" : "text-gray-500"}`} strokeWidth={1.8} />
                     <span>Plans & Billing</span>
                     <span className="ml-auto px-1.5 py-0.5 rounded-full bg-teal-500/10 text-teal-400 text-[9px] font-black">NEW</span>
                   </>

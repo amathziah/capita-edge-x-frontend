@@ -1,6 +1,4 @@
 import React from 'react';
-import { pdf } from '@react-pdf/renderer';
-import InvoicePDF from '../../PDF/InvoicePDF';
 import { dataService } from '../../../services/dataService';
 import { InvoiceState } from './useInvoiceState';
 
@@ -14,7 +12,7 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
         taxLabel, taxRate, shipping,
         projectName, shippingAddress, orderNumber,
         courierTracking, dispatchDate, businessType,
-        logo, setLogo,
+        setLogo,
         setActiveAction,
         setIsEmailModalOpen, emailTo, setEmailTo,
         showToast, validateForm,
@@ -98,21 +96,7 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
         try {
             const invoiceData = buildInvoiceData();
             const savedInvoice = await dataService.saveInvoice(invoiceData as unknown as Parameters<typeof dataService.saveInvoice>[0]);
-            const latestSettings = await dataService.getSettings();
-            const blob = await pdf(
-                React.createElement(InvoicePDF, {
-                    invoice: savedInvoice,
-                    settings: latestSettings,
-                    logoUrl: logo,
-                })
-            ).toBlob();
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `Invoice_${meta.number}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            await dataService.downloadInvoicePdf(savedInvoice.id, savedInvoice.invoiceNumber || meta.number);
             showToast("Invoice saved & PDF downloaded!", 'success');
             setTimeout(() => { if (onClose) onClose(); }, 1500);
         } catch (error) {
@@ -157,19 +141,12 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
             const invoiceData = buildInvoiceData();
             const savedInvoice = await dataService.saveInvoice(invoiceData as unknown as Parameters<typeof dataService.saveInvoice>[0]);
             const latestSettings = await dataService.getSettings();
-            const blob = await pdf(
-                React.createElement(InvoicePDF, {
-                    invoice: savedInvoice,
-                    settings: latestSettings,
-                    logoUrl: logo,
-                })
-            ).toBlob();
             if (!latestSettings.smtp_user || !latestSettings.smtp_pass) {
                 showToast("Email service not configured. Please go to Settings to connect your Gmail.", 'error');
                 setActiveAction(null);
                 return;
             }
-            await dataService.sendInvoiceEmail(savedInvoice.id, emailTo, blob);
+            await dataService.sendInvoiceEmail(savedInvoice.id, emailTo);
             showToast("Invoice sent successfully!", 'success');
             setIsEmailModalOpen(false);
             setEmailTo('');

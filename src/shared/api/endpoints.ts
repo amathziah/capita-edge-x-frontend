@@ -13,6 +13,7 @@ export const ENDPOINTS = {
     // ─── Invoices ──────────────────────────────────────────────────────
     INVOICES: '/invoices',
     INVOICE: (id: string) => `/invoices/${id}`,
+    INVOICE_PDF: (id: string) => `/invoices/${id}/pdf`,
     INVOICE_DUPLICATE: (id: string) => `/invoices/${id}/duplicate`,
     INVOICE_SEND: (id: string) => `/invoices/${id}/send`,
     INVOICE_REMINDER: (id: string) => `/invoices/${id}/reminder`,

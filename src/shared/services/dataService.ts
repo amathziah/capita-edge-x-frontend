@@ -41,6 +41,7 @@ class DataService {
   // Invoices
   getInvoices = invoiceService.getInvoices;
   getInvoice = invoiceService.getInvoice;
+  getInvoicePdfBlob = invoiceService.getInvoicePdfBlob;
   saveInvoice = invoiceService.saveInvoice;
   deleteInvoice = invoiceService.deleteInvoice;
   duplicateInvoice = invoiceService.duplicateInvoice;
@@ -91,6 +92,18 @@ class DataService {
   sendPaymentReminder = async (invoiceId: string, to: string, pdfBlob?: Blob | null) => {
     const base64 = pdfBlob ? await aiService.blobToBase64(pdfBlob) : undefined;
     return invoiceService.sendReminder(invoiceId, to, base64);
+  };
+
+  downloadInvoicePdf = async (invoiceId: string, invoiceNumber: string) => {
+    const blob = await invoiceService.getInvoicePdfBlob(invoiceId);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Invoice_${invoiceNumber}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   // Upload

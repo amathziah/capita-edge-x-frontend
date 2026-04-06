@@ -16,6 +16,7 @@ export const invoiceService = {
     },
 
     getInvoice: (id: string) => api.get<Invoice>(ENDPOINTS.INVOICE(id)),
+    getInvoicePdfBlob: (id: string) => api.getBlob(ENDPOINTS.INVOICE_PDF(id)),
 
     saveInvoice: (invoice: Invoice) => {
         if (invoice.id) {

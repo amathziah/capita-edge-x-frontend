@@ -2,14 +2,11 @@ import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FileText, Download, Mail, Loader2, Eye, Printer, X, Plus, Search, Edit2, Trash2, DollarSign, CheckCircle, Share2 } from "lucide-react";
-import { pdf } from '@react-pdf/renderer';
-import InvoicePDF from '@/components/PDF/InvoicePDF';
 import { dataService } from '@/services/dataService';
 import { Invoice } from '@/types';
 import { Toast, ToastType } from '@/components/Toast';
 import RecordPaymentModal from '@/components/Invoice/RecordPaymentModal';
 import { useData } from "@/contexts/DataContext";
-import { usePersona } from "@/contexts/PersonaContext";
 import { CustomSelect } from '@/components/ui/CustomSelect';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -28,7 +25,6 @@ export function Invoices() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { filteredInvoices: invoices, loading, refreshData, setData } = useData();
-  const { businessType } = usePersona();
 
   // UI state
   const [searchTerm, setSearchTerm] = useState("");
@@ -210,21 +206,11 @@ export function Invoices() {
             continue;
           }
 
-          // Generate PDF client-side (Premium Design)
-          const settings = await dataService.getSettings();
-          const blob = await pdf(
-            <InvoicePDF
-              invoice={inv}
-              settings={{ ...settings, businessType }}
-              logoUrl={dataService.getLogoUrl(settings.logoFilename)}
-            />
-          ).toBlob();
-
           if (inv.status === 'paid') {
-            await dataService.sendInvoiceEmail(inv.id, inv.buyer.email, blob);
+            await dataService.sendInvoiceEmail(inv.id, inv.buyer.email);
             successCount++;
           } else {
-            await dataService.sendPaymentReminder(inv.id, inv.buyer.email, blob);
+            await dataService.sendPaymentReminder(inv.id, inv.buyer.email);
             successCount++;
           }
 
@@ -257,17 +243,7 @@ export function Invoices() {
     }
     setActionLoading(inv.id);
     try {
-      // Generate PDF client-side
-      const settings = await dataService.getSettings();
-      const blob = await pdf(
-        <InvoicePDF
-          invoice={inv}
-          settings={{ ...settings, businessType }}
-          logoUrl={dataService.getLogoUrl(settings.logoFilename)}
-        />
-      ).toBlob();
-
-      await dataService.sendPaymentReminder(inv.id, inv.buyer.email, blob);
+      await dataService.sendPaymentReminder(inv.id, inv.buyer.email);
       showToast(`Reminder sent for ${inv.invoiceNumber}`, 'success');
 
       // Update local state
@@ -567,21 +543,7 @@ export function Invoices() {
                           onClick={async () => {
                             try {
                               showToast("Generating PDF...", "info");
-                              const settings = await dataService.getSettings();
-                              const blob = await pdf(
-                                <InvoicePDF
-                                  invoice={inv}
-                                  settings={{ ...settings, businessType }}
-                                  logoUrl={dataService.getLogoUrl(settings.logoFilename)}
-                                />
-                              ).toBlob();
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = `Invoice_${inv.invoiceNumber}.pdf`;
-                              document.body.appendChild(a);
-                              a.click();
-                              document.body.removeChild(a);
+                              await dataService.downloadInvoicePdf(inv.id, inv.invoiceNumber);
                               showToast("PDF Downloaded", "success");
                             } catch (e) {
                               console.error(e);
@@ -950,21 +912,7 @@ export function Invoices() {
                   if (!viewInvoice) return;
                   try {
                     showToast("Generating PDF...", "info");
-                    const settings = await dataService.getSettings();
-                    const blob = await pdf(
-                      <InvoicePDF
-                        invoice={viewInvoice}
-                        settings={{ ...settings, businessType }}
-                        logoUrl={dataService.getLogoUrl(settings.logoFilename)}
-                      />
-                    ).toBlob();
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `Invoice_${viewInvoice.invoiceNumber}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
+                    await dataService.downloadInvoicePdf(viewInvoice.id, viewInvoice.invoiceNumber);
                     showToast("PDF Downloaded", "success");
                   } catch (e) {
                     console.error("PDF Error", e);
@@ -997,20 +945,10 @@ export function Invoices() {
                   if (email) {
                     try {
                       setEmailSending(true);
-                      showToast("Generating PDF and sending...", "info");
-
-                      // Generate PDF
-                      const settings = await dataService.getSettings();
-                      const blob = await pdf(
-                        <InvoicePDF
-                          invoice={viewInvoice}
-                          settings={{ ...settings, businessType }}
-                          logoUrl={dataService.getLogoUrl(settings.logoFilename)}
-                        />
-                      ).toBlob();
+                      showToast("Sending invoice...", "info");
 
                       // Send
-                      await dataService.sendInvoiceEmail(viewInvoice.id, email, blob);
+                      await dataService.sendInvoiceEmail(viewInvoice.id, email);
                       showToast("Email sent successfully!", "success");
 
                       // Update local state
