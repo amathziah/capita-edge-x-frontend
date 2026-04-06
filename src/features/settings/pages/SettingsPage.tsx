@@ -264,7 +264,9 @@ function BrandingTab({ onSave, saving, logoPreview, onLogoChange }: Omit<TabProp
   );
 }
 
-function PaymentsTab({ settings, onChange, onSave, saving }: TabProps) {
+function PaymentsTab({
+  settings, onChange, onSave, saving, paymentQrPreview, onPaymentQrChange,
+}: TabProps & { paymentQrPreview: string | null; onPaymentQrChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   const legacyBank = parseLegacyBankDetails(settings.bankDetails || '');
   const bankName = settings.bankName || legacyBank.bankName;
   const bankAccountNumber = settings.bankAccountNumber || legacyBank.bankAccountNumber;
@@ -303,9 +305,39 @@ function PaymentsTab({ settings, onChange, onSave, saving }: TabProps) {
 
       <Card>
         <SectionHeader icon={CreditCard} title="How clients pay you" description="Payment details printed on every invoice" iconColor="text-emerald-500" iconBg="bg-emerald-50" />
-        <Field label="UPI ID" hint="Generates a scannable QR code on PDF invoices — the easiest way to get paid.">
+        {!settings.paymentQrFilename && !paymentQrPreview && (
+          <AlertBanner
+            type="warning"
+            title="No payment QR uploaded"
+            message="Invoices will show only text payment details until you upload the exact QR issued for your payment account."
+          />
+        )}
+        <Field label="UPI ID" hint="Shown on invoices if you accept UPI payments.">
           <input className={inputCls} value={settings.upiId || ''} onChange={e => onChange('upiId', e.target.value)} placeholder="yourname@upi" />
         </Field>
+        <div className="grid md:grid-cols-[140px_1fr] gap-4 items-start">
+          <label className="group relative cursor-pointer">
+            <div className="w-[140px] h-[140px] rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden transition-colors group-hover:border-primary/40 group-hover:bg-primary/5">
+              {paymentQrPreview
+                ? <img src={paymentQrPreview} alt="Payment QR preview" className="w-full h-full object-contain p-2" />
+                : <div className="text-center px-3"><ImageIcon className="w-6 h-6 text-gray-300 mx-auto mb-1" /><span className="text-[10px] text-gray-400">No QR uploaded</span></div>
+              }
+            </div>
+            <input type="file" className="hidden" accept="image/*" onChange={onPaymentQrChange} />
+          </label>
+          <div className="space-y-2">
+            <Field label="Payment QR image" hint="Upload your own UPI or bank payment QR. This exact image will appear on invoice PDFs.">
+              <label className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 hover:border-primary/50 text-sm font-semibold rounded-lg cursor-pointer transition active:scale-95 shadow-sm w-fit">
+                <Upload className="w-3.5 h-3.5 text-text-muted" />
+                Upload QR
+                <input type="file" className="hidden" accept="image/*" onChange={onPaymentQrChange} />
+              </label>
+            </Field>
+            <p className="text-[11px] text-text-muted leading-relaxed">
+              Use the exact QR issued for your own payment account. Capita will show this uploaded QR on invoices instead of generating one.
+            </p>
+          </div>
+        </div>
         <div className="grid md:grid-cols-2 gap-4">
           <Field label="Bank name" hint="Shown for NEFT / RTGS transfers">
             <input
@@ -335,7 +367,7 @@ function PaymentsTab({ settings, onChange, onSave, saving }: TabProps) {
             <textarea className={`${inputCls} resize-none`} rows={3} value={settings.paymentInstructions || ''} onChange={e => onChange('paymentInstructions', e.target.value)} placeholder="Please include invoice number in the payment reference." />
           </Field>
         </div>
-        <SaveRow onClick={() => onSave(['upiId', 'bankName', 'bankAccountNumber', 'bankIfsc', 'paymentInstructions'], 'Payment details')} saving={saving} />
+        <SaveRow onClick={() => onSave(['upiId', 'bankName', 'bankAccountNumber', 'bankIfsc', 'paymentInstructions', 'paymentQrFilename'], 'Payment details')} saving={saving} />
       </Card>
     </div>
   );
@@ -483,6 +515,8 @@ export function Settings() {
   const [settings, setSettings] = useState<Record<string, any>>({});
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [paymentQrFile, setPaymentQrFile] = useState<File | null>(null);
+  const [paymentQrPreview, setPaymentQrPreview] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [testStatus, setTestStatus] = useState<{ type: 'success' | 'error' | null; message: string | null }>({ type: null, message: null });
   const [testingConnection, setTestingConnection] = useState(false);
@@ -497,6 +531,7 @@ export function Settings() {
       const data = await dataService.getSettings();
       setSettings(data);
       if (data.logoFilename) setLogoPreview(dataService.getLogoUrl(data.logoFilename));
+      if (data.paymentQrFilename) setPaymentQrPreview(dataService.getPaymentQrUrl(data.paymentQrFilename));
       if (data.smtp_user && data.smtp_pass) { setIsVerified(true); setConnectionChecked(true); }
     } catch (err) {
       console.error('Failed to load settings:', err);
@@ -537,6 +572,13 @@ export function Settings() {
     setLogoPreview(URL.createObjectURL(file));
   };
 
+  const handlePaymentQrChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPaymentQrFile(file);
+    setPaymentQrPreview(URL.createObjectURL(file));
+  };
+
   const handleSave = async (keys: string[], sectionName: string) => {
     try {
       setSaving(true);
@@ -549,9 +591,16 @@ export function Settings() {
         setLogoFile(null);
       }
 
+      if (keys.includes('paymentQrFilename') && paymentQrFile) {
+        const { filename } = await dataService.uploadPaymentQr(paymentQrFile);
+        await dataService.saveSetting('paymentQrFilename', filename);
+        setSettings(prev => ({ ...prev, paymentQrFilename: filename }));
+        setPaymentQrFile(null);
+      }
+
       await Promise.all(
         keys
-          .filter(k => k !== 'logoFilename' && settings[k] !== undefined)
+          .filter(k => k !== 'logoFilename' && k !== 'paymentQrFilename' && settings[k] !== undefined)
           .map(k => dataService.saveSetting(k, settings[k]))
       );
 
@@ -645,7 +694,7 @@ export function Settings() {
             >
               {activeTab === 'general' && <GeneralTab {...tabProps} />}
               {activeTab === 'branding' && <BrandingTab {...tabProps} logoPreview={logoPreview} onLogoChange={handleLogoChange} />}
-              {activeTab === 'payments' && <PaymentsTab {...tabProps} />}
+              {activeTab === 'payments' && <PaymentsTab {...tabProps} paymentQrPreview={paymentQrPreview} onPaymentQrChange={handlePaymentQrChange} />}
               {activeTab === 'email' && (
                 <EmailTab
                   settings={settings}

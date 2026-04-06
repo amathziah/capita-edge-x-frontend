@@ -64,6 +64,10 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
             deliveryState: state.deliveryState || undefined,
             // TDS configuration
             tdsApplicable: state.tdsEnabled || false,
+            tdsEnabled: state.tdsEnabled || false,
+            tdsRate: state.tdsRate || 0,
+            tdsAmount: state.tdsAmount || 0,
+            netReceivable: state.netReceivable || state.total,
             // CA
             frn: state.frn || null,
             lutNumber: state.lutNumber || null,

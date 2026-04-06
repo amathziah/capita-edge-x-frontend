@@ -93,7 +93,6 @@ export const InvoiceHeader = () => {
                         options={[
                             { label: 'Tax Invoice', value: 'tax_invoice' },
                             { label: 'Bill of Supply', value: 'bill_of_supply' },
-                            { label: 'Proforma', value: 'proforma' },
                             { label: 'Credit Note', value: 'credit_note' },
                         ]}
                         error={errors.type?.message}

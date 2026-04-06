@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { InvoiceCalculator } from '@/lib/financialMath';
+import { InvoiceDocumentPreview } from '@/features/invoices/components/InvoiceDocumentPreview';
 
 /* ─────────────────────────────────────────────────────────────
    TYPES
@@ -35,6 +36,7 @@ interface InvoiceForm extends Invoice {
     accountNumber: string;
     ifscCode: string;
     upiId: string;
+    paymentQrUrl?: string;
     notes: string;
     terms: string;
     discount: number;
@@ -45,6 +47,7 @@ interface InvoiceForm extends Invoice {
     recurringFrequency: string;
     currencyCode: string;
     taxLabel: string;
+    taxRate: number;
     projectReference: string;
     signatureName: string;
     isInterstate: boolean;
@@ -105,6 +108,35 @@ function numberToWords(num: number): string {
         return cvt(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + cvt(n % 10000000) : '');
     };
     return 'Indian Rupee ' + cvt(num);
+}
+
+function parseNonNegativeNumber(value: unknown, fallback = 0): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function formatInrAmount(value: unknown) {
+    const amount = Number(value || 0);
+    return amount.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+}
+
+function getLineAmount(item: any) {
+    const quantity = Number(item.quantity || 0);
+    const price = Number(item.price || 0);
+    const discountPercent = Number(item.discount_percent ?? item.discountPercent ?? item.discount ?? 0);
+    const gross = quantity * price;
+    return Math.max(gross - (gross * discountPercent) / 100, 0);
+}
+
+function getDocumentTitle(isGstRegistered: boolean, explicitType?: string) {
+    const normalized = String(explicitType || '').toLowerCase();
+    if (normalized === 'bill_of_supply') return 'BILL OF SUPPLY';
+    if (normalized === 'credit_note') return 'CREDIT NOTE';
+    if (normalized === 'debit_note') return 'DEBIT NOTE';
+    return isGstRegistered ? 'INVOICE' : 'BILL OF SUPPLY';
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -222,13 +254,37 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
     const { customers } = useData();
     const [isFocused, setIsFocused] = useState(false);
     const customerName = watch('customerName') || '';
+    const invoiceDate = watch('date') || '';
+
+    const getCustomerAddress = (customer: any) =>
+        [
+            customer.addressLine1,
+            customer.addressLine2,
+            customer.city,
+            customer.state,
+            customer.pincode,
+            customer.country,
+        ]
+            .filter(Boolean)
+            .join(', ');
+
+    const applyCustomerToForm = (customer: any) => {
+        setValue('customerName', customer.name || '', { shouldValidate: true, shouldDirty: true });
+        setValue('customerEmail', customer.email || '', { shouldValidate: true, shouldDirty: true });
+        setValue('customerGstin', customer.gstin || customer.taxId || '', { shouldDirty: true });
+        setValue('customerAddress', getCustomerAddress(customer), { shouldDirty: true });
+
+        if (customer.paymentTerms && invoiceDate) {
+            const dueDate = new Date(invoiceDate);
+            dueDate.setDate(dueDate.getDate() + Number(customer.paymentTerms));
+            if (!Number.isNaN(dueDate.getTime())) {
+                setValue('dueDate', dueDate.toISOString().split('T')[0], { shouldDirty: true });
+            }
+        }
+    };
 
     const handleSelect = (customer: any) => {
-        setValue('customerName', customer.name, { shouldValidate: true });
-        setValue('customerEmail', customer.email || '', { shouldValidate: true });
-        setValue('customerGstin', customer.taxId || '');
-        const addr = [customer.addressLine1, customer.city, customer.state, customer.pincode].filter(Boolean).join(', ');
-        setValue('customerAddress', addr);
+        applyCustomerToForm(customer);
         setIsFocused(false);
     };
 
@@ -238,6 +294,16 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
 
     const filtered = customers?.filter((c: any) => c.name.toLowerCase().includes(customerName.toLowerCase())) || [];
     const customerReg = register('customerName', { required: 'Required' });
+
+    useEffect(() => {
+        const normalized = customerName.trim().toLowerCase();
+        if (!normalized) return;
+
+        const exactMatch = customers?.find((customer: any) => customer.name?.trim().toLowerCase() === normalized);
+        if (exactMatch) {
+            applyCustomerToForm(exactMatch);
+        }
+    }, [customerName, customers, invoiceDate]);
 
     return (
         <div className="space-y-4">
@@ -452,7 +518,7 @@ function StepItems({ register, control, watch, calcResult }: { register: any; co
                                 </div>
                                 {amt > 0 && (
                                     <div className="px-3 pb-1.5 text-right">
-                                        <span className="text-[10px] text-[#6B6E76]">= ₹{amt.toFixed(2)}</span>
+                                        <span className="text-[10px] text-[#6B6E76] tabular-nums">= ₹{formatInrAmount(amt)}</span>
                                     </div>
                                 )}
                             </div>
@@ -484,7 +550,7 @@ function StepItems({ register, control, watch, calcResult }: { register: any; co
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Subtotal after adjustments</span>
                     <span className="text-sm font-black text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>
-                        ₹{parseFloat(calcResult.subtotal).toFixed(2)}
+                        ₹{formatInrAmount(parseFloat(calcResult.subtotal))}
                     </span>
                 </div>
             </SectionCard>
@@ -497,21 +563,40 @@ function StepItems({ register, control, watch, calcResult }: { register: any; co
 ───────────────────────────────────────────────────────────── */
 function StepGst({ register, watch, setValue, calcResult }: { register: any; watch: any; setValue: any; calcResult: any }) {
     const isGst = watch('isGstRegistered');
+    const taxRate = parseNonNegativeNumber(watch('taxRate'), 0);
     return (
         <div className="space-y-4">
             <SectionCard>
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-[13px] font-bold text-gray-900">GST registered</p>
-                        <p className="text-[11px] text-gray-400 mt-0.5 font-medium">Apply 18% GST on all line items</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5 font-medium">Apply your organisation GST rate on all line items</p>
                     </div>
                     <Toggle
                         checked={!!isGst}
-                        onChange={v => setValue('isGstRegistered', v, { shouldDirty: true })}
+                        onChange={v => {
+                            setValue('isGstRegistered', v, { shouldDirty: true });
+                            if (!v) {
+                                setValue('taxRate', 0, { shouldDirty: true });
+                            }
+                        }}
                     />
                 </div>
                 {isGst && (
                     <>
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                            <Field label="GST Rate (%)">
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        {...register('taxRate', { valueAsNumber: true, min: 0, max: 100 })}
+                                        placeholder="18"
+                                        className={INP + ' pr-8'}
+                                    />
+                                    <Percent size={12} className="absolute right-3 top-2.5 text-gray-400" />
+                                </div>
+                            </Field>
+                        </div>
                         <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
                             <div>
                                 <p className="text-[12px] font-bold text-gray-700">Inter-state Transaction?</p>
@@ -525,7 +610,7 @@ function StepGst({ register, watch, setValue, calcResult }: { register: any; wat
                         <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
                             <Shield size={12} className="text-teal-600" />
                             <span className="text-[11px] text-teal-600 font-bold uppercase tracking-wider">
-                                18% {watch('isInterstate') ? 'IGST' : 'CGST + SGST'} will be calculated
+                                {taxRate}% {watch('isInterstate') ? 'IGST' : 'CGST + SGST'} will be calculated
                             </span>
                         </div>
                     </>
@@ -547,7 +632,7 @@ function StepGst({ register, watch, setValue, calcResult }: { register: any; wat
                         </div>
                     </Field>
                     <div className="pb-2.5">
-                       <p className="text-[10px] text-gray-400 font-medium">Estimated deduction: <span className="font-bold text-red-500">₹{parseFloat(calcResult.tds_amount).toFixed(2)}</span></p>
+                       <p className="text-[10px] text-gray-400 font-medium">Estimated deduction: <span className="font-bold text-red-500 tabular-nums">₹{formatInrAmount(parseFloat(calcResult.tds_amount))}</span></p>
                     </div>
                 </div>
                 <p className="text-[11px] text-gray-500 mt-3 bg-gray-50 p-3 rounded-lg border border-gray-100 italic">
@@ -591,8 +676,9 @@ function StepPayment({
     const subtotal = parseFloat(calcResult.subtotal);
     const taxAmount = parseFloat(calcResult.total_tax);
     const discountAmt = parseFloat(calcResult.total_discount);
-    const total = parseFloat(calcResult.payable_amount);
+    const total = parseFloat(calcResult.grand_total);
     const tdsAmount = parseFloat(calcResult.tds_amount);
+    const netReceivable = parseFloat(calcResult.payable_amount);
     const watchedShipping = parseFloat(calcResult.shipping_charges);
 
     const payments    = watch('payments') || [];
@@ -719,28 +805,28 @@ function StepPayment({
                 <div className="space-y-2.5 text-sm">
                     <div className="flex justify-between">
                         <span className="text-[13px] font-medium text-gray-500">Subtotal</span>
-                        <span className="font-bold text-gray-900">₹{subtotal.toFixed(2)}</span>
+                        <span className="font-bold text-gray-900 tabular-nums break-all text-right max-w-[11rem]">₹{formatInrAmount(subtotal)}</span>
                     </div>
                     
                     {/* GST Breakdown */}
-                    {w.isGstRegistered && (
-                        <>
-                            {w.isInterstate ? (
+                {w.isGstRegistered && (
+                    <>
+                        {w.isInterstate ? (
+                            <div className="flex justify-between">
+                                <span className="text-[13px] font-medium text-gray-500">IGST ({parseNonNegativeNumber(w.taxRate, 0)}%)</span>
+                                <span className="font-bold text-gray-900 tabular-nums break-all text-right max-w-[11rem]">₹{formatInrAmount(taxAmount)}</span>
+                            </div>
+                        ) : (
+                            <>
                                 <div className="flex justify-between">
-                                    <span className="text-[13px] font-medium text-gray-500">IGST (18%)</span>
-                                    <span className="font-bold text-gray-900">₹{taxAmount.toFixed(2)}</span>
+                                    <span className="text-[13px] font-medium text-gray-500">CGST ({(parseNonNegativeNumber(w.taxRate, 0) / 2).toFixed(2)}%)</span>
+                                    <span className="font-bold text-gray-900 tabular-nums break-all text-right max-w-[11rem]">₹{formatInrAmount(taxAmount / 2)}</span>
                                 </div>
-                            ) : (
-                                <>
-                                    <div className="flex justify-between">
-                                        <span className="text-[13px] font-medium text-gray-500">CGST (9%)</span>
-                                        <span className="font-bold text-gray-900">₹{(taxAmount / 2).toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-[13px] font-medium text-gray-500">SGST (9%)</span>
-                                        <span className="font-bold text-gray-900">₹{(taxAmount / 2).toFixed(2)}</span>
-                                    </div>
-                                </>
+                                <div className="flex justify-between">
+                                    <span className="text-[13px] font-medium text-gray-500">SGST ({(parseNonNegativeNumber(w.taxRate, 0) / 2).toFixed(2)}%)</span>
+                                    <span className="font-bold text-gray-900 tabular-nums break-all text-right max-w-[11rem]">₹{formatInrAmount(taxAmount / 2)}</span>
+                                </div>
+                            </>
                             )}
                         </>
                     )}
@@ -748,246 +834,35 @@ function StepPayment({
                     {discountAmt > 0 && (
                         <div className="flex justify-between">
                             <span className="text-[13px] font-bold text-red-500">Discount ({w.discount}%)</span>
-                            <span className="font-bold text-red-500">−₹{discountAmt.toFixed(2)}</span>
+                            <span className="font-bold text-red-500 tabular-nums break-all text-right max-w-[11rem]">−₹{formatInrAmount(discountAmt)}</span>
                         </div>
                     )}
                     {watchedShipping > 0 && (
                         <div className="flex justify-between">
                             <span className="text-[13px] font-medium text-gray-500">Shipping</span>
-                            <span className="font-bold text-gray-900">₹{watchedShipping.toFixed(2)}</span>
+                            <span className="font-bold text-gray-900 tabular-nums break-all text-right max-w-[11rem]">₹{formatInrAmount(watchedShipping)}</span>
                         </div>
                     )}
                     {tdsAmount > 0 && (
                         <div className="flex justify-between">
                             <span className="text-[13px] font-bold text-amber-600">TDS Deduction ({w.tdsRate}%)</span>
-                            <span className="font-bold text-amber-600">−₹{tdsAmount.toFixed(2)}</span>
+                            <span className="font-bold text-amber-600 tabular-nums break-all text-right max-w-[11rem]">−₹{formatInrAmount(tdsAmount)}</span>
                         </div>
                     )}
                     <div className="flex justify-between pt-4 border-t-2 border-gray-900 mt-2">
                         <span className="font-black text-gray-900 text-base uppercase tracking-tight">Total Amount</span>
-                        <span className="font-black text-teal-600 text-2xl tracking-tighter">₹{total.toFixed(2)}</span>
+                        <span className="font-black text-teal-600 text-xl leading-tight tracking-tight tabular-nums break-all text-right max-w-[12rem]">₹{formatInrAmount(total)}</span>
                     </div>
-                    <p className="text-right text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-1">
-                        {numberToWords(Math.floor(total))}
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-/* ─────────────────────────────────────────────────────────────
-   LIVE PREVIEW — right panel (white invoice doc on dark bg)
-───────────────────────────────────────────────────────────── */
-function InvoicePreview({
-    w, calcResult
-}: {
-    w: InvoiceForm;
-    calcResult: any;
-}) {
-    const subtotal = parseFloat(calcResult.subtotal);
-    const taxAmount = parseFloat(calcResult.total_tax);
-    const discountAmt = parseFloat(calcResult.total_discount);
-    const total = parseFloat(calcResult.payable_amount);
-    const tdsAmount = parseFloat(calcResult.tds_amount);
-    const watchedShipping = parseFloat(calcResult.shipping_charges);
-
-    const watchedItems    = (w.items || []) as any[];
-    const watchedDiscount = w.discount || 0;
-    const hasItems        = watchedItems.some(i => i.description);
-
-    return (
-        <div className="h-full bg-white flex flex-col">
-            <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
-
-                {/* Header */}
-                <div className="flex items-start justify-between mb-6">
-                    <div>
-                        {w.fromName
-                            ? <p className="text-base font-bold text-gray-900">{w.fromName}</p>
-                            : <p className="text-sm text-gray-300 italic">Your name</p>
-                        }
-                        {w.fromTitle && <p className="text-[10px] font-bold text-teal-600 uppercase tracking-wider mb-1">{w.fromTitle}</p>}
-                        {w.fromAddress && <p className="text-xs text-gray-500 mt-0.5">{w.fromAddress}</p>}
-                        {w.fromGstin   && <p className="text-xs text-gray-500 mt-0.5">GSTIN: {w.fromGstin}</p>}
-                    </div>
-                    <div className="text-right">
-                        <p className="text-3xl font-black tracking-tighter text-gray-900 leading-none">PROFORMA</p>
-                        <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">{w.invoiceNumber}</p>
-                    </div>
-                </div>
-
-                {/* Billed from / to */}
-                <div className="grid grid-cols-2 gap-6 mb-5">
-                    <div>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Billed From</p>
-                        {w.fromName
-                            ? <p className="text-sm font-semibold text-gray-800">{w.fromName}</p>
-                            : <p className="text-xs text-gray-300 italic">—</p>
-                        }
-                        {w.fromAddress && <p className="text-xs text-gray-500 mt-0.5">{w.fromAddress}</p>}
-                    </div>
-                    <div>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Billed To</p>
-                        {w.customerName ? (
-                            <>
-                                <p className="text-sm font-semibold text-gray-800">{w.customerName}</p>
-                                {w.customerEmail   && <p className="text-xs text-gray-500 mt-0.5">{w.customerEmail}</p>}
-                                {w.customerAddress && <p className="text-xs text-gray-500 mt-0.5">{w.customerAddress}</p>}
-                                {w.customerGstin   && <p className="text-xs text-gray-500 mt-0.5">GSTIN: {w.customerGstin}</p>}
-                            </>
-                        ) : (
-                            <p className="text-xs text-gray-300 italic">Select a client…</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Dates */}
-                <div className="grid grid-cols-2 gap-6 mb-5 pb-4 border-b border-gray-100">
-                    <div>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Invoice Date</p>
-                        <p className="text-sm font-bold text-gray-800">{fmtDate(w.date)}</p>
-                    </div>
-                    <div>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Due Date</p>
-                        <p className="text-sm font-bold text-gray-800">{fmtDate(w.dueDate)}</p>
-                    </div>
-                </div>
-
-                {/* Items table */}
-                <div className="border border-gray-200 rounded-lg overflow-hidden mb-5">
-                    <div className="grid grid-cols-12 bg-gray-50 px-4 py-2 border-b border-gray-200">
-                        <div className="col-span-6 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Description</div>
-                        <div className="col-span-2 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-center">Qty</div>
-                        <div className="col-span-2 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-right">Rate</div>
-                        <div className="col-span-2 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-right">Amount</div>
-                    </div>
-                    {!hasItems ? (
-                        <div className="py-6 text-center">
-                            <p className="text-xs text-gray-300 italic">No items added yet</p>
-                        </div>
-                    ) : watchedItems.map((item: any, i: number) => item.description ? (
-                        <div key={i} className="grid grid-cols-12 px-4 py-2.5 border-b border-gray-100 last:border-0">
-                            <div className="col-span-6 text-xs font-medium text-gray-800">{item.description}</div>
-                            <div className="col-span-2 text-xs text-gray-500 text-center">{item.quantity}</div>
-                            <div className="col-span-2 text-xs text-gray-500 text-right">₹{(item.price || 0).toFixed(2)}</div>
-                            <div className="col-span-2 text-xs font-semibold text-gray-800 text-right">
-                                ₹{((item.quantity || 0) * (item.price || 0)).toFixed(2)}
-                            </div>
-                        </div>
-                    ) : null)}
-                </div>
-
-                {/* Totals */}
-                <div className="ml-auto w-52 space-y-1.5 mb-1">
-                    <div className="flex justify-between">
-                        <span className="text-xs text-gray-400">Subtotal</span>
-                        <span className="text-xs font-medium text-gray-700">₹{subtotal.toFixed(2)}</span>
-                    </div>
-                    {w.isGstRegistered && (
-                        <>
-                            {w.isInterstate ? (
-                                <div className="flex justify-between">
-                                    <span className="text-xs text-gray-400">IGST (18%)</span>
-                                    <span className="text-xs font-medium text-gray-700">₹{taxAmount.toFixed(2)}</span>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">CGST (9%)</span>
-                                        <span className="text-xs font-medium text-gray-700">₹{(taxAmount / 2).toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-xs text-gray-400">SGST (9%)</span>
-                                        <span className="text-xs font-medium text-gray-700">₹{(taxAmount / 2).toFixed(2)}</span>
-                                    </div>
-                                </>
-                            )}
-                        </>
-                    )}
-                    {discountAmt > 0 && (
-                        <div className="flex justify-between">
-                            <span className="text-xs text-red-400">Discount ({watchedDiscount}%)</span>
-                            <span className="text-xs font-medium text-red-400">−₹{discountAmt.toFixed(2)}</span>
-                        </div>
-                    )}
-                    {watchedShipping > 0 && (
-                        <div className="flex justify-between">
-                            <span className="text-xs text-gray-400">Shipping</span>
-                            <span className="text-xs font-medium text-gray-700">₹{watchedShipping.toFixed(2)}</span>
-                        </div>
-                    )}
                     {tdsAmount > 0 && (
                         <div className="flex justify-between">
-                            <span className="text-xs text-amber-500 font-medium">TDS ({w.tdsRate}%)</span>
-                            <span className="text-xs font-medium text-amber-500">−₹{tdsAmount.toFixed(2)}</span>
+                            <span className="text-[13px] font-bold text-amber-600">You Receive</span>
+                            <span className="font-bold text-amber-600 tabular-nums break-all text-right max-w-[11rem]">₹{formatInrAmount(netReceivable)}</span>
                         </div>
                     )}
-                    <div className="border-t-2 border-gray-900 pt-2 flex justify-between items-baseline">
-                        <span className="text-sm font-bold text-gray-900">Total</span>
-                        <span className="text-2xl font-black text-emerald-600">₹{total.toFixed(2)}</span>
-                    </div>
-                    <p className="text-right text-[10px] text-gray-400 italic leading-tight">
-                        {numberToWords(Math.floor(total))}
+                    <p className="text-right text-[10px] font-bold text-gray-400 uppercase tracking-wide mt-1">
+                        {numberToWords(Math.floor(netReceivable))}
                     </p>
                 </div>
-
-                {/* Bank / Payment Instructions */}
-                {(w.bankName || w.upiId) && (
-                    <div className="mt-8 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Payment Instructions</p>
-                        <div className="grid grid-cols-2 gap-4">
-                            {w.bankName && (
-                                <div className="space-y-1">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Bank Transfer</p>
-                                    <p className="text-[11px] font-bold text-gray-800">{w.bankName}</p>
-                                    <p className="text-[10px] text-gray-500">A/C: {w.accountNumber}</p>
-                                    <p className="text-[10px] text-gray-500">IFSC: {w.ifscCode}</p>
-                                </div>
-                            )}
-                            {w.upiId && (
-                                <div className="space-y-1">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">UPI Payment</p>
-                                    <p className="text-[11px] font-bold text-emerald-600">{w.upiId}</p>
-                                    <div className="flex items-center gap-1.5 pt-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                        <p className="text-[9px] text-gray-400 font-medium">Instant Clearance</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Notes */}
-                {w.notes && (
-                    <div className="mt-5 pt-4 border-t border-gray-100">
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Notes</p>
-                        <p className="text-xs text-gray-600 leading-relaxed">{w.notes}</p>
-                    </div>
-                )}
-
-                {/* Terms */}
-                {w.terms && (
-                    <div className="mt-3">
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Terms & Conditions</p>
-                        <p className="text-xs text-gray-600 leading-relaxed">{w.terms}</p>
-                    </div>
-                )}
-
-                {/* Signature */}
-                {w.includeSignature && (
-                    <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
-                        <div className="w-40 text-center">
-                            <p className="text-lg text-gray-700 italic" style={{ fontFamily: '"Times New Roman", serif' }}>
-                                {w.signatureName || w.fromName || 'Signature'}
-                            </p>
-                            <div className="border-t border-gray-400 pt-1 mt-2">
-                                <p className="text-[9px] text-gray-400 font-medium">Authorised Signature</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
@@ -1060,6 +935,7 @@ export function CreateInvoice() {
     const navigate = useNavigate();
     const { id: invoiceId } = useParams();
     const { businessType } = usePersona();
+    const { refreshData } = useData();
     const [step, setStep]               = useState(0);
     const [saving, setSaving]           = useState(false);
     const [savedDraft, setSavedDraft]   = useState(false);
@@ -1092,12 +968,14 @@ export function CreateInvoice() {
             accountNumber:      '',
             ifscCode:           '',
             upiId:              '',
+            paymentQrUrl:       '',
             notes:              '',
             terms:              '',
             discount:           0,
             shipping:           0,
             currencyCode:       'INR',
             taxLabel:           'GST',
+            taxRate:            0,
             projectReference:   '',
             signatureName:      '',
             recurringFrequency: 'Monthly',
@@ -1147,11 +1025,12 @@ export function CreateInvoice() {
                 signatureName: invoice.seller?.signatureName || '',
                 isGstRegistered: invoice.isGstRegistered || false,
                 notes: invoice.notes || '',
-                terms: '',
+                terms: (invoice as any).seller?.terms || '',
                 discount: invoice.discount || 0,
                 shipping: invoice.shipping || 0,
                 currencyCode: (invoice as any).currencyCode || 'INR',
                 taxLabel: invoice.taxType || 'GST',
+                taxRate: Number((invoice as any).taxRate ?? invoice.items?.[0]?.tax_rate ?? 0),
                 projectReference: invoice.projectName || '',
                 recurringFrequency: 'Monthly',
                 payments: [],
@@ -1162,6 +1041,7 @@ export function CreateInvoice() {
                 accountNumber: (invoice as any).seller?.accountNumber || '',
                 ifscCode: (invoice as any).seller?.ifscCode || '',
                 upiId: (invoice as any).seller?.upiId || '',
+                paymentQrUrl: (invoice as any).seller?.paymentQrUrl || '',
                 isInterstate: (invoice as any).isInterstate || false,
             } as InvoiceForm);
 
@@ -1176,7 +1056,10 @@ export function CreateInvoice() {
             }
 
             try {
-                const { nextNumber, defaults } = await invoiceService.getDraftDefaults();
+                const [{ nextNumber, defaults }, settings] = await Promise.all([
+                    invoiceService.getDraftDefaults(),
+                    dataService.getSettings(),
+                ]);
                 if (cancelled) return;
 
                 const dueDate = new Date(Date.now() + defaults.dueDays * 24 * 60 * 60 * 1000)
@@ -1184,15 +1067,23 @@ export function CreateInvoice() {
                     .split('T')[0];
 
                 setValue('invoiceNumber', nextNumber);
-                setValue('fromName', defaults.fromName);
-                setValue('fromAddress', defaults.fromAddress);
-                setValue('fromGstin', defaults.fromGstin);
-                setValue('notes', defaults.notes);
+                setValue('fromName', settings.owner_name || defaults.fromName);
+                setValue('fromTitle', settings.freelanceCategory || '');
+                setValue('fromAddress', settings.address || defaults.fromAddress);
+                setValue('fromGstin', settings.companyTaxId || defaults.fromGstin);
+                setValue('notes', settings.invoiceNotes || defaults.notes);
                 setValue('terms', defaults.terms);
                 setValue('currencyCode', defaults.currencyCode);
                 setValue('taxLabel', defaults.taxLabel);
+                setValue('taxRate', parseNonNegativeNumber(settings.defaultGstRate, defaults.isGstRegistered ? 18 : 0));
                 setValue('dueDate', dueDate);
                 setValue('isGstRegistered', defaults.isGstRegistered);
+                setValue('bankName', settings.bankName || '');
+                setValue('accountNumber', settings.bankAccountNumber || '');
+                setValue('ifscCode', settings.bankIfsc || '');
+                setValue('upiId', settings.upiId || '');
+                setValue('paymentQrUrl', settings.paymentQrFilename ? dataService.getPaymentQrUrl(settings.paymentQrFilename) : '');
+                setValue('signatureName', settings.owner_name || settings.businessName || defaults.fromName);
             } catch (error) {
                 console.error('Failed to load invoice defaults:', error);
             } finally {
@@ -1214,12 +1105,13 @@ export function CreateInvoice() {
     const watchedDiscount = w.discount || 0;
     const watchedShipping = w.shipping || 0;
     const watchedTdsRate  = w.tdsRate || 0;
+    const watchedTaxRate  = parseNonNegativeNumber(w.taxRate, 0);
 
     const calcResult = InvoiceCalculator.calculate({
         line_items: watchedItems.map((item: any) => ({
             quantity:      item.quantity || 0,
             unit_price:    item.price    || 0,
-            tax_rate:      w.isGstRegistered ? 18 : 0,
+            tax_rate:      w.isGstRegistered ? watchedTaxRate : 0,
             is_interstate: w.isInterstate || false,
         })),
         document_discount: { type: 'percentage', value: watchedDiscount },
@@ -1229,8 +1121,9 @@ export function CreateInvoice() {
 
     const subtotal    = parseFloat(calcResult.subtotal);
     const taxAmount   = parseFloat(calcResult.total_tax);
-    const total       = parseFloat(calcResult.payable_amount);
+    const total       = parseFloat(calcResult.grand_total);
     const tdsAmount   = parseFloat(calcResult.tds_amount);
+    const netReceivable = parseFloat(calcResult.payable_amount);
 
     /* ── Step navigation ── */
     const goNext = useCallback(async () => {
@@ -1252,6 +1145,10 @@ export function CreateInvoice() {
                 ...data,
                 id: invoiceId || data.id,
                 persona: businessType || data.persona || 'solopreneur',
+                items: (data.items || []).map((item: any) => ({
+                    ...item,
+                    tax_rate: data.isGstRegistered ? parseNonNegativeNumber(data.taxRate, 0) : 0,
+                })),
                 buyer: {
                     name: data.customerName,
                     email: data.customerEmail || null,
@@ -1265,6 +1162,7 @@ export function CreateInvoice() {
                     gstin: data.fromGstin || null,
                     includeSignature: Boolean(data.includeSignature),
                     signatureName: data.signatureName || data.fromName || null,
+                    terms: data.terms || null,
                     bankName: data.bankName || null,
                     accountNumber: data.accountNumber || null,
                     ifscCode: data.ifscCode || null,
@@ -1272,11 +1170,16 @@ export function CreateInvoice() {
                 },
                 projectName: data.projectReference || null,
                 subtotal,
+                taxRate: data.isGstRegistered ? parseNonNegativeNumber(data.taxRate, 0) : 0,
                 taxAmount,
                 total,
+                tdsApplicable: Number(data.tdsRate || 0) > 0,
+                tdsEnabled: Number(data.tdsRate || 0) > 0,
                 tdsRate: data.tdsRate || 0,
                 tdsAmount,
+                netReceivable,
             } as any);
+            await refreshData(['invoices', 'stats'], true);
             navigate('/dashboard/invoices');
         } catch (err) {
             console.error(err);
@@ -1380,7 +1283,7 @@ export function CreateInvoice() {
                         className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-teal-600 border border-gray-200 text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-teal-500/20"
                     >
                         {saving && <Loader2 size={14} className="animate-spin" />}
-                        Generate Proforma
+                        Create Invoice
                     </button>
                 </div>
             </header>
@@ -1462,9 +1365,10 @@ export function CreateInvoice() {
 
                     <div className="flex-1 min-h-0 p-5 overflow-hidden">
                         <div className="h-full rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <InvoicePreview
-                                w={w as InvoiceForm}
+                            <InvoiceDocumentPreview
+                                invoice={w as InvoiceForm}
                                 calcResult={calcResult}
+                                discountLabel={w.discount ? `Discount (${w.discount}%)` : undefined}
                             />
                         </div>
                     </div>

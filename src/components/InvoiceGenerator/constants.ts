@@ -8,6 +8,13 @@ export type Seller = {
     address: string;
     taxId: string;
     upiId: string;
+    paymentQrUrl?: string;
+    bankName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    terms?: string;
+    includeSignature?: boolean;
+    signatureName?: string;
     panNumber?: string;
     bankDetails?: string;
     tagline?: string;

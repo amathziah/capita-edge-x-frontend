@@ -49,7 +49,9 @@ export const ENDPOINTS = {
 
     // ─── Upload ────────────────────────────────────────────────────────
     UPLOAD_LOGO: '/upload/logo',
+    UPLOAD_PAYMENT_QR: '/upload/payment-qr',
     LOGO_URL: (fn: string) => `/uploads/logos/${fn}`,
+    PAYMENT_QR_URL: (fn: string) => `/uploads/payment-qr/${fn}`,
 
     // ─── Compliance ────────────────────────────────────────────────────
     COMPLIANCE: '/compliance',

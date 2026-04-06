@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FileText, Download, Mail, Loader2, Eye, Printer, X, Plus, Search, Edit2, Trash2, DollarSign, CheckCircle, Share2 } from "lucide-react";
 import { dataService } from '@/services/dataService';
+import { InvoiceDocumentPreview } from '@/features/invoices/components/InvoiceDocumentPreview';
 import { Invoice } from '@/types';
 import { Toast, ToastType } from '@/components/Toast';
 import RecordPaymentModal from '@/components/Invoice/RecordPaymentModal';
@@ -19,6 +20,30 @@ const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600 border-gray-200",
   cancelled: "bg-red-50 text-red-500 border-red-100",
   escalated: "bg-purple-50 text-purple-600 border-purple-100",
+};
+
+const formatInrAmount = (value: unknown) =>
+  Number(value || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+const getDocumentTitle = (invoice: Invoice | null) => {
+  if (!invoice) return 'INVOICE';
+  const explicitType = String((invoice as any).type || '').toLowerCase();
+  if (explicitType === 'bill_of_supply') return 'BILL OF SUPPLY';
+  if (explicitType === 'credit_note') return 'CREDIT NOTE';
+  if (explicitType === 'debit_note') return 'DEBIT NOTE';
+  if (explicitType === 'delivery_challan') return 'DELIVERY CHALLAN';
+  return invoice.isGstRegistered === false ? 'BILL OF SUPPLY' : 'INVOICE';
+};
+
+const getLineAmount = (item: any) => {
+  const quantity = Number(item.quantity || 0);
+  const price = Number(item.price || 0);
+  const discountPercent = Number(item.discount_percent ?? item.discountPercent ?? item.discount ?? 0);
+  const gross = quantity * price;
+  return Math.max(gross - (gross * discountPercent) / 100, 0);
 };
 
 export function Invoices() {
@@ -38,6 +63,7 @@ export function Invoices() {
   // View Modal State
   const [viewInvoiceId, setViewInvoiceId] = useState<string | null>(null);
   const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
+  const [viewSettings, setViewSettings] = useState<any | null>(null);
 
   const [viewLoading, setViewLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -80,8 +106,12 @@ export function Invoices() {
       const fetchDetails = async () => {
         setViewLoading(true);
         try {
-          const inv = await dataService.getInvoice(viewInvoiceId);
+          const [inv, settings] = await Promise.all([
+            dataService.getInvoice(viewInvoiceId),
+            dataService.getSettings(),
+          ]);
           setViewInvoice(inv);
+          setViewSettings(settings);
         } catch (err) {
           console.error("Failed to fetch invoice details", err);
           showToast("Could not load invoice details.", 'error');
@@ -93,6 +123,7 @@ export function Invoices() {
       fetchDetails();
     } else {
       setViewInvoice(null);
+      setViewSettings(null);
     }
   }, [viewInvoiceId]);
 
@@ -691,208 +722,48 @@ export function Invoices() {
                   <Loader2 className="w-10 h-10 text-primary animate-spin" />
                 </div>
               ) : viewInvoice ? (
-                <div className="space-y-8">
-                  {/* Top Info */}
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-3xl font-bold text-text-main">INVOICE</h1>
-                        {(() => {
-                          const dispStatus = (viewInvoice.status === 'pending' && new Date(viewInvoice.dueDate || viewInvoice.date) < new Date()) ? 'overdue' : viewInvoice.status;
-                          return (
-                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide border ${STATUS_COLORS[dispStatus as keyof typeof STATUS_COLORS] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                              {dispStatus.replace(/_/g, ' ')}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                      <p className="text-text-muted text-lg tracking-tight">#{viewInvoice.invoiceNumber}</p>
-                      {viewInvoice.projectName && (
-                        <p className="text-primary font-bold text-sm mt-2 flex items-center gap-1">
-                          <span className="text-text-light uppercase tracking-widest text-[10px]">Project:</span> {viewInvoice.projectName}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right space-y-1">
-                      <div className="text-xs font-medium text-text-light uppercase tracking-wide">Date Issued</div>
-                      <div className="font-medium text-text-main">{new Date(viewInvoice.date || viewInvoice.createdAt || Date.now()).toLocaleDateString()}</div>
-                      <div className="text-xs font-medium text-text-light uppercase tracking-wide mt-3">Due Date</div>
-                      <div className="font-medium text-text-main">{viewInvoice.dueDate ? new Date(viewInvoice.dueDate).toLocaleDateString() : '—'}</div>
-                    </div>
-                  </div>
-
-                  <hr className="border-gray-100" />
-
-                  {/* Parties */}
-                  <div className="grid grid-cols-2 gap-12">
-                    <div>
-                      <h4 className="text-xs font-bold text-text-light uppercase tracking-wide mb-3">From</h4>
-                      <div className="font-bold text-text-main text-lg mb-1">{viewInvoice.seller?.name}</div>
-                      <div className="text-sm text-text-muted space-y-0.5">
-                        <p className="whitespace-pre-line">{viewInvoice.seller?.address}</p>
-                        <p>{viewInvoice.seller?.email}</p>
-                        <p>{viewInvoice.seller?.phone}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <h4 className="text-xs font-bold text-text-light uppercase tracking-wide mb-3">Bill To</h4>
-                      <div className="font-bold text-text-main text-lg mb-1">{viewInvoice.buyer?.name}</div>
-                      <div className="text-sm text-text-muted space-y-0.5">
-                        <p>{viewInvoice.buyer?.phone}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {viewInvoice.shippingAddress && (
-                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
-                      <h4 className="text-[10px] font-bold text-text-light uppercase tracking-wider mb-1">Shipping Destination</h4>
-                      <p className="text-sm text-text-main font-medium">{viewInvoice.shippingAddress}</p>
-                    </div>
-                  )}
-
-                  {/* Items Table */}
-                  <div className="border border-gray-200 rounded-xl overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50/50 border-b border-gray-200">
-                        <tr>
-                          <th className="px-6 py-3 text-left font-semibold text-text-muted">Description</th>
-                          {(viewInvoice?.projectName || viewInvoice?.items?.some(i => i.serviceStartDate)) && (
-                            <th className="px-6 py-3 text-center font-semibold text-text-muted">Service Period</th>
-                          )}
-                          <th className="px-6 py-3 text-center font-semibold text-text-muted">Unit</th>
-                          <th className="px-6 py-3 text-center font-semibold text-text-muted">Qty</th>
-                          <th className="px-6 py-3 text-right font-semibold text-text-muted">Price</th>
-                          <th className="px-6 py-3 text-right font-semibold text-text-muted">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {viewInvoice.items && viewInvoice.items.length > 0 ? (
-                          viewInvoice.items.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-gray-50/50">
-                              <td className="px-6 py-4 font-medium text-text-main">
-                                {item.description}
-                                {item.sku && <span className="block text-[10px] text-text-light mt-0.5">SKU: {item.sku}</span>}
-                              </td>
-                              {(viewInvoice?.projectName || viewInvoice?.items?.some(i => i.serviceStartDate)) && (
-                                <td className="px-6 py-4 text-center text-[10px] text-text-muted">
-                                  {item.serviceStartDate ? `${new Date(item.serviceStartDate).toLocaleDateString()} - ${item.serviceEndDate ? new Date(item.serviceEndDate).toLocaleDateString() : ''}` : '—'}
-                                </td>
-                              )}
-                              <td className="px-6 py-4 text-center text-text-muted">{item.unit || "Qty"}</td>
-                              <td className="px-6 py-4 text-center text-text-main">{item.quantity}</td>
-                              <td className="px-6 py-4 text-right text-text-muted">₹{(item.price || 0).toLocaleString('en-IN')}</td>
-                              <td className="px-6 py-4 text-right font-bold text-text-main">₹{((item.quantity || 0) * (item.price || 0)).toLocaleString('en-IN')}</td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr><td colSpan={5} className="p-6 text-center text-text-muted">No items found.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Summary */}
-                  <div className="flex justify-end">
-                    <div className="w-72 bg-gray-50/50 p-6 rounded-xl space-y-3">
-
-                      <div className="flex justify-between text-sm text-text-muted">
-                        <span>Subtotal</span>
-                        <span className="font-medium text-text-main">
-                          ₹{(viewInvoice.subtotal || 0).toLocaleString('en-IN')}
-                        </span>
-                      </div>
-
-                      {viewInvoice.discountAmount && viewInvoice.discountAmount > 0 ? (
-                        <div className="flex justify-between text-sm text-text-muted">
-                          <span>Discount</span>
-                          <span className="font-medium text-red-500">
-                            − ₹{viewInvoice.discountAmount.toLocaleString('en-IN')}
-                          </span>
-                        </div>
-                      ) : null}
-
-                      {viewInvoice.gstType === 'cgst_sgst' && (
-                        <>
-                          <div className="flex justify-between text-sm text-text-muted">
-                            <span>CGST</span>
-                            <span className="font-medium text-blue-600">
-                              ₹{(viewInvoice.cgstAmount || 0).toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm text-text-muted">
-                            <span>SGST</span>
-                            <span className="font-medium text-blue-600">
-                              ₹{(viewInvoice.sgstAmount || 0).toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                        </>
-                      )}
-
-                      {viewInvoice.gstType === 'igst' && (
-                        <div className="flex justify-between text-sm text-text-muted">
-                          <span>IGST</span>
-                          <span className="font-medium text-blue-600">
-                            ₹{(viewInvoice.igstAmount || 0).toLocaleString('en-IN')}
-                          </span>
-                        </div>
-                      )}
-
-                      {viewInvoice.gstType === 'not_applicable' && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-text-muted">GST</span>
-                          <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
-                            Not Applicable
-                          </span>
-                        </div>
-                      )}
-
-                      {(viewInvoice.shipping || 0) > 0 && (
-                        <div className="flex justify-between text-sm text-text-muted">
-                          <span>Shipping</span>
-                          <span className="font-medium text-text-main">
-                            ₹{(viewInvoice.shipping || 0).toLocaleString('en-IN')}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="border-t border-gray-200 pt-3">
-                        <div className="flex justify-between text-xl font-bold text-primary">
-                          <span>Total</span>
-                          <span>₹{(viewInvoice.total || 0).toLocaleString('en-IN')}</span>
-                        </div>
-                      </div>
-
-                      {viewInvoice.tdsApplicable && viewInvoice.tdsAmount && viewInvoice.tdsAmount > 0 ? (
-                        <div className="bg-gray-100 rounded-lg p-3 space-y-1.5 mt-2">
-                          <div className="flex justify-between text-xs text-gray-500">
-                            <span>
-                              TDS Sec 194J
-                              @ {viewInvoice.tdsRate || 10}%
-                            </span>
-                            <span className="text-red-500 font-medium">
-                              − ₹{(viewInvoice.tdsAmount || 0).toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm font-semibold">
-                            <span className="text-gray-700">You receive</span>
-                            <span className="text-green-600">
-                              ₹{(viewInvoice.netReceivable || 0).toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                        </div>
-                      ) : null}
-
-                    </div>
-                  </div>
-
-                  {/* Notes */}
-                  {viewInvoice.notes && (
-                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-sm text-amber-900">
-                      <strong className="block mb-1 font-semibold">Notes:</strong>
-                      {viewInvoice.notes}
-                    </div>
-                  )}
-
+                <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white">
+                  <InvoiceDocumentPreview
+                    invoice={{
+                      invoiceNumber: viewInvoice.invoiceNumber,
+                      date: viewInvoice.date,
+                      dueDate: viewInvoice.dueDate,
+                      fromName: viewInvoice.seller?.name || viewSettings?.owner_name || viewSettings?.businessName || '',
+                      fromTitle: (viewInvoice as any).seller?.title || '',
+                      fromAddress: viewInvoice.seller?.address || viewSettings?.address || '',
+                      fromGstin: (viewInvoice as any).seller?.gstin || (viewInvoice as any).seller?.taxId || viewSettings?.companyTaxId || '',
+                      customerName: viewInvoice.buyer?.name || '',
+                      customerEmail: viewInvoice.buyer?.email || '',
+                      customerAddress: viewInvoice.buyer?.address || '',
+                      customerGstin: viewInvoice.buyer?.gstin || '',
+                      isGstRegistered: viewInvoice.isGstRegistered !== false,
+                      isInterstate: viewInvoice.gstType === 'igst' || Boolean((viewInvoice as any).isInterstate),
+                      taxRate: viewInvoice.taxRate || 0,
+                      tdsRate: viewInvoice.tdsRate || 0,
+                      shipping: viewInvoice.shipping || 0,
+                      bankName: (viewInvoice as any).seller?.bankName || viewSettings?.bankName || '',
+                      accountNumber: (viewInvoice as any).seller?.accountNumber || viewSettings?.bankAccountNumber || '',
+                      ifscCode: (viewInvoice as any).seller?.ifscCode || viewSettings?.bankIfsc || '',
+                      upiId: (viewInvoice as any).seller?.upiId || viewSettings?.upiId || '',
+                      paymentQrUrl: viewSettings?.paymentQrFilename ? dataService.getPaymentQrUrl(viewSettings.paymentQrFilename) : '',
+                      notes: viewInvoice.notes || viewSettings?.invoiceNotes || '',
+                      terms: (viewInvoice as any).seller?.terms || '',
+                      includeSignature: Boolean((viewInvoice as any).seller?.includeSignature),
+                      signatureName: (viewInvoice as any).seller?.signatureName || '',
+                      type: (viewInvoice as any).type,
+                      items: viewInvoice.items || [],
+                    }}
+                    calcResult={{
+                      subtotal: String(Number(viewInvoice.subtotal || 0)),
+                      total_tax: String(Number(viewInvoice.taxAmount || 0)),
+                      total_discount: String(Number(viewInvoice.discountAmount || viewInvoice.discount || 0)),
+                      grand_total: String(Number(viewInvoice.total || 0)),
+                      payable_amount: String(Number(viewInvoice.netReceivable || viewInvoice.total || 0)),
+                      tds_amount: String(Number(viewInvoice.tdsAmount || 0)),
+                      shipping_charges: String(Number(viewInvoice.shipping || 0)),
+                    }}
+                    discountLabel={Number(viewInvoice.discountAmount || viewInvoice.discount || 0) > 0 ? 'Discount' : undefined}
+                  />
                 </div>
               ) : (
                 <div className="text-center text-gray-500 py-20">Failed to load details.</div>

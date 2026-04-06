@@ -46,6 +46,7 @@ export const invoiceService = {
                 terms: string;
                 currencyCode: string;
                 taxLabel: string;
+                defaultGstRate?: number;
                 dueDays: number;
                 isGstRegistered: boolean;
                 businessType: string;

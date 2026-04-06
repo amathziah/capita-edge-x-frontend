@@ -154,7 +154,21 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
     const [logo, setLogo] = useState<string | null>(null);
 
     // ─── Invoice Data ──────────────────────────────────────────────────
-    const [seller, setSeller] = useState<Seller>({ name: "", phone: "", email: "", address: "", taxId: "", upiId: "" });
+    const [seller, setSeller] = useState<Seller>({
+        name: "",
+        phone: "",
+        email: "",
+        address: "",
+        taxId: "",
+        upiId: "",
+        paymentQrUrl: "",
+        bankName: "",
+        accountNumber: "",
+        ifscCode: "",
+        terms: "",
+        includeSignature: false,
+        signatureName: "",
+    });
     const [buyer, setBuyer] = useState<Buyer>({ name: "", phone: "", email: "", address: "", taxId: "" });
     const [notes, setNotes] = useState<string>("");
     const [meta, setMeta] = useState<InvoiceMeta>({
@@ -282,7 +296,21 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
                 date: editingInvoice.date || new Date().toISOString().split("T")[0],
                 dueDate: editingInvoice.dueDate || new Date().toISOString().split("T")[0],
             });
-            setSeller(editingInvoice.seller || { name: "", phone: "", email: "", address: "", taxId: "", upiId: "" });
+            setSeller({
+                name: editingInvoice.seller?.name || "",
+                phone: editingInvoice.seller?.phone || "",
+                email: editingInvoice.seller?.email || "",
+                address: editingInvoice.seller?.address || "",
+                taxId: editingInvoice.seller?.taxId || "",
+                upiId: editingInvoice.seller?.upiId || "",
+                paymentQrUrl: editingInvoice.seller?.paymentQrUrl || "",
+                bankName: editingInvoice.seller?.bankName || "",
+                accountNumber: editingInvoice.seller?.accountNumber || "",
+                ifscCode: editingInvoice.seller?.ifscCode || "",
+                terms: editingInvoice.seller?.terms || "",
+                includeSignature: Boolean(editingInvoice.seller?.includeSignature),
+                signatureName: editingInvoice.seller?.signatureName || "",
+            });
             setBuyer(editingInvoice.buyer || { name: "", phone: "", email: "", address: "", taxId: "" });
             if (editingInvoice.notes) setNotes(editingInvoice.notes);
             setItems(editingInvoice.items?.length ? (editingInvoice.items as InvoiceItem[]).map((i: InvoiceItem) => ({ ...i, unit: i.unit || 'Qty' })) : [{ description: "", quantity: 1, unit: config.defaultUnit, price: undefined, discount: undefined }]);
@@ -316,14 +344,28 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         dataService.getSettings().then(settings => {
             if (settings.logoFilename) setLogo(dataService.getLogoUrl(settings.logoFilename));
             if (!editingInvoice) {
+                const savedTaxId = settings.companyTaxId || settings.gstin || "";
+                const savedTaxRate = Number(settings.defaultGstRate);
+                const resolvedTaxRate = Number.isFinite(savedTaxRate) && savedTaxRate >= 0
+                    ? savedTaxRate
+                    : config.defaultTaxRate;
                 setSeller({
-                    name: settings.businessName || "",
+                    name: settings.owner_name || settings.businessName || "",
                     phone: settings.phone || "",
                     email: settings.email || "",
                     address: settings.address || "",
-                    taxId: settings.companyTaxId || "",
-                    upiId: settings.upiId || ""
+                    taxId: savedTaxId,
+                    upiId: settings.upiId || "",
+                    paymentQrUrl: settings.paymentQrFilename ? dataService.getPaymentQrUrl(settings.paymentQrFilename) : "",
+                    bankName: settings.bankName || "",
+                    accountNumber: settings.bankAccountNumber || "",
+                    ifscCode: settings.bankIfsc || "",
+                    terms: settings.paymentInstructions || "",
+                    includeSignature: Boolean(settings.owner_name || settings.businessName),
+                    signatureName: settings.owner_name || settings.businessName || "",
                 });
+                setIsGstRegistered(Boolean(savedTaxId));
+                setTaxRate(Boolean(savedTaxId) ? resolvedTaxRate : 0);
             }
         }).catch(e => console.error("Failed to load settings", e));
 

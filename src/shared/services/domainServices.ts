@@ -38,6 +38,12 @@ export const settingService = {
         const formData = new FormData();
         formData.append('logo', file);
         return api.post<{ filename: string, url: string }>(ENDPOINTS.UPLOAD_LOGO, formData);
+    },
+
+    uploadPaymentQr: (file: File) => {
+        const formData = new FormData();
+        formData.append('paymentQr', file);
+        return api.post<{ filename: string, url: string }>(ENDPOINTS.UPLOAD_PAYMENT_QR, formData);
     }
 };
 

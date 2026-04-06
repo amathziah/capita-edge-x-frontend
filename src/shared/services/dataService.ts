@@ -108,9 +108,14 @@ class DataService {
 
   // Upload
   uploadLogo = settingService.uploadLogo;
+  uploadPaymentQr = settingService.uploadPaymentQr;
   getLogoUrl = (filename?: string) => {
     if (!filename) return '';
     return `${API_URL}${ENDPOINTS.LOGO_URL(filename)}`;
+  };
+  getPaymentQrUrl = (filename?: string) => {
+    if (!filename) return '';
+    return `${API_URL}${ENDPOINTS.PAYMENT_QR_URL(filename)}`;
   };
 
   // Cache for analytics and AI

@@ -9,11 +9,12 @@ import { CURRENCIES, TAX_LABELS, UNITS } from './constants';
 import { numberToIndianWords } from './utils';
 import { autoSuggestSac } from '../../lib/sacDatabase';
 import { Toast } from '../Toast';
+import { InvoiceDocumentPreview } from '../../features/invoices/components/InvoiceDocumentPreview';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Plus, X, ChevronDown, User, Calendar, MapPin, 
     CreditCard, FileText, Mail, Search, Trash2, 
-    Smartphone, Banknote
+    Smartphone, Banknote, StickyNote
 } from 'lucide-react';
 
 /* ─── Interfaces ───────────────────────────────────────────────────────── */
@@ -93,6 +94,11 @@ const SectionCard = ({ title, children, icon: Icon, action, className = '' }: Se
         </div>
     </div>
 );
+
+const formatPreviewAmount = (value: number) => value.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+});
 
 /* ─── Main Component ───────────────────────────────────────────────────── */
 
@@ -174,7 +180,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         isGstRegistered, setIsGstRegistered,
         dispatchDate, setDispatchDate,
         items, setItems, taxRate, setTaxRate,
-        subtotal, taxAmount, total,
+        subtotal, taxAmount, total, tdsAmount, netReceivable,
         activeAction, loading,
         isEmailModalOpen, setIsEmailModalOpen, emailTo, setEmailTo,
         toast, setToast,
@@ -362,7 +368,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                     </button>
                     <div>
                         <h1 className="text-xl font-black text-gray-900 tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
-                            {fetchedInvoice ? 'Edit Proforma' : 'Create New Invoice'}
+                            {fetchedInvoice ? 'Edit Invoice' : 'Create New Invoice'}
                         </h1>
                         <p className="text-[10px] font-bold text-teal-600/70 uppercase tracking-widest mt-0.5">Financial Operations Control</p>
                     </div>
@@ -374,7 +380,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                         {activeAction === 'saving' ? 'Saving...' : 'Save Draft'}
                     </button>
                     <button onClick={actions.handleSaveAndDownload} disabled={loading} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-white text-sm font-black shadow-lg shadow-teal-500/25 hover:from-teal-600 hover:to-teal-700 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                        {activeAction === 'downloading' ? 'Generating...' : fetchedInvoice ? 'Update & Download' : 'Generate Proforma'}
+                        {activeAction === 'downloading' ? 'Generating...' : fetchedInvoice ? 'Update & Download' : 'Generate Invoice'}
                     </button>
                 </div>
             </div>
@@ -404,7 +410,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                             </div>
                         </div>
                         <div className="flex justify-end items-end gap-3 pb-1">
-                            <Toggle label="Notes" value={showNotes} onChange={setShowNotes} />
+                            <Toggle label="Notes & terms" value={showNotes} onChange={setShowNotes} />
                         </div>
                     </div>
 
@@ -586,24 +592,47 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                             </div>
                         </SectionCard>
 
-                        {/* Section: Additional Details */}
-                        <SectionCard title="Additional Context" icon={FileText}>
-                             <div className="space-y-4">
-                                {showNotes && (
-                                    <InputWrapper label="Internal Notes & Footers">
-                                        <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Bank details, terms, etc." className={`${commonInputClass} resize-none`} />
+                        <SectionCard title="Notes & terms" icon={StickyNote}>
+                            {showNotes ? (
+                                <div className="space-y-4">
+                                    <InputWrapper label="Notes (shown on invoice)">
+                                        <textarea
+                                            rows={3}
+                                            value={notes}
+                                            onChange={e => setNotes(e.target.value)}
+                                            placeholder="Payment terms, thank-you message…"
+                                            className={`${commonInputClass} resize-none`}
+                                        />
                                     </InputWrapper>
-                                )}
-                                <div className="flex items-center justify-between p-4 bg-teal-50/20 rounded-2xl border border-teal-100/50">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-white rounded-lg border border-teal-100/60 shadow-sm">
-                                            <CreditCard size={14} className="text-teal-600" />
-                                        </div>
-                                        <span className="text-[11px] font-black text-gray-600 uppercase tracking-wider">GST Registered</span>
-                                    </div>
-                                    <Toggle value={isGstRegistered} onChange={v => { setIsGstRegistered(v); setTaxRate(v ? 18 : 0); }} />
+                                    <InputWrapper label="Terms & conditions">
+                                        <textarea
+                                            rows={3}
+                                            value={seller.terms || ''}
+                                            onChange={e => setSeller({ ...seller, terms: e.target.value })}
+                                            placeholder="e.g. Payment due within 15 days of invoice date."
+                                            className={`${commonInputClass} resize-none`}
+                                        />
+                                    </InputWrapper>
                                 </div>
-                             </div>
+                            ) : (
+                                <p className="text-sm text-gray-400 leading-relaxed">
+                                    Enable notes and terms above to add invoice notes, payment terms, and footer details.
+                                </p>
+                            )}
+                        </SectionCard>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <SectionCard title="Additional Context" icon={FileText}>
+                            <div className="flex items-center justify-between p-4 bg-teal-50/20 rounded-2xl border border-teal-100/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-white rounded-lg border border-teal-100/60 shadow-sm">
+                                        <CreditCard size={14} className="text-teal-600" />
+                                    </div>
+                                    <span className="text-[11px] font-black text-gray-600 uppercase tracking-wider">GST Registered</span>
+                                </div>
+                                <Toggle value={isGstRegistered} onChange={v => { setIsGstRegistered(v); setTaxRate(v ? (taxRate || 18) : 0); }} />
+                            </div>
                         </SectionCard>
                     </div>
 
@@ -622,95 +651,38 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-10 custom-scrollbar relative z-10 flex justify-center items-start overflow-x-hidden">
-                        {/* THE DOCUMENT */}
-                        <div className="w-full max-w-[400px] bg-white rounded-[2rem] border border-teal-100/60 shadow-[0_20px_50px_rgba(20,184,166,0.1)] overflow-hidden scale-[0.85] origin-top">
-                            {/* Branding Info */}
-                            <div className="p-8 bg-gradient-to-br from-teal-500 to-teal-700 text-white flex justify-between items-start">
-                                <div className="text-left">
-                                    <h2 className="text-2xl font-black tracking-tighter">PROFORMA</h2>
-                                    <p className="text-[10px] font-bold opacity-80 mt-1 uppercase tracking-[0.2em]">{meta.number || 'P-0001'}</p>
-                                </div>
-                                {logo && (
-                                    <img src={logo} alt="logo" className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md p-1 object-contain" />
-                                )}
-                            </div>
-
-                            <div className="p-8 space-y-8 text-left">
-                                {/* Bill To/From */}
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div className="text-left">
-                                        <h4 className="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-2">Billed To</h4>
-                                        <p className="text-xs font-black text-gray-900 leading-tight">{buyer.name || 'Untitled Client'}</p>
-                                        <p className="text-[10px] text-gray-400 font-medium mt-1 leading-relaxed line-clamp-3">{buyer.address || 'Address pending'}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <h4 className="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-2">Issue Date</h4>
-                                        <p className="text-xs font-black text-gray-900">{formatDate(meta.date || '')}</p>
-                                        <h4 className="text-[9px] font-black text-teal-600 uppercase tracking-widest mt-4 mb-2">Due Date</h4>
-                                        <p className="text-xs font-black text-gray-900">{formatDate(meta.dueDate || '')}</p>
-                                    </div>
-                                </div>
-
-                                {/* Items */}
-                                <div className="space-y-4">
-                                    <div className="flex justify-between border-b-2 border-gray-900 pb-2 text-[10px] font-black uppercase tracking-widest">
-                                        <span>Description</span>
-                                        <span>Amount</span>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {items.length === 0 ? (
-                                            <div className="py-4 border-b border-gray-50 flex justify-between items-center opacity-30">
-                                                <span className="text-[11px] italic">Sample Line Item #1</span>
-                                                <span className="font-bold text-xs">{currency.symbol}0.00</span>
-                                            </div>
-                                        ) : items.map((item, idx) => {
-                                            const amt = (item.quantity || 0) * (item.price || 0) * (1 - (item.discount || 0) / 100);
-                                            return (
-                                                <div key={idx} className="flex justify-between items-start pt-1">
-                                                    <div className="max-w-[180px] text-left">
-                                                        <p className="text-[11px] font-bold text-gray-900">{item.description || 'Untitled Service'}</p>
-                                                        {item.quantity > 1 && <p className="text-[9px] text-teal-600 font-bold mt-0.5">{item.quantity} units</p>}
-                                                    </div>
-                                                    <span className="font-black text-xs text-gray-900">{currency.symbol}{amt.toLocaleString()}</span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Totals */}
-                                <div className="border-t-2 border-gray-900/5 pt-6 space-y-2 text-left">
-                                    <div className="flex justify-between text-[11px] font-bold text-gray-400">
-                                        <span>Subtotal</span>
-                                        <span>{currency.symbol}{subtotal.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between text-[11px] font-black text-teal-600">
-                                        <span>Taxation ({taxRate}%)</span>
-                                        <span>{currency.symbol}{taxAmount.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between pt-4 pb-2">
-                                        <span className="text-xs font-black text-gray-900 uppercase">Grand Total</span>
-                                        <span className="text-2xl font-black text-gray-900 tracking-tighter">{currency.symbol}{total.toLocaleString()}</span>
-                                    </div>
-                                </div>
-
-                                {/* Words */}
-                                {currency.code === 'INR' && total > 0 && (
-                                    <div className="pt-2 text-left">
-                                        <p className="text-[8px] font-black text-teal-600/50 uppercase tracking-[0.2em] mb-1">Total in words</p>
-                                        <p className="text-[10px] font-bold italic text-gray-400 leading-tight">
-                                            {numberToIndianWords(total)} Only
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Footer Art */}
-                            <div className="mt-8 relative overflow-hidden h-24 flex items-center justify-center">
-                                <div className="absolute inset-0 bg-teal-50 group-hover:bg-teal-100/50 transition-colors" />
-                                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-teal-200 to-transparent" />
-                                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-teal-400 opacity-20 blur-3xl rounded-full" />
-                            </div>
+                        <div className="w-full max-w-[520px] rounded-[2rem] border border-teal-100/60 shadow-[0_20px_50px_rgba(20,184,166,0.1)] overflow-hidden">
+                            <InvoiceDocumentPreview
+                                invoice={{
+                                    invoiceNumber: meta.number,
+                                    date: meta.date,
+                                    dueDate: meta.dueDate,
+                                    fromName: seller.name,
+                                    fromAddress: seller.address,
+                                    fromGstin: seller.taxId,
+                                    customerName: buyer.name,
+                                    customerEmail: buyer.email,
+                                    customerAddress: buyer.address,
+                                    customerGstin: buyer.taxId,
+                                    isGstRegistered,
+                                    isInterstate: state.resolvedGstType === 'igst',
+                                    taxRate,
+                                    tdsRate: state.tdsRate,
+                                    shipping,
+                                    bankName: seller.bankName,
+                                    accountNumber: seller.accountNumber,
+                                    ifscCode: seller.ifscCode,
+                                    upiId: seller.upiId,
+                                    paymentQrUrl: seller.paymentQrUrl,
+                                    notes,
+                                    terms: seller.terms,
+                                    includeSignature: seller.includeSignature,
+                                    signatureName: seller.signatureName,
+                                    items,
+                                }}
+                                calcResult={state.calcResult}
+                                discountLabel={state.discountAmount ? 'Discount' : undefined}
+                            />
                         </div>
                     </div>
                 </div>
