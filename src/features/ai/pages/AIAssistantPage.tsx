@@ -251,6 +251,10 @@ function ChatBubble({
   const isBot = msg.sender === 'bot';
   const isStreaming = isBot && msg.status === 'streaming';
   const isPendingAction = msg.data?.type === 'action_prompt';
+  const actionPromptMessage =
+    isPendingAction && typeof msg.data?.action?.confirmationMessage === 'string'
+      ? msg.data.action.confirmationMessage
+      : null;
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -382,25 +386,38 @@ function ChatBubble({
 
             {/* Action prompt */}
             {isPendingAction && (
-              <div className="mt-4 flex items-center gap-2">
-                <button
-                  onClick={onConfirmAction}
-                  className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all hover:scale-[1.02] active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #2dd4bf, #06b6d4)', color: '#0c0f1a' }}
-                >
-                  Go ahead →
-                </button>
-                <button
-                  onClick={onCancelAction}
-                  className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all hover:bg-white/10"
-                  style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    color: 'rgba(255,255,255,0.6)',
-                  }}
-                >
-                  Cancel
-                </button>
+              <div className="mt-4 space-y-3">
+                {actionPromptMessage && (
+                  <div
+                    className="rounded-xl px-3 py-2 text-[12px] font-medium text-teal-100"
+                    style={{
+                      background: 'rgba(45,212,191,0.08)',
+                      border: '1px solid rgba(45,212,191,0.15)',
+                    }}
+                  >
+                    {actionPromptMessage}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={onConfirmAction}
+                    className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all hover:scale-[1.02] active:scale-95"
+                    style={{ background: 'linear-gradient(135deg, #2dd4bf, #06b6d4)', color: '#0c0f1a' }}
+                  >
+                    Go ahead →
+                  </button>
+                  <button
+                    onClick={onCancelAction}
+                    className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all hover:bg-white/10"
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      color: 'rgba(255,255,255,0.6)',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -786,6 +803,10 @@ export function AIAssistantPage() {
 
         } else if (event.type === 'complete') {
           setIsThinking(false);
+          const resolvedText =
+            (typeof event.text === 'string' && event.text.trim().length > 0)
+              ? event.text
+              : (typeof event.action?.confirmationMessage === 'string' ? event.action.confirmationMessage : accumulatedText);
 
           // If we never created a bubble (e.g. only gen_ui events, no tokens), create it now
           if (!botMsgId) {
@@ -799,7 +820,7 @@ export function AIAssistantPage() {
                   m.id === botMsgId
                     ? {
                         ...m,
-                        text: event.text ?? accumulatedText,
+                        text: resolvedText,
                         data: event.action
                           ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
                           : event.data,
@@ -816,7 +837,7 @@ export function AIAssistantPage() {
                   {
                     id: botMsgId,
                     sender: 'bot',
-                    text: event.text ?? accumulatedText,
+                    text: resolvedText,
                     timestamp: new Date(),
                     status: 'sent',
                     data: event.action
@@ -948,7 +969,7 @@ export function AIAssistantPage() {
 
       setPendingAction(null);
       setMessages(prev => [
-        ...prev,
+        ...prev.filter(m => m.data?.type !== 'action_prompt'),
         {
           id: `action_done_${Date.now()}`,
           sender: 'bot',
