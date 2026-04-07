@@ -11,6 +11,7 @@ import type { Components } from 'react-markdown';
 import * as LucideIcons from 'lucide-react';
 import { GENERAL_CHAT_STEPS } from '@/utils/aiLoadingSteps';
 import { AIWorkspaceRenderer } from '../components/AIWorkspaceRenderer';
+import { AIDomainChoiceCard } from '../components/AIDomainChoiceCard';
 
 const IconMap: Record<string, any> = {
   TrendingUp: LucideIcons.TrendingUp,
@@ -43,9 +44,78 @@ interface Message {
     candidatesTokenCount: number;
     totalTokenCount: number;
   };
+  intent?: string;
+  domain?: string;
+  specialistLabel?: string;
+  provenance?: Array<{ tool?: string; source?: string | null; generated_at?: string | null }>;
 }
 
 const TEAL = '#2dd4bf';
+const AUTO_CLEAR_HISTORY_KEY = 'capita_ai_auto_clear_history';
+const LAST_ACTIVE_KEY = 'capita_ai_last_active_at';
+
+const INTENT_LABELS: Record<string, string> = {
+  conversational: 'Conversation',
+  business_health: 'Business Health',
+  cash_flow: 'Cash Flow',
+  payments_recent: 'Recent Payments',
+  invoices_attention: 'Invoice Attention',
+  expenses_spend: 'Expenses',
+  compliance_status: 'Compliance',
+  compliance_knowledge: 'Compliance Knowledge',
+  customer_insights: 'Customer Insights',
+  action_request: 'Action',
+  general_advice: 'General Advice',
+};
+
+const DOMAIN_LABELS: Record<string, string> = {
+  invoices: 'Invoices',
+  payments: 'Payments',
+  expenses: 'Expenses',
+  compliance: 'Compliance',
+  finance: 'Finance',
+  customers: 'Customers',
+  actions: 'Actions',
+  general: 'General',
+};
+
+const getIntentLabel = (intent?: string | null) => {
+  if (!intent) return 'General Advice';
+  return INTENT_LABELS[intent] || intent;
+};
+
+const getDomainLabel = (domain?: string | null) => {
+  if (!domain) return 'Finance';
+  return DOMAIN_LABELS[domain] || domain;
+};
+
+const getComposerPlaceholder = (domain?: string | null) => {
+  switch (domain) {
+    case 'invoices':
+      return 'Ask about overdue invoices, collections, or receivables…';
+    case 'payments':
+      return 'Ask about recent payments, receipts, or reconciliation…';
+    case 'expenses':
+      return 'Ask about spend, categories, or cost control…';
+    case 'compliance':
+      return 'Ask about GST, filings, or compliance tasks…';
+    default:
+      return 'Ask about invoices, payments, expenses, or compliance…';
+  }
+};
+
+const sanitizeAssistantText = (text: string) => {
+  const cleaned = String(text ?? '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .filter((line) => {
+      const trimmed = line.trim();
+      return trimmed !== '0' && trimmed !== '';
+    })
+    .join('\n')
+    .trim();
+  return cleaned;
+};
 
 const formatTime = (d: any) => {
   const date = d instanceof Date ? d : new Date(d);
@@ -229,8 +299,28 @@ function SidebarActionCard({
 }
 
 // ─── Generative UI Renderer ───────────────────────────────────────────────────
-function GenerativeUIRenderer({ component, data }: { component: string; data: any }) {
-  return <AIWorkspaceRenderer component={component} data={data} />;
+function GenerativeUIRenderer({
+  component,
+  data,
+  onSelectView,
+  onAction,
+  isLoadingView,
+}: {
+  component: string;
+  data: any;
+  onSelectView?: (viewId: string) => void;
+  onAction?: (action: any) => void;
+  isLoadingView?: boolean;
+}) {
+  return (
+    <AIWorkspaceRenderer
+      component={component}
+      data={data}
+      onSelectView={onSelectView}
+      onAction={onAction}
+      isLoadingView={isLoadingView}
+    />
+  );
 }
 
 // ─── Streaming cursor — rendered as a React element, never injected into text ─
@@ -243,10 +333,18 @@ function ChatBubble({
   msg,
   onConfirmAction,
   onCancelAction,
+  onSelectGuidedChoice,
+  onSelectWorkspaceView,
+  onExecuteGuidedAction,
+  disableGuidedChoice,
 }: {
   msg: Message;
   onConfirmAction?: () => void;
   onCancelAction?: () => void;
+  onSelectGuidedChoice?: (choice: any) => void;
+  onSelectWorkspaceView?: (message: Message, viewId: string) => void;
+  onExecuteGuidedAction?: (action: any) => void;
+  disableGuidedChoice?: boolean;
 }) {
   const isBot = msg.sender === 'bot';
   const isStreaming = isBot && msg.status === 'streaming';
@@ -258,7 +356,7 @@ function ChatBubble({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(msg.text);
+    navigator.clipboard.writeText(sanitizeAssistantText(msg.text));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -337,21 +435,6 @@ function ChatBubble({
           )}
 
           <div className={`px-4 ${isBot ? 'pt-0.5 pb-3.5' : 'py-2.5'}`}>
-            {/* Generative UI card */}
-            {msg.uiBlocks && msg.uiBlocks.length > 0 && (
-              <div className="mb-4 mt-2 space-y-3">
-                {msg.uiBlocks.map((block, index) => (
-                  <GenerativeUIRenderer key={`${block.component}_${index}`} component={block.component} data={block.data} />
-                ))}
-              </div>
-            )}
-
-            {!msg.uiBlocks?.length && msg.uiComponent && (
-              <div className="mb-4 mt-2">
-                <GenerativeUIRenderer component={msg.uiComponent} data={msg.uiData} />
-              </div>
-            )}
-
             {/* Text content */}
             <div className={isBot ? 'text-gray-300' : 'text-gray-100'}>
               {isWaitingForFirstToken ? (
@@ -360,7 +443,7 @@ function ChatBubble({
               ) : msg.text.length > 0 ? (
                 <>
                   <ReactMarkdown components={isBot ? botMd : userMd}>
-                    {msg.text}
+                    {sanitizeAssistantText(msg.text)}
                   </ReactMarkdown>
                   {/* Cursor is a React element — never touches the markdown string */}
                   {isStreaming && <StreamingCursor />}
@@ -368,8 +451,82 @@ function ChatBubble({
               ) : (msg.uiBlocks?.length || msg.uiComponent) ? (
                 // UI component rendered above, text is empty — still show cursor if streaming
                 isStreaming ? <StreamingCursor /> : null
-              ) : null}
+                ) : null}
             </div>
+
+            {/* Generative UI card */}
+            {msg.uiBlocks && msg.uiBlocks.length > 0 && (
+              <div className="mt-4 space-y-3">
+                {msg.uiBlocks.map((block, index) => (
+                  <GenerativeUIRenderer
+                    key={`${block.component}_${index}`}
+                    component={block.component}
+                    data={block.data}
+                    isLoadingView={msg.status === 'streaming'}
+                    onAction={onExecuteGuidedAction}
+                    onSelectView={
+                      msg.data?.type === 'workspace_view' && onSelectWorkspaceView
+                        ? (viewId) => onSelectWorkspaceView(msg, viewId)
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            )}
+
+            {!msg.uiBlocks?.length && msg.uiComponent && (
+              <div className="mt-4">
+                <GenerativeUIRenderer
+                  component={msg.uiComponent}
+                  data={msg.uiData}
+                  isLoadingView={msg.status === 'streaming'}
+                  onAction={onExecuteGuidedAction}
+                  onSelectView={
+                    msg.data?.type === 'workspace_view' && onSelectWorkspaceView
+                      ? (viewId) => onSelectWorkspaceView(msg, viewId)
+                      : undefined
+                  }
+                />
+              </div>
+            )}
+
+            {isBot && Boolean(msg.intent || msg.domain || msg.specialistLabel || msg.provenance?.length) && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {msg.specialistLabel && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[8px] font-black uppercase tracking-[0.18em] text-gray-300">
+                    {msg.specialistLabel}
+                  </span>
+                )}
+                {msg.domain && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-[8px] font-black uppercase tracking-[0.18em] text-sky-300">
+                    {getDomainLabel(msg.domain)}
+                  </span>
+                )}
+                {msg.intent && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-[8px] font-black uppercase tracking-[0.18em] text-teal-300">
+                    {INTENT_LABELS[msg.intent] || msg.intent}
+                  </span>
+                )}
+                {msg.provenance?.slice(0, 2).map((entry, index) => (
+                  <span
+                    key={`${entry.tool || 'source'}_${index}`}
+                    className="inline-flex items-center px-2 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[8px] font-black uppercase tracking-[0.18em] text-gray-400"
+                    title={entry.source || entry.tool || 'source'}
+                  >
+                    {entry.tool || 'Source'}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {isBot && msg.data?.type === 'guided_choice' && onSelectGuidedChoice && (
+              <AIDomainChoiceCard
+                data={msg.data}
+                disabled={disableGuidedChoice}
+                onSelect={onSelectGuidedChoice}
+                onAction={onExecuteGuidedAction}
+              />
+            )}
 
             {/* Stat chip */}
             {msg.data?.type === 'stat' && (
@@ -471,6 +628,25 @@ function ThinkingSkeleton({ step }: { step: string }) {
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyState() {
+  const capabilities = [
+    {
+      label: 'Invoices',
+      summary: 'Overdue queue, outstanding amounts, full invoice table, and create invoice.',
+    },
+    {
+      label: 'Payments',
+      summary: 'Recent receipts, this month collections, and pending payment items.',
+    },
+    {
+      label: 'Expenses',
+      summary: 'Spend analysis, recent expenses, and top categories.',
+    },
+    {
+      label: 'Compliance',
+      summary: 'Urgent tasks, due-this-week items, and overdue compliance work.',
+    },
+  ];
+
   return (
     <div className="flex flex-col items-center justify-center h-full py-16 px-8 text-center select-none">
       <div className="relative mb-5">
@@ -492,8 +668,23 @@ function EmptyState() {
       </div>
       <h3 className="text-white font-bold text-[15px] mb-2 tracking-tight">Hey, I'm Capita</h3>
       <p className="text-gray-500 text-[12px] leading-relaxed max-w-xs">
-        Ask about invoices, payments, expenses, or compliance and I will answer from your live workspace data.
+        Ask a question, then choose a workspace. I only open invoices, payments, expenses, and compliance with live backend data.
       </p>
+      <div className="mt-5 grid gap-2 md:grid-cols-2 max-w-2xl w-full">
+        {capabilities.map((item) => (
+          <div
+            key={item.label}
+            className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-3 text-left"
+          >
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-300">
+              {item.label}
+            </div>
+            <div className="mt-1 text-[11px] leading-relaxed text-gray-500">
+              {item.summary}
+            </div>
+          </div>
+        ))}
+      </div>
       <div className="mt-5 flex items-center gap-2">
         <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
         <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Ready to help</span>
@@ -524,9 +715,17 @@ export function AIAssistantPage() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isConversationLoading, setIsConversationLoading] = useState(false);
   const [isChatReady, setIsChatReady] = useState(false);
+  const [autoClearHistory, setAutoClearHistory] = useState(() => {
+    try {
+      return localStorage.getItem(AUTO_CLEAR_HISTORY_KEY) !== 'false';
+    } catch {
+      return true;
+    }
+  });
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
 
   /**
    * isThinking  — waiting for the first token (show skeleton)
@@ -551,6 +750,7 @@ export function AIAssistantPage() {
   const activeStreamRequestRef = useRef(0);
   const messagesRef = useRef<Message[]>([]);
   const currentConversationIdRef = useRef<string | null>(null);
+  const hasLocalInteractionRef = useRef(false);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -587,15 +787,69 @@ export function AIAssistantPage() {
     setIsThinking(false);
   }, []);
 
-  const resetChatContext = useCallback(() => {
+  const noteLocalInteraction = useCallback(() => {
+    hasLocalInteractionRef.current = true;
+  }, []);
+
+  const canApplyBootstrapState = useCallback(() => {
+    return !hasLocalInteractionRef.current
+      && messagesRef.current.length === 0
+      && !currentConversationIdRef.current;
+  }, []);
+
+  const resetChatContext = useCallback((options?: { invalidateBootstrap?: boolean }) => {
+    const invalidateBootstrap = options?.invalidateBootstrap !== false;
     cancelActiveStream();
-    historyLoadRequestRef.current += 1;
+    if (invalidateBootstrap) {
+      historyLoadRequestRef.current += 1;
+    }
     setPendingAction(null);
     setMessages([]);
     messagesRef.current = [];
     setCurrentConversationId(null);
     currentConversationIdRef.current = null;
   }, [cancelActiveStream]);
+
+  const getTodayKey = useCallback(() => new Date().toISOString().slice(0, 10), []);
+
+  const loadFreshChatState = useCallback((options?: { invalidateBootstrap?: boolean }) => {
+    resetChatContext(options);
+    setShowHistory(false);
+  }, [resetChatContext]);
+
+  const clearPersistedChatHistory = useCallback(async () => {
+    noteLocalInteraction();
+    resetChatContext();
+    await aiService.deleteHistory();
+    const sessions = await aiService.getConversations();
+    setConversations(sessions as any[]);
+  }, [noteLocalInteraction, resetChatContext]);
+
+  const persistAutoClearHistory = useCallback((value: boolean) => {
+    setAutoClearHistory(value);
+    try {
+      localStorage.setItem(AUTO_CLEAR_HISTORY_KEY, String(value));
+    } catch {
+      // Ignore storage failures.
+    }
+  }, []);
+
+  const markChatActive = useCallback(() => {
+    try {
+      localStorage.setItem(LAST_ACTIVE_KEY, new Date().toISOString());
+    } catch {
+      // ignore storage failures
+    }
+  }, []);
+
+  const exitAssistant = useCallback(() => {
+    navigate('/dashboard');
+    if (autoClearHistory) {
+      void clearPersistedChatHistory().catch((err) => {
+        console.error('Failed to clear chat on exit:', err);
+      });
+    }
+  }, [autoClearHistory, clearPersistedChatHistory, navigate]);
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -608,22 +862,39 @@ export function AIAssistantPage() {
         if (historyLoadRequestRef.current !== requestId) return;
         setDynamicConfig(config as any);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+        setIsChatReady(true);
 
         const sessions = await aiService.getConversations();
         if (historyLoadRequestRef.current !== requestId) return;
         setConversations(sessions as any[]);
 
-        if (!currentConversationId) {
-          const history = await aiService.getHistory();
-          if (historyLoadRequestRef.current !== requestId) return;
-          if (Array.isArray(history) && history.length > 0) {
-            setMessages(
-              history.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
-            );
-            // Scroll to bottom after setting messages
-            setTimeout(() => scrollToBottom(), 100);
+        if (canApplyBootstrapState()) {
+          let lastActiveAt: Date | null = null;
+          try {
+            const raw = localStorage.getItem(LAST_ACTIVE_KEY);
+            lastActiveAt = raw ? new Date(raw) : null;
+          } catch {
+            lastActiveAt = null;
+          }
+
+          const isSameDay = Boolean(lastActiveAt)
+            && lastActiveAt!.toISOString().slice(0, 10) === getTodayKey();
+
+          if (isSameDay) {
+            const history = await aiService.getHistory();
+            if (historyLoadRequestRef.current !== requestId) return;
+            if (!canApplyBootstrapState()) return;
+            if (Array.isArray(history) && history.length > 0) {
+              setMessages(
+                history.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
+              );
+              setShowHistory(false);
+              setTimeout(() => scrollToBottom(), 100);
+            } else {
+              loadFreshChatState({ invalidateBootstrap: false });
+            }
           } else {
-            setMessages([]);
+            loadFreshChatState({ invalidateBootstrap: false });
           }
         }
       } catch (err) {
@@ -638,7 +909,29 @@ export function AIAssistantPage() {
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [businessType, STORAGE_KEY]);
+  }, [businessType, STORAGE_KEY, canApplyBootstrapState, getTodayKey, loadFreshChatState, scrollToBottom]);
+
+  useEffect(() => {
+    return () => {
+      if (!autoClearHistory) return;
+      void clearPersistedChatHistory().catch((err) => {
+        console.error('Failed to auto-clear chat on unmount:', err);
+      });
+    };
+  }, [autoClearHistory, clearPersistedChatHistory]);
+
+  useEffect(() => {
+    if (!autoClearHistory) return;
+    const handleBeforeUnload = () => {
+      try {
+        localStorage.removeItem(LAST_ACTIVE_KEY);
+      } catch {
+        // ignore storage failures
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [autoClearHistory]);
 
   // ── Auto-scroll on new messages ──────────────────────────────────────────
   useEffect(() => {
@@ -676,9 +969,11 @@ export function AIAssistantPage() {
   // ── Send message ──────────────────────────────────────────────────────────
   const handleSend = async (textOverride?: string) => {
     const text = (textOverride || query).trim();
-    if (!text || !isChatReady || isHistoryLoading || isConversationLoading) return;
+    if (!text || isConversationLoading) return;
 
+    noteLocalInteraction();
     cancelActiveStream();
+    setPendingAction(null);
     const streamRequestId = activeStreamRequestRef.current;
 
     const userMsg: Message = {
@@ -689,6 +984,7 @@ export function AIAssistantPage() {
       status: 'sent',
     };
     setMessages(prev => [...prev, userMsg]);
+    markChatActive();
     setQuery('');
     setIsThinking(true);
     
@@ -818,17 +1114,21 @@ export function AIAssistantPage() {
             prev.some(m => m.id === botMsgId)
               ? prev.map(m =>
                   m.id === botMsgId
-                    ? {
-                        ...m,
-                        text: resolvedText,
-                        data: event.action
-                          ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
-                          : event.data,
-                        usage: event.usage,
-                        status: 'sent',
-                        uiBlocks: pendingUiBlocks.length > 0 ? pendingUiBlocks : m.uiBlocks,
-                        uiComponent: pendingUiBlocks[0]?.component || m.uiComponent,
-                        uiData: pendingUiBlocks[0]?.data ?? m.uiData,
+                        ? {
+                            ...m,
+                            text: resolvedText,
+                            data: event.action
+                              ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
+                              : event.data,
+                            intent: event.data?.intent || m.intent,
+                            domain: event.data?.domain || m.domain,
+                            specialistLabel: event.data?.specialistLabel || m.specialistLabel,
+                            provenance: event.data?.provenance || m.provenance,
+                            usage: event.usage,
+                            status: 'sent',
+                            uiBlocks: pendingUiBlocks.length > 0 ? pendingUiBlocks : m.uiBlocks,
+                            uiComponent: pendingUiBlocks[0]?.component || m.uiComponent,
+                            uiData: pendingUiBlocks[0]?.data ?? m.uiData,
                       }
                     : m
                 )
@@ -843,6 +1143,10 @@ export function AIAssistantPage() {
                     data: event.action
                       ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
                       : event.data,
+                    intent: event.data?.intent,
+                    domain: event.data?.domain,
+                    specialistLabel: event.data?.specialistLabel,
+                    provenance: event.data?.provenance,
                     usage: event.usage,
                     uiBlocks: pendingUiBlocks,
                     uiComponent: pendingUiBlocks[0]?.component,
@@ -912,6 +1216,165 @@ export function AIAssistantPage() {
       }
     }
   };
+
+  const loadWorkspaceIntoMessage = useCallback(async ({
+    messageId,
+    domain,
+    view,
+    label,
+    specialistLabel,
+    mode,
+  }: {
+    messageId: string;
+    domain: string;
+    view?: string;
+    label?: string;
+    specialistLabel?: string;
+    mode: 'open' | 'switch';
+  }) => {
+    const normalizedDomain = String(domain || '').toLowerCase();
+    if (!normalizedDomain) return;
+
+    try {
+      const workspace = await aiService.getWorkspace(normalizedDomain, view);
+      const response = workspace as any;
+      const meta = response?.meta || {};
+      const selectedViewLabel = response?.availableViews?.find((entry: any) => entry.id === response?.selectedView)?.label
+        || response?.data?.availableViews?.find((entry: any) => entry.id === response?.data?.selectedView)?.label
+        || response?.data?.selectedView
+        || view
+        || 'overview';
+
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                text: mode === 'switch'
+                  ? `Showing ${selectedViewLabel} in the ${response?.label || label || normalizedDomain} with live backend data.`
+                  : `Showing the ${response?.label || label || normalizedDomain} with live backend data. Use the guided steps below to analyze it.`,
+                status: 'sent',
+                domain: response?.domain || normalizedDomain,
+                specialistLabel: response?.specialistLabel || specialistLabel,
+                provenance: meta?.source
+                  ? [{
+                      tool: response?.component || normalizedDomain,
+                      source: meta.source,
+                      generated_at: meta.generated_at || null,
+                    }]
+                  : [],
+                uiComponent: response?.component,
+                uiData: response?.data,
+                data: {
+                  type: 'workspace_view',
+                  meta,
+                },
+              }
+            : message
+        )
+      );
+    } catch (error) {
+      console.error('Failed to open AI workspace:', error);
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                text: '⚠️ I could not load that workspace. Please try again.',
+                status: 'error',
+              }
+            : message
+        )
+      );
+    }
+  }, []);
+
+  const openGuidedWorkspace = useCallback(async (choice: any) => {
+    const domain = String(choice?.domain || '').toLowerCase();
+    if (!domain || isBusy || isConversationLoading) return;
+
+    noteLocalInteraction();
+    cancelActiveStream();
+    setPendingAction(null);
+    markChatActive();
+    setShowHistory(false);
+
+    const userMessage: Message = {
+      id: `user_workspace_${Date.now()}_${Math.random()}`,
+      sender: 'user',
+      text: `Open ${choice?.label || domain}`,
+      timestamp: new Date(),
+      status: 'sent',
+    };
+    const botMessageId = `bot_workspace_${Date.now()}_${Math.random()}`;
+
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      {
+        id: botMessageId,
+        sender: 'bot',
+        text: `Loading ${choice?.shortLabel || domain} workspace from live backend data…`,
+        timestamp: new Date(),
+        status: 'streaming',
+        domain,
+        specialistLabel: choice?.specialistLabel,
+      },
+    ]);
+
+    setTimeout(() => scrollToBottom(), 50);
+
+    await loadWorkspaceIntoMessage({
+      messageId: botMessageId,
+      domain,
+      view: choice?.defaultView,
+      label: choice?.label,
+      specialistLabel: choice?.specialistLabel,
+      mode: 'open',
+    });
+  }, [cancelActiveStream, isBusy, isConversationLoading, loadWorkspaceIntoMessage, markChatActive, noteLocalInteraction, scrollToBottom]);
+
+  const handleGuidedAction = useCallback((action: any) => {
+    if (!action || isBusy) return;
+
+    if (action.type === 'navigate' && action.to) {
+      navigate(action.to);
+      return;
+    }
+
+    if (action.type === 'open_invoice_modal') {
+      window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail: action.data || {} }));
+    }
+  }, [isBusy, navigate]);
+
+  const handleWorkspaceViewChange = useCallback(async (message: Message, viewId: string) => {
+    const domain = String(message.domain || message.uiData?.workspaceDomain || '').toLowerCase();
+    if (!domain || !viewId || isConversationLoading || isBusy) return;
+
+    cancelActiveStream();
+    setPendingAction(null);
+
+    setMessages((prev) =>
+      prev.map((entry) =>
+        entry.id === message.id
+          ? {
+              ...entry,
+              text: `Loading ${viewId.replace(/_/g, ' ')} from live backend data…`,
+              status: 'streaming',
+            }
+          : entry
+      )
+    );
+
+    await loadWorkspaceIntoMessage({
+      messageId: message.id,
+      domain,
+      view: viewId,
+      label: message.uiData?.workspaceLabel,
+      specialistLabel: message.specialistLabel,
+      mode: 'switch',
+    });
+  }, [cancelActiveStream, isBusy, isConversationLoading, loadWorkspaceIntoMessage]);
 
   // ── Confirm / cancel pending action ──────────────────────────────────────
   const handleConfirmAction = () => {
@@ -1013,6 +1476,7 @@ export function AIAssistantPage() {
   // ── Load past conversation ────────────────────────────────────────────────
   const loadConversation = async (id: string) => {
     if (id === currentConversationId || isBusy || isConversationLoading) return;
+    noteLocalInteraction();
     const requestId = ++historyLoadRequestRef.current;
     try {
       cancelActiveStream();
@@ -1023,6 +1487,7 @@ export function AIAssistantPage() {
       const msgs = await aiService.getConversationMessages(id);
       if (historyLoadRequestRef.current !== requestId) return;
       setMessages((msgs as any[]).map(m => ({ ...m, timestamp: new Date(m.timestamp) })));
+      setShowHistory(false);
       setCurrentConversationId(id);
       currentConversationIdRef.current = id;
       setTimeout(() => scrollToBottom(), 50);
@@ -1039,10 +1504,8 @@ export function AIAssistantPage() {
   // ── Clear chat ────────────────────────────────────────────────────────────
   const clearChat = async () => {
     try {
-      resetChatContext();
-      await aiService.deleteHistory();
-      const sessions = await aiService.getConversations();
-      setConversations(sessions as any[]);
+      await clearPersistedChatHistory();
+      setShowHistory(false);
     } catch (err) {
       console.error('Failed to clear history:', err);
     }
@@ -1068,6 +1531,12 @@ export function AIAssistantPage() {
   };
 
   const { actions } = dynamicConfig;
+  const activeBotContext = [...messages]
+    .reverse()
+    .find((msg) => msg.sender === 'bot' && (msg.intent || msg.domain || msg.specialistLabel));
+  const activeIntentLabel = getIntentLabel(activeBotContext?.intent);
+  const activeSpecialistLabel = activeBotContext?.specialistLabel || activeIntentLabel;
+  const activeComposerPlaceholder = getComposerPlaceholder(activeBotContext?.domain);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -1091,9 +1560,8 @@ export function AIAssistantPage() {
         }
       `}</style>
 
-      <div 
-        className="flex flex-col w-full max-w-[1400px] mx-auto h-full px-4 pb-4 pt-4 lg:pt-6 overflow-hidden cursor-pointer"
-        onClick={(e) => { if (e.target === e.currentTarget) navigate('/dashboard'); }}
+      <div
+        className="flex flex-col w-full max-w-[1400px] mx-auto h-full px-4 pb-4 pt-4 lg:pt-6 overflow-hidden"
       >
         {/* Outer shell */}
         <div className="
@@ -1128,6 +1596,12 @@ export function AIAssistantPage() {
                   <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Online</span>
                 </div>
               </div>
+              <div className="hidden lg:flex flex-col items-start pl-3 ml-2 border-l border-white/[0.06]">
+                <span className="text-[8px] font-black text-gray-500 uppercase tracking-[0.22em]">Mode</span>
+                <span className="mt-0.5 inline-flex items-center px-2 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-[8px] font-black uppercase tracking-[0.18em] text-teal-300">
+                  {activeSpecialistLabel}
+                </span>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -1139,12 +1613,12 @@ export function AIAssistantPage() {
                     ? 'opacity-40 cursor-not-allowed text-gray-600 border-gray-600/20 bg-gray-600/10'
                     : 'text-teal-400 border-teal-500/20 bg-teal-500/10 hover:bg-teal-500/20'
                   }`}
-              >
-                <RotateCcw size={9} /> Reset
+                >
+                <RotateCcw size={9} /> Clear
               </button>
 
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => void exitAssistant()}
                 className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-gray-500 hover:text-white hover:bg-white/[0.08] transition-all"
                 title="Close AI Assistant"
               >
@@ -1157,15 +1631,15 @@ export function AIAssistantPage() {
           <div className="flex flex-1 min-h-0 relative z-10 overflow-hidden">
 
             {/* ── LEFT SIDEBAR ── */}
-            <div className="w-52 lg:w-64 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#07090f]/90 backdrop-blur-xl overflow-hidden">
+            <div className="w-48 lg:w-56 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#07090f]/90 backdrop-blur-xl overflow-hidden">
 
               {/* Presets */}
-              <div className="px-3 pt-3.5 pb-2.5 border-b border-white/[0.05] shrink-0">
-                <span className="text-[8px] font-black text-gray-500 tracking-widest uppercase">Presets</span>
+              <div className="px-3 pt-3 pb-2 border-b border-white/[0.05] shrink-0">
+                <span className="text-[8px] font-black text-gray-500 tracking-[0.22em] uppercase">Presets</span>
               </div>
               <div
                 className="overflow-y-auto py-2 px-2 space-y-1 shrink-0"
-                style={{ maxHeight: '35%', scrollbarWidth: 'none' }}
+                style={{ maxHeight: '34%', scrollbarWidth: 'none' }}
               >
                 {actions.map((action: any, i: number) => (
                   <SidebarActionCard
@@ -1178,57 +1652,97 @@ export function AIAssistantPage() {
               </div>
 
               {/* History */}
-              <div className="px-3 pt-3.5 pb-2.5 border-t border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between shrink-0">
-                <span className="text-[8px] font-black text-teal-500/70 tracking-widest uppercase">Recent Advice</span>
+              <div className="px-3 pt-3 pb-2 border-t border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between shrink-0">
+                <span className="text-[8px] font-black text-teal-500/70 tracking-[0.22em] uppercase">Current Chat</span>
                 <button
-                  onClick={() => { if (!isBusy) { resetChatContext(); } }}
-                  disabled={isBusy}
-                  className={`text-[8px] font-black uppercase tracking-widest transition-colors ${
-                    isBusy ? 'text-gray-700 cursor-not-allowed' : 'text-gray-500 hover:text-white pointer-events-auto'
-                  }`}
+                  onClick={() => setShowHistory((prev) => !prev)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg border text-[8px] font-black uppercase tracking-[0.2em] transition-colors text-gray-400 border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:text-white"
+                  title="Toggle chat history"
                 >
-                  + New
+                  {showHistory ? 'Hide history' : 'History'}
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto py-2 px-2 space-y-1 bg-[#090c14]/40" style={{ scrollbarWidth: 'none' }}>
-                {isHistoryLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="h-10 mx-1 rounded-lg bg-white/[0.02] border border-white/[0.03] animate-pulse" />
-                  ))
-                ) : conversations.length > 0 ? (
-                  conversations.map(conv => (
-                    <button
-                      key={conv.id}
-                      onClick={() => !isBusy && loadConversation(conv.id)}
-                      disabled={isBusy}
-                      className={`w-full text-left p-2.5 rounded-xl border transition-all group flex flex-col gap-1 ${
-                        isBusy ? 'opacity-40 cursor-not-allowed' : ''
-                      } ${currentConversationId === conv.id
-                        ? 'bg-teal-500/10 border-teal-500/30 ring-1 ring-teal-500/20'
-                        : 'border-transparent hover:bg-white/[0.03] grayscale hover:grayscale-0'
-                        }`}
+              {showHistory ? (
+                <div className="flex-1 overflow-y-auto py-2 px-2 space-y-1 bg-[#090c14]/40" style={{ scrollbarWidth: 'none' }}>
+                  <div className="px-2 py-2 mb-1 rounded-lg border border-white/[0.05] bg-white/[0.03] flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => { if (!isBusy) { resetChatContext(); markChatActive(); } }}
+                        disabled={isBusy}
+                        className={`text-[8px] font-black uppercase tracking-[0.2em] transition-colors ${
+                        isBusy ? 'text-gray-700 cursor-not-allowed' : 'text-gray-500 hover:text-white'
+                      }`}
                     >
-                      <span className={`text-[10px] font-bold truncate ${currentConversationId === conv.id ? 'text-teal-400' : 'text-gray-400 group-hover:text-gray-200'
-                        }`}>
-                        {conv.title}
-                      </span>
-                      <span className="text-[7px] font-mono text-gray-600 uppercase tracking-tighter">
-                        {new Date(conv.created_at).toLocaleDateString('en-US', {
-                          month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric',
-                        })}
-                      </span>
+                      + New Chat
                     </button>
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-20 opacity-30">
-                    <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">No History Yet</span>
+                      <label className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={autoClearHistory}
+                          onChange={(e) => persistAutoClearHistory(e.target.checked)}
+                          className="accent-teal-400"
+                        />
+                        Auto-clear
+                      </label>
+                    </div>
                   </div>
-                )}
-              </div>
+                  {isHistoryLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="h-10 mx-1 rounded-lg bg-white/[0.02] border border-white/[0.03] animate-pulse" />
+                    ))
+                  ) : conversations.length > 0 ? (
+                    conversations.map(conv => (
+                      <button
+                        key={conv.id}
+                        onClick={() => !isBusy && loadConversation(conv.id)}
+                        disabled={isBusy}
+                        className={`w-full text-left p-2.5 rounded-xl border transition-all group flex flex-col gap-1 ${
+                          isBusy ? 'opacity-40 cursor-not-allowed' : ''
+                        } ${currentConversationId === conv.id
+                          ? 'bg-teal-500/10 border-teal-500/30 ring-1 ring-teal-500/20'
+                          : 'border-transparent hover:bg-white/[0.03] grayscale hover:grayscale-0'
+                          }`}
+                      >
+                        <span className={`text-[10px] font-bold truncate ${currentConversationId === conv.id ? 'text-teal-400' : 'text-gray-400 group-hover:text-gray-200'
+                          }`}>
+                          {conv.title}
+                        </span>
+                        <span className="text-[7px] font-mono text-gray-600 uppercase tracking-tighter">
+                          {new Date(conv.created_at).toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric',
+                          })}
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-20 opacity-30">
+                      <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">No History Yet</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col gap-2 justify-center px-3 text-center bg-[#090c14]/40">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">Session first</div>
+                    <div className="mt-1 text-[10px] text-gray-600 leading-relaxed">
+                      Click History only when you need older sessions.
+                    </div>
+                  </div>
+                  <label className="flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={autoClearHistory}
+                      onChange={(e) => persistAutoClearHistory(e.target.checked)}
+                      className="accent-teal-400"
+                    />
+                    Auto-clear
+                  </label>
+                </div>
+              )}
 
-              <div className="px-3 py-3.5 border-t border-white/[0.05] bg-black/20 shrink-0">
-                <span className="text-[8px] text-gray-700 font-bold uppercase tracking-widest opacity-60 italic leading-none">
+              <div className="px-3 py-3 border-t border-white/[0.05] bg-black/20 shrink-0">
+                <span className="text-[8px] text-gray-700 font-bold uppercase tracking-[0.2em] opacity-60 italic leading-none">
                   Finance engine · Encrypted
                 </span>
               </div>
@@ -1281,6 +1795,10 @@ export function AIAssistantPage() {
                               msg={msg}
                               onConfirmAction={handleConfirmAction}
                               onCancelAction={handleCancelAction}
+                              onSelectGuidedChoice={openGuidedWorkspace}
+                              onSelectWorkspaceView={handleWorkspaceViewChange}
+                              onExecuteGuidedAction={handleGuidedAction}
+                              disableGuidedChoice={isBusy}
                             />
                           </motion.div>
                         );
@@ -1379,9 +1897,9 @@ export function AIAssistantPage() {
                     }}
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
-                    placeholder="Ask about invoices, payments, expenses, or compliance…"
+                    placeholder={activeComposerPlaceholder}
                     className="flex-1 bg-transparent border-none outline-none text-sm text-white py-1 px-1 placeholder-gray-600"
-                    disabled={isBusy || isHistoryLoading || isConversationLoading || !isChatReady}
+                    disabled={false}
                   />
 
                   <div className="flex items-center gap-1 shrink-0">
@@ -1389,7 +1907,7 @@ export function AIAssistantPage() {
                       whileHover={!isBusy ? { scale: 1.08 } : {}}
                       whileTap={!isBusy ? { scale: 0.92 } : {}}
                       onClick={startListening}
-                      disabled={isBusy || isHistoryLoading || isConversationLoading || !isChatReady}
+                      disabled={false}
                       className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors
                         ${isListening
                           ? 'bg-red-500/10 text-red-400 border border-red-500/20'
@@ -1405,10 +1923,10 @@ export function AIAssistantPage() {
                       whileHover={{ scale: query.trim() && !isBusy ? 1.08 : 1 }}
                       whileTap={{ scale: query.trim() && !isBusy ? 0.92 : 1 }}
                       onClick={() => handleSend()}
-                      disabled={!query.trim() || isBusy || isHistoryLoading || isConversationLoading || !isChatReady}
+                      disabled={!query.trim() || isBusy}
                       className="w-8 h-8 rounded-xl flex items-center justify-center transition-all relative overflow-hidden"
                       style={
-                        query.trim() && !isBusy && !isHistoryLoading && !isConversationLoading && isChatReady
+                        query.trim() && !isBusy
                           ? { background: `linear-gradient(135deg, ${TEAL}, #06b6d4)`, color: '#0a0d15' }
                           : { background: 'rgba(255,255,255,0.04)', color: '#374151', cursor: 'not-allowed' }
                       }
@@ -1422,8 +1940,8 @@ export function AIAssistantPage() {
                   <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">
                     {isConversationLoading
                       ? 'Loading conversation…'
-                      : isHistoryLoading || !isChatReady
-                        ? 'Preparing chat history…'
+                      : !isChatReady
+                        ? 'Preparing chat…'
                         : 'Finance engine · Encrypted'}
                   </span>
                   {isListening && (
@@ -1436,8 +1954,9 @@ export function AIAssistantPage() {
               </div>
             </div>
           </div>
+          </div>
         </div>
-      </div>
-    </>
+
+      </>
   );
 }

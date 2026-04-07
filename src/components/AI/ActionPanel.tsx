@@ -5,7 +5,6 @@ import {
     ArrowRight,
     Gavel,
     Clock,
-    CheckCircle
 } from 'lucide-react';
 
 interface ActionPanelProps {
@@ -53,32 +52,15 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({ invoices, onExecuteAct
             });
         }
 
-        // Example: General "All Good" action if empty? 
-        if (actions.length === 0 && invoices.length > 0) {
-            actions.push({
-                id: '3',
-                type: 'check',
-                priority: 'low',
-                title: `Review Recent Payments`,
-                desc: 'Everything looks healthy. Check reports?',
-                impact: 'Maintain Health',
-                icon: CheckCircle,
-                color: 'text-status-success',
-                bg: 'bg-status-success-bg',
-                border: 'border-status-success/20',
-                badge: 'bg-white'
-            });
-        }
-
         return actions;
     }, [invoices]);
 
     return (
         <div className="space-y-3">
-            {recommendations.length === 0 && invoices.length === 0 && (
+            {recommendations.length === 0 && (
                 <div className="text-text-muted text-sm p-6 bg-gray-50 rounded-xl text-center border border-gray-100">
                     <Clock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                    No active recommended actions.
+                    No invoice-specific actions at the moment.
                 </div>
             )}
             {recommendations.map(action => (

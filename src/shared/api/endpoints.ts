@@ -78,6 +78,7 @@ export const ENDPOINTS = {
     // ─── AI ────────────────────────────────────────────────────────────
     AI_CHAT: '/ai/chat',
     AI_CHAT_STREAM: '/ai/chat/stream',
+    AI_WORKSPACE: (domain: string) => `/ai/workspaces/${domain}`,
     AI_CONFIG: '/ai/config',
     AI_MAGIC_FILL: '/ai/magic-fill',
     AI_INSIGHTS: '/ai/insights',

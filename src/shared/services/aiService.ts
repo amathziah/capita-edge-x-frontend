@@ -12,6 +12,9 @@ export const aiService = {
   processQuery: (query: string, agentId?: string, persona?: string, history?: any[]) => 
     api.post<any>(ENDPOINTS.AI_CHAT, { query, agentId, persona, history }),
 
+  getWorkspace: (domain: string, view?: string) =>
+    api.get(view ? `${ENDPOINTS.AI_WORKSPACE(domain)}?view=${encodeURIComponent(view)}` : ENDPOINTS.AI_WORKSPACE(domain)),
+
   /**
    * Streams the AI response token by token using Server-Sent Events (SSE).
    * Returns an async generator that yields event objects:
