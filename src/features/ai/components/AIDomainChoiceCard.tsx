@@ -6,6 +6,7 @@ const DOMAIN_ICON: Record<string, any> = {
   payments: LucideIcons.CreditCard,
   expenses: LucideIcons.Receipt,
   compliance: LucideIcons.ShieldCheck,
+  customers: LucideIcons.Users,
 };
 
 export function AIDomainChoiceCard({
