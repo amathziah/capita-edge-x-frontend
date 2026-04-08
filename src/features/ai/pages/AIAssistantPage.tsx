@@ -1740,7 +1740,12 @@ Choose a desk to get started, or ask me anything.`,
                     ))}
                   </div>
                 ) : messages.length === 0 && !isThinking ? (
-                  <EmptyState />
+                  <div className="flex items-center justify-center h-screen">
+                    <div className="text-center space-y-4">
+                      <h2 className="text-2xl font-bold text-white">Welcome to Capita AI</h2>
+                      <p className="text-gray-400">Start a conversation about invoices, payments, expenses, or compliance.</p>
+                    </div>
+                  </div>
                 ) : (
                   <div className="max-w-3xl mx-auto px-5 pb-12 space-y-6 pt-4">
                     <AnimatePresence initial={false}>
