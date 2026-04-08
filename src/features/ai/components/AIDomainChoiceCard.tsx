@@ -46,14 +46,15 @@ export function AIDomainChoiceCard({
             return (
               <div
                 key={item.id || item.domain}
-                className="rounded-xl border border-white/[0.05] bg-black/20 p-3"
+                className="rounded-xl border border-white/[0.05] bg-black/20 p-3 cursor-pointer hover:border-teal-400/40 hover:bg-teal-500/10 transition-all"
+                onClick={() => onSelect?.(item)}
               >
                 <div className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-teal-300">
                   <Icon size={12} />
                   {item.label}
                 </div>
                 <div className="text-[11px] leading-relaxed text-gray-400">
-                  {item.summary}
+                  {item.description}
                 </div>
               </div>
             );

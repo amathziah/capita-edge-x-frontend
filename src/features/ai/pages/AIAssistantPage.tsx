@@ -815,6 +815,28 @@ export function AIAssistantPage() {
   const loadFreshChatState = useCallback((options?: { invalidateBootstrap?: boolean }) => {
     resetChatContext(options);
     setShowHistory(false);
+    
+    const welcomeMessage: Message = {
+        id: 'welcome_' + Date.now(),
+        sender: 'bot',
+        text: `Hi! I'm Capita, your strategic finance AI.
+
+Choose a desk to get started, or ask me anything.`,
+        timestamp: new Date(),
+        status: 'sent',
+        data: {
+          type: 'guided_choice',
+          promptTitle: 'Choose A Workspace',
+          promptDescription: 'Select one of the supported workspaces.',
+          choices: [
+            { id: 'invoices', domain: 'invoices', label: 'Invoices', description: 'Overdue invoices, collections & receivables', recommended: true },
+            { id: 'payments', domain: 'payments', label: 'Payments', description: 'Recent receipts & cash-in' },
+            { id: 'expenses', domain: 'expenses', label: 'Expenses', description: 'Spend analysis & burn rate' },
+            { id: 'compliance', domain: 'compliance', label: 'Compliance', description: 'GST, TDS & deadlines' },
+          ],
+        },
+      };
+      setMessages([welcomeMessage]);
   }, [resetChatContext]);
 
   const clearPersistedChatHistory = useCallback(async () => {
@@ -1104,6 +1126,25 @@ export function AIAssistantPage() {
               ? event.text
               : (typeof event.action?.confirmationMessage === 'string' ? event.action.confirmationMessage : accumulatedText);
 
+          // Handle workspace data from backend (auto-open guided workspace)
+          const workspaceData = event.workspace || event.data?.workspace;
+          console.log('[AI] event keys:', Object.keys(event), 'workspace:', !!workspaceData, 'component:', workspaceData?.component);
+          const workspaceDomain = workspaceData?.domain;
+          let finalUiBlocks = pendingUiBlocks;
+          let finalUiComponent = pendingUiBlocks[0]?.component;
+          let finalUiData = pendingUiBlocks[0]?.data;
+
+          // If workspace data came from backend, use it
+          if (workspaceData && !pendingUiBlocks.length) {
+            finalUiComponent = workspaceData.component;
+            finalUiData = workspaceData.data;
+            // Create a uiBlock from workspace data
+            finalUiBlocks = [{
+              component: workspaceData.component,
+              data: workspaceData.data
+            }];
+          }
+
           // If we never created a bubble (e.g. only gen_ui events, no tokens), create it now
           if (!botMsgId) {
             botMsgId = `bot_${Date.now()}_${Math.random()}`;
@@ -1121,14 +1162,14 @@ export function AIAssistantPage() {
                               ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
                               : event.data,
                             intent: event.data?.intent || m.intent,
-                            domain: event.data?.domain || m.domain,
+                            domain: workspaceDomain || event.data?.domain || m.domain,
                             specialistLabel: event.data?.specialistLabel || m.specialistLabel,
                             provenance: event.data?.provenance || m.provenance,
                             usage: event.usage,
                             status: 'sent',
-                            uiBlocks: pendingUiBlocks.length > 0 ? pendingUiBlocks : m.uiBlocks,
-                            uiComponent: pendingUiBlocks[0]?.component || m.uiComponent,
-                            uiData: pendingUiBlocks[0]?.data ?? m.uiData,
+                            uiBlocks: finalUiBlocks.length > 0 ? finalUiBlocks : m.uiBlocks,
+                            uiComponent: finalUiComponent || m.uiComponent,
+                            uiData: finalUiData ?? m.uiData,
                       }
                     : m
                 )
@@ -1144,13 +1185,13 @@ export function AIAssistantPage() {
                       ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
                       : event.data,
                     intent: event.data?.intent,
-                    domain: event.data?.domain,
+                    domain: workspaceDomain || event.data?.domain,
                     specialistLabel: event.data?.specialistLabel,
                     provenance: event.data?.provenance,
                     usage: event.usage,
-                    uiBlocks: pendingUiBlocks,
-                    uiComponent: pendingUiBlocks[0]?.component,
-                    uiData: pendingUiBlocks[0]?.data,
+                    uiBlocks: finalUiBlocks,
+                    uiComponent: finalUiComponent,
+                    uiData: finalUiData,
                   },
                 ]
           );
