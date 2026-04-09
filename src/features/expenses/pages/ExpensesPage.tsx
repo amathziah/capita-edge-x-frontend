@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { dataService } from '@/shared/services/dataService';
 import { Expense } from '@/types';
 import { ExpensesMap } from '@/features/expenses/components/ExpensesMap';
-import { useData } from "../contexts/DataContext";
+import { useData } from "@/app/providers/DataContext";
 import { CustomSelect } from '@/components/ui/CustomSelect';
 
 const CATEGORIES = ["Travel", "Meals", "Supplies", "Utilities", "Marketing", "Rent", "Salary", "Other"];

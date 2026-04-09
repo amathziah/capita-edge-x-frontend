@@ -14,10 +14,10 @@ import dagre from 'dagre';
 import 'reactflow/dist/style.css';
 
 import { Expense } from '@/types';
-import { TotalNode } from './nodes/TotalNode';
-import { CategoryNode } from './nodes/CategoryNode';
-import { InsightNode } from './nodes/InsightNode';
-import { ElasticEdge } from './ElasticEdge';
+import { TotalNode } from '@/features/invoices/components/nodes/TotalNode';
+import { CategoryNode } from '@/features/invoices/components/nodes/CategoryNode';
+import { InsightNode } from '@/features/invoices/components/nodes/InsightNode';
+import { ElasticEdge } from '@/features/invoices/components/ElasticEdge';
 import {
 } from 'lucide-react';
 

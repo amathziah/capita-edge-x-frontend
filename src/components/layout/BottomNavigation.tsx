@@ -6,7 +6,7 @@ import {
     CreditCard,
     Bot,
 } from "lucide-react";
-import { useLanguage } from "../LanguageProvider";
+import { useLanguage } from "@/app/providers/LanguageProvider";
 import { Logo } from "../common/Logo";
 
 const mobileNavigation = [

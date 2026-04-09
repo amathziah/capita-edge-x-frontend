@@ -19,9 +19,9 @@ import {
   ArrowUpRight,
   Crown,
 } from "lucide-react";
-import { useLanguage } from "../LanguageProvider";
-import { useAuth } from "../../contexts/AuthContext";
-import { usePersona } from "../../contexts/PersonaContext";
+import { useLanguage } from "@/app/providers/LanguageProvider";
+import { useAuth } from "@/app/providers/AuthContext";
+import { usePersona } from "@/app/providers/PersonaContext";
 
 import { Logo } from "../common/Logo";
 

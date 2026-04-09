@@ -10,8 +10,8 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import * as LucideIcons from 'lucide-react';
 import { GENERAL_CHAT_STEPS } from '@/shared/utils/aiLoadingSteps';
-import { AIWorkspaceRenderer } from '../components/AIWorkspaceRenderer';
-import { AIDomainChoiceCard } from '../components/AIDomainChoiceCard';
+import { AIWorkspaceRenderer } from '@/features/ai/components/AIWorkspaceRenderer';
+import { AIDomainChoiceCard } from '@/features/ai/components/AIDomainChoiceCard';
 
 const IconMap: Record<string, any> = {
   TrendingUp: LucideIcons.TrendingUp,

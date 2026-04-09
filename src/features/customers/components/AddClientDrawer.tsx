@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { X, User, MapPin, Loader2, Tag, CreditCard, Sparkles, Building2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RegionDropdown } from "react-country-region-selector";
-import { SearchableSelect } from "./SearchableSelect";
-import { Customer } from "../../types";
-import { dataService } from "../../services/dataService";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { Customer } from "@/types";
+import { dataService } from "@/shared/services/dataService";
 
 interface AddClientDrawerProps {
   isOpen: boolean;

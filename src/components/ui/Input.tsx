@@ -1,5 +1,4 @@
 import React, { forwardRef } from 'react';
-import { cn } from '../../utils/cn'; // Assuming utility exists, if not I'll create inline
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label?: string;

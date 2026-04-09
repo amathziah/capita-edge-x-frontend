@@ -5,7 +5,7 @@ import { dataService } from '@/shared/services/dataService';
 import { Customer, Invoice, CustomerInsights } from '@/types';
 import { useData } from '@/app/providers/DataContext';
 import { usePersona } from '@/app/providers/PersonaContext';
-import { AddClientDrawer } from "../components/shared/AddClientDrawer";
+import { AddClientDrawer } from "@/features/customers/components/AddClientDrawer";
 
 // ---------------------------------------------------------------------------
 // Helpers

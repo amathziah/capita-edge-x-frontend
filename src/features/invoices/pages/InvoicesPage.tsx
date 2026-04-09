@@ -7,7 +7,7 @@ import { InvoiceDocumentPreview } from '@/features/invoices/components/InvoiceDo
 import { Invoice } from '@/types';
 import { Toast, ToastType } from '@/components/ui/Toast';
 import RecordPaymentModal from '@/features/invoices/components/RecordPaymentModal';
-import { useData } from "@/contexts/DataContext";
+import { useData } from "@/app/providers/DataContext";
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { downloadCsv } from '@/shared/lib/export';
 
