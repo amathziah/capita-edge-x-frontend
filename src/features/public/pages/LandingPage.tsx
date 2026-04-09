@@ -241,7 +241,7 @@ function DashboardMockup() {
     const events = [
         { type: 'Payment Received', detail: 'Received ₹3,540 via cash', time: '17:57:54', ok: true },
         { type: 'Payment Received', detail: 'Received ₹60 via upi', time: '16:21:09', ok: true },
-        { type: 'Invoice Overdue', detail: 'STR-5739-2359 · ₹8,644', time: '09:00:00', ok: false },
+        { type: 'Invoice Overdue', detail: 'CEX-2026-0048 · ₹8,644', time: '09:00:00', ok: false },
     ];
     return (
         <div className="relative perspective-1000">
@@ -342,7 +342,7 @@ function DashboardMockup() {
                             </div>
                             <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl p-3.5">
                                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-white mb-3"><Clock className="w-3.5 h-3.5 text-orange-400" />Priority Queue</div>
-                                {[{ name: 'Stress Client 419', inv: 'STR-5740-2419', amt: '₹2,871' }, { name: 'Stress Client 415', inv: 'STR-5740-2415', amt: '₹6,817' }, { name: 'Stress Client 411', inv: 'STR-5740-2411', amt: '₹10,103' }].map((c, i) => (
+                                {[{ name: 'BlueSky Marketing', inv: 'CEX-2026-0048', amt: '₹8,644' }, { name: 'TechFlow Solutions', inv: 'CEX-2026-0047', amt: '₹4,220' }, { name: 'Craft & Canvas Co.', inv: 'CEX-2026-0045', amt: '₹5,893' }].map((c, i) => (
                                     <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.7 + i * 0.1 }} className="flex items-center gap-2 mb-2.5 last:mb-0">
                                         <motion.div className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" animate={{ scale: [1, 1.5, 1] }} transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }} />
                                         <div className="flex-1 min-w-0"><div className="text-[11px] font-semibold text-slate-200 truncate">{c.name}</div><div className="text-[10px] text-slate-600">{c.inv}</div></div>
@@ -374,11 +374,11 @@ function DashboardMockup() {
 // ─── Invoice Mock ─────────────────────────────────────────────────────────────
 function InvoicesMock() {
     const rows = [
-        { num: 'STR-5739-2289', date: '21 Feb 2026', customer: 'Stress Client 289', total: '₹8,034', status: 'Paid', sc: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-        { num: 'STR-5739-2359', date: '21 Feb 2026', customer: 'Stress Client 359', total: '₹8,644', status: 'Overdue', sc: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
-        { num: 'STR-5738-2119', date: '21 Feb 2026', customer: 'Stress Client 119', total: '₹4,220', status: 'Overdue', sc: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
-        { num: 'STR-5737-1826', date: '21 Feb 2026', customer: 'Stress Client 826', total: '₹6,071', status: 'Sent', sc: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
-        { num: 'STR-5736-1691', date: '21 Feb 2026', customer: 'Stress Client 691', total: '₹5,893', status: 'Overdue', sc: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
+        { num: 'CEX-2026-0049', date: '21 Feb 2026', customer: 'Pixel Republic Studio', total: '₹8,034', status: 'Paid', sc: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+        { num: 'CEX-2026-0048', date: '19 Feb 2026', customer: 'BlueSky Marketing', total: '₹8,644', status: 'Overdue', sc: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
+        { num: 'CEX-2026-0047', date: '18 Feb 2026', customer: 'TechFlow Solutions', total: '₹4,220', status: 'Overdue', sc: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
+        { num: 'CEX-2026-0046', date: '15 Feb 2026', customer: 'Nexus Creatives Pvt', total: '₹6,071', status: 'Sent', sc: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+        { num: 'CEX-2026-0045', date: '14 Feb 2026', customer: 'Craft & Canvas Co.', total: '₹5,893', status: 'Overdue', sc: 'bg-rose-500/15 text-rose-400 border-rose-500/30' },
     ];
     return (
         <div className="bg-[#0a0e1a] p-4">
@@ -543,7 +543,7 @@ export const Landing: React.FC = () => {
                         className={`flex items-center justify-between px-5 py-3 rounded-2xl transition-all duration-500 ${scrolled ? 'bg-[#050810]/80 backdrop-blur-3xl border border-white/[0.08] shadow-[0_8px_40px_rgba(0,0,0,0.4)]' : 'border border-transparent'}`}>
                         <div className="flex items-center gap-2.5">
                             <Logo size={32} />
-                            <span className="display font-black text-xl text-white tracking-tight">Capita <span className="text-teal-400">AI</span></span>
+                            <span className="display font-black text-xl text-white tracking-tight">Capita<span className="text-teal-400">EdgeX</span></span>
                         </div>
                         <div className="hidden md:flex items-center gap-6">
                             {[['#features', 'Features'], ['#how-it-works', 'How it Works'], ['#pricing', 'Pricing'], ['#faq', 'FAQ']].map(([href, label]) => (
@@ -580,7 +580,7 @@ export const Landing: React.FC = () => {
                         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}>
                             <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-teal-500/10 border border-teal-500/25 text-teal-300 text-[11px] font-black uppercase tracking-[0.2em] mb-8 relative">
                                 <motion.span className="w-1.5 h-1.5 rounded-full bg-teal-400 inline-block" animate={{ scale: [1, 1.8, 1], opacity: [1, 0.4, 1] }} transition={{ duration: 2, repeat: Infinity }} />
-                                India's Financial OS for Agencies
+                                India's AI-Powered Financial OS
                                 <motion.span className="absolute inset-0 rounded-full border border-teal-500/20" animate={{ scale: [1, 1.07, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 2.5, repeat: Infinity }} />
                             </div>
                         </motion.div>
@@ -632,7 +632,7 @@ export const Landing: React.FC = () => {
 
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.7 }}
                             className="flex flex-wrap items-center justify-center gap-5 text-[12px] font-semibold text-slate-500">
-                            {['GST-compliant invoicing', 'UPI & Razorpay ready', 'Built for Indian agencies', 'No credit card needed'].map((f, i) => (
+                            {['GST-compliant invoicing', 'UPI & Razorpay ready', 'Built for Indian businesses', 'No credit card needed'].map((f, i) => (
                                 <motion.div key={i} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.8 + i * 0.08 }}
                                     className="flex items-center gap-1.5">
                                     <CheckCircle2 className="w-3.5 h-3.5 text-teal-500" />{f}
@@ -680,7 +680,7 @@ export const Landing: React.FC = () => {
                     <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center">
                         <motion.div variants={fadeUp} className="text-teal-400 font-black uppercase tracking-[0.22em] text-[11px] mb-4">Complete Platform</motion.div>
                         <motion.h2 variants={fadeUp} className="display font-black text-white leading-tight" style={{ fontSize: 'clamp(32px, 5.5vw, 64px)' }}>
-                            Every financial tool<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">your agency needs.</span>
+                            Every financial tool<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">your business needs.</span>
                         </motion.h2>
                     </motion.div>
 
@@ -737,7 +737,7 @@ export const Landing: React.FC = () => {
                                 </div>
                                 <div className="bg-white/[0.02] rounded-xl p-3">
                                     <div className="flex items-center gap-1.5 mb-2 text-[10px] font-bold text-white"><Activity className="w-3.5 h-3.5 text-teal-400" />Live Events</div>
-                                    {[{ ev: 'Payment Received', detail: '₹3,540 via cash', t: '17:57', ok: true }, { ev: 'Payment Received', detail: '₹60 via UPI', t: '16:21', ok: true }, { ev: 'Invoice Overdue', detail: 'STR-5739-2359 · ₹8,644', t: '09:00', ok: false }].map((e, i) => (
+                                    {[{ ev: 'Payment Received', detail: '₹3,540 via UPI', t: '17:57', ok: true }, { ev: 'Payment Received', detail: '₹8,034 via Razorpay', t: '16:21', ok: true }, { ev: 'Invoice Overdue', detail: 'CEX-2026-0048 · ₹8,644', t: '09:00', ok: false }].map((e, i) => (
                                         <motion.div key={i} initial={{ opacity: 0, x: -8 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                                             className="flex items-start gap-2 py-1.5 border-b border-white/[0.03] last:border-0">
                                             <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 ${e.ok ? 'bg-emerald-500/15' : 'bg-rose-500/15'}`}>
