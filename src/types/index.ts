@@ -182,9 +182,14 @@ export interface Payment {
   date: string;
   method?: string;
   paymentMode?: 'upi' | 'neft' | 'imps' | 'rtgs' |
-               'cheque' | 'cash' | 'razorpay' |
-               'stripe' | 'other';
+               'cheque' | 'cash' | 'card' | 'bank_transfer' |
+               'razorpay' | 'stripe' | 'other';
+  payment_mode?: 'upi' | 'neft' | 'imps' | 'rtgs' |
+               'cheque' | 'cash' | 'card' | 'bank_transfer' |
+               'razorpay' | 'stripe' | 'other';
+  reference_number?: string;
   referenceNumber?: string;
+  upi_transaction_id?: string;
   upiTransactionId?: string;
   notes?: string;
   status?: string;

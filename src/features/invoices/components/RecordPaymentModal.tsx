@@ -13,17 +13,17 @@ interface RecordPaymentModalProps {
 export default function RecordPaymentModal({ invoice, onClose, onSuccess }: RecordPaymentModalProps) {
     const [amount, setAmount] = useState(invoice.total - (invoice.amountPaid || 0)); // Default to remaining balance if we had it, else total
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [method, setMethod] = useState<Payment['method']>('bank_transfer');
+    const [method, setMethod] = useState<NonNullable<Payment['paymentMode']>>('bank_transfer');
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const METHOD_OPTIONS: { label: string; value: Payment['method'] }[] = [
+    const METHOD_OPTIONS: { label: string; value: NonNullable<Payment['paymentMode']> }[] = [
         { label: 'Bank Transfer', value: 'bank_transfer' },
         { label: 'Credit Card', value: 'card' },
         { label: 'Cash', value: 'cash' },
         { label: 'UPI', value: 'upi' },
-        { label: 'Check', value: 'check' },
+        { label: 'Cheque', value: 'cheque' },
         { label: 'Other', value: 'other' },
     ];
 
@@ -34,11 +34,12 @@ export default function RecordPaymentModal({ invoice, onClose, onSuccess }: Reco
 
         try {
             await dataService.savePayment({
-                id: '', // New payment
+                id: '',
                 invoiceId: invoice.id,
                 amount: Number(amount),
                 date: date,
                 method: method,
+                paymentMode: method,
                 notes: notes,
                 status: 'completed'
             });

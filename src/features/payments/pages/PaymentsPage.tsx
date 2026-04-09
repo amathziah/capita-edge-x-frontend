@@ -28,23 +28,42 @@ type SortDir = 'asc' | 'desc';
 type ViewMode = 'grid' | 'list';
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers — method mapping (backend ↔ display)
 // ---------------------------------------------------------------------------
-function methodIcon(method: string) {
-  const m = method.toLowerCase();
-  if (m.includes("card")) return <CreditCard className="w-4 h-4" />;
-  if (m.includes("upi")) return <Smartphone className="w-4 h-4" />;
-  if (m.includes("bank") || m.includes("transfer") || m.includes("netbanking")) return <Banknote className="w-4 h-4" />;
-  if (m.includes("cheque")) return <CheckCircle className="w-4 h-4" />;
-  return <DollarSign className="w-4 h-4" />;
+const METHOD_MAP: Record<string, string> = {
+  upi: 'UPI',
+  card: 'Card',
+  bank_transfer: 'Netbanking',
+  cash: 'Cash',
+  cheque: 'Cheque',
+  neft: 'NEFT',
+  imps: 'IMPS',
+  rtgs: 'RTGS',
+  razorpay: 'Razorpay',
+  stripe: 'Stripe',
+  other: 'Other',
+};
+
+const DISPLAY_TO_BACKEND: Record<string, string> = Object.fromEntries(
+  Object.entries(METHOD_MAP).map(([k, v]) => [v, k])
+);
+
+function normalizeMethod(payment: { payment_mode?: string; method?: string }): string {
+  return (payment.payment_mode || payment.method || 'other').toLowerCase();
 }
 
+function formatMethod(method: string): string {
+  return METHOD_MAP[method.toLowerCase()] || method.charAt(0).toUpperCase() + method.slice(1);
+}
 
-
-function formatMethod(method: string) {
-  if (method === 'bank_transfer') return 'Netbanking';
-  if (method === 'upi') return 'UPI';
-  return method.charAt(0).toUpperCase() + method.slice(1);
+function methodIcon(method: string) {
+  const m = method.toLowerCase();
+  if (m === 'card') return <CreditCard className="w-4 h-4" />;
+  if (m === 'upi') return <Smartphone className="w-4 h-4" />;
+  if (m === 'bank_transfer' || m === 'neft' || m === 'imps' || m === 'rtgs') return <Banknote className="w-4 h-4" />;
+  if (m === 'cheque') return <CheckCircle className="w-4 h-4" />;
+  if (m === 'cash') return <DollarSign className="w-4 h-4" />;
+  return <DollarSign className="w-4 h-4" />;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,7 +109,7 @@ export function Payments() {
       return {
         id: p.id,
         invoice: inv ? inv.invoiceNumber : "Unknown",
-        method: p.method || "Other",
+        method: normalizeMethod(p),
         amount: p.amount,
         date: new Date(p.date || p.createdAt || new Date()).toISOString().split('T')[0],
         reconciled: p.status === 'completed'
@@ -107,10 +126,11 @@ export function Payments() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const filterKey = methodFilter === "All" ? null : (DISPLAY_TO_BACKEND[methodFilter] || methodFilter).toLowerCase();
     let result = payments
-      .filter(p => (methodFilter === "All" ? true : p.method.toLowerCase() === methodFilter.toLowerCase()))
+      .filter(p => (!filterKey || p.method === filterKey))
       .filter(p => (showOnlyUnreconciled ? !p.reconciled : true))
-      .filter(p => (q ? p.invoice.toLowerCase().includes(q) || (p.date ?? "").includes(q) || p.method.toLowerCase().includes(q) : true));
+      .filter(p => (q ? p.invoice.toLowerCase().includes(q) || (p.date ?? "").includes(q) || formatMethod(p.method).toLowerCase().includes(q) : true));
 
     result.sort((a, b) => {
       let cmp = 0;
@@ -177,22 +197,15 @@ export function Payments() {
       return;
     }
 
-    // Map frontend display methods to backend expected values
-    const methodMap: Record<string, string> = {
-      'UPI': 'upi',
-      'Card': 'card',
-      'Netbanking': 'bank_transfer',
-      'Cash': 'cash',
-      'Cheque': 'cheque'
-    };
-    const backendMethod = methodMap[newPayment.method] || newPayment.method.toLowerCase();
+    const backendMethod = DISPLAY_TO_BACKEND[newPayment.method] || newPayment.method.toLowerCase();
 
     try {
       setSaving(true);
       await dataService.savePayment({
         invoiceId: newPayment.invoiceId,
         amount: newPayment.amount,
-        method: backendMethod as any,
+        method: backendMethod,
+        paymentMode: backendMethod,
         notes: newPayment.notes,
         date: newPayment.date,
         status: 'completed'
@@ -514,7 +527,7 @@ export function Payments() {
                           <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white text-teal-500 border border-teal-100 group-hover:scale-110 transition-transform shadow-sm">
                             {methodIcon(p.method)}
                           </span>
-                          <span className="font-bold">{p.method}</span>
+                          <span className="font-bold">{formatMethod(p.method)}</span>
                         </div>
                       </div>
                     )}
@@ -595,7 +608,7 @@ export function Payments() {
                             <span className="text-gray-700">{formatMethod(p.method)}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-3.5 font-semibold text-gray-900">Rs. {p.amount.toLocaleString()}</td>
+                        <td className="px-6 py-3.5 font-semibold text-gray-900">₹{p.amount.toLocaleString()}</td>
                         <td className="px-6 py-3.5 text-gray-500">{p.date}</td>
                         <td className="px-6 py-3.5">
                           <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${p.reconciled
@@ -778,7 +791,7 @@ export function Payments() {
                       className={`w-full px-3 py-2 bg-white border rounded-xl text-xs cursor-pointer transition-all flex justify-between items-center shadow-sm ${showMethodDropdown ? 'border-teal-300 shadow-[0_0_0_3px_rgba(20,184,166,0.08)]' : 'border-teal-100 hover:border-teal-200'}`}
                     >
                       <div className="flex items-center gap-1.5 truncate">
-                        <span className="text-teal-500 text-sm flex-shrink-0">{methodIcon(newPayment.method)}</span>
+                        <span className="text-teal-500 text-sm flex-shrink-0">{methodIcon(DISPLAY_TO_BACKEND[newPayment.method] || newPayment.method)}</span>
                         <span className="font-semibold text-gray-800 truncate text-[11px]">{newPayment.method}</span>
                       </div>
                       <ChevronDown size={13} className={`text-gray-400 transition-transform flex-shrink-0 ml-1 ${showMethodDropdown ? 'rotate-180' : ''}`} />
@@ -795,7 +808,7 @@ export function Payments() {
                               onClick={() => { setNewPayment({ ...newPayment, method: m }); setShowMethodDropdown(false); }}
                               className={`px-3 py-2 hover:bg-teal-50/60 cursor-pointer transition flex items-center gap-2 border-b border-gray-50 last:border-0 ${newPayment.method === m ? 'bg-teal-50/40' : ''}`}
                             >
-                              <span className="text-teal-500">{methodIcon(m)}</span>
+                              <span className="text-teal-500">{methodIcon(DISPLAY_TO_BACKEND[m] || m)}</span>
                               <span className={`text-[11px] font-medium flex-1 ${newPayment.method === m ? 'text-teal-700 font-bold' : 'text-gray-700'}`}>{m}</span>
                               {newPayment.method === m && <CheckCircle size={12} className="text-teal-500" />}
                             </div>
@@ -942,7 +955,7 @@ export function Payments() {
                   <div className="space-y-4">
                     <div className="bg-teal-50 p-4 rounded-2xl border border-teal-100">
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total for {selectedInvoice}</p>
-                      <p className="text-2xl font-bold text-gray-900">Rs. {total.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-gray-900">₹{total.toLocaleString()}</p>
                       <p className="text-xs text-teal-600 mt-1 font-medium">{matchingPayments.length} payment(s)</p>
                     </div>
                     {matchingPayments.map(p => (
@@ -957,7 +970,7 @@ export function Payments() {
                           </div>
                         </div>
                         <div className="text-right flex flex-col items-end gap-1">
-                          <p className="text-sm font-bold text-gray-900">Rs. {p.amount.toLocaleString()}</p>
+                          <p className="text-sm font-bold text-gray-900">₹{p.amount.toLocaleString()}</p>
                           <div className="flex items-center gap-2">
                             {!p.reconciled && (
                               <button

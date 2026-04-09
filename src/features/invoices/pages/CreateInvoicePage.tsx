@@ -11,7 +11,7 @@ import {
     ArrowLeft, Plus, Sparkles, Loader2, AlertCircle,
     Trash2, Eye, FileText, PenLine, RefreshCcw, CreditCard,
     X, Check, ChevronLeft, ChevronRight, Building2, User,
-    Calendar, Hash, Percent, StickyNote, Shield, Banknote,
+    Calendar, Hash, Percent, StickyNote, Shield,
     Landmark, Globe, Coins, Search, ChevronDown,
 } from 'lucide-react';
 import { useData } from '@/app/providers/DataContext';
@@ -71,14 +71,7 @@ const CURRENCIES = [
 
 const TAX_LABELS = ['GST', 'VAT', 'None'];
 
-const PAYMENT_METHODS = [
-    { id: 'upi',      label: 'UPI',           icon: Coins },
-    { id: 'bank',     label: 'Bank transfer',  icon: Landmark },
-    { id: 'paypal',   label: 'PayPal',         icon: Banknote },
-    { id: 'razorpay', label: 'Razorpay',       icon: CreditCard },
-    { id: 'stripe',   label: 'Stripe',         icon: Globe },
-    { id: 'cash',     label: 'Cash',           icon: Coins },
-];
+const PAYMENT_METHODS: { id: string; label: string; icon: any }[] = [];
 
 const FREQUENCIES = ['Weekly', 'Monthly', 'Quarterly', 'Yearly'];
 
@@ -404,9 +397,9 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                             </div>
                         )}
                     </div>
-                    <Field label="Invoice ID">
+                    <Field label="Invoice Number">
                         <div className="relative">
-                            <input {...register('invoiceNumber')} className={INP + ' pr-8'} />
+                            <input {...register('invoiceNumber')} placeholder="Auto-generated if left empty" className={INP + ' pr-8'} />
                             <Hash size={12} className="absolute right-3 top-2.5 text-[#6B6E76] pointer-events-none" />
                         </div>
                     </Field>
@@ -695,30 +688,6 @@ function StepPayment({
 
     return (
         <div className="space-y-4">
-            {/* Payment methods */}
-            <SectionCard>
-                <SectionHead icon={CreditCard} label="Payment methods" />
-                <div className="flex flex-wrap gap-2">
-                    {PAYMENT_METHODS.map(({ id, label }) => {
-                        const selected = payments.includes(id);
-                        return (
-                            <button
-                                key={id}
-                                type="button"
-                                onClick={() => togglePayment(id)}
-                                className={`px-3 py-2 rounded-lg border text-xs font-semibold transition ${
-                                    selected
-                                        ? 'bg-teal-50 border-teal-200 text-teal-700 shadow-sm'
-                                        : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
-                                }`}
-                            >
-                                {selected && <Check size={10} className="inline mr-1" />}
-                                {label}
-                            </button>
-                        );
-                    })}
-                </div>
-            </SectionCard>
 
             {/* Options */}
             <SectionCard>
@@ -949,7 +918,7 @@ export function CreateInvoice() {
         formState: { errors },
     } = useForm<InvoiceForm>({
         defaultValues: {
-            invoiceNumber:      `INV-2627-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+            invoiceNumber:      '',
             date:               new Date().toISOString().split('T')[0],
             dueDate:            new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             status:             'draft',
@@ -1138,9 +1107,9 @@ export function CreateInvoice() {
 
     /* ── Save ── */
     const onSave = async (data: InvoiceForm) => {
+        if (!data.customerName) { alert('Please enter a Client Name'); return; }
         setSaving(true);
         try {
-            if (!data.customerName) { alert('Please enter a Client Name'); return; }
             await dataService.saveInvoice({
                 ...data,
                 id: invoiceId || data.id,
@@ -1274,16 +1243,6 @@ export function CreateInvoice() {
                             ? <><Check size={11} className="text-emerald-400" /> Saved!</>
                             : 'Save draft'
                         }
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={handleSubmit(onSave)}
-                        disabled={saving}
-                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-teal-600 border border-gray-200 text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-teal-500/20"
-                    >
-                        {saving && <Loader2 size={14} className="animate-spin" />}
-                        Create Invoice
                     </button>
                 </div>
             </header>
