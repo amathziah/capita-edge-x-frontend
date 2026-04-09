@@ -305,9 +305,9 @@ export function Payments() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowRecordModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 transition shadow-sm"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
             >
-              <Plus size={16} /> Record Payment
+              <Plus className="w-5 h-5" /> Record Payment
             </button>
             <button
               onClick={() => exportCSV(filtered)}

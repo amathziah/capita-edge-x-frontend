@@ -444,7 +444,7 @@ export function Customers() {
                       setSelectedCustomer(null);
                       setShowCustomerModal(true);
                     }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-teal-50 text-sm font-semibold text-teal-700 hover:bg-teal-100 transition"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
                   >
                     <Plus size={16} /> Add Customer
                   </button>
@@ -613,9 +613,9 @@ export function Customers() {
                   <p className="text-gray-400 mt-2 text-sm">Add your first client to get started.</p>
                   <button
                     onClick={() => { setIsEditing(false); setSelectedCustomer(null); setShowCustomerModal(true); }}
-                    className="mt-4 px-4 py-2.5 rounded-xl bg-teal-50 border border-gray-200 text-sm font-semibold text-teal-700 hover:bg-teal-100 transition"
+                    className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
                   >
-                    <Plus size={14} className="inline mr-1" /> Add Customer
+                    <Plus size={14} /> Add Customer
                   </button>
                 </div>
               ) : viewMode === 'grid' ? (

@@ -142,9 +142,11 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`hidden lg:flex flex-col h-screen bg-[#0c0f1a] text-gray-300 select-none transition-all duration-75 overflow-visible ${collapsed ? "w-[68px]" : "w-[220px]"
+      className={`relative hidden lg:flex flex-col h-screen bg-[#0c0f1a] text-gray-300 select-none transition-all duration-75 overflow-visible border-r border-teal-500/10 ${collapsed ? "w-[68px]" : "w-[220px]"
         }`}
     >
+      {/* Gradient separator — fades from teal to transparent */}
+      <div className="absolute right-0 top-0 h-full w-px bg-gradient-to-b from-teal-500/20 via-white/[0.04] to-transparent pointer-events-none z-10" />
 
       {/* ── Brand (click to toggle) ───────────────────────────── */}
       <button
@@ -185,7 +187,7 @@ export function Sidebar() {
                   <span className="text-[10px] font-bold tracking-[0.12em] text-gray-400 uppercase whitespace-nowrap">
                     {SECTION_LABELS[section]}
                   </span>
-                  <div className="flex-1 h-px bg-white/[0.04]" />
+                  <div className="flex-1 h-px bg-white/[0.08]" />
                 </div>
               ) : (
                 <div className="flex justify-center mb-2">

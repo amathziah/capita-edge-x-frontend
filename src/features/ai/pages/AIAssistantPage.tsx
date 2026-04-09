@@ -1534,14 +1534,12 @@ Choose a desk to get started, or ask me anything.`,
       `}</style>
 
       <div
-        className="flex flex-col w-full max-w-[1400px] mx-auto h-full px-4 pb-4 pt-4 lg:pt-6 overflow-hidden"
+        className="flex flex-col w-full h-screen overflow-hidden"
       >
         {/* Outer shell */}
         <div className="
           flex flex-col flex-1 min-h-0 overflow-hidden relative cursor-default
-          bg-[#0c0f1a] rounded-2xl lg:rounded-3xl
-          border border-white/[0.07]
-          shadow-[0_0_60px_-15px_rgba(45,212,191,0.18)]
+          bg-[#0c0f1a]
           font-sans text-gray-300
         ">
           {/* Background glows */}

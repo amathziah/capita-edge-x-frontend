@@ -225,10 +225,9 @@ export function Expenses() {
         <div className="flex gap-2">
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-medium shadow-soft transition"
-            style={{ backgroundColor: '#14b8b8' }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
             Add Expense
           </button>
         </div>

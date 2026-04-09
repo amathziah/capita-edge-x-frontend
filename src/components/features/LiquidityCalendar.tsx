@@ -529,11 +529,6 @@ export function LiquidityCalendar() {
                         Cash Flow Calendar
                     </h1>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                    <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-black transition-all shadow-lg shadow-slate-900/20">
-                        <Plus size={13} /> Add Forecast
-                    </button>
-                </div>
             </div>
 
             {/* ── Stat Cards ── */}

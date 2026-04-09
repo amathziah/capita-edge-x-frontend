@@ -50,12 +50,21 @@ export function Layout() {
     };
   }, []);
 
+  if (isAIActive) {
+    return (
+      <div className="h-screen w-screen bg-background overflow-hidden">
+        <RefreshingIndicator />
+        <Outlet />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-background">
       <RefreshingIndicator />
       <Sidebar />
 
-      <div className="flex-1 flex flex-col min-w-0 pb-16 lg:pb-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-16 lg:pb-0 shadow-[inset_4px_0_24px_rgba(0,0,0,0.06)]">
         <Header sidebarOpen={false} setSidebarOpen={() => { }} />
 
         <main className={`flex-1 flex flex-col overflow-x-hidden ${isNoScrollPage ? 'overflow-y-hidden' : 'overflow-y-auto'}`}>
