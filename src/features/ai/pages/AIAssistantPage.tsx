@@ -430,7 +430,7 @@ function ChatBubble({
                 Capita
               </span>
               <span className="text-[9px] text-white/10">·</span>
-              <span className="text-[9px] text-white/25 font-medium">Strategic AI</span>
+              <span className="text-[9px] text-white/25 font-medium">AI CFO</span>
             </div>
           )}
 
