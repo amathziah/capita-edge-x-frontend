@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
-import { dataService } from '@/services/dataService';
-import { API_URL } from '@/api/client';
-import { ENDPOINTS } from '@/api/endpoints';
+import { dataService } from '@/shared/services/dataService';
+import { API_URL } from '@/shared/api/client';
+import { ENDPOINTS } from '@/shared/api/endpoints';
 import { Invoice } from '@/types';
-import { invoiceService } from '@/services/invoiceService';
-import { usePersona } from '@/contexts/PersonaContext';
+import { invoiceService } from '@/shared/services/invoiceService';
+import { usePersona } from '@/app/providers/PersonaContext';
 import {
     ArrowLeft, Plus, Sparkles, Loader2, AlertCircle,
     Trash2, Eye, FileText, PenLine, RefreshCcw, CreditCard,
@@ -14,8 +14,8 @@ import {
     Calendar, Hash, Percent, StickyNote, Shield, Banknote,
     Landmark, Globe, Coins, Search, ChevronDown,
 } from 'lucide-react';
-import { useData } from '@/contexts/DataContext';
-import { InvoiceCalculator } from '@/lib/financialMath';
+import { useData } from '@/app/providers/DataContext';
+import { InvoiceCalculator } from '@/shared/lib/financialMath';
 import { InvoiceDocumentPreview } from '@/features/invoices/components/InvoiceDocumentPreview';
 
 /* ─────────────────────────────────────────────────────────────

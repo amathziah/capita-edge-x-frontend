@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Download, Mail, Building2, Loader2, AlertCircle } from 'lucide-react';
-import { API_URL } from '@/api/client';
+import { API_URL } from '@/shared/api/client';
 import { InvoiceDocumentPreview } from '@/features/invoices/components/InvoiceDocumentPreview';
 
 interface SharedInvoicePayload {

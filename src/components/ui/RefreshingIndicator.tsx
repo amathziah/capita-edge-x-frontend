@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '@/app/providers/DataContext';
 
 export function RefreshingIndicator() {
   const { loading, invoices, payments, customers, expenses, products } = useData();

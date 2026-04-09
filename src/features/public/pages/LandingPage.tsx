@@ -11,8 +11,8 @@ import {
 import { Link } from 'react-router-dom';
 import { Logo } from '@/components/common/Logo';
 import { Pricing } from '@/features/public/pages/PricingPage';
-import { CapitaCore } from '@/components/landing/CapitaCore';
-import { LegalModal, PolicyType } from '@/components/features/LegalModal';
+import { CapitaCore } from '@/features/public/components/CapitaCore';
+import { LegalModal, PolicyType } from '@/features/compliance/components/LegalModal';
 import { brandProfile } from '@/shared/lib/config/brandProfile';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useData } from '@/contexts/DataContext';
-import { usePersona } from '@/contexts/PersonaContext';
+import { useData } from '@/app/providers/DataContext';
+import { usePersona } from '@/app/providers/PersonaContext';
 import {
     AlertTriangle,
     TrendingUp,
@@ -18,8 +18,8 @@ import {
     Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { InvoiceLifecycleMap } from '@/components/Visualizations/InvoiceLifecycleMap';
-import { SYNC_STEPS } from '@/utils/aiLoadingSteps';
+import { InvoiceLifecycleMap } from '@/features/invoices/components/InvoiceLifecycleMap';
+import { SYNC_STEPS } from '@/shared/utils/aiLoadingSteps';
 
 const getInvoiceBalanceDue = (invoice: any) => {
     const explicitBalance = invoice.balance_due ?? invoice.balanceDue;

@@ -1,8 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { usePersona } from '@/contexts/PersonaContext';
+import { useAuth } from '@/app/providers/AuthContext';
+import { usePersona } from '@/app/providers/PersonaContext';
 import { Loader2 } from 'lucide-react';
-import { hasCompletedOnboarding, needsOnboarding } from '@/lib/authFlow';
+import { hasCompletedOnboarding, needsOnboarding } from '@/shared/lib/authFlow';
 
 export const ProtectedRoute = () => {
     const { user, loading } = useAuth();

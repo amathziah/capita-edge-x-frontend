@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { usePersona, BusinessType } from '@/contexts/PersonaContext';
-import { api } from '@/api/client';
-import { ENDPOINTS } from '@/api/endpoints';
-import { supabase } from '@/supabaseClient';
-import { hasCompletedOnboarding } from '@/lib/authFlow';
+import { useAuth } from '@/app/providers/AuthContext';
+import { usePersona, BusinessType } from '@/app/providers/PersonaContext';
+import { api } from '@/shared/api/client';
+import { ENDPOINTS } from '@/shared/api/endpoints';
+import { supabase } from '@/shared/lib/supabaseClient';
+import { hasCompletedOnboarding } from '@/shared/lib/authFlow';
 import {
     Loader2,
     ShieldCheck,

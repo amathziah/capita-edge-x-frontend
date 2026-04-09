@@ -1,6 +1,6 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { InvoiceCalculator } from '@/lib/financialMath';
+import { InvoiceCalculator } from '@/shared/lib/financialMath';
 import { InvoiceDocumentPreview } from '@/features/invoices/components/InvoiceDocumentPreview';
 
 type AnyInvoice = Record<string, any>;

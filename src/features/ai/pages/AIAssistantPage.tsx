@@ -4,12 +4,12 @@ import {
   Send, Mic, MicOff, Zap, RotateCcw, ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { aiService } from '@/services/aiService';
-import { usePersona } from '@/contexts/PersonaContext';
+import { aiService } from '@/shared/services/aiService';
+import { usePersona } from '@/app/providers/PersonaContext';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import * as LucideIcons from 'lucide-react';
-import { GENERAL_CHAT_STEPS } from '@/utils/aiLoadingSteps';
+import { GENERAL_CHAT_STEPS } from '@/shared/utils/aiLoadingSteps';
 import { AIWorkspaceRenderer } from '../components/AIWorkspaceRenderer';
 import { AIDomainChoiceCard } from '../components/AIDomainChoiceCard';
 

@@ -4,7 +4,7 @@ import {
     Loader2, CheckCircle2, CreditCard, ChevronRight, Mail, AlertCircle,
     Receipt, Settings2 as Settings2Icon, Eye, EyeOff
   } from 'lucide-react';
-import { dataService } from '@/services/dataService';
+import { dataService } from '@/shared/services/dataService';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@
  * NEVER uses native JS floats for monetary arithmetic.
  *
  * Usage:
- *   import { InvoiceCalculator } from '@/lib/financialMath';
+ *   import { InvoiceCalculator } from '@/shared/lib/financialMath';
  *   const result = InvoiceCalculator.calculate({ line_items, tds_rate, ... });
  */
 
