@@ -12,6 +12,7 @@ import * as LucideIcons from 'lucide-react';
 import { GENERAL_CHAT_STEPS } from '@/shared/utils/aiLoadingSteps';
 import { AIWorkspaceRenderer } from '@/features/ai/components/AIWorkspaceRenderer';
 import { AIDomainChoiceCard } from '@/features/ai/components/AIDomainChoiceCard';
+import { LogoSplash } from '@/features/public/components/LogoSplash';
 
 const IconMap: Record<string, any> = {
   TrendingUp: LucideIcons.TrendingUp,
@@ -658,6 +659,7 @@ export function AIAssistantPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [aiSplashDone, setAiSplashDone] = useState(false);
 
   /**
    * isThinking  — waiting for the first token (show skeleton)
@@ -1514,6 +1516,8 @@ Choose a desk to get started, or ask me anything.`,
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
+      {!aiSplashDone && <LogoSplash onComplete={() => setAiSplashDone(true)} />}
+
       {/*
         Inject the cursor keyframe once — avoids repeating inline animation
         definitions on every StreamingCursor render.
