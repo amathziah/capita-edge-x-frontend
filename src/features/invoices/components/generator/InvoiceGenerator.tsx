@@ -178,7 +178,8 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         projectName, setProjectName,
         orderNumber, setOrderNumber,
         isGstRegistered, setIsGstRegistered,
-        orgGstEnabled,
+        orgGstEnabled, forceIgst, setForceIgst,
+        applyGstOnAllItems, setApplyGstOnAllItems,
         dispatchDate, setDispatchDate,
         items, setItems, taxRate, setTaxRate, shipping,
         subtotal, taxAmount, total, tdsAmount, netReceivable,
@@ -509,7 +510,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                 </div>
                                 Line Items & Services
                             </h3>
-                            <button onClick={() => setItems([...items, { description: '', quantity: 1, unit: businessType === 'solopreneur' ? 'Service' : 'Qty', price: undefined, discount: 0, sac_code: '', tax_rate: 18, is_exempt: false }])} className="px-4 py-2 rounded-xl border border-teal-200 bg-white text-xs font-black text-teal-600 hover:bg-teal-50 transition-all shadow-sm">
+                            <button onClick={() => setItems([...items, { description: '', quantity: 1, unit: businessType === 'solopreneur' ? 'Service' : 'Qty', price: undefined, discount: 0, sac_code: '', tax_rate: taxRate, is_exempt: false }])} className="px-4 py-2 rounded-xl border border-teal-200 bg-white text-xs font-black text-teal-600 hover:bg-teal-50 transition-all shadow-sm">
                                 Add Row
                             </button>
                         </div>
@@ -523,6 +524,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                         <th className="px-6 py-3 text-center w-24">Qty</th>
                                         <th className="px-6 py-3 text-right w-32">Price</th>
                                         {businessType !== 'solopreneur' && <th className="px-6 py-3 text-center w-20">Disc%</th>}
+                                        {isGstRegistered && !applyGstOnAllItems && <th className="px-6 py-3 text-center w-24">Tax%</th>}
                                         <th className="px-6 py-3 text-right w-32">Amount</th>
                                         <th className="px-6 py-3 w-12 text-center"></th>
                                     </tr>
@@ -564,6 +566,11 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                                 {businessType !== 'solopreneur' && (
                                                     <td className="px-4 py-4">
                                                         <input type="number" value={item.discount ?? ''} onChange={e => updateItem(idx, { discount: e.target.value === '' ? undefined : Number(e.target.value) })} className="w-full bg-transparent text-center text-xs font-bold text-gray-400 outline-none" />
+                                                    </td>
+                                                )}
+                                                {isGstRegistered && !applyGstOnAllItems && (
+                                                    <td className="px-4 py-4">
+                                                        <input type="number" value={item.tax_rate ?? taxRate} onChange={e => updateItem(idx, { tax_rate: Number(e.target.value) })} className="w-full bg-transparent text-center text-xs font-bold text-gray-700 outline-none" />
                                                     </td>
                                                 )}
                                                 <td className="px-6 py-4 text-right">
@@ -625,21 +632,63 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                         </SectionCard>
                     </div>
 
-                    {orgGstEnabled && (
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                             <SectionCard title="Additional Context" icon={FileText}>
-                                <div className="flex items-center justify-between p-4 bg-teal-50/20 rounded-2xl border border-teal-100/50">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-white rounded-lg border border-teal-100/60 shadow-sm">
-                                            <CreditCard size={14} className="text-teal-600" />
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 bg-teal-50/20 rounded-2xl border border-teal-100/50">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-white rounded-lg border border-teal-100/60 shadow-sm">
+                                                <CreditCard size={14} className="text-teal-600" />
+                                            </div>
+                                            <div>
+                                                <span className="text-[11px] font-black text-gray-600 uppercase tracking-wider block">GST Calculation</span>
+                                                <span className="text-[9px] text-gray-400 font-semibold block mt-0.5">
+                                                    {orgGstEnabled
+                                                        ? (isGstRegistered ? `Active: ${applyGstOnAllItems ? taxRate : 'Per-item'}% ${forceIgst ? 'IGST' : 'CGST/SGST'}` : 'Disabled for this invoice')
+                                                        : 'Organization not GST-enabled'}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <span className="text-[11px] font-black text-gray-600 uppercase tracking-wider">GST Registered</span>
+                                        {orgGstEnabled ? (
+                                            <Toggle value={isGstRegistered} onChange={v => { setIsGstRegistered(v); setTaxRate(v ? (taxRate || 18) : 0); }} />
+                                        ) : (
+                                            <button onClick={() => navigate('/dashboard/settings')} className="text-[10px] font-bold text-teal-600 bg-white px-3 py-1.5 rounded-lg border border-teal-100 shadow-sm hover:bg-teal-50">
+                                                Enable in Settings
+                                            </button>
+                                        )}
                                     </div>
-                                    <Toggle value={isGstRegistered} onChange={v => { setIsGstRegistered(v); setTaxRate(v ? (taxRate || 18) : 0); }} />
+                                    {isGstRegistered && (
+                                        <>
+                                            <div className="flex items-center justify-between p-4 bg-teal-50/20 rounded-2xl border border-teal-100/50">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[11px] font-black text-gray-600 uppercase tracking-wider">Inter-state Transaction (IGST)</span>
+                                                </div>
+                                                <Toggle value={forceIgst} onChange={v => setForceIgst(v)} />
+                                            </div>
+                                            <div className="flex items-center justify-between p-4 bg-teal-50/20 rounded-2xl border border-teal-100/50">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[11px] font-black text-gray-600 uppercase tracking-wider">Apply Global GST on all items</span>
+                                                </div>
+                                                <Toggle value={applyGstOnAllItems} onChange={v => setApplyGstOnAllItems(v)} />
+                                            </div>
+                                            {applyGstOnAllItems && (
+                                                <div className="flex items-center justify-between p-4 bg-teal-50/20 rounded-2xl border border-teal-100/50">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[11px] font-black text-gray-600 uppercase tracking-wider">Global GST Rate (%)</span>
+                                                    </div>
+                                                    <input
+                                                        type="number"
+                                                        value={taxRate}
+                                                        onChange={e => setTaxRate(Number(e.target.value))}
+                                                        className="w-20 bg-white/50 border border-teal-100/60 rounded-xl px-3 py-1.5 text-sm font-bold text-gray-900 outline-none text-right focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500/40"
+                                                    />
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
                             </SectionCard>
                         </div>
-                    )}
 
                 </div>
 

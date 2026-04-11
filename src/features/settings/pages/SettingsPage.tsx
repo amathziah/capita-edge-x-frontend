@@ -312,21 +312,31 @@ function PaymentsTab({
             </select>
           </Field>
           {gstRegistered && (
-          <Field label="Default GST rate (%)">
-            <select className={inputCls} value={settings.defaultGstRate || '18'} onChange={e => onChange('defaultGstRate', e.target.value)}>
-              <option value="0">0% (Exempt / Export)</option>
-              <option value="5">5%</option>
-              <option value="12">12%</option>
-              <option value="18">18% (Most services)</option>
-              <option value="28">28%</option>
-            </select>
-          </Field>
+          <>
+            <Field label="Default GST rate (%)">
+              <input type="number" step="0.1" className={inputCls} value={settings.defaultGstRate || '18'} onChange={e => onChange('defaultGstRate', e.target.value)} />
+            </Field>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] font-semibold text-text-main leading-tight">Apply GST on all items</label>
+                <Toggle checked={settings.applyGstOnAllItems !== false && settings.applyGstOnAllItems !== 'false'} onChange={() => onChange('applyGstOnAllItems', settings.applyGstOnAllItems !== false && settings.applyGstOnAllItems !== 'false' ? false : true)} />
+              </div>
+              <p className="text-[11px] leading-tight text-text-light">Apply your default GST rate to all line items automatically.</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] font-semibold text-text-main leading-tight">Inter-state Transaction?</label>
+                <Toggle checked={settings.isInterstate === true || settings.isInterstate === 'true'} onChange={() => onChange('isInterstate', !(settings.isInterstate === true || settings.isInterstate === 'true'))} />
+              </div>
+              <p className="text-[11px] leading-tight text-text-light">Bills as IGST instead of CGST/SGST.</p>
+            </div>
+          </>
           )}
         </div>
         <Field label="Default thank-you note">
           <textarea className={`${inputCls} resize-none`} rows={2} value={settings.invoiceNotes || ''} onChange={e => onChange('invoiceNotes', e.target.value)} placeholder="e.g. Thank you for the opportunity! Looking forward to working with you again." />
         </Field>
-        <SaveRow onClick={() => onSave(['paymentTerms', 'defaultGstRate', 'invoiceNotes'], 'Invoice defaults')} saving={saving} />
+        <SaveRow onClick={() => onSave(['paymentTerms', 'defaultGstRate', 'applyGstOnAllItems', 'isInterstate', 'invoiceNotes'], 'Invoice defaults')} saving={saving} />
       </Card>
 
       <Card>

@@ -58,6 +58,10 @@ export interface InvoiceState {
     isGstRegistered: boolean;
     setIsGstRegistered: (v: boolean) => void;
     orgGstEnabled: boolean;
+    forceIgst: boolean;
+    setForceIgst: (v: boolean) => void;
+    applyGstOnAllItems: boolean;
+    setApplyGstOnAllItems: (v: boolean) => void;
     authorizedSignatory: string;
     setAuthorizedSignatory: (v: string) => void;
     placeOfSupply: string;
@@ -185,6 +189,8 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
     const [orderNumber, setOrderNumber] = useState("");
     const [isGstRegistered, setIsGstRegistered] = useState(false);
     const [orgGstEnabled, setOrgGstEnabled] = useState(false);
+    const [forceIgst, setForceIgst] = useState(false);
+    const [applyGstOnAllItems, setApplyGstOnAllItems] = useState(true);
     const [authorizedSignatory, setAuthorizedSignatory] = useState("");
     const [placeOfSupply, setPlaceOfSupply] = useState('27 - Maharashtra');
     const [reverseCharge, setReverseCharge] = useState(false);
@@ -216,7 +222,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
     const [taxRate, setTaxRate] = useState<number>(config.defaultTaxRate);
     const [shipping, setShipping] = useState<number | undefined>(undefined);
 
-    const resolvedGstType = detectGstType(
+    const resolvedGstType = forceIgst ? 'igst' : detectGstType(
         seller.taxId ?? '',
         buyer.taxId ?? '',
         {
@@ -237,7 +243,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
             discount: (item.discount && item.discount > 0)
                 ? { type: 'percentage' as const, value: item.discount }
                 : undefined,
-            tax_rate: item.is_exempt ? 0 : (item.tax_rate ?? taxRate),
+            tax_rate: item.is_exempt ? 0 : (applyGstOnAllItems ? taxRate : (item.tax_rate ?? taxRate)),
             is_interstate: isInterStateResolved,
         })),
         document_discount: (discountAmount && discountAmount > 0)
@@ -334,6 +340,8 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
             if (editingInvoice.placeOfSupply) setPlaceOfSupply(editingInvoice.placeOfSupply);
             if (editingInvoice.isGstRegistered !== undefined) setIsGstRegistered(editingInvoice.isGstRegistered !== false);
             if (editingInvoice.discountAmount) setDiscountAmount(editingInvoice.discountAmount);
+            if ((editingInvoice as any).forceIgst !== undefined) setForceIgst((editingInvoice as any).forceIgst === true);
+            if ((editingInvoice as any).applyGstOnAllItems !== undefined) setApplyGstOnAllItems((editingInvoice as any).applyGstOnAllItems !== false);
             if (editingInvoice.dispatchDate) setDispatchDate(editingInvoice.dispatchDate);
             if (editingInvoice.courierTracking) setCourierTracking(editingInvoice.courierTracking);
             setInvoiceId(editingInvoice.id);
@@ -361,6 +369,8 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
                 const resolvedTaxRate = Number.isFinite(savedTaxRate) && savedTaxRate >= 0
                     ? savedTaxRate
                     : config.defaultTaxRate;
+                setForceIgst(settings.isInterstate === true || settings.isInterstate === 'true');
+                setApplyGstOnAllItems(settings.applyGstOnAllItems !== false && settings.applyGstOnAllItems !== 'false');
                 setSeller({
                     name: settings.owner_name || settings.businessName || "",
                     phone: settings.phone || "",
@@ -461,6 +471,8 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         orderNumber, setOrderNumber,
         isGstRegistered, setIsGstRegistered,
         orgGstEnabled,
+        forceIgst, setForceIgst,
+        applyGstOnAllItems, setApplyGstOnAllItems,
         authorizedSignatory, setAuthorizedSignatory,
         placeOfSupply, setPlaceOfSupply,
         reverseCharge, setReverseCharge,

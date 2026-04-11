@@ -62,6 +62,8 @@ export function useInvoiceActions(state: InvoiceState, onClose?: () => void) {
             placeOfSupply: state.placeOfSupply || null,
             reverseCharge: state.reverseCharge || false,
             deliveryState: state.deliveryState || undefined,
+            forceIgst: state.forceIgst || false,
+            applyGstOnAllItems: state.applyGstOnAllItems,
             // TDS configuration
             tdsApplicable: state.tdsEnabled || false,
             tdsEnabled: state.tdsEnabled || false,
