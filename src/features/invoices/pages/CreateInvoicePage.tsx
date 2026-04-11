@@ -138,6 +138,7 @@ function getDocumentTitle(isGstRegistered: boolean, explicitType?: string) {
 const INP = [
     "w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] font-medium text-gray-900 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-teal-500/10 outline-none transition-shadow duration-200",
 ].join(' ');
+const SEL = `${INP} appearance-none cursor-pointer`;
 const INP_ERR = ' !border-red-400 !ring-red-500/10';
 const LBL = 'block text-[11px] font-semibold text-gray-600 uppercase tracking-wider mb-1.5';
 
@@ -186,8 +187,8 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
             role="switch"
             aria-checked={checked}
             onClick={() => onChange(!checked)}
-            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 focus:ring-offset-[#26282C] ${
-                checked ? 'bg-emerald-600' : 'bg-[#3A3C42]'
+            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 focus:ring-offset-white ${
+                checked ? 'bg-emerald-600' : 'bg-gray-300'
             }`}
         >
             <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
@@ -332,14 +333,20 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                 <SectionHead icon={Globe} label="Global Settings" />
                 <div className="grid grid-cols-2 gap-3">
                     <Field label="Currency">
-                        <select {...register('currencyCode')} className={INP}>
-                            {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
-                        </select>
+                        <div className="relative">
+                            <select {...register('currencyCode')} className={SEL + ' pr-9'}>
+                                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
+                            </select>
+                            <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        </div>
                     </Field>
                     <Field label="Taxation Type">
-                        <select {...register('taxLabel')} className={INP}>
-                            {TAX_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
-                        </select>
+                        <div className="relative">
+                            <select {...register('taxLabel')} className={SEL + ' pr-9'}>
+                                {TAX_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
+                            </select>
+                            <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        </div>
                     </Field>
                 </div>
             </SectionCard>
@@ -347,10 +354,10 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
             <SectionCard>
                 <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2">
-                        <User size={11} className="text-[#6B6E76]" />
-                        <span className="text-[10px] font-bold text-[#6B6E76] uppercase tracking-widest">Billed to (client)</span>
+                        <User size={11} className="text-gray-500" />
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Billed to (client)</span>
                     </div>
-                    <button type="button" onClick={openDrawer} className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 transition">
+                    <button type="button" onClick={openDrawer} className="text-[10px] uppercase tracking-wider font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 transition">
                         <Plus size={11} /> Add New Client
                     </button>
                 </div>
@@ -358,7 +365,7 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                     <div className="col-span-1 relative z-10">
                         <Field label="Client name" required error={errors.customerName?.message}>
                             <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B6E76] group-focus-within:text-emerald-500 transition-colors">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors">
                                     <Search size={14} />
                                 </div>
                                 <input
@@ -374,24 +381,24 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                                     autoComplete="off"
                                     className={`${INP} pl-9 ${errors.customerName ? INP_ERR : ''}`}
                                 />
-                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B6E76]" />
+                                <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             </div>
                         </Field>
 
                         {isFocused && filtered.length > 0 && (
-                            <div className="absolute left-0 right-0 top-[60px] mt-1 bg-[#26282C] border border-[#3A3C42] rounded-lg shadow-xl overflow-hidden z-[100] max-h-48 overflow-y-auto">
+                            <div className="absolute left-0 right-0 top-[60px] mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-[100] max-h-48 overflow-y-auto">
                                 {filtered.slice(0, 5).map((c: any) => (
-                                    <button 
-                                        type="button" 
-                                        key={c.id} 
+                                    <button
+                                        type="button"
+                                        key={c.id}
                                         onMouseDown={(e) => {
                                             e.preventDefault();
                                             handleSelect(c);
-                                        }} 
-                                        className="w-full text-left px-4 py-2 border-b border-[#3A3C42] last:border-0 hover:bg-[#2E3035] transition group"
+                                        }}
+                                        className="w-full text-left px-4 py-2.5 border-b border-gray-100 last:border-0 hover:bg-teal-50 transition group"
                                     >
-                                        <p className="text-sm font-semibold text-[#F0F1F3] group-hover:text-emerald-400 transition-colors">{c.name}</p>
-                                        {c.email && <p className="text-[10px] text-[#6B6E76]">{c.email}</p>}
+                                        <p className="text-sm font-semibold text-gray-900 group-hover:text-teal-700 transition-colors">{c.name}</p>
+                                        {c.email && <p className="text-[10px] text-gray-500">{c.email}</p>}
                                     </button>
                                 ))}
                             </div>
@@ -400,7 +407,7 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                     <Field label="Invoice Number">
                         <div className="relative">
                             <input {...register('invoiceNumber')} placeholder="Auto-generated if left empty" className={INP + ' pr-8'} />
-                            <Hash size={12} className="absolute right-3 top-2.5 text-[#6B6E76] pointer-events-none" />
+                            <Hash size={12} className="absolute right-3 top-2.5 text-gray-400 pointer-events-none" />
                         </div>
                     </Field>
                     <Field label="Client email">
@@ -453,14 +460,14 @@ function StepItems({ register, control, watch, calcResult }: { register: any; co
                     <button
                         type="button"
                         onClick={() => append({ description: '', quantity: 1, price: 0 })}
-                        className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-[#0F2419] border border-emerald-700 px-3 py-1.5 rounded-lg hover:bg-emerald-900/30 transition shadow-sm"
+                        className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition shadow-sm"
                     >
                         <Plus size={11} /> Add row
                     </button>
                 </div>
 
                 {/* Table header */}
-                <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-gray-50/50 rounded-t-2xl border border-[#e2e8f0]">
+                <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-gray-50/50 rounded-t-2xl border border-gray-200">
                     <div className="col-span-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">Description</div>
                     <div className="col-span-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] text-center">Qty</div>
                     <div className="col-span-3 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] text-right">Rate ₹</div>
@@ -468,15 +475,15 @@ function StepItems({ register, control, watch, calcResult }: { register: any; co
                 </div>
 
                 {/* Table rows */}
-                <div className="border border-[#e2e8f0] border-t-0 rounded-b-2xl overflow-hidden bg-white">
+                <div className="border border-gray-200 border-t-0 rounded-b-2xl overflow-hidden bg-white">
                     {fields.length === 0 ? (
-                        <div className="py-8 text-center bg-[#212225]">
-                            <p className="text-xs text-[#6B6E76] italic">No items yet — click "Add item" above</p>
+                        <div className="py-8 text-center bg-gray-50">
+                            <p className="text-xs text-gray-400 italic">No items yet — click "Add item" above</p>
                         </div>
                     ) : fields.map((field, i) => {
                         const amt = (watchedItems[i]?.quantity || 0) * (watchedItems[i]?.price || 0);
                         return (
-                            <div key={field.id} className="border-b border-[#f1f5f9] last:border-0 hover:bg-teal-50/30 group bg-white transition-colors">
+                            <div key={field.id} className="border-b border-gray-100 last:border-0 hover:bg-teal-50/30 group bg-white transition-colors">
                                 <div className="grid grid-cols-12 gap-2 px-6 py-4 items-center">
                                     <div className="col-span-6">
                                         <input
@@ -511,7 +518,7 @@ function StepItems({ register, control, watch, calcResult }: { register: any; co
                                 </div>
                                 {amt > 0 && (
                                     <div className="px-3 pb-1.5 text-right">
-                                        <span className="text-[10px] text-[#6B6E76] tabular-nums">= ₹{formatInrAmount(amt)}</span>
+                                        <span className="text-[10px] text-gray-400 tabular-nums">= ₹{formatInrAmount(amt)}</span>
                                     </div>
                                 )}
                             </div>
@@ -695,10 +702,10 @@ function StepPayment({
 
                 <div className="flex items-center justify-between py-1">
                     <div className="flex items-center gap-2.5">
-                        <PenLine size={14} className="text-[#6B6E76]" />
+                        <PenLine size={14} className="text-gray-500" />
                         <div>
-                            <p className="text-sm font-semibold text-[#F0F1F3]">Include signature</p>
-                            <p className="text-xs text-[#6B6E76]">Add a digital signature block</p>
+                            <p className="text-sm font-semibold text-gray-900">Include signature</p>
+                            <p className="text-xs text-gray-500">Add a digital signature block</p>
                         </div>
                     </div>
                     <Toggle
@@ -707,7 +714,7 @@ function StepPayment({
                     />
                 </div>
 
-                <div className="h-px bg-[#3A3C42]" />
+                <div className="h-px bg-gray-100" />
 
                 {isSig && (
                     <Field label="Signature name">
@@ -721,10 +728,10 @@ function StepPayment({
 
                 <div className="flex items-center justify-between py-1">
                     <div className="flex items-center gap-2.5">
-                        <RefreshCcw size={14} className="text-[#6B6E76]" />
+                        <RefreshCcw size={14} className="text-gray-500" />
                         <div>
-                            <p className="text-sm font-semibold text-[#F0F1F3]">Recurring invoice</p>
-                            <p className="text-xs text-[#6B6E76]">Auto-send on a set schedule</p>
+                            <p className="text-sm font-semibold text-gray-900">Recurring invoice</p>
+                            <p className="text-xs text-gray-500">Auto-send on a set schedule</p>
                         </div>
                     </div>
                     <Toggle
@@ -735,9 +742,12 @@ function StepPayment({
 
                 {isRecurring && (
                     <Field label="Frequency">
-                        <select {...register('recurringFrequency')} className={INP}>
-                            {FREQUENCIES.map(f => <option key={f}>{f}</option>)}
-                        </select>
+                        <div className="relative">
+                            <select {...register('recurringFrequency')} className={SEL + ' pr-9'}>
+                                {FREQUENCIES.map(f => <option key={f}>{f}</option>)}
+                            </select>
+                            <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        </div>
                     </Field>
                 )}
             </SectionCard>
@@ -852,7 +862,7 @@ function AuditPanel({
             <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2.5">
                     <Sparkles size={16} className="text-violet-400" />
-                    <span className="text-base font-bold text-violet-300">AI Audit Report</span>
+                    <span className="text-base font-bold text-violet-600">AI Audit Report</span>
                 </div>
                 <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition">
                     <X size={16} />
@@ -863,7 +873,7 @@ function AuditPanel({
                 {analyzing ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3">
                         <Loader2 size={28} className="animate-spin text-violet-400" />
-                        <p className="text-sm font-semibold text-[#A8AAAF]">Auditing invoice…</p>
+                        <p className="text-sm font-semibold text-gray-500">Auditing invoice…</p>
                     </div>
                 ) : auditResult ? (
                     <>
@@ -1200,8 +1210,8 @@ export function CreateInvoice() {
             }}
         >
             {loadingDefaults && (
-                <div className="absolute inset-0 z-20 bg-[#1A1B1E]/80 backdrop-blur-sm flex items-center justify-center">
-                    <div className="flex items-center gap-3 text-[#F0F1F3] text-sm font-semibold">
+                <div className="absolute inset-0 z-20 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                    <div className="flex items-center gap-3 text-gray-700 text-sm font-semibold">
                         <Loader2 size={16} className="animate-spin" />
                         <span>Loading organisation invoice defaults…</span>
                     </div>
@@ -1229,7 +1239,7 @@ export function CreateInvoice() {
                     <button
                         type="button"
                         onClick={() => navigate(-1)}
-                        className="px-3 py-1.5 text-xs font-semibold text-[#A8AAAF] border border-[#3A3C42] rounded-lg hover:bg-[#26282C] transition"
+                        className="px-3 py-1.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100 transition"
                     >
                         Discard
                     </button>
@@ -1237,10 +1247,10 @@ export function CreateInvoice() {
                     <button
                         type="button"
                         onClick={onDraft}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#A8AAAF] border border-[#3A3C42] rounded-lg hover:bg-[#26282C] transition"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100 transition"
                     >
                         {savedDraft
-                            ? <><Check size={11} className="text-emerald-400" /> Saved!</>
+                            ? <><Check size={11} className="text-emerald-600" /> Saved!</>
                             : 'Save draft'
                         }
                     </button>

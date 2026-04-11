@@ -248,23 +248,19 @@ export function SharedInvoicePage() {
             />
           </div>
 
-          <div className="space-y-6">
-            <div className={`${theme.cardBg} rounded-[28px] shadow-xl border ${theme.cardBorder} p-6`}>
-              <p className={`text-xs uppercase tracking-[0.2em] ${theme.muted} mb-4`}>Public invoice</p>
-              <div className={`space-y-3 text-sm ${theme.body}`}>
-                <div className="flex items-start gap-3">
-                  <Building2 className={`w-4 h-4 mt-0.5 ${theme.muted}`} />
-                  <span>The document shown here now uses the same invoice preview renderer as the internal invoice screens.</span>
-                </div>
-                {settings.email && (
+          {settings.email && (
+            <div className="space-y-6">
+              <div className={`${theme.cardBg} rounded-[28px] shadow-xl border ${theme.cardBorder} p-6`}>
+                <p className={`text-xs uppercase tracking-[0.2em] ${theme.muted} mb-4`}>Contact sender</p>
+                <div className={`space-y-3 text-sm ${theme.body}`}>
                   <div className="flex items-start gap-3">
                     <Mail className={`w-4 h-4 mt-0.5 ${theme.muted}`} />
                     <span>{settings.email}</span>
                   </div>
-                )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
