@@ -178,6 +178,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
         projectName, setProjectName,
         orderNumber, setOrderNumber,
         isGstRegistered, setIsGstRegistered,
+        orgGstEnabled,
         dispatchDate, setDispatchDate,
         items, setItems, taxRate, setTaxRate, shipping,
         subtotal, taxAmount, total, tdsAmount, netReceivable,
@@ -457,13 +458,15 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                                     </AnimatePresence>
                                 </div>
                             </InputWrapper>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className={`grid ${orgGstEnabled ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
                                 <InputWrapper label="Invoice ID">
                                     <input value={meta.number || ''} disabled className={`${commonInputClass} opacity-60 bg-gray-50/50 cursor-not-allowed`} />
                                 </InputWrapper>
-                                <InputWrapper label="GST Identification (Client)">
-                                    <input value={buyer.taxId || ''} onChange={e => setBuyer({ ...buyer, taxId: e.target.value.toUpperCase() })} placeholder="GSTIN" className={commonInputClass} />
-                                </InputWrapper>
+                                {orgGstEnabled && (
+                                    <InputWrapper label="GST Identification (Client)">
+                                        <input value={buyer.taxId || ''} onChange={e => setBuyer({ ...buyer, taxId: e.target.value.toUpperCase() })} placeholder="GSTIN" className={commonInputClass} />
+                                    </InputWrapper>
+                                )}
                             </div>
                         </SectionCard>
 
@@ -622,19 +625,21 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                         </SectionCard>
                     </div>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <SectionCard title="Additional Context" icon={FileText}>
-                            <div className="flex items-center justify-between p-4 bg-teal-50/20 rounded-2xl border border-teal-100/50">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-white rounded-lg border border-teal-100/60 shadow-sm">
-                                        <CreditCard size={14} className="text-teal-600" />
+                    {orgGstEnabled && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <SectionCard title="Additional Context" icon={FileText}>
+                                <div className="flex items-center justify-between p-4 bg-teal-50/20 rounded-2xl border border-teal-100/50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white rounded-lg border border-teal-100/60 shadow-sm">
+                                            <CreditCard size={14} className="text-teal-600" />
+                                        </div>
+                                        <span className="text-[11px] font-black text-gray-600 uppercase tracking-wider">GST Registered</span>
                                     </div>
-                                    <span className="text-[11px] font-black text-gray-600 uppercase tracking-wider">GST Registered</span>
+                                    <Toggle value={isGstRegistered} onChange={v => { setIsGstRegistered(v); setTaxRate(v ? (taxRate || 18) : 0); }} />
                                 </div>
-                                <Toggle value={isGstRegistered} onChange={v => { setIsGstRegistered(v); setTaxRate(v ? (taxRate || 18) : 0); }} />
-                            </div>
-                        </SectionCard>
-                    </div>
+                            </SectionCard>
+                        </div>
+                    )}
 
                 </div>
 

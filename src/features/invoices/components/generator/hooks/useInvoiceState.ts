@@ -57,6 +57,7 @@ export interface InvoiceState {
     setOrderNumber: (v: string) => void;
     isGstRegistered: boolean;
     setIsGstRegistered: (v: boolean) => void;
+    orgGstEnabled: boolean;
     authorizedSignatory: string;
     setAuthorizedSignatory: (v: string) => void;
     placeOfSupply: string;
@@ -183,6 +184,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
     const [shippingAddress, setShippingAddress] = useState("");
     const [orderNumber, setOrderNumber] = useState("");
     const [isGstRegistered, setIsGstRegistered] = useState(false);
+    const [orgGstEnabled, setOrgGstEnabled] = useState(false);
     const [authorizedSignatory, setAuthorizedSignatory] = useState("");
     const [placeOfSupply, setPlaceOfSupply] = useState('27 - Maharashtra');
     const [reverseCharge, setReverseCharge] = useState(false);
@@ -343,8 +345,18 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
 
         dataService.getSettings().then(settings => {
             if (settings.logoFilename) setLogo(dataService.getLogoUrl(settings.logoFilename));
+            const gstSetting = settings.isGstRegistered;
+            const gstOptedIn = gstSetting === true || gstSetting === 'true';
+            const gstOptedOut = gstSetting === false || gstSetting === 'false';
+            const savedTaxId = settings.companyTaxId || settings.gstin || "";
+            const orgGst = gstOptedIn || (gstSetting === undefined && Boolean(savedTaxId));
+            const editingHasGst = Boolean(editingInvoice && editingInvoice.isGstRegistered !== false);
+            setOrgGstEnabled(orgGst || editingHasGst);
+            if (gstOptedOut && !editingHasGst) {
+                setIsGstRegistered(false);
+                setTaxRate(0);
+            }
             if (!editingInvoice) {
-                const savedTaxId = settings.companyTaxId || settings.gstin || "";
                 const savedTaxRate = Number(settings.defaultGstRate);
                 const resolvedTaxRate = Number.isFinite(savedTaxRate) && savedTaxRate >= 0
                     ? savedTaxRate
@@ -354,7 +366,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
                     phone: settings.phone || "",
                     email: settings.email || "",
                     address: settings.address || "",
-                    taxId: savedTaxId,
+                    taxId: orgGst ? savedTaxId : "",
                     upiId: settings.upiId || "",
                     paymentQrUrl: settings.paymentQrFilename ? dataService.getPaymentQrUrl(settings.paymentQrFilename) : "",
                     bankName: settings.bankName || "",
@@ -364,8 +376,8 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
                     includeSignature: Boolean(settings.owner_name || settings.businessName),
                     signatureName: settings.owner_name || settings.businessName || "",
                 });
-                setIsGstRegistered(Boolean(savedTaxId));
-                setTaxRate(Boolean(savedTaxId) ? resolvedTaxRate : 0);
+                setIsGstRegistered(orgGst);
+                setTaxRate(orgGst ? resolvedTaxRate : 0);
             }
         }).catch(e => console.error("Failed to load settings", e));
 
@@ -448,6 +460,7 @@ export function useInvoiceState({ businessType, editingInvoice, initialData }: U
         shippingAddress, setShippingAddress,
         orderNumber, setOrderNumber,
         isGstRegistered, setIsGstRegistered,
+        orgGstEnabled,
         authorizedSignatory, setAuthorizedSignatory,
         placeOfSupply, setPlaceOfSupply,
         reverseCharge, setReverseCharge,

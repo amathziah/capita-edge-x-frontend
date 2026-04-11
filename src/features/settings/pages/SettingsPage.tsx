@@ -152,6 +152,9 @@ function GeneralTab({ settings, onChange, onSave, saving }: TabProps) {
   const categoryOptions = isCustomCategory
     ? [...freelanceCategories.slice(0, -1), savedCategory, 'Other']
     : freelanceCategories;
+  const gstRegistered = settings.isGstRegistered === undefined
+    ? Boolean(settings.companyTaxId || settings.gstin)
+    : (settings.isGstRegistered === true || settings.isGstRegistered === 'true');
 
   return (
     <div className="space-y-4">
@@ -200,11 +203,29 @@ function GeneralTab({ settings, onChange, onSave, saving }: TabProps) {
           <Field label="Your standard daily rate" hint="Used by Capita to estimate project profitability">
             <input type="number" className={inputCls} value={settings.dailyRate || ''} onChange={e => onChange('dailyRate', e.target.value)} placeholder="e.g. 8000" />
           </Field>
-          <Field label="Tax ID / GSTIN" hint="If registered for GST">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[13px] font-semibold text-text-main leading-tight">GST registered</label>
+              <Toggle
+                checked={gstRegistered}
+                onChange={() => {
+                  const next = !gstRegistered;
+                  onChange('isGstRegistered', next);
+                  if (!next) onChange('companyTaxId', '');
+                }}
+              />
+            </div>
+            <p className="text-[11px] leading-tight text-text-light">
+              Turn on if you have a GSTIN and charge GST on invoices. When off, GST fields are hidden everywhere.
+            </p>
+          </div>
+        </div>
+        {gstRegistered && (
+          <Field label="Tax ID / GSTIN" hint="Shown on invoices and used to detect interstate GST">
             <input className={`${inputCls} font-mono uppercase`} value={settings.companyTaxId || ''} onChange={e => onChange('companyTaxId', e.target.value)} placeholder="27ABCDE1234F1Z5" />
           </Field>
-        </div>
-        <SaveRow onClick={() => onSave(['owner_name', 'businessName', 'freelanceCategory', 'customFreelanceCategory', 'currency', 'dailyRate', 'companyTaxId'], 'Business identity')} saving={saving} />
+        )}
+        <SaveRow onClick={() => onSave(['owner_name', 'businessName', 'freelanceCategory', 'customFreelanceCategory', 'currency', 'dailyRate', 'isGstRegistered', 'companyTaxId'], 'Business identity')} saving={saving} />
       </Card>
 
       {/* Contact */}
@@ -271,6 +292,9 @@ function PaymentsTab({
   const bankName = settings.bankName || legacyBank.bankName;
   const bankAccountNumber = settings.bankAccountNumber || legacyBank.bankAccountNumber;
   const bankIfsc = settings.bankIfsc || legacyBank.bankIfsc;
+  const gstRegistered = settings.isGstRegistered === undefined
+    ? Boolean(settings.companyTaxId || settings.gstin)
+    : (settings.isGstRegistered === true || settings.isGstRegistered === 'true');
 
   return (
     <div className="space-y-4">
@@ -287,6 +311,7 @@ function PaymentsTab({
               <option value="Net 45">Net 45 (45 days)</option>
             </select>
           </Field>
+          {gstRegistered && (
           <Field label="Default GST rate (%)">
             <select className={inputCls} value={settings.defaultGstRate || '18'} onChange={e => onChange('defaultGstRate', e.target.value)}>
               <option value="0">0% (Exempt / Export)</option>
@@ -296,6 +321,7 @@ function PaymentsTab({
               <option value="28">28%</option>
             </select>
           </Field>
+          )}
         </div>
         <Field label="Default thank-you note">
           <textarea className={`${inputCls} resize-none`} rows={2} value={settings.invoiceNotes || ''} onChange={e => onChange('invoiceNotes', e.target.value)} placeholder="e.g. Thank you for the opportunity! Looking forward to working with you again." />
@@ -507,7 +533,7 @@ function EmailTab({ settings, onChange, isVerified, connectionChecked, testingCo
 // ─── Shared tab prop type ─────────────────────────────────────────────────────
 interface TabProps {
   settings: Record<string, any>;
-  onChange: (key: string, value: string) => void;
+  onChange: (key: string, value: any) => void;
   onSave: (keys: string[], label: string) => void;
   saving: boolean;
 }
@@ -567,7 +593,7 @@ export function Settings() {
     }
   };
 
-  const handleChange = (key: string, value: string) =>
+  const handleChange = (key: string, value: any) =>
     setSettings(prev => ({ ...prev, [key]: value }));
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -603,11 +629,17 @@ export function Settings() {
         setPaymentQrFile(null);
       }
 
-      await Promise.all(
-        keys
-          .filter(k => k !== 'logoFilename' && k !== 'paymentQrFilename' && settings[k] !== undefined)
-          .map(k => dataService.saveSetting(k, settings[k]))
-      );
+      const saveKeys = keys.filter(k => k !== 'logoFilename' && k !== 'paymentQrFilename');
+      for (const key of saveKeys) {
+        const value = settings[key];
+        if (value === undefined) continue;
+        await dataService.saveSetting(key, value === null ? '' : value);
+      }
+
+      const refreshed = await dataService.getSettings();
+      setSettings(refreshed);
+      if (refreshed.logoFilename) setLogoPreview(dataService.getLogoUrl(refreshed.logoFilename));
+      if (refreshed.paymentQrFilename) setPaymentQrPreview(dataService.getPaymentQrUrl(refreshed.paymentQrFilename));
 
       setSuccessMessage(`${sectionName} saved.`);
       setTimeout(() => setSuccessMessage(null), 3000);

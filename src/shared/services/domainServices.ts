@@ -26,7 +26,7 @@ export const paymentService = {
 export const settingService = {
     getSettings: () => api.get<any>(ENDPOINTS.SETTINGS),
 
-    saveSetting: (key: string, value: string) => api.post(ENDPOINTS.SETTINGS, { key, value }),
+    saveSetting: (key: string, value: any) => api.post(ENDPOINTS.SETTINGS, { key, value }),
 
     getInventorySettings: () => api.get<any>(ENDPOINTS.INVENTORY_SETTINGS),
 

@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FileText, Download, Mail, Loader2, Eye, Printer, X, Plus, Search, Edit2, Trash2, DollarSign, CheckCircle, Share2 } from "lucide-react";
+import { FileText, Download, Mail, Loader2, Eye, X, Plus, Search, Edit2, Trash2, Share2 } from "lucide-react";
 import { dataService } from '@/shared/services/dataService';
 import { InvoiceDocumentPreview } from '@/features/invoices/components/InvoiceDocumentPreview';
 import { Invoice } from '@/types';
@@ -70,7 +70,6 @@ export function Invoices() {
 
   const [viewLoading, setViewLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [emailSending, setEmailSending] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
   const [recordingPaymentFor, setRecordingPaymentFor] = useState<Invoice | null>(null);
 
@@ -283,10 +282,6 @@ export function Invoices() {
     } finally {
       setActionLoading(null);
     }
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   // UI helpers for sort
@@ -774,146 +769,13 @@ export function Invoices() {
               )}
             </div>
 
-            {/* Modal Footer (Actions) */}
+            {/* Modal Footer */}
             <div className="p-5 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 rounded-b-2xl">
               <button
-                onClick={handlePrint}
+                onClick={() => setViewInvoiceId(null)}
                 className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-text-main hover:bg-gray-50 shadow-sm transition"
               >
-                <Printer className="w-4 h-4" /> Print
-              </button>
-              <button
-                onClick={async () => {
-                  if (!viewInvoice) return;
-                  try {
-                    showToast("Generating PDF...", "info");
-                    await dataService.downloadInvoicePdf(viewInvoice.id, viewInvoice.invoiceNumber);
-                    showToast("PDF Downloaded", "success");
-                  } catch (e) {
-                    console.error("PDF Error", e);
-                    showToast("Failed to generate PDF", "error");
-                  }
-                }}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-text-main hover:bg-gray-50 shadow-sm transition"
-              >
-                <Download className="w-4 h-4" /> PDF
-              </button>
-              <button
-                onClick={async () => {
-                  if (!viewInvoice?.share_token) {
-                    showToast("Share link not available.", 'error');
-                    return;
-                  }
-                  try {
-                    const result = await dataService.markInvoiceShared(viewInvoice.id);
-                    const nextInvoice = result?.invoice;
-                    if (nextInvoice) {
-                      setViewInvoice(nextInvoice as any);
-                      setData({
-                        invoices: invoices.map(item => item.id === viewInvoice.id ? nextInvoice : item)
-                      });
-                    }
-                    const url = dataService.getShareUrl(result?.shareToken || viewInvoice.share_token);
-                    await navigator.clipboard.writeText(url);
-                    showToast("Share link copied to clipboard!", 'success');
-                  } catch (e) {
-                    console.error(e);
-                    showToast("Failed to prepare share link", 'error');
-                  }
-                }}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition"
-              >
-                <Share2 className="w-4 h-4" /> Copy Share Link
-              </button>
-              <button
-                onClick={async () => {
-                  if (!viewInvoice) return;
-                  // Simple prompt for now (ideally use a modal)
-                  const email = prompt("Enter customer email:", viewInvoice.buyer?.email || "");
-                  if (email) {
-                    try {
-                      setEmailSending(true);
-                      showToast("Sending invoice...", "info");
-
-                      // Send
-                      await dataService.sendInvoiceEmail(viewInvoice.id, email);
-                      showToast("Email sent successfully!", "success");
-
-                      // Update local state
-                      setData({
-                        invoices: invoices.map(item =>
-                          item.id === viewInvoice.id && item.status === 'draft'
-                            ? { ...item, status: 'sent' }
-                            : item
-                        )
-                      });
-                      if (viewInvoice.status === 'draft') {
-                        setViewInvoice(prev => prev ? { ...prev, status: 'sent' } : null);
-                      }
-
-                      setViewInvoiceId(null);
-                    } catch (e) {
-                      console.error(e);
-                      showToast("Failed to send email", "error");
-                    } finally {
-                      setEmailSending(false);
-                    }
-                  }
-                }}
-                disabled={emailSending}
-                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary-dark shadow-soft hover:shadow-lg transition disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {emailSending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Mail className="w-4 h-4" />
-                )}
-                {emailSending ? 'Sending...' : (viewInvoice?.status === 'paid' ? 'Email Receipt' : 'Email Customer')}
-              </button>
-
-              {(viewInvoice?.status === 'overdue') && (
-                <button
-                  onClick={async () => {
-                    const offer = await dataService.generateSettlementOffer(viewInvoice.id) as any;
-                    if (offer) {
-                      alert(`Negotiation Email Draft:\n\nSubject: ${offer.subject}\n\n${offer.body}\n\nDiscount Offered: ${offer.discountOffered ? 'Yes (5%)' : 'No'}`);
-                    } else {
-                      showToast('Could not generate offer.', 'error');
-                    }
-                  }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-status-danger text-white rounded-xl text-sm font-medium hover:bg-red-600 shadow-soft hover:shadow-lg transition"
-                >
-                  Recover Payment
-                </button>
-              )}
-
-              {/* Edit Button In Detail Modal */}
-              <button
-                onClick={() => {
-                  setRecordingPaymentFor(viewInvoice);
-                  setViewInvoiceId(null);
-                }}
-                disabled={viewInvoice?.status === 'paid' || viewInvoice?.status === 'draft'}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium shadow-soft transition ${(viewInvoice?.status === 'paid' || viewInvoice?.status === 'draft')
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
-                  : 'bg-teal-600 text-white hover:bg-teal-700 hover:shadow-lg'
-                  }`}
-                title={viewInvoice?.status === 'draft' ? "Please send or view the invoice before recording payment" : ""}
-              >
-                {viewInvoice?.status === 'paid' ? <CheckCircle className="w-4 h-4" /> : <DollarSign className="w-4 h-4" />}
-                {viewInvoice?.status === 'paid' ? 'Payment Recorded' : (viewInvoice?.status === 'draft' ? 'Payment Restricted' : 'Record Payment')}
-              </button>
-
-              <button
-                onClick={() => {
-                  if (viewInvoice) {
-                    navigate(`${viewInvoice.id}/edit`);
-                    setViewInvoiceId(null);
-                  }
-                }}
-                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 shadow-soft hover:shadow-lg transition"
-              >
-                <Edit2 className="w-4 h-4" /> Edit Invoice
+                <X className="w-4 h-4" /> Close
               </button>
             </div>
 
