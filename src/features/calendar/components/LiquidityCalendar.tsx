@@ -1,19 +1,19 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-    Calendar as CalendarIcon,
     ChevronLeft,
     ChevronRight,
-    Plus,
     Clock,
     CheckCircle2,
     AlertCircle,
     ArrowUpRight,
+    ArrowDownLeft,
     Search,
     X,
     TrendingUp,
     Sparkles,
     LayoutGrid,
     List,
+    Receipt,
 } from 'lucide-react';
 import {
     format,
@@ -27,6 +27,7 @@ import {
     startOfWeek,
     endOfWeek,
     isToday,
+    eachDayOfInterval,
 } from 'date-fns';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,18 +39,21 @@ import { Invoice } from '@/types';
 /* ─────────────────────────────────────────────
    Types
 ───────────────────────────────────────────── */
-type FilterStatus = 'all' | 'paid' | 'pending' | 'due_today' | 'overdue';
+type FilterStatus = 'all' | 'paid' | 'pending' | 'due_today' | 'overdue' | 'expenses';
 type ViewMode = 'month' | 'list';
-type NormalizedCalendarStatus = 'paid' | 'pending' | 'due_today' | 'overdue' | 'draft' | 'closed';
+type NormalizedCalendarStatus = 'paid' | 'pending' | 'due_today' | 'overdue' | 'draft' | 'closed' | 'expense';
+type EventType = 'inflow' | 'outflow';
 
 interface CalendarEvent {
     id: string;
     title: string;
     date: Date;
     amount: number;
-    status: 'paid' | 'sent' | 'partially_paid' | 'overdue' | 'draft' | 'void' | 'write_off';
+    status: 'paid' | 'sent' | 'partially_paid' | 'overdue' | 'draft' | 'void' | 'write_off' | 'expense';
     customerName: string;
     invoiceNumber: string;
+    type: EventType;
+    category?: string;
     raw: any;
 }
 
@@ -68,6 +72,7 @@ function getBalanceDue(invoice: any) {
 
 function normaliseStatus(status: string, dueDate?: string): NormalizedCalendarStatus {
     const s = (status || '').toLowerCase().trim();
+    if (s === 'expense') return 'expense';
     if (s === 'paid') return 'paid';
     if (s === 'draft') return 'draft';
     if (s === 'overdue') return 'overdue';
@@ -81,8 +86,16 @@ function normaliseStatus(status: string, dueDate?: string): NormalizedCalendarSt
     return 'draft';
 }
 
-
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, {
+    label: string;
+    pill: string;
+    dot: string;
+    bar: string;
+    card: string;
+    badge: string;
+    icon: any;
+    iconColor: string;
+}> = {
     paid: {
         label: 'Paid',
         pill: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
@@ -133,15 +146,28 @@ const STATUS_CONFIG = {
         icon: TrendingUp,
         iconColor: 'text-slate-400',
     },
+    expense: {
+        label: 'Expense',
+        pill: 'bg-violet-50 text-violet-700 border border-violet-200',
+        dot: 'bg-violet-500',
+        bar: 'bg-violet-500',
+        card: 'border-l-violet-400',
+        badge: 'bg-violet-50 text-violet-600 ring-1 ring-violet-200',
+        icon: Receipt,
+        iconColor: 'text-violet-500',
+    },
 };
 
 function fmt(n: number) {
-    if (n >= 10_00_000) return `₹${(n / 10_00_000).toFixed(1)}L`;
-    if (n >= 1000) return `₹${(n / 1000).toFixed(0)}K`;
-    return `₹${n.toLocaleString('en-IN')}`;
+    const abs = Math.abs(n);
+    const sign = n < 0 ? '-' : '';
+    if (abs >= 10_00_000) return `${sign}₹${(abs / 10_00_000).toFixed(1)}L`;
+    if (abs >= 1000) return `${sign}₹${(abs / 1000).toFixed(0)}K`;
+    return `${sign}₹${abs.toLocaleString('en-IN')}`;
 }
 
 function fmtFull(n: number) {
+    if (n < 0) return `-₹${Math.abs(n).toLocaleString('en-IN')}`;
     return `₹${n.toLocaleString('en-IN')}`;
 }
 
@@ -152,42 +178,102 @@ function StatCard({
     label,
     value,
     sub,
-    accent,
     icon: Icon,
     iconClass,
-    delay = 0,
 }: {
     label: string;
     value: string;
     sub: string;
-    accent: string;
     icon: any;
     iconClass: string;
-    delay?: number;
 }) {
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay, ease: [0.22, 1, 0.36, 1] }}
-            className="relative bg-white rounded-2xl border border-slate-100 p-5 overflow-hidden group hover:border-slate-200 hover:shadow-lg hover:shadow-slate-100/80 transition-all duration-300"
-        >
-            {/* top accent bar */}
-            <div className={`absolute top-0 left-0 right-0 h-[3px] ${accent} rounded-t-2xl`} />
+        <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-slate-300 transition-colors">
+            <div className="flex items-start justify-between mb-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center bg-slate-50 ${iconClass}`}>
+                    <Icon size={14} />
+                </div>
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-0.5">{value}</h3>
+            <p className="text-[11px] text-slate-400">{sub}</p>
+        </div>
+    );
+}
 
-            <div className="flex items-start justify-between mb-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">{label}</p>
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center bg-slate-50 group-hover:scale-110 transition-transform duration-300 ${iconClass}`}>
-                    <Icon size={15} />
+/* ─────────────────────────────────────────────
+   Running Balance Chart
+───────────────────────────────────────────── */
+function RunningBalanceChart({ events, currentDate }: { events: CalendarEvent[]; currentDate: Date }) {
+    const dailyData = useMemo(() => {
+        const start = startOfMonth(currentDate);
+        const end = endOfMonth(currentDate);
+        const days = eachDayOfInterval({ start, end });
+        let runningBalance = 0;
+        return days.map(day => {
+            const dayEvents = events.filter(e => isSameDay(e.date, day));
+            const inflow = dayEvents.filter(e => e.type === 'inflow').reduce((s, e) => s + e.amount, 0);
+            const outflow = dayEvents.filter(e => e.type === 'outflow').reduce((s, e) => s + e.amount, 0);
+            const net = inflow - outflow;
+            runningBalance += net;
+            return { day, inflow, outflow, net, runningBalance };
+        });
+    }, [events, currentDate]);
+
+    const maxAbs = Math.max(...dailyData.map(d => Math.abs(d.net)), 1);
+
+    return (
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <p className="text-xs font-semibold text-slate-500">Daily Net Cash Flow</p>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-[11px] text-slate-400">Inflow</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span className="text-[11px] text-slate-400">Outflow</span>
+                    </div>
                 </div>
             </div>
 
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-1">{value}</h3>
-            <p className="text-[11px] font-semibold text-slate-400">{sub}</p>
+            <div className="flex items-end gap-[2px] h-14">
+                {dailyData.map((d, i) => {
+                    const h = d.net === 0 ? 4 : Math.max((Math.abs(d.net) / maxAbs) * 100, 8);
+                    return (
+                        <div key={i} className="flex-1 group/bar relative flex flex-col items-center justify-end h-full">
+                            <div
+                                className={`w-full rounded-sm ${
+                                    d.net === 0
+                                        ? 'bg-slate-100'
+                                        : d.net > 0
+                                            ? 'bg-emerald-500 group-hover/bar:bg-emerald-600'
+                                            : 'bg-rose-500 group-hover/bar:bg-rose-600'
+                                }`}
+                                style={{ height: `${h}%` }}
+                            />
+                            <div className="absolute bottom-full mb-2 hidden group-hover/bar:block z-50 pointer-events-none">
+                                <div className="bg-slate-800 text-white rounded-lg px-3 py-2 text-[11px] whitespace-nowrap shadow-lg">
+                                    <p className="font-semibold mb-1">{format(d.day, 'EEE, dd MMM')}</p>
+                                    <p className="text-emerald-300">In: {fmtFull(d.inflow)}</p>
+                                    <p className="text-rose-300">Out: {fmtFull(d.outflow)}</p>
+                                    <p className={`font-semibold mt-1 pt-1 border-t border-slate-600 ${d.net >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                                        Net: {d.net >= 0 ? '+' : ''}{fmtFull(d.net)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
 
-            {/* subtle shimmer on hover */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-br from-white/60 via-transparent to-transparent" />
-        </motion.div>
+            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+                <span>1st</span>
+                <span>Net this month: {fmtFull(dailyData[dailyData.length - 1]?.runningBalance ?? 0)}</span>
+                <span>{dailyData.length}th</span>
+            </div>
+        </div>
     );
 }
 
@@ -195,18 +281,31 @@ function StatCard({
    Event Pill (inside calendar cell)
 ───────────────────────────────────────────── */
 function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
-    const s = normaliseStatus(event.status, event.raw?.dueDate);
-    const cfg = STATUS_CONFIG[s];
+    const s = event.type === 'outflow' ? 'expense' : normaliseStatus(event.status, event.raw?.dueDate);
+    const cfg = STATUS_CONFIG[s] || STATUS_CONFIG.draft;
+    const borderColor =
+        s === 'paid' ? '#34d399' :
+        s === 'overdue' ? '#f87171' :
+        s === 'due_today' ? '#0ea5e9' :
+        s === 'pending' ? '#fbbf24' :
+        s === 'expense' ? '#8b5cf6' :
+        '#94a3b8';
+
     return (
         <button
             onClick={(e) => { e.stopPropagation(); onClick(); }}
-            className={`w-full text-left flex items-center gap-1.5 px-2 py-[3px] rounded-md text-[10px] font-semibold truncate border-l-2 ${cfg.pill} hover:brightness-95 transition-all duration-150 group/pill`}
-            style={{ borderLeftColor: s === 'paid' ? '#34d399' : s === 'overdue' ? '#f87171' : s === 'due_today' ? '#0ea5e9' : s === 'pending' ? '#fbbf24' : '#94a3b8' }}
+            className={`w-full text-left flex items-center gap-1 px-1.5 py-[3px] rounded-md text-[10px] font-semibold truncate border-l-2 ${cfg.pill} hover:brightness-95 transition-all duration-150`}
+            style={{ borderLeftColor: borderColor }}
         >
-
-            <span className={`shrink-0 w-[5px] h-[5px] rounded-full ${cfg.dot}`} />
+            {event.type === 'outflow' ? (
+                <ArrowDownLeft size={8} className="shrink-0 text-violet-500" />
+            ) : (
+                <span className={`shrink-0 w-[5px] h-[5px] rounded-full ${cfg.dot}`} />
+            )}
             <span className="truncate">{event.customerName.split(' ')[0]}</span>
-            <span className="ml-auto shrink-0 font-bold opacity-70">{fmt(event.amount)}</span>
+            <span className="ml-auto shrink-0 font-bold opacity-70">
+                {event.type === 'outflow' ? '-' : ''}{fmt(event.amount)}
+            </span>
         </button>
     );
 }
@@ -230,12 +329,15 @@ function DayCell({
     const visible = events.slice(0, MAX);
     const overflow = events.length - MAX;
 
-    const dayTotal = events.reduce((s, e) => s + e.amount, 0);
+    const inflow = events.filter(e => e.type === 'inflow').reduce((s, e) => s + e.amount, 0);
+    const outflow = events.filter(e => e.type === 'outflow').reduce((s, e) => s + e.amount, 0);
+    const net = inflow - outflow;
+    const hasActivity = events.length > 0 && isCurrentMonth;
 
     return (
         <div
             className={`
-                min-h-[108px] p-2 border-b border-r border-slate-50 flex flex-col gap-1
+                min-h-[112px] p-2 border-b border-r border-slate-50 flex flex-col gap-0.5
                 ${!isCurrentMonth ? 'bg-slate-50/40' : 'bg-white hover:bg-slate-50/50'}
                 transition-colors duration-150
             `}
@@ -254,8 +356,10 @@ function DayCell({
                 >
                     {format(date, 'd')}
                 </span>
-                {events.length > 0 && isCurrentMonth && (
-                    <span className="text-[9px] font-black text-slate-300">{fmt(dayTotal)}</span>
+                {hasActivity && (
+                    <span className={`text-[10px] font-medium ${net >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {fmt(net)}
+                    </span>
                 )}
             </div>
 
@@ -277,10 +381,10 @@ function DayCell({
    List View Row
 ───────────────────────────────────────────── */
 function ListRow({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
-    const s = normaliseStatus(event.status, event.raw?.dueDate);
-    const cfg = STATUS_CONFIG[s];
-
+    const s = event.type === 'outflow' ? 'expense' : normaliseStatus(event.status, event.raw?.dueDate);
+    const cfg = STATUS_CONFIG[s] || STATUS_CONFIG.draft;
     const Icon = cfg.icon;
+
     return (
         <motion.button
             layout
@@ -288,17 +392,26 @@ function ListRow({ event, onClick }: { event: CalendarEvent; onClick: () => void
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 8 }}
             onClick={onClick}
-            className={`w-full text-left flex items-center gap-4 px-5 py-4 bg-white border border-slate-100 rounded-2xl hover:border-slate-200 hover:shadow-md hover:shadow-slate-100 transition-all duration-200 group border-l-4 ${cfg.card}`}
+            className={`w-full text-left flex items-center gap-4 px-4 py-3.5 bg-white border border-slate-200 rounded-xl hover:border-slate-300 transition-colors group border-l-3 ${cfg.card}`}
         >
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center bg-slate-50 shrink-0 ${cfg.iconColor}`}>
                 <Icon size={17} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-800 truncate">{event.customerName}</p>
-                <p className="text-[11px] text-slate-400 font-mono">{event.invoiceNumber} · {format(event.date, 'dd MMM yyyy')}</p>
+                <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-slate-800 truncate">{event.customerName}</p>
+                    {event.type === 'outflow' && (
+                        <span className="text-[10px] font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded shrink-0">Expense</span>
+                    )}
+                </div>
+                <p className="text-[11px] text-slate-400 font-mono">
+                    {event.type === 'outflow' ? (event.category || 'Expense') : event.invoiceNumber} &middot; {format(event.date, 'dd MMM yyyy')}
+                </p>
             </div>
             <div className="text-right shrink-0">
-                <p className="text-sm font-black text-slate-900">{fmtFull(event.amount)}</p>
+                <p className={`text-sm font-black ${event.type === 'outflow' ? 'text-rose-600' : 'text-slate-900'}`}>
+                    {event.type === 'outflow' ? '-' : ''}{fmtFull(event.amount)}
+                </p>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
             </div>
             <ArrowUpRight size={15} className="text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
@@ -309,9 +422,16 @@ function ListRow({ event, onClick }: { event: CalendarEvent; onClick: () => void
 /* ─────────────────────────────────────────────
    Event Detail Modal
 ───────────────────────────────────────────── */
-function EventModal({ event, onClose, onMarkPaid, onViewInvoice }: { event: CalendarEvent; onClose: () => void; onMarkPaid: () => void; onViewInvoice: () => void }) {
-    const s = normaliseStatus(event.status);
-    const cfg = STATUS_CONFIG[s];
+function EventModal({ event, onClose, onMarkPaid, onViewInvoice, onViewExpense }: {
+    event: CalendarEvent;
+    onClose: () => void;
+    onMarkPaid: () => void;
+    onViewInvoice: () => void;
+    onViewExpense: () => void;
+}) {
+    const isExpense = event.type === 'outflow';
+    const s = isExpense ? 'expense' : normaliseStatus(event.status);
+    const cfg = STATUS_CONFIG[s] || STATUS_CONFIG.draft;
     const Icon = cfg.icon;
 
     return createPortal(
@@ -331,7 +451,7 @@ function EventModal({ event, onClose, onMarkPaid, onViewInvoice }: { event: Cale
                 exit={{ y: 40, opacity: 0, scale: 0.96 }}
                 transition={{ type: 'spring', damping: 28, stiffness: 320 }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl shadow-slate-900/15 overflow-hidden"
+                className="relative w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden"
             >
                 {/* colored top strip */}
                 <div className={`h-1 w-full ${cfg.bar}`} />
@@ -343,11 +463,9 @@ function EventModal({ event, onClose, onMarkPaid, onViewInvoice }: { event: Cale
                             <div className={`w-11 h-11 rounded-2xl flex items-center justify-center bg-slate-50 ${cfg.iconColor}`}>
                                 <Icon size={20} />
                             </div>
-                            <div>
-                                <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${cfg.badge}`}>
-                                    {cfg.label}
-                                </span>
-                            </div>
+                            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg ${cfg.badge}`}>
+                                {cfg.label}
+                            </span>
                         </div>
                         <button
                             onClick={onClose}
@@ -357,38 +475,56 @@ function EventModal({ event, onClose, onMarkPaid, onViewInvoice }: { event: Cale
                         </button>
                     </div>
 
-                    {/* customer */}
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-1">{event.customerName}</h2>
-                    <p className="text-xs font-mono text-slate-400 mb-6">{event.invoiceNumber}</p>
+                    {/* customer / vendor */}
+                    <h2 className="text-xl font-bold text-slate-900 mb-1">{event.customerName}</h2>
+                    <p className="text-xs font-mono text-slate-400 mb-6">
+                        {isExpense ? (event.category || 'Expense') : event.invoiceNumber}
+                    </p>
 
                     {/* fields */}
                     <div className="grid grid-cols-2 gap-3 mb-6">
-                        {[
+                        {(isExpense ? [
+                            { label: 'Amount', value: fmtFull(event.amount), highlight: true },
+                            { label: 'Date', value: format(event.date, 'dd MMM yyyy'), highlight: false },
+                            { label: 'Category', value: event.category || '—', highlight: false },
+                            { label: 'Type', value: 'Outflow', highlight: false },
+                        ] : [
                             { label: 'Amount', value: fmtFull(event.amount), highlight: true },
                             { label: 'Due Date', value: format(event.date, 'dd MMM yyyy'), highlight: false },
                             { label: 'Status', value: cfg.label, highlight: false },
                             { label: 'Invoice', value: event.invoiceNumber, highlight: false },
-                        ].map(({ label, value, highlight }) => (
-                            <div key={label} className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">{label}</p>
-                                <p className={`text-base font-black truncate ${highlight ? 'text-primary' : 'text-slate-800'}`}>{value}</p>
+                        ]).map(({ label, value, highlight }) => (
+                            <div key={label} className="bg-slate-50 rounded-xl p-3.5 border border-slate-100">
+                                <p className="text-[11px] font-medium text-slate-400 mb-1">{label}</p>
+                                <p className={`text-sm font-semibold truncate ${highlight ? 'text-primary' : 'text-slate-800'}`}>{value}</p>
                             </div>
                         ))}
                     </div>
 
                     {/* actions */}
                     <div className="flex gap-2">
-                        <button 
-                            onClick={onViewInvoice}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900 text-white rounded-2xl text-sm font-bold hover:bg-black transition-colors">
-                            View Invoice <ArrowUpRight size={15} />
-                        </button>
-                        {s !== 'paid' && (
-                            <button 
-                                onClick={onMarkPaid}
-                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-2xl text-sm font-bold hover:bg-emerald-100 transition-colors">
-                                Mark Paid <CheckCircle2 size={15} />
+                        {isExpense ? (
+                            <button
+                                onClick={onViewExpense}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors"
+                            >
+                                View Expenses <ArrowUpRight size={14} />
                             </button>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={onViewInvoice}
+                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors">
+                                    View Invoice <ArrowUpRight size={14} />
+                                </button>
+                                {s !== 'paid' && (
+                                    <button
+                                        onClick={onMarkPaid}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors">
+                                        Mark Paid <CheckCircle2 size={14} />
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
@@ -402,7 +538,7 @@ function EventModal({ event, onClose, onMarkPaid, onViewInvoice }: { event: Cale
 ───────────────────────────────────────────── */
 export function LiquidityCalendar() {
     const navigate = useNavigate();
-    const { invoices, payments, refreshData } = useData();
+    const { invoices, payments, expenses, refreshData } = useData();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState<ViewMode>('month');
     const [searchTerm, setSearchTerm] = useState('');
@@ -411,24 +547,22 @@ export function LiquidityCalendar() {
     const [showPaymentModalFor, setShowPaymentModalFor] = useState<Invoice | null>(null);
 
     useEffect(() => {
-        refreshData(['invoices', 'payments']);
+        refreshData(['invoices', 'payments', 'expenses']);
     }, [refreshData]);
 
     /* ── Build events ── */
-    const allEvents: CalendarEvent[] = useMemo(() =>
-        invoices.map((inv: any) => {
-            // Default to due date for liquidity projection
+    const allEvents: CalendarEvent[] = useMemo(() => {
+        // Invoice events (inflows)
+        const invoiceEvents = invoices.map((inv: any) => {
             let eventDate = new Date(inv.dueDate || inv.date || Date.now());
             const normalizedStatus = normaliseStatus(inv.status, inv.dueDate);
-            if (normalizedStatus === 'closed') {
-                return null;
-            }
-            
-            // If paid, show on the actual payment date (recorded date)
+            if (normalizedStatus === 'closed') return null;
+
+            // If paid, show on the actual payment date
             if (inv.status === 'paid') {
-                const invPayments = (payments || []).filter(p => p.invoiceId === inv.id && p.status === 'completed');
+                const invPayments = (payments || []).filter((p: any) => p.invoiceId === inv.id && p.status === 'completed');
                 if (invPayments.length > 0) {
-                    const latest = [...invPayments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                    const latest = [...invPayments].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
                     eventDate = new Date(latest.date);
                 }
             }
@@ -441,41 +575,75 @@ export function LiquidityCalendar() {
                 status: inv.status,
                 customerName: inv.buyer?.name || 'Unknown',
                 invoiceNumber: inv.invoiceNumber || '—',
+                type: 'inflow' as EventType,
                 raw: inv,
             };
-        }).filter(Boolean) as CalendarEvent[],
-        [invoices, payments]
-    );
+        }).filter(Boolean) as CalendarEvent[];
+
+        // Expense events (outflows)
+        const expenseEvents = (expenses || []).map((exp: any) => ({
+            id: `exp-${exp.id}`,
+            title: exp.description || 'Expense',
+            date: new Date(exp.date || Date.now()),
+            amount: Number(exp.amount || 0),
+            status: 'expense' as const,
+            customerName: exp.vendorName || exp.vendor_name || exp.description || 'Expense',
+            invoiceNumber: exp.category || 'Expense',
+            type: 'outflow' as EventType,
+            category: exp.category,
+            raw: exp,
+        }));
+
+        return [...invoiceEvents, ...expenseEvents];
+    }, [invoices, payments, expenses]);
 
     const filteredEvents = useMemo(() => {
         return allEvents.filter((ev) => {
-            const ns = normaliseStatus(ev.status, ev.raw?.dueDate);
+            const ns = ev.type === 'outflow' ? 'expense' : normaliseStatus(ev.status, ev.raw?.dueDate);
             const matchSearch =
                 ev.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                ev.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchFilter =
-                filterStatus === 'all' ||
-                (filterStatus === 'pending' ? ns === 'pending' || ns === 'due_today' : ns === filterStatus);
+                ev.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (ev.category || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+            let matchFilter = true;
+            if (filterStatus === 'expenses') {
+                matchFilter = ev.type === 'outflow';
+            } else if (filterStatus !== 'all') {
+                if (ev.type === 'outflow') {
+                    matchFilter = false;
+                } else {
+                    matchFilter = filterStatus === 'pending'
+                        ? ns === 'pending' || ns === 'due_today'
+                        : ns === filterStatus;
+                }
+            }
+
             return matchSearch && matchFilter;
         });
     }, [allEvents, searchTerm, filterStatus]);
 
-
     /* ── Stats ── */
     const stats = useMemo(() => {
         const monthEvs = allEvents.filter((e) => isSameMonth(e.date, currentDate));
+        const inflowEvs = monthEvs.filter(e => e.type === 'inflow');
+        const outflowEvs = monthEvs.filter(e => e.type === 'outflow');
+
+        const totalInflow = inflowEvs.reduce((s, e) => s + e.amount, 0);
+        const totalOutflow = outflowEvs.reduce((s, e) => s + e.amount, 0);
+
         return {
-            projected: monthEvs.reduce((s, e) => s + e.amount, 0),
-            collected: monthEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'paid').reduce((s, e) => s + e.amount, 0),
-            pending: monthEvs.filter((e) => {
+            inflow: totalInflow,
+            outflow: totalOutflow,
+            net: totalInflow - totalOutflow,
+            collected: inflowEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'paid').reduce((s, e) => s + e.amount, 0),
+            pending: inflowEvs.filter((e) => {
                 const status = normaliseStatus(e.status, e.raw?.dueDate);
                 return status === 'pending' || status === 'due_today';
             }).reduce((s, e) => s + e.amount, 0),
-            dueToday: monthEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'due_today').reduce((s, e) => s + e.amount, 0),
-            overdue: monthEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'overdue').reduce((s, e) => s + e.amount, 0),
+            dueToday: inflowEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'due_today').reduce((s, e) => s + e.amount, 0),
+            overdue: inflowEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'overdue').reduce((s, e) => s + e.amount, 0),
         };
     }, [allEvents, currentDate]);
-
 
     /* ── Calendar grid days ── */
     const calendarDays = useMemo(() => {
@@ -513,6 +681,7 @@ export function LiquidityCalendar() {
         { key: 'pending', label: 'Pending' },
         { key: 'due_today', label: 'Due Today' },
         { key: 'overdue', label: 'Overdue' },
+        { key: 'expenses', label: 'Expenses' },
     ];
 
     return (
@@ -520,59 +689,48 @@ export function LiquidityCalendar() {
 
             {/* ── Header ── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-primary mb-1.5">
-                        <CalendarIcon size={12} />
-                        Liquidity Planner
-                    </div>
-                    <h1 className="text-[28px] font-black text-slate-900 tracking-tight leading-tight">
-                        Cash Flow Calendar
-                    </h1>
-                </div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    Cash Flow Calendar
+                </h1>
             </div>
 
             {/* ── Stat Cards ── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <StatCard
-                    label="Projected"
-                    value={fmtFull(stats.projected)}
-                    sub="Total this month"
-                    accent="bg-gradient-to-r from-violet-400 to-indigo-400"
-                    icon={TrendingUp}
-                    iconClass="text-violet-500"
-                    delay={0}
-                />
-                <StatCard
                     label="Collected"
                     value={fmtFull(stats.collected)}
-                    sub="Paid invoices"
-                    accent="bg-gradient-to-r from-emerald-400 to-teal-400"
+                    sub={`${fmtFull(stats.inflow)} total invoiced`}
                     icon={CheckCircle2}
                     iconClass="text-emerald-500"
-                    delay={0.06}
                 />
                 <StatCard
-                    label="Upcoming"
+                    label="Expenses"
+                    value={fmtFull(stats.outflow)}
+                    sub="This month"
+                    icon={Receipt}
+                    iconClass="text-violet-500"
+                />
+                <StatCard
+                    label="Pending"
                     value={fmtFull(stats.pending)}
                     sub={stats.dueToday > 0 ? `${fmtFull(stats.dueToday)} due today` : "Awaiting payment"}
-                    accent="bg-gradient-to-r from-amber-400 to-orange-400"
                     icon={Clock}
                     iconClass="text-amber-500"
-                    delay={0.12}
                 />
                 <StatCard
                     label="Overdue"
                     value={fmtFull(stats.overdue)}
-                    sub="Needs action"
-                    accent="bg-gradient-to-r from-rose-400 to-pink-400"
+                    sub="Needs follow-up"
                     icon={AlertCircle}
                     iconClass="text-rose-500"
-                    delay={0.18}
                 />
             </div>
 
+            {/* ── Running Balance Chart ── */}
+            <RunningBalanceChart events={allEvents} currentDate={currentDate} />
+
             {/* ── Controls Bar ── */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white border border-slate-100 rounded-2xl px-4 py-3 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3">
                 {/* nav */}
                 <div className="flex items-center gap-2 shrink-0">
                     <button
@@ -581,7 +739,7 @@ export function LiquidityCalendar() {
                     >
                         <ChevronLeft size={16} />
                     </button>
-                    <h2 className="text-base font-black text-slate-900 min-w-[148px] text-center tracking-tight">
+                    <h2 className="text-sm font-semibold text-slate-800 min-w-[140px] text-center">
                         {format(currentDate, 'MMMM yyyy')}
                     </h2>
                     <button
@@ -592,7 +750,7 @@ export function LiquidityCalendar() {
                     </button>
                     <button
                         onClick={() => setCurrentDate(new Date())}
-                        className="text-[11px] font-black text-primary bg-primary/5 hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-all"
+                        className="text-xs font-medium text-primary hover:bg-primary/5 px-2.5 py-1.5 rounded-lg transition-colors"
                     >
                         Today
                     </button>
@@ -605,20 +763,20 @@ export function LiquidityCalendar() {
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                         type="text"
-                        placeholder="Search invoices..."
+                        placeholder="Search invoices & expenses..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-8 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 w-full sm:w-52 transition-all"
+                        className="pl-8 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 w-full sm:w-56 transition-all"
                     />
                 </div>
 
                 {/* filters */}
-                <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100 gap-0.5">
+                <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100 gap-0.5 overflow-x-auto">
                     {FILTER_OPTIONS.map(({ key, label }) => (
                         <button
                             key={key}
                             onClick={() => setFilterStatus(key)}
-                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
                                 filterStatus === key
                                     ? 'bg-white text-slate-900 shadow-sm border border-slate-100'
                                     : 'text-slate-400 hover:text-slate-600'
@@ -656,12 +814,12 @@ export function LiquidityCalendar() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.22 }}
-                        className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden"
+                        className="bg-white rounded-xl border border-slate-200 overflow-hidden"
                     >
                         {/* weekday headers */}
                         <div className="grid grid-cols-7 border-b border-slate-100">
                             {WEEKDAYS.map((d) => (
-                                <div key={d} className="py-3 text-center text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+                                <div key={d} className="py-2.5 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                                     {d}
                                 </div>
                             ))}
@@ -682,10 +840,10 @@ export function LiquidityCalendar() {
 
                         {/* legend */}
                         <div className="flex items-center justify-end gap-5 px-5 py-3 border-t border-slate-50">
-                            {(['paid', 'pending', 'due_today', 'overdue', 'draft'] as const).map((s) => (
+                            {(['paid', 'pending', 'due_today', 'overdue', 'expense'] as const).map((s) => (
                                 <div key={s} className="flex items-center gap-1.5">
                                     <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG[s].dot}`} />
-                                    <span className="text-[10px] font-bold text-slate-400 capitalize">{STATUS_CONFIG[s].label}</span>
+                                    <span className="text-[11px] text-slate-400">{STATUS_CONFIG[s].label}</span>
                                 </div>
                             ))}
                         </div>
@@ -702,7 +860,7 @@ export function LiquidityCalendar() {
                         {listEvents.length === 0 ? (
                             <div className="text-center py-20 text-slate-400">
                                 <Sparkles size={32} className="mx-auto mb-3 opacity-30" />
-                                <p className="text-sm font-bold">No invoices found</p>
+                                <p className="text-sm font-bold">No transactions found</p>
                                 <p className="text-xs mt-1">Try adjusting your filters</p>
                             </div>
                         ) : (
@@ -719,11 +877,12 @@ export function LiquidityCalendar() {
             {/* ── Event Modal ── */}
             <AnimatePresence>
                 {selectedEvent && (
-                    <EventModal 
-                        event={selectedEvent} 
+                    <EventModal
+                        event={selectedEvent}
                         onClose={() => setSelectedEvent(null)}
                         onMarkPaid={() => setShowPaymentModalFor(selectedEvent.raw)}
                         onViewInvoice={() => navigate(`/dashboard/invoices?view=${selectedEvent.id}`)}
+                        onViewExpense={() => navigate('/dashboard/expenses')}
                     />
                 )}
             </AnimatePresence>
