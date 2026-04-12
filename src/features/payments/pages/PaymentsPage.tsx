@@ -2,18 +2,20 @@ import { useMemo, useState, useEffect } from "react";
 import {
   CreditCard, Smartphone, DollarSign, CheckCircle, Download, TrendingUp,
   X, Search, Eye, LayoutGrid, List,
-  SortAsc, SortDesc, Banknote, Clock, Filter, Plus, Hash, ChevronDown, Calendar, ChevronLeft, ChevronRight
+  SortAsc, SortDesc, Banknote, Clock, Filter, Plus
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dataService } from '@/shared/services/dataService';
 import { useData } from '@/app/providers/DataContext';
 import { downloadCsv } from '@/shared/lib/export';
+import RecordPaymentModal from '@/features/invoices/components/RecordPaymentModal';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 type PaymentView = {
   id: string;
+  invoiceId: string;
   invoice: string;
   method: string;
   amount: number;
@@ -49,7 +51,7 @@ const DISPLAY_TO_BACKEND: Record<string, string> = Object.fromEntries(
 );
 
 function normalizeMethod(payment: { payment_mode?: string; method?: string }): string {
-  return (payment.payment_mode || payment.method || 'other').toLowerCase();
+  return (payment.method || payment.payment_mode || 'other').toLowerCase();
 }
 
 function formatMethod(method: string): string {
@@ -78,19 +80,7 @@ export function Payments() {
 
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
   const [showRecordModal, setShowRecordModal] = useState(false);
-  const [newPayment, setNewPayment] = useState({
-    invoiceId: '',
-    amount: 0,
-    method: 'UPI',
-    notes: '',
-    date: new Date().toISOString().split('T')[0]
-  });
   const [saving, setSaving] = useState(false);
-  const [searchInvoice, setSearchInvoice] = useState("");
-  const [showInvoiceDropdown, setShowInvoiceDropdown] = useState(false);
-  const [showMethodDropdown, setShowMethodDropdown] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [viewDate, setViewDate] = useState(new Date());
 
   // Advanced settings
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -108,6 +98,7 @@ export function Payments() {
       const inv = allInvoices.find(i => i.id === p.invoiceId);
       return {
         id: p.id,
+        invoiceId: p.invoiceId,
         invoice: inv ? inv.invoiceNumber : "Unknown",
         method: normalizeMethod(p),
         amount: p.amount,
@@ -149,27 +140,6 @@ export function Payments() {
     pendingCount: filtered.filter(p => !p.reconciled).length,
   }), [filtered]);
 
-  // ── Helpers ────────────────────────────────────────────────────────
-  const getDaysInMonth = (month: number, year: number) => {
-    const date = new Date(year, month, 1);
-    const days = [];
-    const firstDay = date.getDay();
-    const prevMonthLastDay = new Date(year, month, 0).getDate();
-    for (let i = firstDay - 1; i >= 0; i--) {
-      days.push({ day: prevMonthLastDay - i, currentMonth: false, date: new Date(year, month - 1, prevMonthLastDay - i) });
-    }
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push({ day: i, currentMonth: true, date: new Date(year, month, i) });
-    }
-    const totalDays = 42;
-    const remaining = totalDays - days.length;
-    for (let i = 1; i <= remaining; i++) {
-      days.push({ day: i, currentMonth: false, date: new Date(year, month + 1, i) });
-    }
-    return days;
-  };
-
   // ── Actions ────────────────────────────────────────────────────────
   const exportCSV = (rows: PaymentView[]) => {
     downloadCsv(
@@ -183,49 +153,9 @@ export function Payments() {
     try {
       setSaving(true);
       await dataService.reconcilePayment(paymentId);
-      refreshData(['payments'], true);
-    } catch (err: any) {
-      alert(`Error reconciling payment: ${err.message}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSavePayment = async () => {
-    if (!newPayment.invoiceId || newPayment.amount <= 0) {
-      alert("Please select an invoice and enter an amount.");
-      return;
-    }
-
-    const backendMethod = DISPLAY_TO_BACKEND[newPayment.method] || newPayment.method.toLowerCase();
-
-    try {
-      setSaving(true);
-      await dataService.savePayment({
-        invoiceId: newPayment.invoiceId,
-        amount: newPayment.amount,
-        method: backendMethod,
-        paymentMode: backendMethod,
-        notes: newPayment.notes,
-        date: newPayment.date,
-        status: 'completed'
-      } as any);
-
-      setShowRecordModal(false);
-      setSearchInvoice("");
-      setShowInvoiceDropdown(false);
-      setShowMethodDropdown(false);
-      setShowCalendar(false);
-      setNewPayment({
-        invoiceId: '',
-        amount: 0,
-        method: 'UPI',
-        notes: '',
-        date: new Date().toISOString().split('T')[0]
-      });
       refreshData(['payments', 'invoices'], true);
     } catch (err: any) {
-      alert(`Error saving payment: ${err.message}`);
+      alert(`Error reconciling payment: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -655,253 +585,17 @@ export function Payments() {
         </motion.div>
       </div>
 
-      {/* Record Payment Drawer */}
+      {/* Record Payment Modal */}
       <AnimatePresence>
         {showRecordModal && (
-          <div className="fixed inset-0 z-[9999] flex">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
-              onClick={() => { setShowRecordModal(false); setSearchInvoice(""); setShowInvoiceDropdown(false); setShowMethodDropdown(false); setShowCalendar(false); }}
-            />
-
-            {/* Drawer — slides in from right, fixed height no scroll */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="relative ml-auto z-10 w-full max-w-sm h-full flex flex-col bg-white shadow-[-20px_0_60px_-10px_rgba(20,184,166,0.12)] border-l border-teal-100/60"
-            >
-              <div className="absolute top-0 right-0 w-48 h-48 bg-teal-400 opacity-[0.04] blur-[80px] rounded-full pointer-events-none" />
-
-              {/* Header */}
-              <div className="relative flex-shrink-0 px-5 py-3.5 border-b border-teal-100/60 flex items-center justify-between bg-gradient-to-r from-white via-teal-50/30 to-white">
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-teal-400/40 to-transparent" />
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-md shadow-teal-500/20">
-                    <Plus className="w-3.5 h-3.5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-900 leading-tight">Record New Payment</h3>
-                    <p className="text-[10px] text-gray-400 font-medium">Reconcile with an invoice</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => { setShowRecordModal(false); setSearchInvoice(""); setShowInvoiceDropdown(false); setShowMethodDropdown(false); setShowCalendar(false); }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 border border-transparent hover:border-red-100 transition"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
-              {/* Body — no scroll, compact spacing */}
-              <div className="flex-1 px-5 py-4 space-y-3">
-
-                {/* Select Invoice */}
-                <div>
-                  <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Select Invoice</label>
-                  <div
-                    onClick={() => { setShowInvoiceDropdown(!showInvoiceDropdown); setShowMethodDropdown(false); setShowCalendar(false); }}
-                    className={`w-full px-3 py-2 bg-white border rounded-xl text-xs cursor-pointer transition-all flex justify-between items-center shadow-sm ${showInvoiceDropdown ? 'border-teal-300 shadow-[0_0_0_3px_rgba(20,184,166,0.08)]' : 'border-teal-100 hover:border-teal-200'}`}
-                  >
-                    {newPayment.invoiceId ? (
-                      <div className="flex items-center gap-1.5">
-                        <Hash size={11} className="text-teal-500 flex-shrink-0" />
-                        <span className="font-bold text-gray-900">{allInvoices.find(i => i.id === newPayment.invoiceId)?.invoiceNumber}</span>
-                        <span className="text-gray-300">·</span>
-                        <span className="text-gray-500 truncate max-w-[120px]">{allInvoices.find(i => i.id === newPayment.invoiceId)?.buyer?.name}</span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">Search or choose invoice...</span>
-                    )}
-                    <ChevronDown size={13} className={`text-gray-400 transition-transform flex-shrink-0 ml-1.5 ${showInvoiceDropdown ? 'rotate-180' : ''}`} />
-                  </div>
-                  <AnimatePresence>
-                    {showInvoiceDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className="mt-1.5 bg-white border border-teal-100 rounded-xl shadow-[0_8px_24px_-8px_rgba(20,184,166,0.18)] overflow-hidden"
-                      >
-                        <div className="px-2.5 py-2 border-b border-teal-50">
-                          <div className="relative">
-                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-teal-400" size={11} />
-                            <input
-                              type="text" autoFocus placeholder="Invoice # or client name..."
-                              className="w-full pl-6 pr-2 py-1.5 bg-teal-50/50 border border-teal-100 rounded-lg text-[11px] outline-none focus:ring-1 focus:ring-teal-400/30 text-gray-700 placeholder-gray-400"
-                              value={searchInvoice}
-                              onChange={e => setSearchInvoice(e.target.value)}
-                              onClick={e => e.stopPropagation()}
-                            />
-                          </div>
-                        </div>
-                        <div className="overflow-y-auto max-h-32">
-                          {allInvoices
-                            .filter(i => i.status !== 'paid' && i.status !== 'draft')
-                            .filter(i => i.invoiceNumber.toLowerCase().includes(searchInvoice.toLowerCase()) || i.buyer?.name?.toLowerCase().includes(searchInvoice.toLowerCase()))
-                            .map(i => {
-                              const paid = payments.filter(p => p.invoice === i.invoiceNumber && p.reconciled).reduce((s, p) => s + p.amount, 0);
-                              const balance = i.total - paid;
-                              return (
-                                <div key={i.id}
-                                  onClick={() => { setNewPayment({ ...newPayment, invoiceId: i.id, amount: balance > 0 ? balance : i.total }); setShowInvoiceDropdown(false); setSearchInvoice(""); }}
-                                  className="px-3 py-2 hover:bg-teal-50/60 cursor-pointer transition flex justify-between items-center border-b border-gray-50 last:border-0 group"
-                                >
-                                  <div>
-                                    <p className="text-xs font-bold text-gray-800 group-hover:text-teal-700 transition">{i.invoiceNumber}</p>
-                                    <p className="text-[10px] text-gray-400">{i.buyer?.name}</p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-xs font-bold text-teal-700">₹{balance.toLocaleString()}</p>
-                                    <p className="text-[9px] text-gray-400">of ₹{i.total.toLocaleString()}</p>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          {allInvoices.filter(i => i.status !== 'paid' && i.status !== 'draft').filter(i =>
-                            i.invoiceNumber.toLowerCase().includes(searchInvoice.toLowerCase()) || i.buyer?.name?.toLowerCase().includes(searchInvoice.toLowerCase())
-                          ).length === 0 && <div className="py-4 text-center"><p className="text-[11px] text-gray-400">No pending invoices</p></div>}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Amount + Method side by side */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Amount</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-600 font-bold text-xs pointer-events-none">₹</span>
-                      <input
-                        type="number" value={newPayment.amount}
-                        onChange={e => setNewPayment({ ...newPayment, amount: Number(e.target.value) })}
-                        className="w-full pl-7 pr-2 py-2 bg-white border border-teal-100 rounded-xl text-sm font-black text-teal-900 focus:ring-2 focus:ring-teal-400/20 focus:border-teal-300 outline-none transition shadow-sm"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Method</label>
-                    <div
-                      onClick={() => { setShowMethodDropdown(!showMethodDropdown); setShowInvoiceDropdown(false); setShowCalendar(false); }}
-                      className={`w-full px-3 py-2 bg-white border rounded-xl text-xs cursor-pointer transition-all flex justify-between items-center shadow-sm ${showMethodDropdown ? 'border-teal-300 shadow-[0_0_0_3px_rgba(20,184,166,0.08)]' : 'border-teal-100 hover:border-teal-200'}`}
-                    >
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="text-teal-500 text-sm flex-shrink-0">{methodIcon(DISPLAY_TO_BACKEND[newPayment.method] || newPayment.method)}</span>
-                        <span className="font-semibold text-gray-800 truncate text-[11px]">{newPayment.method}</span>
-                      </div>
-                      <ChevronDown size={13} className={`text-gray-400 transition-transform flex-shrink-0 ml-1 ${showMethodDropdown ? 'rotate-180' : ''}`} />
-                    </div>
-                    <AnimatePresence>
-                      {showMethodDropdown && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                          transition={{ duration: 0.15 }}
-                          className="mt-1.5 bg-white border border-teal-100 rounded-xl shadow-[0_8px_24px_-8px_rgba(20,184,166,0.18)] overflow-hidden z-10 relative"
-                        >
-                          {methods.filter(m => m !== 'All').map(m => (
-                            <div key={m}
-                              onClick={() => { setNewPayment({ ...newPayment, method: m }); setShowMethodDropdown(false); }}
-                              className={`px-3 py-2 hover:bg-teal-50/60 cursor-pointer transition flex items-center gap-2 border-b border-gray-50 last:border-0 ${newPayment.method === m ? 'bg-teal-50/40' : ''}`}
-                            >
-                              <span className="text-teal-500">{methodIcon(DISPLAY_TO_BACKEND[m] || m)}</span>
-                              <span className={`text-[11px] font-medium flex-1 ${newPayment.method === m ? 'text-teal-700 font-bold' : 'text-gray-700'}`}>{m}</span>
-                              {newPayment.method === m && <CheckCircle size={12} className="text-teal-500" />}
-                            </div>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-
-                {/* Payment Date — mini inline calendar */}
-                <div>
-                  <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Payment Date</label>
-                  <div
-                    onClick={() => { setShowCalendar(!showCalendar); setShowInvoiceDropdown(false); setShowMethodDropdown(false); }}
-                    className={`w-full px-3 py-2 bg-white border rounded-xl text-xs cursor-pointer transition-all flex justify-between items-center shadow-sm ${showCalendar ? 'border-teal-300 shadow-[0_0_0_3px_rgba(20,184,166,0.08)]' : 'border-teal-100 hover:border-teal-200'}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Calendar size={12} className="text-teal-500" />
-                      <span className="font-semibold text-gray-800">{new Date(newPayment.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                    </div>
-                    <ChevronDown size={13} className={`text-gray-400 transition-transform ${showCalendar ? 'rotate-180' : ''}`} />
-                  </div>
-                  <AnimatePresence>
-                    {showCalendar && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.18 }} className="overflow-hidden"
-                      >
-                        <div className="mt-1.5 bg-white border border-teal-100 rounded-xl shadow-[0_8px_24px_-8px_rgba(20,184,166,0.18)] p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold text-gray-800">{viewDate.toLocaleDateString('default', { month: 'short', year: 'numeric' })}</span>
-                            <div className="flex gap-0.5">
-                              <button type="button" onClick={e => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1)); }} className="p-1 hover:bg-teal-50 rounded-md text-gray-400 hover:text-teal-600 transition"><ChevronLeft size={12} /></button>
-                              <button type="button" onClick={e => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)); }} className="p-1 hover:bg-teal-50 rounded-md text-gray-400 hover:text-teal-600 transition"><ChevronRight size={12} /></button>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-7 gap-px mb-1">
-                            {['S','M','T','W','T','F','S'].map((d, i) => <div key={i} className="text-[8px] font-bold text-gray-400 text-center py-0.5">{d}</div>)}
-                          </div>
-                          <div className="grid grid-cols-7 gap-px">
-                            {getDaysInMonth(viewDate.getMonth(), viewDate.getFullYear()).map((d, i) => {
-                              const isSelected = newPayment.date === d.date.toISOString().split('T')[0];
-                              const isToday = new Date().toISOString().split('T')[0] === d.date.toISOString().split('T')[0];
-                              return (
-                                <button key={i} type="button"
-                                  onClick={() => { setNewPayment({ ...newPayment, date: d.date.toISOString().split('T')[0] }); setShowCalendar(false); }}
-                                  className={`aspect-square flex items-center justify-center text-[10px] rounded-md transition-all font-medium
-                                    ${d.currentMonth ? 'text-gray-700 hover:bg-teal-50 hover:text-teal-700' : 'text-gray-200'}
-                                    ${isSelected ? '!bg-teal-600 !text-white' : ''}
-                                    ${isToday && !isSelected ? 'border border-teal-200 !text-teal-600' : ''}
-                                  `}
-                                >{d.day}</button>
-                              );
-                            })}
-                          </div>
-                          <button type="button"
-                            onClick={() => { const today = new Date().toISOString().split('T')[0]; setNewPayment({ ...newPayment, date: today }); setViewDate(new Date()); setShowCalendar(false); }}
-                            className="w-full mt-2 pt-2 border-t border-teal-50 text-[10px] font-bold text-teal-600 hover:text-teal-700 transition"
-                          >Today</button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Notes */}
-                <div>
-                  <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Notes</label>
-                  <textarea
-                    value={newPayment.notes}
-                    onChange={e => setNewPayment({ ...newPayment, notes: e.target.value })}
-                    placeholder="Reference ID, bank details, etc."
-                    className="w-full px-3 py-2 bg-white border border-teal-100 rounded-xl text-xs text-gray-700 focus:ring-2 focus:ring-teal-400/20 focus:border-teal-300 outline-none transition h-14 resize-none shadow-sm placeholder-gray-400"
-                  />
-                </div>
-
-              </div>
-
-              {/* Footer */}
-              <div className="flex-shrink-0 px-5 py-3 border-t border-teal-100/60 bg-gradient-to-r from-white via-teal-50/20 to-white flex items-center gap-2">
-                <p className="text-[9px] text-gray-400 font-medium flex-1">Instantly reflected in your ledger.</p>
-                <button
-                  onClick={() => { setShowRecordModal(false); setSearchInvoice(""); setShowInvoiceDropdown(false); setShowMethodDropdown(false); setShowCalendar(false); }}
-                  className="px-4 py-2 rounded-lg border border-gray-200 font-bold text-[11px] text-gray-600 hover:bg-gray-50 transition"
-                >Cancel</button>
-                <button
-                  onClick={handleSavePayment} disabled={saving}
-                  className="px-5 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-teal-600 font-bold text-[11px] text-white hover:from-teal-600 hover:to-teal-700 transition disabled:opacity-50 shadow-md shadow-teal-500/20"
-                >{saving ? 'Saving...' : 'Record Payment'}</button>
-              </div>
-            </motion.div>
-          </div>
+          <RecordPaymentModal
+            invoices={allInvoices}
+            onClose={() => setShowRecordModal(false)}
+            onSuccess={async () => {
+              await refreshData(['payments', 'invoices'], true);
+              setShowRecordModal(false);
+            }}
+          />
         )}
       </AnimatePresence>
 

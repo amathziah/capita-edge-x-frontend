@@ -70,13 +70,14 @@ function getBalanceDue(invoice: any) {
     return Math.max(totalAmount - amountPaid, 0);
 }
 
-function normaliseStatus(status: string, dueDate?: string): NormalizedCalendarStatus {
+function normaliseStatus(status: string, dueDate?: string, balanceDue?: number): NormalizedCalendarStatus {
     const s = (status || '').toLowerCase().trim();
     if (s === 'expense') return 'expense';
-    if (s === 'paid') return 'paid';
     if (s === 'draft') return 'draft';
-    if (s === 'overdue') return 'overdue';
     if (s === 'void' || s === 'write_off' || s === 'cancelled') return 'closed';
+    if (s === 'paid') return 'paid';
+    if (balanceDue !== undefined && Number(balanceDue) <= 0) return 'paid';
+    if (s === 'overdue') return 'overdue';
     if (dueDate && ['sent', 'partially_paid', 'pending', 'viewed'].includes(s)) {
         const dueStr = new Date(dueDate).toISOString().split('T')[0];
         const todayStr = new Date().toISOString().split('T')[0];
@@ -202,86 +203,12 @@ function StatCard({
 }
 
 /* ─────────────────────────────────────────────
-   Running Balance Chart
-───────────────────────────────────────────── */
-function RunningBalanceChart({ events, currentDate }: { events: CalendarEvent[]; currentDate: Date }) {
-    const dailyData = useMemo(() => {
-        const start = startOfMonth(currentDate);
-        const end = endOfMonth(currentDate);
-        const days = eachDayOfInterval({ start, end });
-        let runningBalance = 0;
-        return days.map(day => {
-            const dayEvents = events.filter(e => isSameDay(e.date, day));
-            const inflow = dayEvents.filter(e => e.type === 'inflow').reduce((s, e) => s + e.amount, 0);
-            const outflow = dayEvents.filter(e => e.type === 'outflow').reduce((s, e) => s + e.amount, 0);
-            const net = inflow - outflow;
-            runningBalance += net;
-            return { day, inflow, outflow, net, runningBalance };
-        });
-    }, [events, currentDate]);
-
-    const maxAbs = Math.max(...dailyData.map(d => Math.abs(d.net)), 1);
-
-    return (
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                <p className="text-xs font-semibold text-slate-500">Daily Net Cash Flow</p>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="text-[11px] text-slate-400">Inflow</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-rose-500" />
-                        <span className="text-[11px] text-slate-400">Outflow</span>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex items-end gap-[2px] h-14">
-                {dailyData.map((d, i) => {
-                    const h = d.net === 0 ? 4 : Math.max((Math.abs(d.net) / maxAbs) * 100, 8);
-                    return (
-                        <div key={i} className="flex-1 group/bar relative flex flex-col items-center justify-end h-full">
-                            <div
-                                className={`w-full rounded-sm ${
-                                    d.net === 0
-                                        ? 'bg-slate-100'
-                                        : d.net > 0
-                                            ? 'bg-emerald-500 group-hover/bar:bg-emerald-600'
-                                            : 'bg-rose-500 group-hover/bar:bg-rose-600'
-                                }`}
-                                style={{ height: `${h}%` }}
-                            />
-                            <div className="absolute bottom-full mb-2 hidden group-hover/bar:block z-50 pointer-events-none">
-                                <div className="bg-slate-800 text-white rounded-lg px-3 py-2 text-[11px] whitespace-nowrap shadow-lg">
-                                    <p className="font-semibold mb-1">{format(d.day, 'EEE, dd MMM')}</p>
-                                    <p className="text-emerald-300">In: {fmtFull(d.inflow)}</p>
-                                    <p className="text-rose-300">Out: {fmtFull(d.outflow)}</p>
-                                    <p className={`font-semibold mt-1 pt-1 border-t border-slate-600 ${d.net >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
-                                        Net: {d.net >= 0 ? '+' : ''}{fmtFull(d.net)}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-                <span>1st</span>
-                <span>Net this month: {fmtFull(dailyData[dailyData.length - 1]?.runningBalance ?? 0)}</span>
-                <span>{dailyData.length}th</span>
-            </div>
-        </div>
-    );
-}
-
-/* ─────────────────────────────────────────────
    Event Pill (inside calendar cell)
 ───────────────────────────────────────────── */
 function EventPill({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
-    const s = event.type === 'outflow' ? 'expense' : normaliseStatus(event.status, event.raw?.dueDate);
+    const s = event.type === 'outflow'
+        ? 'expense'
+        : normaliseStatus(event.status, event.raw?.dueDate, getBalanceDue(event.raw));
     const cfg = STATUS_CONFIG[s] || STATUS_CONFIG.draft;
     const borderColor =
         s === 'paid' ? '#34d399' :
@@ -381,7 +308,9 @@ function DayCell({
    List View Row
 ───────────────────────────────────────────── */
 function ListRow({ event, onClick }: { event: CalendarEvent; onClick: () => void }) {
-    const s = event.type === 'outflow' ? 'expense' : normaliseStatus(event.status, event.raw?.dueDate);
+    const s = event.type === 'outflow'
+        ? 'expense'
+        : normaliseStatus(event.status, event.raw?.dueDate, getBalanceDue(event.raw));
     const cfg = STATUS_CONFIG[s] || STATUS_CONFIG.draft;
     const Icon = cfg.icon;
 
@@ -430,7 +359,7 @@ function EventModal({ event, onClose, onMarkPaid, onViewInvoice, onViewExpense }
     onViewExpense: () => void;
 }) {
     const isExpense = event.type === 'outflow';
-    const s = isExpense ? 'expense' : normaliseStatus(event.status);
+    const s = isExpense ? 'expense' : normaliseStatus(event.status, event.raw?.dueDate, getBalanceDue(event.raw));
     const cfg = STATUS_CONFIG[s] || STATUS_CONFIG.draft;
     const Icon = cfg.icon;
 
@@ -555,11 +484,12 @@ export function LiquidityCalendar() {
         // Invoice events (inflows)
         const invoiceEvents = invoices.map((inv: any) => {
             let eventDate = new Date(inv.dueDate || inv.date || Date.now());
-            const normalizedStatus = normaliseStatus(inv.status, inv.dueDate);
+            const balanceDue = getBalanceDue(inv);
+            const normalizedStatus = normaliseStatus(inv.status, inv.dueDate, balanceDue);
             if (normalizedStatus === 'closed') return null;
 
             // If paid, show on the actual payment date
-            if (inv.status === 'paid') {
+            if (normalizedStatus === 'paid') {
                 const invPayments = (payments || []).filter((p: any) => p.invoiceId === inv.id && p.status === 'completed');
                 if (invPayments.length > 0) {
                     const latest = [...invPayments].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
@@ -571,7 +501,7 @@ export function LiquidityCalendar() {
                 id: inv.id,
                 title: inv.buyer?.name || 'Unknown',
                 date: eventDate,
-                amount: normalizedStatus === 'paid' ? Number(inv.total || 0) : getBalanceDue(inv),
+                amount: normalizedStatus === 'paid' ? Number(inv.total || 0) : balanceDue,
                 status: inv.status,
                 customerName: inv.buyer?.name || 'Unknown',
                 invoiceNumber: inv.invoiceNumber || '—',
@@ -599,7 +529,9 @@ export function LiquidityCalendar() {
 
     const filteredEvents = useMemo(() => {
         return allEvents.filter((ev) => {
-            const ns = ev.type === 'outflow' ? 'expense' : normaliseStatus(ev.status, ev.raw?.dueDate);
+            const ns = ev.type === 'outflow'
+                ? 'expense'
+                : normaliseStatus(ev.status, ev.raw?.dueDate, getBalanceDue(ev.raw));
             const matchSearch =
                 ev.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 ev.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -635,13 +567,13 @@ export function LiquidityCalendar() {
             inflow: totalInflow,
             outflow: totalOutflow,
             net: totalInflow - totalOutflow,
-            collected: inflowEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'paid').reduce((s, e) => s + e.amount, 0),
+            collected: inflowEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate, getBalanceDue(e.raw)) === 'paid').reduce((s, e) => s + e.amount, 0),
             pending: inflowEvs.filter((e) => {
-                const status = normaliseStatus(e.status, e.raw?.dueDate);
+                const status = normaliseStatus(e.status, e.raw?.dueDate, getBalanceDue(e.raw));
                 return status === 'pending' || status === 'due_today';
             }).reduce((s, e) => s + e.amount, 0),
-            dueToday: inflowEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'due_today').reduce((s, e) => s + e.amount, 0),
-            overdue: inflowEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate) === 'overdue').reduce((s, e) => s + e.amount, 0),
+            dueToday: inflowEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate, getBalanceDue(e.raw)) === 'due_today').reduce((s, e) => s + e.amount, 0),
+            overdue: inflowEvs.filter((e) => normaliseStatus(e.status, e.raw?.dueDate, getBalanceDue(e.raw)) === 'overdue').reduce((s, e) => s + e.amount, 0),
         };
     }, [allEvents, currentDate]);
 
@@ -725,9 +657,6 @@ export function LiquidityCalendar() {
                     iconClass="text-rose-500"
                 />
             </div>
-
-            {/* ── Running Balance Chart ── */}
-            <RunningBalanceChart events={allEvents} currentDate={currentDate} />
 
             {/* ── Controls Bar ── */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3">
@@ -893,10 +822,10 @@ export function LiquidityCalendar() {
                     <RecordPaymentModal
                         invoice={showPaymentModalFor}
                         onClose={() => setShowPaymentModalFor(null)}
-                        onSuccess={() => {
+                        onSuccess={async () => {
                             setShowPaymentModalFor(null);
                             setSelectedEvent(null);
-                            refreshData(['invoices', 'payments']);
+                            await refreshData(['invoices', 'payments'], true);
                         }}
                     />
                 )}

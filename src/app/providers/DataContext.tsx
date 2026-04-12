@@ -45,6 +45,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const lastFetchedRef = useRef<Record<string, number>>({});
     const inFlightRequests = useRef<Record<string, Promise<any> | null>>({});
+    const requestVersionRef = useRef<Record<string, number>>({});
 
     const refreshData = useCallback(async (entitiesOrForce: DataEntity[] | boolean = false, force = false) => {
         if (!organizationId) return;
@@ -65,7 +66,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (entitiesToFetch.length === 0) return;
 
         // Prevent redundant in-flight requests for the same entities
-        const actualEntitiesToFetch = entitiesToFetch.filter(entity => !inFlightRequests.current[entity]);
+        const actualEntitiesToFetch = forceFetch
+            ? entitiesToFetch
+            : entitiesToFetch.filter(entity => !inFlightRequests.current[entity]);
         if (actualEntitiesToFetch.length === 0) return;
 
         try {
@@ -87,20 +90,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     case 'reports': promise = dataService.getReports(); break;
                     default: return;
                 }
+
+                const requestVersion = (requestVersionRef.current[entity] || 0) + 1;
+                requestVersionRef.current[entity] = requestVersion;
                 
                 const wrappedPromise = promise.then(data => {
                     lastFetchedRef.current[entity] = Date.now();
-                    inFlightRequests.current[entity] = null;
+                    if (inFlightRequests.current[entity] === wrappedPromise) {
+                        inFlightRequests.current[entity] = null;
+                    }
                     
-                    // Update state immediately upon resolution
-                    setState(prev => ({
-                        ...prev,
-                        [entity]: data || (entity === 'stats' ? { total_customers: 0 } : [])
-                    }));
+                    // Ignore stale responses when a newer force-refresh finished later.
+                    if (requestVersionRef.current[entity] === requestVersion) {
+                        setState(prev => ({
+                            ...prev,
+                            [entity]: data || (entity === 'stats' ? { total_customers: 0 } : [])
+                        }));
+                    }
                     
                     return data;
                 }).catch(err => {
-                    inFlightRequests.current[entity] = null;
+                    if (inFlightRequests.current[entity] === wrappedPromise) {
+                        inFlightRequests.current[entity] = null;
+                    }
                     throw err;
                 });
                 

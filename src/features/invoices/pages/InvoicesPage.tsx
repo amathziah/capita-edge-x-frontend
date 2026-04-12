@@ -788,19 +788,16 @@ export function Invoices() {
 
 
       {/* Record Payment Modal */}
-      {
-        recordingPaymentFor && createPortal(
-          <RecordPaymentModal
-            invoice={recordingPaymentFor}
-            onClose={() => setRecordingPaymentFor(null)}
-            onSuccess={async () => {
-              showToast('Payment recorded successfully', 'success');
-              refreshData(true);
-            }}
-          />,
-          document.body
-        )
-      }
+      {recordingPaymentFor && (
+        <RecordPaymentModal
+          invoice={recordingPaymentFor}
+          onClose={() => setRecordingPaymentFor(null)}
+          onSuccess={async () => {
+            showToast('Payment recorded successfully', 'success');
+            refreshData(true);
+          }}
+        />
+      )}
 
 
 
