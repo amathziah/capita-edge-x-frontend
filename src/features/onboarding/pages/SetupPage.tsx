@@ -8,22 +8,18 @@ import { supabase } from '@/shared/lib/supabaseClient';
 import { hasCompletedOnboarding } from '@/shared/lib/authFlow';
 import {
     Loader2,
-    ShieldCheck,
     AlertCircle,
-    Building,
     CheckCircle2,
-    Zap,
     ArrowRight,
     ArrowLeft,
-    Cpu,
+    Zap,
+    Activity,
     Globe,
-    Database,
-    Terminal,
-    Activity
+    Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type Step = 'calibrate' | 'identity' | 'persona' | 'processing' | 'done';
+type Step = 'identity' | 'persona' | 'processing' | 'done';
 
 export function SetupPage() {
     const { user, loading: authLoading } = useAuth();
@@ -32,7 +28,7 @@ export function SetupPage() {
     const isHydratingStatus = authLoading || personaLoading;
     const isOnboarded = hasCompletedOnboarding(organizationId, businessType);
 
-    const [step, setStep] = useState<Step>('calibrate');
+    const [step, setStep] = useState<Step>('identity');
     const isProvisioningRef = useRef(false);
 
     // Guard: redirect to login if not authenticated
@@ -61,32 +57,8 @@ export function SetupPage() {
     const [companyName, setCompanyName] = useState(user?.user_metadata?.company_name || '');
     const [selectedPersona, setSelectedPersona] = useState<BusinessType>('solopreneur');
     const [error, setError] = useState<string | null>(null);
-    const [calibrationLogs, setCalibrationLogs] = useState<string[]>([]);
     
     const initializedRef = useRef(false);
-
-    useEffect(() => {
-        if (step === 'calibrate') {
-            const logs = [
-                "Initializing Capita Core v2.5...",
-                "Scanning secure nodes...",
-                "Calibrating neural UI layers...",
-                "Synchronizing with protocol...",
-                "Establishment sequence ready."
-            ];
-            let i = 0;
-            const interval = setInterval(() => {
-                if (i < logs.length) {
-                    setCalibrationLogs(prev => [...prev, `[SYSTEM]: ${logs[i]}`]);
-                    i++;
-                } else {
-                    clearInterval(interval);
-                    setTimeout(() => setStep('identity'), 1000);
-                }
-            }, 600);
-            return () => clearInterval(interval);
-        }
-    }, [step]);
 
     // Pre-fill company name exactly once when user data becomes available
     useEffect(() => {
@@ -134,7 +106,7 @@ export function SetupPage() {
 
             // 3. Redirect
             setStep('done');
-            setTimeout(() => navigate('/dashboard'), 2500);
+            setTimeout(() => navigate('/dashboard'), 800);
         } catch (err: any) {
             console.error('[SetupPage] provisioning error:', err);
             const msg = (err?.message ?? '').toLowerCase();
@@ -202,7 +174,7 @@ export function SetupPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#040608] font-sans selection:bg-teal-500/20 relative overflow-x-hidden flex flex-col items-center justify-center py-6 md:py-12 px-4">
+        <div className="min-h-screen bg-[#040608] font-sans selection:bg-teal-500/20 relative overflow-x-hidden flex flex-col items-center justify-center px-4">
             {/* Background Grid & Particles */}
             <div className="fixed inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
 
@@ -210,91 +182,43 @@ export function SetupPage() {
             <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-teal-500/5 blur-[130px] rounded-full animate-pulse pointer-events-none" />
             <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/5 blur-[130px] rounded-full animate-pulse pointer-events-none" />
 
-            <div className="w-full max-w-[500px] relative z-10">
+            <div className="w-full max-w-md relative z-10">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    className="bg-[#0c111d]/50 backdrop-blur-2xl border border-white/10 rounded-[32px] p-6 md:p-10 shadow-2xl flex flex-col min-h-[460px] w-full"
+                    className="bg-[#0c111d]/50 backdrop-blur-2xl border border-white/10 rounded-[24px] p-6 shadow-2xl flex flex-col w-full"
                 >
                     <AnimatePresence mode="wait">
-                        {step === 'calibrate' && (
-                            <motion.div
-                                key="calibrate"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                className="flex flex-col flex-1 justify-center items-center space-y-8"
-                            >
-                                <div className="relative">
-                                    <div className="absolute inset-0 bg-teal-500/20 rounded-full blur-2xl animate-pulse" />
-                                    <Terminal className="w-12 h-12 text-teal-400 relative z-10" />
-                                </div>
-                                <div className="w-full max-w-sm space-y-2">
-                                    {calibrationLogs.map((log, i) => (
-                                        <motion.div
-                                            key={i}
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            className="font-mono text-[11px] text-teal-500/70"
-                                        >
-                                            {log}
-                                        </motion.div>
-                                    ))}
-                                </div>
-                                <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
-                                    <motion.div
-                                        className="h-full bg-teal-500"
-                                        initial={{ width: 0 }}
-                                        animate={{ width: '100%' }}
-                                        transition={{ duration: 3.5, ease: "easeInOut" }}
-                                    />
-                                </div>
-                            </motion.div>
-                        )}
-
                         {step === 'identity' && (
                             <motion.div
                                 key="identity"
                                 initial={{ opacity: 0, x: 40 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -40 }}
-                                className="space-y-10"
+                                className="space-y-5"
                             >
-                                <div className="text-center space-y-3">
-                                    <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400 shadow-inner">
-                                        <Building className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h1 className="text-3xl font-black text-white tracking-tight leading-none mb-2">Build your space.</h1>
-                                        <p className="text-gray-400 text-[13px] font-medium">Initialize your business identity in the protocol architecture.</p>
-                                    </div>
+                                <div className="text-center space-y-1">
+                                    <h1 className="text-xl font-bold text-white">What's your business name?</h1>
+                                    <p className="text-gray-400 text-sm">This will appear on your invoices.</p>
                                 </div>
 
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 ml-1">Your business name</label>
-                                        <div className="relative group">
-                                            <input
-                                                type="text"
-                                                value={companyName}
-                                                onChange={(e) => setCompanyName(e.target.value)}
-                                                placeholder="e.g. Rahul Mehta Designs"
-                                                className="w-full px-6 py-4 bg-white/[0.04] border-2 border-white/[0.08] rounded-2xl text-white text-base font-bold focus:bg-white/[0.06] focus:border-teal-500/40 focus:ring-8 focus:ring-teal-500/5 outline-none transition-all placeholder:text-gray-700"
-                                            />
-                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 opacity-0 group-focus-within:opacity-100 transition-opacity">
-                                                <Cpu className="w-4 h-4 text-teal-500/50 animate-spin" />
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div className="space-y-3">
+                                    <input
+                                        type="text"
+                                        value={companyName}
+                                        onChange={(e) => setCompanyName(e.target.value)}
+                                        placeholder="e.g. Rahul Mehta Designs"
+                                        className="w-full px-4 py-3 bg-white/[0.04] border-2 border-white/[0.08] rounded-xl text-white text-sm font-medium focus:bg-white/[0.06] focus:border-teal-500/40 outline-none transition-all placeholder:text-gray-600"
+                                    />
 
                                     {error && (
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="p-5 rounded-[24px] bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold flex items-center gap-4"
+                                            className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm flex items-center gap-2"
                                         >
-                                            <AlertCircle className="w-5 h-5 shrink-0" />
+                                            <AlertCircle className="w-4 h-4 shrink-0" />
                                             {error}
                                         </motion.div>
                                     )}
@@ -302,10 +226,10 @@ export function SetupPage() {
                                     <button
                                         onClick={() => companyName && setStep('persona')}
                                         disabled={!companyName}
-                                        className="w-full py-4 bg-gradient-to-br from-teal-400 to-blue-600 hover:brightness-110 text-white rounded-2xl font-black text-sm shadow-2xl shadow-teal-500/20 transition-all flex items-center justify-center gap-3 group disabled:opacity-30 active:scale-[0.98]"
+                                        className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40"
                                     >
-                                        Establish Connection
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+                                        Continue
+                                        <ArrowRight className="w-4 h-4" />
                                     </button>
                                 </div>
                             </motion.div>
@@ -317,19 +241,14 @@ export function SetupPage() {
                                 initial={{ opacity: 0, x: 40 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -40 }}
-                                className="space-y-10"
+                                className="space-y-4"
                             >
-                                <div className="text-center space-y-3">
-                                    <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-inner">
-                                        <Zap className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h1 className="text-3xl font-black text-white tracking-tight leading-none mb-2">Define Operation.</h1>
-                                        <p className="text-gray-400 text-[13px] font-medium">Adapting neural UI layers to your specific business model.</p>
-                                    </div>
+                                <div className="text-center space-y-1">
+                                    <h1 className="text-lg font-bold text-white">How do you work?</h1>
+                                    <p className="text-gray-400 text-sm">This helps us customize your experience.</p>
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-3">
+                                <div className="grid grid-cols-1 gap-2">
                                     {personas.map((p, idx) => (
                                         <motion.button
                                             key={p.id}
@@ -338,57 +257,48 @@ export function SetupPage() {
                                             transition={{ delay: idx * 0.05 }}
                                             onClick={() => p.available && setSelectedPersona(p.id as any)}
                                             disabled={!p.available}
-                                            className={`flex items-center gap-4 p-4 rounded-xl border transition-all relative group
+                                            className={`flex items-center gap-3 p-3 rounded-xl border transition-all
                                                 ${!p.available ? 'opacity-40 grayscale-[0.5] cursor-not-allowed border-white/5 bg-white/[0.005]' :
                                                   selectedPersona === p.id
-                                                    ? 'border-teal-500/50 bg-teal-500/[0.03] shadow-sm'
-                                                    : 'border-white/10 bg-white/[0.01] hover:border-white/20 hover:bg-white/[0.02]'}`}
+                                                    ? 'border-teal-500/50 bg-teal-500/[0.03]'
+                                                    : 'border-white/10 bg-white/[0.01] hover:border-white/20'}`}
                                         >
-                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border transition-all
-                                                ${!p.available ? 'bg-white/5 border-white/5 text-gray-600' :
+                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center
+                                                ${!p.available ? 'bg-white/5 text-gray-600' :
                                                   selectedPersona === p.id
-                                                    ? 'bg-teal-500/10 border-teal-500/20 text-teal-400'
-                                                    : 'bg-white/5 border-white/5 text-gray-500'}`}>
+                                                    ? 'bg-teal-500/10 text-teal-400'
+                                                    : 'bg-white/5 text-gray-500'}`}>
                                                 {p.icon}
                                             </div>
                                             <div className="flex-1 text-left">
-                                                <div className="flex items-center gap-2">
-                                                    <h4 className={`font-bold text-sm tracking-tight ${selectedPersona === p.id ? 'text-teal-400' : 'text-white'}`}>
-                                                        {p.label}
-                                                    </h4>
-                                                    {!p.available && (
-                                                        <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest text-gray-500">
-                                                            Soon
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p className="text-[10px] text-gray-500 font-medium leading-tight mt-0.5">
+                                                <h4 className={`font-medium text-sm ${selectedPersona === p.id ? 'text-teal-400' : 'text-white'}`}>
+                                                    {p.label}
+                                                </h4>
+                                                <p className="text-xs text-gray-500">
                                                     {p.desc}
                                                 </p>
                                             </div>
-                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all
-                                                ${selectedPersona === p.id
-                                                    ? 'border-teal-500 bg-teal-500'
-                                                    : 'border-white/10'}`}>
-                                                {selectedPersona === p.id && <CheckCircle2 className="w-2.5 h-2.5 text-[#040608]" />}
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center
+                                                ${selectedPersona === p.id ? 'border-teal-500 bg-teal-500' : 'border-white/10'}`}>
+                                                {selectedPersona === p.id && <CheckCircle2 className="w-2 h-2 text-[#040608]" />}
                                             </div>
                                         </motion.button>
                                     ))}
                                 </div>
 
-                                <div className="flex gap-4">
+                                <div className="flex gap-2">
                                     <button
                                         onClick={() => setStep('identity')}
-                                        className="px-6 py-4 bg-white/[0.03] hover:bg-white/[0.08] text-gray-500 hover:text-white rounded-2xl border border-white/10 transition-all active:scale-95 group"
+                                        className="px-4 py-2.5 bg-white/[0.05] hover:bg-white/[0.1] text-gray-400 rounded-lg border border-white/10 transition-all text-sm"
                                     >
-                                        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                        Back
                                     </button>
                                     <button
                                         onClick={handleProvisioning}
-                                        className="flex-1 py-4 bg-gradient-to-br from-teal-400 to-blue-600 hover:brightness-110 text-white rounded-2xl font-black text-sm shadow-2xl shadow-teal-500/20 transition-all flex items-center justify-center gap-3 group active:scale-[0.98]"
+                                        className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2"
                                     >
-                                        Initialize Protocol
-                                        <ShieldCheck className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                                        Continue
+                                        <ArrowRight className="w-4 h-4" />
                                     </button>
                                 </div>
                             </motion.div>
@@ -399,37 +309,11 @@ export function SetupPage() {
                                 key="processing"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="flex flex-col flex-1 justify-center items-center text-center space-y-10"
+                                className="flex flex-col justify-center items-center text-center py-8"
                             >
-                                <div className="relative">
-                                    <div className="absolute inset-0 bg-teal-500/20 rounded-full blur-3xl animate-ping opacity-30"></div>
-                                    <div className="relative bg-[#0c111d] rounded-3xl p-8 shadow-2xl border border-white/10 overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-t from-teal-500/5 to-transparent" />
-                                        <Loader2 className="w-12 h-12 text-teal-400 animate-spin relative z-10" />
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <h1 className="text-2xl font-black text-white tracking-tight">Deploying Instance...</h1>
-                                    <p className="text-gray-500 text-[13px] font-medium max-w-xs mx-auto">
-                                        Seeding secure financial modules and establishing encrypted cloud connectivity.
-                                    </p>
-                                </div>
-                                <div className="flex gap-2">
-                                    {[0, 1, 2].map((i) => (
-                                        <motion.div
-                                            key={i}
-                                            animate={{
-                                                scale: [1, 1.5, 1],
-                                                opacity: [0.3, 1, 0.3]
-                                            }}
-                                            transition={{
-                                                repeat: Infinity,
-                                                duration: 1.5,
-                                                delay: i * 0.2
-                                            }}
-                                            className="w-2 h-2 rounded-full bg-teal-500"
-                                        />
-                                    ))}
+                                <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-500 rounded-full animate-spin" />
+                                <div className="mt-4">
+                                    <h1 className="text-lg font-bold text-white">Setting up...</h1>
                                 </div>
                             </motion.div>
                         )}
@@ -439,27 +323,11 @@ export function SetupPage() {
                                 key="done"
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="flex flex-col flex-1 justify-center items-center text-center space-y-10"
+                                className="flex flex-col justify-center items-center text-center py-8"
                             >
-                                <motion.div
-                                    initial={{ y: 20 }}
-                                    animate={{ y: 0 }}
-                                    className="inline-flex items-center justify-center w-24 h-24 rounded-[32px] bg-gradient-to-br from-emerald-400 to-teal-700 text-white shadow-3xl shadow-emerald-500/30 mb-2 border border-white/20"
-                                >
-                                    <CheckCircle2 className="w-12 h-12" />
-                                </motion.div>
-                                <div className="space-y-3">
-                                    <h1 className="text-3xl font-black text-white tracking-tight">Access Granted.</h1>
-                                    <p className="text-gray-500 text-[13px] font-medium">Welcome to your new autonomous financial nervous system.</p>
-                                </div>
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: 0.8 }}
-                                    className="text-teal-500/50 font-mono text-[10px] uppercase tracking-[0.4em] animate-pulse"
-                                >
-                                    Redirecting to secure terminal...
-                                </motion.div>
+                                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                                <h1 className="text-lg font-bold text-white mt-3">You're all set!</h1>
+                                <p className="text-gray-400 text-sm">Redirecting to dashboard...</p>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -469,14 +337,9 @@ export function SetupPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 0.3 }}
                     transition={{ delay: 1 }}
-                    className="text-center mt-8 space-y-3"
+                    className="text-center mt-5"
                 >
                     <p className="text-[9px] font-black uppercase tracking-[0.5em] text-gray-500">CapitaEdgeX Protocol v2.5 // Core-Node-Alpha</p>
-                    <div className="flex justify-center gap-3 opacity-30">
-                        <div className="w-1 h-px bg-gray-600" />
-                        <div className="w-3 h-px bg-teal-600" />
-                        <div className="w-1 h-px bg-gray-600" />
-                    </div>
                 </motion.div>
             </div>
         </div>

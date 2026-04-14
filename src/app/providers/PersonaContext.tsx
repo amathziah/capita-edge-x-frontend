@@ -52,7 +52,6 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       // Handle the "Fresh Auth" state (Logged in via Google but no public.profiles record yet)
       if (!data && !error) {
-        console.log('[PersonaContext] First-time login detected (No profile yet). Ready for setup.');
         setBusinessType(null);
         setOrganizationId(null);
         setOrgId(null);
