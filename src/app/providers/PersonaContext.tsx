@@ -109,8 +109,6 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const refreshPersona = useCallback(async () => {
     if (user) {
-      // Force refresh session to get latest metadata (essential for OAuth users)
-      await supabase.auth.refreshSession();
       await fetchPersona(user.id);
     }
   }, [user, fetchPersona]);

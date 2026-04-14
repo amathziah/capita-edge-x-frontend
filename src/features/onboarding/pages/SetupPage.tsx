@@ -11,7 +11,6 @@ import {
     AlertCircle,
     CheckCircle2,
     ArrowRight,
-    ArrowLeft,
     Zap,
     Activity,
     Globe,
@@ -19,7 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type Step = 'identity' | 'persona' | 'processing' | 'done';
+type Step = 'identity' | 'persona';
 
 export function SetupPage() {
     const { user, loading: authLoading } = useAuth();
@@ -29,7 +28,7 @@ export function SetupPage() {
     const isOnboarded = hasCompletedOnboarding(organizationId, businessType);
 
     const [step, setStep] = useState<Step>('identity');
-    const isProvisioningRef = useRef(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Guard: redirect to login if not authenticated
     useEffect(() => {
@@ -46,13 +45,11 @@ export function SetupPage() {
         if (
             !isHydratingStatus &&
             isOnboarded &&
-            !isProvisioningRef.current &&
-            step !== 'processing' &&
-            step !== 'done'
+            !isSubmitting
         ) {
             navigate('/dashboard', { replace: true });
         }
-    }, [isHydratingStatus, isOnboarded, step, navigate]);
+    }, [isHydratingStatus, isOnboarded, isSubmitting, navigate]);
 
     const [companyName, setCompanyName] = useState(user?.user_metadata?.company_name || '');
     const [selectedPersona, setSelectedPersona] = useState<BusinessType>('solopreneur');
@@ -69,14 +66,15 @@ export function SetupPage() {
     }, [user]);
 
     const handleProvisioning = async () => {
+        if (isSubmitting) return;
+
         if (!companyName.trim()) {
             setError('Please enter your business name.');
             setStep('identity');
             return;
         }
 
-        isProvisioningRef.current = true;
-        setStep('processing');
+        setIsSubmitting(true);
         setError(null);
         try {
             // 0. Ensure session is ready before proceeding (Fix Bug: Provisioning Race)
@@ -86,7 +84,7 @@ export function SetupPage() {
             }
 
             // 1. Call backend to provision organization
-            if (!organizationId) {
+            if (!isOnboarded) {
                 try {
                     await api.post(ENDPOINTS.AUTH_PROVISION, { 
                         companyName: companyName.trim(),
@@ -104,16 +102,15 @@ export function SetupPage() {
             // 2. Always refresh persona after provisioning attempt
             await refreshPersona();
 
-            // 3. Redirect
-            setStep('done');
-            setTimeout(() => navigate('/dashboard'), 800);
+            // 3. Redirect immediately once real provisioning completes
+            navigate('/dashboard', { replace: true });
         } catch (err: any) {
             console.error('[SetupPage] provisioning error:', err);
             const msg = (err?.message ?? '').toLowerCase();
             let friendlyError = 'Something went wrong. Please try again.';
             
             if (msg.includes('failed to fetch')) {
-                friendlyError = 'Backend server unreachable. Please ensure the server is running on port 3000.';
+                friendlyError = 'We could not reach the server. Please try again.';
             } else if (msg.includes('already belongs') || msg.includes('already provisioned')) {
                 friendlyError = 'Your account is already set up. Redirecting...';
             } else if (msg.includes('session not ready') || msg.includes('session expired') || msg.includes('authentication')) {
@@ -121,14 +118,13 @@ export function SetupPage() {
             } else if (msg.includes('company name') || msg.includes('required')) {
                 friendlyError = 'Please enter your business name.';
             } else if (msg.includes('provisioning failed') || msg.includes('seeding') || msg.includes('synchronization') || msg.includes('initialization')) {
-                friendlyError = 'Setup was interrupted. Your account is safe — please click Initialize Protocol to try again.';
+                friendlyError = 'Setup was interrupted. Your account is safe. Please try again.';
             }
             
             setError(friendlyError);
-            // Move back to persona step to allow retry, unless we don't even have an identity
-            setStep(organizationId ? 'persona' : (companyName ? 'persona' : 'identity'));
+            setStep(hasMultiplePersonaChoices && companyName.trim() ? 'persona' : 'identity');
         } finally {
-            isProvisioningRef.current = false;
+            setIsSubmitting(false);
         }
     };
 
@@ -163,6 +159,24 @@ export function SetupPage() {
         },
     ];
 
+    const availablePersonas = personas.filter((persona) => persona.available);
+    const hasMultiplePersonaChoices = availablePersonas.length > 1;
+    const primaryPersona = availablePersonas[0] ?? null;
+
+    const handleIdentityContinue = async () => {
+        if (!companyName.trim()) {
+            setError('Please enter your business name.');
+            return;
+        }
+
+        if (hasMultiplePersonaChoices) {
+            setStep('persona');
+            return;
+        }
+
+        await handleProvisioning();
+    };
+
     // Guard: hydration check - stay in neutral theme until status is 100% stable
     // MOVED here to comply with Rules of Hooks (must be after all top-level hooks)
     if (isHydratingStatus) {
@@ -186,7 +200,7 @@ export function SetupPage() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     className="bg-[#0c111d]/50 backdrop-blur-2xl border border-white/10 rounded-[24px] p-6 shadow-2xl flex flex-col w-full"
                 >
                     <AnimatePresence mode="wait">
@@ -209,8 +223,24 @@ export function SetupPage() {
                                         value={companyName}
                                         onChange={(e) => setCompanyName(e.target.value)}
                                         placeholder="e.g. Rahul Mehta Designs"
+                                        disabled={isSubmitting}
                                         className="w-full px-4 py-3 bg-white/[0.04] border-2 border-white/[0.08] rounded-xl text-white text-sm font-medium focus:bg-white/[0.06] focus:border-teal-500/40 outline-none transition-all placeholder:text-gray-600"
                                     />
+
+                                    {!hasMultiplePersonaChoices && primaryPersona && (
+                                        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3 flex items-start gap-3">
+                                            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                                                {primaryPersona.icon}
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-400/80">
+                                                    Starting Workspace
+                                                </p>
+                                                <p className="text-sm font-medium text-white">{primaryPersona.label}</p>
+                                                <p className="text-xs text-gray-400">{primaryPersona.desc}</p>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {error && (
                                         <motion.div
@@ -224,12 +254,21 @@ export function SetupPage() {
                                     )}
 
                                     <button
-                                        onClick={() => companyName && setStep('persona')}
-                                        disabled={!companyName}
+                                        onClick={handleIdentityContinue}
+                                        disabled={!companyName.trim() || isSubmitting}
                                         className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40"
                                     >
-                                        Continue
-                                        <ArrowRight className="w-4 h-4" />
+                                        {isSubmitting ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Setting up...
+                                            </>
+                                        ) : (
+                                            <>
+                                                {hasMultiplePersonaChoices ? 'Continue' : 'Enter Workspace'}
+                                                <ArrowRight className="w-4 h-4" />
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </motion.div>
@@ -256,7 +295,7 @@ export function SetupPage() {
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.05 }}
                                             onClick={() => p.available && setSelectedPersona(p.id as any)}
-                                            disabled={!p.available}
+                                            disabled={!p.available || isSubmitting}
                                             className={`flex items-center gap-3 p-3 rounded-xl border transition-all
                                                 ${!p.available ? 'opacity-40 grayscale-[0.5] cursor-not-allowed border-white/5 bg-white/[0.005]' :
                                                   selectedPersona === p.id
@@ -289,45 +328,29 @@ export function SetupPage() {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setStep('identity')}
+                                        disabled={isSubmitting}
                                         className="px-4 py-2.5 bg-white/[0.05] hover:bg-white/[0.1] text-gray-400 rounded-lg border border-white/10 transition-all text-sm"
                                     >
                                         Back
                                     </button>
                                     <button
                                         onClick={handleProvisioning}
+                                        disabled={isSubmitting}
                                         className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2"
                                     >
-                                        Continue
-                                        <ArrowRight className="w-4 h-4" />
+                                        {isSubmitting ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Setting up...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Continue
+                                                <ArrowRight className="w-4 h-4" />
+                                            </>
+                                        )}
                                     </button>
                                 </div>
-                            </motion.div>
-                        )}
-
-                        {step === 'processing' && (
-                            <motion.div
-                                key="processing"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="flex flex-col justify-center items-center text-center py-8"
-                            >
-                                <div className="w-8 h-8 border-2 border-teal-500/30 border-t-teal-500 rounded-full animate-spin" />
-                                <div className="mt-4">
-                                    <h1 className="text-lg font-bold text-white">Setting up...</h1>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {step === 'done' && (
-                            <motion.div
-                                key="done"
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="flex flex-col justify-center items-center text-center py-8"
-                            >
-                                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-                                <h1 className="text-lg font-bold text-white mt-3">You're all set!</h1>
-                                <p className="text-gray-400 text-sm">Redirecting to dashboard...</p>
                             </motion.div>
                         )}
                     </AnimatePresence>

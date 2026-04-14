@@ -89,7 +89,6 @@ export function Expenses() {
 
   const handleEditExpense = (e: React.MouseEvent, expense: Expense) => {
     e.stopPropagation();
-    console.log("handleEditExpense triggered", expense.id);
     setExpenseForm({
       id: expense.id,
       description: expense.description,

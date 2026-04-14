@@ -78,7 +78,6 @@ export default function AuthComponent() {
         setMessage(null);
         
         const normalizedEmail = email.trim().toLowerCase();
-        console.log(`[Auth] Attempting signup for: ${normalizedEmail}...`);
         
         try {
             const response = await api.post<any>(ENDPOINTS.AUTH_SIGNUP, { 
@@ -87,8 +86,6 @@ export default function AuthComponent() {
                 companyName 
             });
 
-            console.log(`[Auth] Signup response received:`, response);
-            
             if (response.success || response.id) {
                 setMessage(response.message || 'Verification code sent!');
                 setError(null);
@@ -109,7 +106,6 @@ export default function AuthComponent() {
                                 msg.includes('duplicate');
 
             if (isRegistered) {
-                console.log('[Auth] Conflict recognized. Forcing handover to OTP screen...');
                 // 1. Wipe all local error states to clear the UI
                 setError(null);
                 // 2. Force the transition to the OTP view
@@ -120,7 +116,6 @@ export default function AuthComponent() {
                 // 4. Trigger the resend to ensure they have the latest code
                 try {
                     await api.post(ENDPOINTS.AUTH_RESEND, { email: normalizedEmail });
-                    console.log('[Auth] Resend triggered successfully.');
                 } catch (resendErr) {
                     console.warn('[Auth] Handover resend note:', resendErr);
                 }

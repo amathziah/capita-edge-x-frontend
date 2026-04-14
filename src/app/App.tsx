@@ -9,7 +9,6 @@ import { NotificationProvider } from '@/app/providers/NotificationContext';
 import { usePersona } from '@/app/providers/PersonaContext';
 import { hasCompletedOnboarding } from '@/shared/lib/authFlow';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
-import { Loader2 } from 'lucide-react';
 
 const Layout = lazy(() => import('@/components/layout/Layout').then(module => ({ default: module.Layout })));
 const Customers = lazy(() => import('@/features/customers/pages/CustomersPage').then(module => ({ default: module.Customers })));
@@ -44,35 +43,12 @@ const HomeLoader = () => {
   const { user, loading: loadingAuth } = useAuth();
   const { organizationId, businessType, loading: loadingPersona } = usePersona();
   const isOnboarded = hasCompletedOnboarding(organizationId, businessType);
-
-  // 1. Check for established user session directly
-  const hasToken = !!user;
   const isHydrating = loadingAuth || loadingPersona;
 
-  // RULE 1: If we have ANY hint of a session (token), stay in NEUTRAL mode.
-  // This removes the "Syncing Security Protocol" text and flashes for established users.
-  if (isHydrating && hasToken) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#040608]">
-        <div className="relative">
-          <div className="w-12 h-12 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
-          <div className="absolute inset-0 bg-teal-500/10 blur-xl rounded-full" />
-        </div>
-      </div>
-    );
-  }
-
-  // RULE 2: Only show onboarding-themed loading for users with NO token (fresh sign-ups)
   if (isHydrating) {
-    return (
-      <div className="flex flex-col h-screen items-center justify-center bg-[#0c0f1a] space-y-4">
-        <Loader2 className="w-10 h-10 text-teal-400 animate-spin" />
-        <p className="text-gray-400 text-sm font-bold tracking-tight">Syncing Security Protocol...</p>
-      </div>
-    );
+    return <RouteFallback />;
   }
 
-  // RULE 3: Routing Decisions (Only after isHydrating is false)
   if (user) {
     if (isOnboarded) {
       return <Navigate to="/dashboard" replace />;

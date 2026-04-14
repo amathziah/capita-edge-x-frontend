@@ -1064,7 +1064,6 @@ Choose a desk to get started, or ask me anything.`,
 
           // Handle workspace data from backend (auto-open guided workspace)
           const workspaceData = event.workspace || event.data?.workspace;
-          console.log('[AI] event keys:', Object.keys(event), 'workspace:', !!workspaceData, 'component:', workspaceData?.component);
           const workspaceDomain = workspaceData?.domain;
           let finalUiBlocks = pendingUiBlocks;
           let finalUiComponent = pendingUiBlocks[0]?.component;
