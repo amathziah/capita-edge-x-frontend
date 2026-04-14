@@ -38,6 +38,16 @@ const isOpenInvoiceStatus = (status?: string) =>
 const isOverdueInvoiceStatus = (status?: string) =>
     (status || '').toLowerCase().trim() === 'overdue';
 
+const interactiveMetricCardClass =
+    'group relative overflow-hidden rounded-2xl border p-4 sm:p-6 shadow-sm transition-all duration-300 cursor-pointer hover:shadow-lg';
+
+const staticMetricCardClass =
+    'group relative overflow-hidden rounded-2xl border p-4 sm:p-6 shadow-sm transition-all duration-300';
+
+const metricValueClass = 'text-xl sm:text-2xl font-bold text-gray-900';
+const metricValueStrongClass = 'text-xl sm:text-2xl font-black tracking-tight text-gray-900';
+const panelClass =
+    'relative overflow-hidden rounded-[28px] border border-emerald-100/60 bg-white/80 p-4 shadow-sm backdrop-blur-xl sm:p-6 lg:p-7';
 
 export const ControlRoom = () => {
     const { businessType, loading: personaLoading } = usePersona();
@@ -184,7 +194,7 @@ export const ControlRoom = () => {
 
     if ((loading && invoices.length === 0) || personaLoading) {
         return (
-            <div className="p-12 flex flex-col items-center justify-center min-h-[60vh] bg-gray-50/50 space-y-4">
+            <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4 bg-gray-50/50 px-4 py-10 sm:p-12">
                 <div className="relative mb-8">
                     <div className="w-20 h-20 border-4 border-emerald-400 border-dotted rounded-full animate-spin [animation-duration:3s]"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -212,56 +222,56 @@ export const ControlRoom = () => {
             <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl -z-10"></div>
             <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-emerald-200/30 blur-[110px] -z-10"></div>
 
-            <div className="p-[18px] lg:p-8 max-w-7xl mx-auto">
+            <div className="mx-auto max-w-7xl px-3 pb-8 pt-4 sm:px-4 sm:pb-10 sm:pt-5 lg:px-8 lg:pt-8">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
-                    className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+                    className="mb-6 flex flex-col gap-4 sm:mb-8 md:flex-row md:items-center md:justify-between"
                 >
-                    <div>
-                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600 sm:text-xs sm:tracking-[0.2em]">
                             {isSolopreneur ? "Control Room" : "Mission Control"}
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         </div>
-                        <h1 className="mt-2 text-3xl font-black text-gray-900 tracking-tight">
+                        <h1 className="mt-2 text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">
                             {isSolopreneur ? "Control Room" : "Control Room"}
                         </h1>
-                        <p className="text-gray-500 mt-1 font-bold text-xs tracking-wide">
+                        <p className="mt-1 text-[11px] font-bold tracking-wide text-gray-500 sm:text-xs">
                             {isSolopreneur ? "Your financial overview" : `${businessType || 'New'} Persona Matrix Active`}
                         </p>
                         {isSolopreneur && (
-                            <p className="text-[11px] text-gray-400 mt-2 font-medium">
+                            <p className="mt-2 max-w-2xl text-[11px] font-medium text-gray-400 sm:text-xs">
                                 Monthly cards show this month. Overdue shows unpaid late invoices across your workspace right now.
                             </p>
                         )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="bg-white p-1 rounded-xl border border-gray-200 flex items-center shadow-sm">
+                    <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                        <div className="flex w-full items-center justify-center rounded-xl border border-gray-200 bg-white p-1 shadow-sm sm:w-auto sm:justify-start">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                className={`flex min-h-[44px] flex-1 items-center justify-center rounded-lg px-3 transition-all sm:min-w-[44px] sm:flex-none sm:px-2 ${viewMode === 'grid' ? 'bg-gray-100 text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                                 title="Grid View"
                             >
                                 <LayoutGrid size={18} />
                             </button>
                                 <button
                                     onClick={() => setViewMode('map')}
-                                    className={`p-2 rounded-lg transition-all ${viewMode === 'map' ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`flex min-h-[44px] flex-1 items-center justify-center rounded-lg px-3 transition-all sm:min-w-[44px] sm:flex-none sm:px-2 ${viewMode === 'map' ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                                     title="Workflow Map"
                                 >
                                     <Network size={18} />
                                 </button>
                         </div>
 
-                        <div className="relative">
+                        <div className="relative w-full sm:w-auto">
                             <button
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     setShowQuickActions((value) => !value);
                                 }}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
+                                className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-xl shadow-slate-900/10 transition hover:bg-black sm:w-auto sm:justify-start"
                             >
                                 <Plus size={16} />
                                 Quick Action
@@ -271,7 +281,7 @@ export const ControlRoom = () => {
                             {showQuickActions && (
                                 <div
                                     onClick={(event) => event.stopPropagation()}
-                                    className="absolute right-0 top-[calc(100%+10px)] z-20 w-56 rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl shadow-slate-900/10"
+                                    className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl shadow-slate-900/10 sm:left-auto sm:right-0 sm:w-56"
                                 >
                                     {quickActions.map((action) => (
                                         <button
@@ -280,7 +290,7 @@ export const ControlRoom = () => {
                                                 setShowQuickActions(false);
                                                 navigate(action.href);
                                             }}
-                                            className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                                            className="flex min-h-[44px] w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                                         >
                                             {action.label}
                                         </button>
@@ -298,24 +308,24 @@ export const ControlRoom = () => {
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.98 }}
-                            className="bg-[#0c0f1a] backdrop-blur-xl rounded-3xl border border-white/[0.08] shadow-2xl overflow-hidden relative"
+                            className="relative overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0c0f1a] shadow-2xl backdrop-blur-xl"
                         >
-                            <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-[#161a2b]/80">
-                                <div className="flex items-center gap-3">
+                            <div className="flex flex-col gap-3 border-b border-white/[0.06] bg-[#161a2b]/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                                <div className="flex min-w-0 items-center gap-3">
                                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
                                         <Network size={18} className="text-white" />
                                     </div>
-                                    <div>
+                                    <div className="min-w-0">
                                         <h3 className="text-sm font-bold text-white">Invoice Status</h3>
-                                        <p className="text-[11px] text-gray-500 mt-0.5">Quick overview • Actionable insights</p>
+                                        <p className="mt-0.5 text-[11px] text-gray-500">Quick overview • Actionable insights</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 self-start sm:self-auto">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                                     <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Live</span>
                                 </div>
                             </div>
-                            <div className="p-6">
+                            <div className="p-4 sm:p-6">
                                 <InvoiceQuickView invoices={invoices} />
                             </div>
                         </motion.div>
@@ -327,13 +337,13 @@ export const ControlRoom = () => {
                             exit={{ opacity: 0, y: -12 }}
                         >
                             {/* SaaS Metrics or Standard Stats Grid */}
-                            <div className={`grid grid-cols-1 md:grid-cols-2 ${isSolopreneur ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-5 mb-10`}>
+                            <div className={`mb-8 grid grid-cols-1 gap-4 sm:mb-10 sm:gap-5 md:grid-cols-2 ${isSolopreneur ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
                                 {businessType === 'subscription' ? (
                                     <>
                                         {/* Card 1: MRR */}
                                         <div
                                             onClick={() => navigate('/dashboard/invoices')}
-                                            className="relative bg-gradient-to-br from-white to-indigo-50/30 p-6 rounded-2xl border border-indigo-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30 hover:border-indigo-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-indigo-100/40 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -347,7 +357,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Monthly Recurring Revenue</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalCollected / 1000).toFixed(1)}k</h3>
+                                                    <h3 className={metricValueClass}>₹{(totalCollected / 1000).toFixed(1)}k</h3>
                                                     <p className="text-sm text-indigo-600 mt-2 font-medium">Growth Mode Active</p>
                                                 </div>
                                             </div>
@@ -356,7 +366,7 @@ export const ControlRoom = () => {
                                         {/* Card 2: Churn Rate */}
                                         <div
                                             onClick={() => navigate('/dashboard/customers')}
-                                            className="relative bg-gradient-to-br from-white to-rose-50/30 p-6 rounded-2xl border border-rose-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-rose-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-rose-100 bg-gradient-to-br from-white to-rose-50/30 hover:border-rose-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-rose-100/40 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -367,7 +377,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Churn Rate</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">{churnRate}%</h3>
+                                                    <h3 className={metricValueClass}>{churnRate}%</h3>
                                                     <p className="text-sm text-rose-600 mt-2 font-medium">Below Target (1.5%)</p>
                                                 </div>
                                             </div>
@@ -375,7 +385,7 @@ export const ControlRoom = () => {
 
                                         {/* Card 3: Cash Runway */}
                                         <div
-                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-emerald-100 bg-gradient-to-br from-white to-emerald-50/30 hover:border-emerald-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -386,7 +396,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Cash Runway</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">{cashRunway} Months</h3>
+                                                    <h3 className={metricValueClass}>{cashRunway} Months</h3>
                                                     <div className="w-full bg-gray-100 h-2 rounded-full mt-4 overflow-hidden">
                                                         <div className="bg-gradient-to-r from-emerald-400 to-teal-600 h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (cashRunway / 12) * 100)}%` }} />
                                                     </div>
@@ -398,7 +408,7 @@ export const ControlRoom = () => {
                                         {/* Card 4: Active Subs */}
                                         <div
                                             onClick={() => navigate('/dashboard/customers')}
-                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-emerald-100 bg-gradient-to-br from-white to-emerald-50/30 hover:border-emerald-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -409,7 +419,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Active Subscriptions</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">{activeSubscriptions}</h3>
+                                                    <h3 className={metricValueClass}>{activeSubscriptions}</h3>
                                                     <p className="text-sm text-emerald-600 mt-2 font-medium">Investor View Active</p>
                                                 </div>
                                             </div>
@@ -420,7 +430,7 @@ export const ControlRoom = () => {
                                         {/* Agency Card 1: Pending Revenue */}
                                         <div
                                             onClick={() => navigate('/dashboard/invoices')}
-                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-emerald-100 bg-gradient-to-br from-white to-emerald-50/30 hover:border-emerald-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -431,7 +441,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pending Revenue</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalPending / 1000).toFixed(1)}k</h3>
+                                                    <h3 className={metricValueClass}>₹{(totalPending / 1000).toFixed(1)}k</h3>
                                                     <p className="text-sm text-emerald-600 mt-2 font-medium">{pendingCount} active invoices</p>
                                                 </div>
                                             </div>
@@ -440,7 +450,7 @@ export const ControlRoom = () => {
                                         {/* Agency Card 2: Cash Collected */}
                                         <div
                                             onClick={() => navigate('/dashboard/payments')}
-                                            className="relative bg-gradient-to-br from-white to-emerald-50/30 p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-emerald-100 bg-gradient-to-br from-white to-emerald-50/30 hover:border-emerald-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -451,7 +461,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Cash Collected</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalCollected / 1000).toFixed(1)}k</h3>
+                                                    <h3 className={metricValueClass}>₹{(totalCollected / 1000).toFixed(1)}k</h3>
                                                     <p className="text-sm text-emerald-600 mt-2 font-medium">This month</p>
                                                 </div>
                                             </div>
@@ -459,7 +469,7 @@ export const ControlRoom = () => {
 
                                         {/* Agency Card 3: Retainer Usage */}
                                         <div
-                                            className="relative bg-gradient-to-br from-white to-indigo-50/30 p-6 rounded-2xl border border-indigo-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-indigo-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30 hover:border-indigo-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-indigo-100/40 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -470,7 +480,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Retainer Usage</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">{retainerUsage}%</h3>
+                                                    <h3 className={metricValueClass}>{retainerUsage}%</h3>
                                                     <div className="w-full bg-gray-100 h-2 rounded-full mt-4 overflow-hidden">
                                                         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full" style={{ width: `${retainerUsage}%` }} />
                                                     </div>
@@ -481,7 +491,7 @@ export const ControlRoom = () => {
 
                                         {/* Agency Card 4: Unbilled Hours */}
                                         <div
-                                            className="relative bg-gradient-to-br from-white to-amber-50/30 p-6 rounded-2xl border border-amber-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-amber-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-amber-100 bg-gradient-to-br from-white to-amber-50/30 hover:border-amber-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-amber-100/40 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -492,7 +502,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Unbilled Hours</p>
-                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight text-center">
+                                                    <h3 className={`${metricValueStrongClass} text-center`}>
                                                         {unbilledHours}h
                                                     </h3>
                                                     <p className="text-sm text-amber-600 mt-2 font-medium">Ready to invoice</p>
@@ -504,7 +514,7 @@ export const ControlRoom = () => {
                                     <>
                                         {/* Card 1: Total Invoiced */}
                                         <div
-                                            className="relative bg-white p-6 rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 group overflow-hidden"
+                                            className={`${staticMetricCardClass} border-gray-100 bg-white`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-gray-50 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -515,7 +525,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Invoiced This Month</p>
-                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">₹{solopreneurMetrics.totalInvoicedMonth.toLocaleString()}</h3>
+                                                    <h3 className={metricValueStrongClass}>₹{solopreneurMetrics.totalInvoicedMonth.toLocaleString()}</h3>
                                                     <p className="text-xs text-gray-500 mt-2 font-medium">Invoices dated in the current month</p>
                                                 </div>
                                             </div>
@@ -523,7 +533,7 @@ export const ControlRoom = () => {
 
                                         {/* Card 2: Overdue */}
                                         <div
-                                            className="relative bg-white p-6 rounded-2xl border border-amber-100 shadow-sm transition-all duration-300 group overflow-hidden"
+                                            className={`${staticMetricCardClass} border-amber-100 bg-white`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-amber-50 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -534,7 +544,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Total Overdue Now</p>
-                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">₹{solopreneurMetrics.totalOverdueAmount.toLocaleString()}</h3>
+                                                    <h3 className={metricValueStrongClass}>₹{solopreneurMetrics.totalOverdueAmount.toLocaleString()}</h3>
                                                     <p className="text-xs text-amber-600 mt-2 font-bold">{solopreneurMetrics.overdueCount} late invoices still unpaid</p>
                                                 </div>
                                             </div>
@@ -542,7 +552,7 @@ export const ControlRoom = () => {
 
                                         {/* Card 3: Cash Collected */}
                                         <div
-                                            className="relative bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm transition-all duration-300 group overflow-hidden"
+                                            className={`${staticMetricCardClass} border-emerald-100 bg-white`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-50 rounded-full blur-2xl" />
                                             <div className="relative">
@@ -553,7 +563,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Collected This Month</p>
-                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">₹{solopreneurMetrics.totalCollectedMonth.toLocaleString()}</h3>
+                                                    <h3 className={metricValueStrongClass}>₹{solopreneurMetrics.totalCollectedMonth.toLocaleString()}</h3>
                                                     <p className="text-xs text-emerald-600 mt-2 font-medium">{solopreneurMetrics.collectionRate}% of this month&apos;s invoiced amount</p>
                                                 </div>
                                             </div>
@@ -566,7 +576,7 @@ export const ControlRoom = () => {
                                         {/* Default Card 1: Pending Revenue */}
                                         <div
                                             onClick={() => navigate('/dashboard/invoices')}
-                                            className="relative bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-emerald-100 bg-white hover:border-emerald-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
                                             <div className="relative text-left">
@@ -577,7 +587,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pending Revenue</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalPending / 1000).toFixed(1)}k</h3>
+                                                    <h3 className={metricValueClass}>₹{(totalPending / 1000).toFixed(1)}k</h3>
                                                     <p className="text-sm text-emerald-600 mt-2 font-medium">{pendingCount} invoices pending</p>
                                                 </div>
                                             </div>
@@ -586,7 +596,7 @@ export const ControlRoom = () => {
                                         {/* Default Card 2: Action Required */}
                                         <div
                                             onClick={() => navigate('/dashboard/invoices')}
-                                            className="relative bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-emerald-100 bg-white hover:border-emerald-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
                                             {overdueCount > 0 && <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse shadow-lg shadow-amber-500/50" />}
@@ -598,7 +608,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Action Required</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalOverdue / 1000).toFixed(1)}k</h3>
+                                                    <h3 className={metricValueClass}>₹{(totalOverdue / 1000).toFixed(1)}k</h3>
                                                     <p className="text-sm text-amber-600 mt-2 font-medium">{overdueCount} overdue payments</p>
                                                 </div>
                                             </div>
@@ -607,7 +617,7 @@ export const ControlRoom = () => {
                                         {/* Default Card 3: Collected */}
                                         <div
                                             onClick={() => navigate('/dashboard/payments')}
-                                            className="relative bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all duration-300 group overflow-hidden"
+                                            className={`${interactiveMetricCardClass} border-emerald-100 bg-white hover:border-emerald-200`}
                                         >
                                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl" />
                                             <div className="relative text-left">
@@ -618,7 +628,7 @@ export const ControlRoom = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Cash Collected</p>
-                                                    <h3 className="text-2xl font-bold text-gray-900">₹{(totalCollected / 1000).toFixed(1)}k</h3>
+                                                    <h3 className={metricValueClass}>₹{(totalCollected / 1000).toFixed(1)}k</h3>
                                                     <p className="text-sm text-emerald-600 mt-2 font-medium">This year</p>
                                                 </div>
                                             </div>
@@ -627,17 +637,17 @@ export const ControlRoom = () => {
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-8">
                                 {/* Left Column: Monitoring (Hidden for Solopreneurs) */}
                                 {!isSolopreneur && (
-                                    <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm p-6 lg:p-7 relative overflow-hidden">
+                                    <div className={`lg:col-span-2 ${panelClass}`}>
                                         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/20 rounded-full blur-3xl -z-10 transform translate-x-1/2 -translate-y-1/2"></div>
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                        <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+                                            <h2 className="flex items-center gap-2 text-base font-bold text-gray-900 sm:text-lg">
                                                 <Activity size={18} className="text-emerald-500" />
                                                 Live Monitoring
                                             </h2>
-                                            <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg flex items-center border border-emerald-100">
+                                            <span className="inline-flex items-center self-start rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-600 sm:self-auto sm:text-xs">
                                                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
                                                 Systems Nominal
                                             </span>
@@ -645,31 +655,31 @@ export const ControlRoom = () => {
 
                                         <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                             {recentPayments.map((pay) => (
-                                                <div key={pay.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-emerald-100 hover:border-emerald-200 transition-colors shadow-sm">
+                                                <div key={pay.id} className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-white/70 p-3.5 shadow-sm transition-colors hover:border-emerald-200 sm:gap-4 sm:p-4">
                                                     <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg shrink-0"><CreditCard size={16} /></div>
-                                                    <div>
+                                                    <div className="min-w-0">
                                                         <h3 className="text-sm font-bold text-gray-900">Payment Received</h3>
-                                                        <p className="text-sm text-gray-500 mt-0.5">₹{pay.amount.toLocaleString()} via {pay.method}</p>
+                                                        <p className="mt-0.5 text-sm text-gray-500">₹{pay.amount.toLocaleString()} via {pay.method}</p>
                                                         <span className="text-xs text-emerald-500 mt-2 block">{new Date(pay.createdAt || 0).toLocaleTimeString()}</span>
                                                     </div>
                                                 </div>
                                             ))}
                                             {overdueInvoices.slice(0, 2).map((inv) => (
-                                                <div key={inv.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-amber-100 hover:border-amber-200 transition-colors cursor-pointer shadow-sm group" onClick={() => navigate('/dashboard/invoices')}>
+                                                <div key={inv.id} className="group flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-100 bg-white/70 p-3.5 shadow-sm transition-colors hover:border-amber-200 sm:gap-4 sm:p-4" onClick={() => navigate('/dashboard/invoices')}>
                                                     <div className="p-2 bg-amber-100 text-amber-600 rounded-lg shrink-0 group-hover:scale-110 transition-transform"><AlertTriangle size={16} /></div>
-                                                    <div>
+                                                    <div className="min-w-0">
                                                         <h3 className="text-sm font-bold text-gray-900">Collection Alert</h3>
-                                                        <p className="text-sm text-gray-500 mt-0.5">#{inv.invoiceNumber} for {inv.buyer?.name} is overdue.</p>
+                                                        <p className="mt-0.5 text-sm text-gray-500">#{inv.invoiceNumber} for {inv.buyer?.name} is overdue.</p>
                                                         <span className="text-xs text-amber-500 mt-2 block font-medium">Action: Send Follow-up</span>
                                                     </div>
                                                 </div>
                                             ))}
                                             {recentInvoices.map((inv) => (
-                                                <div key={inv.id} className="flex items-start gap-4 p-4 rounded-2xl bg-white/70 border border-emerald-100 hover:border-emerald-200 transition-colors shadow-sm">
+                                                <div key={inv.id} className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-white/70 p-3.5 shadow-sm transition-colors hover:border-emerald-200 sm:gap-4 sm:p-4">
                                                     <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg shrink-0"><CheckCircle2 size={16} /></div>
-                                                    <div>
+                                                    <div className="min-w-0">
                                                         <h3 className="text-sm font-bold text-gray-900">Invoice {inv.status === 'draft' ? 'Draft' : 'Sent'}</h3>
-                                                        <p className="text-sm text-gray-500 mt-0.5">#{inv.invoiceNumber} to {inv.buyer?.name} - ₹{inv.total.toLocaleString()}</p>
+                                                        <p className="mt-0.5 text-sm text-gray-500">#{inv.invoiceNumber} to {inv.buyer?.name} - ₹{inv.total.toLocaleString()}</p>
                                                         <span className="text-xs text-gray-400 mt-2 block">{new Date(inv.createdAt || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                     </div>
                                                 </div>
@@ -679,8 +689,8 @@ export const ControlRoom = () => {
                                 )}
 
                                 {/* Priority Queue (Always shown, full width for solopreneurs) */}
-                                <div className={`${isSolopreneur ? 'lg:col-span-3' : 'lg:col-span-1'} bg-white/80 backdrop-blur-xl rounded-3xl border border-emerald-100/60 shadow-sm p-6`}>
-                                    <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center justify-between">
+                                <div className={`${isSolopreneur ? 'lg:col-span-3' : 'lg:col-span-1'} ${panelClass}`}>
+                                    <h2 className="mb-5 flex flex-col gap-3 text-base font-bold text-gray-900 sm:mb-6 sm:flex-row sm:items-center sm:justify-between sm:text-lg">
                                         <div className="flex items-center gap-2">
                                             <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
                                                 <AlertCircle size={18} />
@@ -688,7 +698,7 @@ export const ControlRoom = () => {
                                             {isSolopreneur ? "Who Owes Me" : (businessType === 'subscription' ? 'Failed Subscriptions' : 'Priority Queue')}
                                         </div>
                                         {isSolopreneur && solopreneurMetrics && (
-                                            <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full uppercase tracking-tighter border border-amber-100">
+                                            <span className="inline-flex self-start rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-tighter text-amber-600 sm:self-auto">
                                                 {solopreneurMetrics.overdueCount} Pending Actions
                                             </span>
                                         )}
@@ -701,24 +711,24 @@ export const ControlRoom = () => {
                                                 const diff = Math.floor((new Date().getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
                                                 
                                                 return (
-                                                    <div key={inv.id} className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 hover:bg-gray-50 transition group">
-                                                        <div className="flex items-center gap-4">
+                                                    <div key={inv.id} className="group flex flex-col gap-3 rounded-2xl border border-gray-100 p-4 transition hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between">
+                                                        <div className="flex items-center gap-3 sm:gap-4">
                                                             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 uppercase">
                                                                 {inv.buyer?.name?.substring(0, 2) || "C"}
                                                             </div>
-                                                            <div>
+                                                            <div className="min-w-0">
                                                                 <div className="text-sm font-bold text-gray-900">{inv.buyer?.name || "Customer"}</div>
                                                                 <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{diff} days overdue</div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-6">
-                                                            <div className="text-right">
+                                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+                                                            <div className="text-left sm:text-right">
                                                                 <div className="text-sm font-black text-gray-900">₹{getInvoiceBalanceDue(inv).toLocaleString()}</div>
                                                                 <div className="text-[10px] text-amber-500 font-bold uppercase">Overdue</div>
                                                             </div>
                                                             <button 
                                                                 disabled 
-                                                                className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 opacity-50 cursor-not-allowed"
+                                                                className="min-h-[40px] rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 opacity-50 cursor-not-allowed sm:w-auto"
                                                             >
                                                                 Remind
                                                             </button>
@@ -728,22 +738,22 @@ export const ControlRoom = () => {
                                             })
                                         ) : overdueInvoices.length > 0 ? (
                                             overdueInvoices.map((inv) => (
-                                                <div key={inv.id} className="flex items-center justify-between p-3 rounded-2xl border border-gray-100 hover:bg-amber-50/50 hover:border-amber-100 transition cursor-pointer group" onClick={() => navigate('/dashboard/invoices')}>
+                                                <div key={inv.id} className="group flex cursor-pointer flex-col gap-2 rounded-2xl border border-gray-100 p-3 transition hover:border-amber-100 hover:bg-amber-50/50 sm:flex-row sm:items-center sm:justify-between" onClick={() => navigate('/dashboard/invoices')}>
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-amber-500 group-hover:scale-125 transition-transform"></div>
-                                                        <div>
+                                                        <div className="min-w-0">
                                                             <div className="text-sm font-semibold text-gray-900">{inv.buyer?.name}</div>
                                                             <div className="text-xs text-gray-500">{inv.invoiceNumber}</div>
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
+                                                    <div className="text-left sm:text-right">
                                                         <div className="text-sm font-bold text-gray-900">₹{getInvoiceBalanceDue(inv).toLocaleString()}</div>
                                                         <div className="text-xs text-amber-500 group-hover:font-medium">Overdue</div>
                                                     </div>
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="text-center py-12 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
+                                            <div className="rounded-2xl border-2 border-dashed border-gray-100 bg-gray-50/50 py-10 text-center sm:py-12">
                                                 <h3 className="text-sm font-bold text-gray-900">
                                                     {isSolopreneur ? "No overdue invoices — you're all caught up!" : "No urgent items."}
                                                 </h3>

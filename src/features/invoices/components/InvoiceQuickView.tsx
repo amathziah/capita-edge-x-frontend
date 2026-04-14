@@ -134,21 +134,21 @@ const InvoiceQuickViewBase: React.FC<InvoiceQuickViewProps> = ({ invoices, onSta
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between mb-6">
+            <div className="mb-4 flex items-center justify-between sm:mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-white">Invoice Status</h3>
+                    <h3 className="text-base font-bold text-white sm:text-lg">Invoice Status</h3>
                     <p className="text-sm text-gray-500 mt-1">Track your money flow</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3">
                 {statusGroups.map((group) => {
                     const Icon = group.icon;
                     return (
                         <button
                             key={group.statusKey}
                             onClick={() => handleCardClick(group.statusKey)}
-                            className={`relative p-5 rounded-2xl border ${group.bg} ${group.border} text-left transition-all hover:scale-[1.02] hover:shadow-lg`}
+                            className={`relative rounded-2xl border p-4 text-left transition-all hover:scale-[1.02] hover:shadow-lg sm:p-5 ${group.bg} ${group.border}`}
                         >
                             <div className="flex items-start justify-between mb-3">
                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${group.iconBg}`}>
@@ -161,11 +161,11 @@ const InvoiceQuickViewBase: React.FC<InvoiceQuickViewProps> = ({ invoices, onSta
                                 {group.label}
                             </div>
 
-                            <div className="text-2xl font-black text-white mt-1">
+                            <div className="mt-1 text-xl font-black text-white sm:text-2xl">
                                 {group.count}
                             </div>
 
-                            <div className="text-lg font-bold text-white mt-1">
+                            <div className="mt-1 text-base font-bold text-white sm:text-lg">
                                 ₹{group.value.toLocaleString('en-IN')}
                             </div>
 
@@ -189,7 +189,7 @@ const InvoiceQuickViewBase: React.FC<InvoiceQuickViewProps> = ({ invoices, onSta
 
             {groups.overdue.count > 0 && (
                 <div className="mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
                         <AlertTriangle className="text-red-400" size={20} />
                         <div className="flex-1">
                             <p className="text-sm font-semibold text-red-400">
@@ -201,7 +201,7 @@ const InvoiceQuickViewBase: React.FC<InvoiceQuickViewProps> = ({ invoices, onSta
                         </div>
                         <button
                             onClick={() => handleCardClick('overdue')}
-                            className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                            className="min-h-[40px] w-full rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-600 sm:w-auto"
                         >
                             Chase
                         </button>

@@ -54,9 +54,13 @@ export function Layout() {
     };
   }, []);
 
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
   if (isAIActive) {
     return (
-      <div className="h-screen w-screen bg-background overflow-hidden">
+      <div className="h-[100dvh] w-full max-w-full bg-background overflow-hidden">
         <RefreshingIndicator />
         <Outlet />
       </div>
@@ -64,11 +68,11 @@ export function Layout() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-[100dvh] bg-background">
       <RefreshingIndicator />
       <Sidebar />
 
-      <div className="flex-1 flex flex-col min-w-0 pb-16 lg:pb-0 shadow-[inset_4px_0_24px_rgba(0,0,0,0.06)]">
+      <div className="flex-1 flex flex-col min-w-0 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] lg:pb-0 shadow-[inset_4px_0_24px_rgba(0,0,0,0.06)]">
         <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
         <main className={`flex-1 flex flex-col overflow-x-hidden ${isNoScrollPage ? 'overflow-y-hidden' : 'overflow-y-auto'}`}>

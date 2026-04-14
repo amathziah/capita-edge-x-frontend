@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Send, Mic, MicOff, Zap, RotateCcw, ChevronDown,
   PanelLeft, X
@@ -394,7 +394,7 @@ function ChatBubble({
         </div>
       )}
 
-      <div className={`flex flex-col gap-1 ${isBot ? 'items-start' : 'items-end'} max-w-[82%]`}>
+      <div className={`flex max-w-[90%] flex-col gap-1 sm:max-w-[82%] ${isBot ? 'items-start' : 'items-end'}`}>
         {/* Bubble */}
         <motion.div
           className="relative rounded-2xl overflow-hidden shadow-2xl"
@@ -631,6 +631,7 @@ function ThinkingSkeleton({ step }: { step: string }) {
 // ─── Main component ────────────────────────────────────────────────────────────
 export function AIAssistantPage() {
   const { businessType } = usePersona();
+  const location = useLocation();
   const navigate = useNavigate();
   const STORAGE_KEY = `capita_ai_config_${businessType || 'default'}`;
 
@@ -687,6 +688,14 @@ export function AIAssistantPage() {
   const messagesRef = useRef<Message[]>([]);
   const currentConversationIdRef = useRef<string | null>(null);
   const hasLocalInteractionRef = useRef(false);
+
+  const closeMobileSidebar = useCallback(() => {
+    setMobileSidebarOpen(false);
+  }, []);
+
+  const toggleMobileSidebar = useCallback(() => {
+    setMobileSidebarOpen((open) => !open);
+  }, []);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -801,13 +810,14 @@ Choose a desk to get started, or ask me anything.`,
   }, []);
 
   const exitAssistant = useCallback(() => {
+    closeMobileSidebar();
     navigate('/dashboard');
     if (autoClearHistory) {
       void clearPersistedChatHistory().catch((err) => {
         console.error('Failed to clear chat on exit:', err);
       });
     }
-  }, [autoClearHistory, clearPersistedChatHistory, navigate]);
+  }, [autoClearHistory, clearPersistedChatHistory, closeMobileSidebar, navigate]);
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -890,6 +900,53 @@ Choose a desk to get started, or ask me anything.`,
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [autoClearHistory]);
+
+  useEffect(() => {
+    closeMobileSidebar();
+  }, [closeMobileSidebar, location.pathname]);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+
+    const { body, documentElement } = document;
+    const previousBodyOverflow = body.style.overflow;
+    const previousDocumentOverflow = documentElement.style.overflow;
+    body.style.overflow = 'hidden';
+    documentElement.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeMobileSidebar();
+      }
+    };
+
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    const handleMediaChange = (event: MediaQueryListEvent) => {
+      if (event.matches) {
+        closeMobileSidebar();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    if (mediaQuery.matches) {
+      closeMobileSidebar();
+    } else if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleMediaChange);
+    } else {
+      mediaQuery.addListener(handleMediaChange);
+    }
+
+    return () => {
+      body.style.overflow = previousBodyOverflow;
+      documentElement.style.overflow = previousDocumentOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+      if (typeof mediaQuery.removeEventListener === 'function') {
+        mediaQuery.removeEventListener('change', handleMediaChange);
+      } else {
+        mediaQuery.removeListener(handleMediaChange);
+      }
+    };
+  }, [closeMobileSidebar, mobileSidebarOpen]);
 
   // ── Auto-scroll on new messages ──────────────────────────────────────────
   useEffect(() => {
@@ -1538,9 +1595,9 @@ Choose a desk to get started, or ask me anything.`,
         }
       `}</style>
 
-      <div className="flex flex-col w-full h-screen overflow-hidden">
+      <div className="flex h-[100dvh] min-h-[100dvh] w-full overflow-hidden">
         {/* Outer shell */}
-        <div className="flex flex-col flex-1 min-h-0 overflow-hidden relative cursor-default bg-[#0c0f1a] font-sans text-gray-300">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden cursor-default bg-[#0c0f1a] font-sans text-gray-300">
           
           {/* Background glows */}
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -1555,39 +1612,41 @@ Choose a desk to get started, or ask me anything.`,
           </div>
 
           {/* ── TOP BAR ── */}
-          <div className="relative z-30 shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/[0.06] bg-[#090c13]/80 backdrop-blur-sm">
-            <div className="flex items-center gap-2.5">
+          <div className="relative z-30 shrink-0 flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#090c13]/80 px-3 py-2.5 backdrop-blur-sm sm:px-6 sm:py-3">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
               <button
-                onClick={() => setMobileSidebarOpen(true)}
+                onClick={toggleMobileSidebar}
+                aria-expanded={mobileSidebarOpen}
+                aria-label={mobileSidebarOpen ? 'Close assistant menu' : 'Open assistant menu'}
                 className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-gray-400 hover:text-white transition-colors"
-                title="Open menu"
+                title={mobileSidebarOpen ? 'Close menu' : 'Open menu'}
               >
-                <PanelLeft size={16} />
+                {mobileSidebarOpen ? <X size={16} /> : <PanelLeft size={16} />}
               </button>
               
               <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shrink-0">
                 <RobotSVG size={20} />
               </div>
-              <div>
-                <span className="text-sm font-bold text-white tracking-tight">Capita AI</span>
+              <div className="min-w-0">
+                <span className="block truncate text-sm font-bold tracking-tight text-white">Capita AI</span>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
                   <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Online</span>
                 </div>
               </div>
-              <div className="flex flex-col items-start pl-3 ml-2 border-l border-white/[0.06]">
+              <div className="hidden min-[380px]:flex min-w-0 flex-col items-start border-l border-white/[0.06] pl-2.5 sm:ml-2 sm:pl-3">
                 <span className="hidden sm:block text-[8px] font-black text-gray-500 uppercase tracking-[0.22em]">Mode</span>
-                <span className="sm:mt-0.5 inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-[7px] sm:text-[8px] font-black uppercase tracking-[0.18em] text-teal-300">
+                <span className="inline-flex max-w-full items-center truncate rounded-full border border-teal-500/20 bg-teal-500/10 px-2 py-0.5 text-[7px] font-black uppercase tracking-[0.18em] text-teal-300 sm:mt-0.5 sm:py-1 sm:text-[8px]">
                   {activeSpecialistLabel}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <button
                 onClick={clearChat}
                 disabled={isBusy}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-colors
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg border text-[8px] font-bold uppercase tracking-wider transition-colors sm:gap-1.5 sm:px-2.5 sm:text-[9px]
                   ${isBusy
                     ? 'opacity-40 cursor-not-allowed text-gray-600 border-gray-600/20 bg-gray-600/10'
                     : 'text-teal-400 border-teal-500/20 bg-teal-500/10 hover:bg-teal-500/20'
@@ -1598,10 +1657,10 @@ Choose a desk to get started, or ask me anything.`,
 
               <button
                 onClick={() => void exitAssistant()}
-                className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-gray-500 hover:text-white hover:bg-white/[0.08] transition-all"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-gray-500 transition-all hover:bg-white/[0.08] hover:text-white"
                 title="Close AI Assistant"
               >
-                <X size={15} className="sm:w-[14px] sm:h-[14px]" />
+                <X size={15} />
               </button>
             </div>
           </div>
@@ -1616,7 +1675,7 @@ Choose a desk to get started, or ask me anything.`,
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  onClick={() => setMobileSidebarOpen(false)}
+                  onClick={closeMobileSidebar}
                   className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden"
                 />
               )}
@@ -1625,14 +1684,14 @@ Choose a desk to get started, or ask me anything.`,
             {/* ── LEFT SIDEBAR ── */}
             <aside 
               className={`
-                fixed inset-y-0 left-0 z-[70] w-64 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-20 lg:w-56
-                flex flex-col border-r border-white/[0.06] bg-[#07090f] lg:bg-[#07090f]/90 backdrop-blur-xl overflow-hidden
+                fixed inset-y-0 left-0 z-[70] w-[82vw] max-w-[18rem] transform transition-transform duration-300 ease-in-out sm:w-64 sm:max-w-none lg:relative lg:translate-x-0 lg:z-20 lg:w-56
+                flex flex-col overflow-hidden border-r border-white/[0.06] bg-[#07090f] shadow-[0_0_40px_rgba(0,0,0,0.45)] backdrop-blur-xl lg:bg-[#07090f]/90 lg:shadow-none
                 ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
               `}
             >
               <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#090c13]">
                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Assistant Menu</span>
-                <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 text-gray-500 hover:text-white">
+                <button onClick={closeMobileSidebar} className="p-1.5 text-gray-500 hover:text-white">
                   <X size={16} />
                 </button>
               </div>
@@ -1645,7 +1704,7 @@ Choose a desk to get started, or ask me anything.`,
                   <SidebarActionCard
                     key={i}
                     action={action}
-                    onClick={() => { handleSend(action.query); setMobileSidebarOpen(false); }}
+                    onClick={() => { handleSend(action.query); closeMobileSidebar(); }}
                     disabled={isBusy}
                   />
                 ))}
@@ -1666,7 +1725,7 @@ Choose a desk to get started, or ask me anything.`,
                   <div className="px-2 py-2 mb-1 rounded-lg border border-white/[0.05] bg-white/[0.03] flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2">
                       <button
-                        onClick={() => { if (!isBusy) { resetChatContext(); markChatActive(); setMobileSidebarOpen(false); } }}
+                        onClick={() => { if (!isBusy) { resetChatContext(); markChatActive(); closeMobileSidebar(); } }}
                         disabled={isBusy}
                         className={`text-[8px] font-black uppercase tracking-[0.2em] transition-colors ${isBusy ? 'text-gray-700 cursor-not-allowed' : 'text-gray-500 hover:text-white'}`}
                       >
@@ -1686,7 +1745,7 @@ Choose a desk to get started, or ask me anything.`,
                     conversations.map(conv => (
                       <button
                         key={conv.id}
-                        onClick={() => { if (!isBusy) { loadConversation(conv.id); setMobileSidebarOpen(false); } }}
+                        onClick={() => { if (!isBusy) { loadConversation(conv.id); closeMobileSidebar(); } }}
                         disabled={isBusy}
                         className={`w-full text-left p-2.5 rounded-xl border transition-all group flex flex-col gap-1 ${isBusy ? 'opacity-40 cursor-not-allowed' : ''} ${currentConversationId === conv.id ? 'bg-teal-500/10 border-teal-500/30 ring-1 ring-teal-500/20' : 'border-transparent hover:bg-white/[0.03] grayscale hover:grayscale-0'}`}
                       >
@@ -1731,22 +1790,22 @@ Choose a desk to get started, or ask me anything.`,
                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
               >
                 {isConversationLoading ? (
-                  <div className="max-w-3xl mx-auto px-5 pb-12 space-y-4 pt-6">
+                  <div className="mx-auto max-w-3xl px-3 pb-12 pt-6 space-y-4 sm:px-5">
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div key={i} className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
-                        <div className="w-full max-w-[75%] h-16 rounded-2xl bg-white/[0.03] border border-white/[0.05] animate-pulse" />
+                        <div className="h-16 w-full max-w-[88%] rounded-2xl border border-white/[0.05] bg-white/[0.03] animate-pulse sm:max-w-[75%]" />
                       </div>
                     ))}
                   </div>
                 ) : messages.length === 0 && !isThinking ? (
                   <div className="flex items-center justify-center h-full">
-                    <div className="text-center space-y-4 px-6">
-                      <h2 className="text-2xl font-bold text-white">Welcome to Capita AI</h2>
+                    <div className="space-y-3 px-5 text-center sm:space-y-4 sm:px-6">
+                      <h2 className="text-xl font-bold text-white sm:text-2xl">Welcome to Capita AI</h2>
                       <p className="text-gray-400 text-sm">Start a conversation about invoices, payments, expenses, or compliance.</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-10 space-y-6 pt-4">
+                  <div className="mx-auto max-w-3xl px-3 pb-8 pt-4 space-y-5 sm:px-6 sm:pb-10 sm:space-y-6">
                     <AnimatePresence initial={false}>
                       {messages.map((msg) => (
                         <ChatBubble
@@ -1792,8 +1851,8 @@ Choose a desk to get started, or ask me anything.`,
               </AnimatePresence>
 
               {/* ── INPUT BAR ── */}
-              <div className="shrink-0 border-t border-white/[0.06] bg-[#090c13]/80 backdrop-blur-sm px-4 sm:px-6 py-3">
-                <div className={`flex items-center gap-2 rounded-2xl px-3 py-2 border transition-all ${inputFocused ? 'border-teal-400/60 ring-2 ring-teal-500/15 bg-[#141820]' : 'border-white/[0.07] hover:border-white/[0.12] bg-white/[0.02]'}`}>
+              <div className="shrink-0 border-t border-white/[0.06] bg-[#090c13]/80 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur-sm sm:px-6 sm:py-3">
+                <div className={`flex items-center gap-1.5 rounded-2xl border px-3 py-2 transition-all sm:gap-2 ${inputFocused ? 'border-teal-400/60 ring-2 ring-teal-500/15 bg-[#141820]' : 'border-white/[0.07] hover:border-white/[0.12] bg-white/[0.02]'}`}>
                   <div className="shrink-0 flex items-center gap-1.5 pr-2.5 border-r border-white/[0.07]">
                     <Zap size={13} className="text-teal-400" />
                     <span className="hidden sm:inline text-[9px] font-black uppercase text-teal-400 tracking-widest">Capita</span>
@@ -1808,7 +1867,7 @@ Choose a desk to get started, or ask me anything.`,
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
                     placeholder={activeComposerPlaceholder}
-                    className="flex-1 bg-transparent border-none outline-none text-sm text-white py-1 px-1 placeholder-gray-600"
+                    className="flex-1 bg-transparent border-none px-1 py-1 text-[16px] text-white outline-none placeholder-gray-600 sm:text-sm"
                   />
 
                   <div className="flex items-center gap-1 shrink-0">
