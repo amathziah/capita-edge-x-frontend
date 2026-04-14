@@ -438,6 +438,7 @@ export function Customers() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
+                {customers.length > 0 && (
                   <button
                     onClick={() => {
                       setIsEditing(false);
@@ -448,6 +449,7 @@ export function Customers() {
                   >
                     <Plus size={16} /> Add Customer
                   </button>
+                )}
               </div>
             </motion.div>
 
