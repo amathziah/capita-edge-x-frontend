@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Send, Mic, MicOff, Zap, RotateCcw, ChevronDown,
+  PanelLeft, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService } from '@/shared/services/aiService';
@@ -659,6 +660,7 @@ export function AIAssistantPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [aiSplashDone, setAiSplashDone] = useState(false);
 
   /**
@@ -1537,15 +1539,10 @@ Choose a desk to get started, or ask me anything.`,
         }
       `}</style>
 
-      <div
-        className="flex flex-col w-full h-screen overflow-hidden"
-      >
+      <div className="flex flex-col w-full h-screen overflow-hidden">
         {/* Outer shell */}
-        <div className="
-          flex flex-col flex-1 min-h-0 overflow-hidden relative cursor-default
-          bg-[#0c0f1a]
-          font-sans text-gray-300
-        ">
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden relative cursor-default bg-[#0c0f1a] font-sans text-gray-300">
+          
           {/* Background glows */}
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
             <div
@@ -1559,8 +1556,16 @@ Choose a desk to get started, or ask me anything.`,
           </div>
 
           {/* ── TOP BAR ── */}
-          <div className="relative z-20 shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#090c13]/80 backdrop-blur-sm">
+          <div className="relative z-30 shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#090c13]/80 backdrop-blur-sm">
             <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => setMobileSidebarOpen(true)}
+                className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-gray-400 hover:text-white transition-colors"
+                title="Open menu"
+              >
+                <PanelLeft size={16} />
+              </button>
+              
               <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shrink-0">
                 <RobotSVG size={20} />
               </div>
@@ -1571,7 +1576,7 @@ Choose a desk to get started, or ask me anything.`,
                   <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Online</span>
                 </div>
               </div>
-              <div className="hidden lg:flex flex-col items-start pl-3 ml-2 border-l border-white/[0.06]">
+              <div className="hidden sm:flex flex-col items-start pl-3 ml-2 border-l border-white/[0.06]">
                 <span className="text-[8px] font-black text-gray-500 uppercase tracking-[0.22em]">Mode</span>
                 <span className="mt-0.5 inline-flex items-center px-2 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-[8px] font-black uppercase tracking-[0.18em] text-teal-300">
                   {activeSpecialistLabel}
@@ -1588,8 +1593,8 @@ Choose a desk to get started, or ask me anything.`,
                     ? 'opacity-40 cursor-not-allowed text-gray-600 border-gray-600/20 bg-gray-600/10'
                     : 'text-teal-400 border-teal-500/20 bg-teal-500/10 hover:bg-teal-500/20'
                   }`}
-                >
-                <RotateCcw size={9} /> Clear
+              >
+                <RotateCcw size={9} /> <span className="hidden sm:inline">Clear</span>
               </button>
 
               <button
@@ -1597,42 +1602,61 @@ Choose a desk to get started, or ask me anything.`,
                 className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-gray-500 hover:text-white hover:bg-white/[0.08] transition-all"
                 title="Close AI Assistant"
               >
-                <LucideIcons.X size={14} />
+                <X size={14} />
               </button>
             </div>
           </div>
 
           {/* ── BODY ── */}
           <div className="flex flex-1 min-h-0 relative z-10 overflow-hidden">
+            
+            {/* ── MOBILE SIDEBAR BACKDROP ── */}
+            <AnimatePresence>
+              {mobileSidebarOpen && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setMobileSidebarOpen(false)}
+                  className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden"
+                />
+              )}
+            </AnimatePresence>
 
             {/* ── LEFT SIDEBAR ── */}
-            <div className="w-48 lg:w-56 shrink-0 flex flex-col border-r border-white/[0.06] bg-[#07090f]/90 backdrop-blur-xl overflow-hidden">
+            <aside 
+              className={`
+                fixed inset-y-0 left-0 z-[70] w-64 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-20 lg:w-48 lg:w-56
+                flex flex-col border-r border-white/[0.06] bg-[#07090f] lg:bg-[#07090f]/90 backdrop-blur-xl overflow-hidden
+                ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+              `}
+            >
+              <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#090c13]">
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Assistant Menu</span>
+                <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 text-gray-500 hover:text-white">
+                  <X size={16} />
+                </button>
+              </div>
 
-              {/* Presets */}
               <div className="px-3 pt-3 pb-2 border-b border-white/[0.05] shrink-0">
                 <span className="text-[8px] font-black text-gray-500 tracking-[0.22em] uppercase">Presets</span>
               </div>
-              <div
-                className="overflow-y-auto py-2 px-2 space-y-1 shrink-0"
-                style={{ maxHeight: '34%', scrollbarWidth: 'none' }}
-              >
+              <div className="overflow-y-auto py-2 px-2 space-y-1 shrink-0" style={{ maxHeight: '34%', scrollbarWidth: 'none' }}>
                 {actions.map((action: any, i: number) => (
                   <SidebarActionCard
                     key={i}
                     action={action}
-                    onClick={() => handleSend(action.query)}
+                    onClick={() => { handleSend(action.query); setMobileSidebarOpen(false); }}
                     disabled={isBusy}
                   />
                 ))}
               </div>
 
-              {/* History */}
               <div className="px-3 pt-3 pb-2 border-t border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between shrink-0">
                 <span className="text-[8px] font-black text-teal-500/70 tracking-[0.22em] uppercase">Current Chat</span>
                 <button
                   onClick={() => setShowHistory((prev) => !prev)}
                   className="flex items-center gap-1 px-2 py-1 rounded-lg border text-[8px] font-black uppercase tracking-[0.2em] transition-colors text-gray-400 border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:text-white"
-                  title="Toggle chat history"
                 >
                   {showHistory ? 'Hide history' : 'History'}
                 </button>
@@ -1643,21 +1667,14 @@ Choose a desk to get started, or ask me anything.`,
                   <div className="px-2 py-2 mb-1 rounded-lg border border-white/[0.05] bg-white/[0.03] flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2">
                       <button
-                        onClick={() => { if (!isBusy) { resetChatContext(); markChatActive(); } }}
+                        onClick={() => { if (!isBusy) { resetChatContext(); markChatActive(); setMobileSidebarOpen(false); } }}
                         disabled={isBusy}
-                        className={`text-[8px] font-black uppercase tracking-[0.2em] transition-colors ${
-                        isBusy ? 'text-gray-700 cursor-not-allowed' : 'text-gray-500 hover:text-white'
-                      }`}
-                    >
-                      + New Chat
-                    </button>
+                        className={`text-[8px] font-black uppercase tracking-[0.2em] transition-colors ${isBusy ? 'text-gray-700 cursor-not-allowed' : 'text-gray-500 hover:text-white'}`}
+                      >
+                        + New Chat
+                      </button>
                       <label className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={autoClearHistory}
-                          onChange={(e) => persistAutoClearHistory(e.target.checked)}
-                          className="accent-teal-400"
-                        />
+                        <input type="checkbox" checked={autoClearHistory} onChange={(e) => persistAutoClearHistory(e.target.checked)} className="accent-teal-400" />
                         Auto-clear
                       </label>
                     </div>
@@ -1670,23 +1687,15 @@ Choose a desk to get started, or ask me anything.`,
                     conversations.map(conv => (
                       <button
                         key={conv.id}
-                        onClick={() => !isBusy && loadConversation(conv.id)}
+                        onClick={() => { if (!isBusy) { loadConversation(conv.id); setMobileSidebarOpen(false); } }}
                         disabled={isBusy}
-                        className={`w-full text-left p-2.5 rounded-xl border transition-all group flex flex-col gap-1 ${
-                          isBusy ? 'opacity-40 cursor-not-allowed' : ''
-                        } ${currentConversationId === conv.id
-                          ? 'bg-teal-500/10 border-teal-500/30 ring-1 ring-teal-500/20'
-                          : 'border-transparent hover:bg-white/[0.03] grayscale hover:grayscale-0'
-                          }`}
+                        className={`w-full text-left p-2.5 rounded-xl border transition-all group flex flex-col gap-1 ${isBusy ? 'opacity-40 cursor-not-allowed' : ''} ${currentConversationId === conv.id ? 'bg-teal-500/10 border-teal-500/30 ring-1 ring-teal-500/20' : 'border-transparent hover:bg-white/[0.03] grayscale hover:grayscale-0'}`}
                       >
-                        <span className={`text-[10px] font-bold truncate ${currentConversationId === conv.id ? 'text-teal-400' : 'text-gray-400 group-hover:text-gray-200'
-                          }`}>
+                        <span className={`text-[10px] font-bold truncate ${currentConversationId === conv.id ? 'text-teal-400' : 'text-gray-400 group-hover:text-gray-200'}`}>
                           {conv.title}
                         </span>
                         <span className="text-[7px] font-mono text-gray-600 uppercase tracking-tighter">
-                          {new Date(conv.created_at).toLocaleDateString('en-US', {
-                            month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric',
-                          })}
+                          {new Date(conv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' })}
                         </span>
                       </button>
                     ))
@@ -1700,33 +1709,22 @@ Choose a desk to get started, or ask me anything.`,
                 <div className="flex-1 flex flex-col gap-2 justify-center px-3 text-center bg-[#090c14]/40">
                   <div>
                     <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">Session first</div>
-                    <div className="mt-1 text-[10px] text-gray-600 leading-relaxed">
-                      Click History only when you need older sessions.
-                    </div>
+                    <div className="mt-1 text-[10px] text-gray-600 leading-relaxed">Click History only when you need older sessions.</div>
                   </div>
                   <label className="flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={autoClearHistory}
-                      onChange={(e) => persistAutoClearHistory(e.target.checked)}
-                      className="accent-teal-400"
-                    />
+                    <input type="checkbox" checked={autoClearHistory} onChange={(e) => persistAutoClearHistory(e.target.checked)} className="accent-teal-400" />
                     Auto-clear
                   </label>
                 </div>
               )}
 
               <div className="px-3 py-3 border-t border-white/[0.05] bg-black/20 shrink-0">
-                <span className="text-[8px] text-gray-700 font-bold uppercase tracking-[0.2em] opacity-60 italic leading-none">
-                  Finance engine · Encrypted
-                </span>
+                <span className="text-[8px] text-gray-700 font-bold uppercase tracking-[0.2em] opacity-60 italic leading-none">Finance engine · Encrypted</span>
               </div>
-            </div>
+            </aside>
 
             {/* ── CHAT AREA ── */}
             <div className="flex flex-col flex-1 min-w-0 min-h-0 relative">
-
-              {/* Messages scroll */}
               <div
                 ref={scrollRef}
                 onScroll={handleScroll}
@@ -1742,105 +1740,53 @@ Choose a desk to get started, or ask me anything.`,
                     ))}
                   </div>
                 ) : messages.length === 0 && !isThinking ? (
-                  <div className="flex items-center justify-center h-screen">
-                    <div className="text-center space-y-4">
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center space-y-4 px-6">
                       <h2 className="text-2xl font-bold text-white">Welcome to Capita AI</h2>
-                      <p className="text-gray-400">Start a conversation about invoices, payments, expenses, or compliance.</p>
+                      <p className="text-gray-400 text-sm">Start a conversation about invoices, payments, expenses, or compliance.</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="max-w-3xl mx-auto px-5 pb-12 space-y-6 pt-4">
+                  <div className="max-w-3xl mx-auto px-5 pb-10 space-y-6 pt-4">
                     <AnimatePresence initial={false}>
-                      {messages.map((msg) => {
-                        const isFirstOfNewExchange = false;
-
-                        return (
-                          <motion.div
-                            key={msg.id}
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="w-full"
-                          >
-                            {isFirstOfNewExchange && (
-                              <div className="flex items-center gap-3 my-8 opacity-40 px-2">
-                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-white/10" />
-                                <span className="text-[8px] uppercase tracking-[0.2em] text-gray-400 font-black">
-                                  Latest Request
-                                </span>
-                                <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/10 to-white/10" />
-                              </div>
-                            )}
-
-                            <ChatBubble
-                              msg={msg}
-                              onConfirmAction={handleConfirmAction}
-                              onCancelAction={handleCancelAction}
-                              onSelectGuidedChoice={openGuidedWorkspace}
-                              onSelectWorkspaceView={handleWorkspaceViewChange}
-                              onExecuteGuidedAction={handleGuidedAction}
-                              disableGuidedChoice={isBusy}
-                            />
-                          </motion.div>
-                        );
-                      })}
+                      {messages.map((msg) => (
+                        <ChatBubble
+                          key={msg.id}
+                          msg={msg}
+                          onConfirmAction={handleConfirmAction}
+                          onCancelAction={handleCancelAction}
+                          onSelectGuidedChoice={openGuidedWorkspace}
+                          onSelectWorkspaceView={handleWorkspaceViewChange}
+                          onExecuteGuidedAction={handleGuidedAction}
+                          disableGuidedChoice={isBusy}
+                        />
+                      ))}
                     </AnimatePresence>
 
-                    {/* Thinking skeleton — shown while waiting for the first token */}
-                    <AnimatePresence>
-                      {isThinking && (
-                        <motion.div
-                          key="thinking"
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -4 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <ThinkingSkeleton step={currentStep} />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {isThinking && <ThinkingSkeleton step={currentStep} />}
 
-                    {/* Voice listening indicator */}
                     <AnimatePresence>
                       {isListening && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="flex justify-center"
-                        >
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="flex justify-center">
                           <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
                             <Mic size={12} className="animate-pulse" />
                             <span className="text-[9px] font-black tracking-widest uppercase">Listening…</span>
                             <div className="flex gap-1 items-center h-3">
                               {[3, 5, 4, 7, 3].map((h, i) => (
-                                <div
-                                  key={i}
-                                  className="w-0.5 rounded-full bg-red-400 animate-pulse"
-                                  style={{ height: h * 2, animationDuration: `${0.4 + i * 0.1}s` }}
-                                />
+                                <div key={i} className="w-0.5 rounded-full bg-red-400 animate-pulse" style={{ height: h * 2, animationDuration: `${0.4 + i * 0.1}s` }} />
                               ))}
                             </div>
                           </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
-
-                    <div className="h-4 pointer-events-none" />
                   </div>
                 )}
               </div>
 
-              {/* Scroll-to-bottom FAB */}
               <AnimatePresence>
                 {showScrollBtn && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    onClick={() => scrollToBottom()}
-                    className="absolute bottom-20 right-4 z-50 w-8 h-8 rounded-full bg-[#161a2b] border border-white/[0.1] flex items-center justify-center cursor-pointer shadow-xl hover:bg-white/[0.08] transition-colors"
-                  >
+                  <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} onClick={() => scrollToBottom()} className="absolute bottom-24 right-4 z-50 w-8 h-8 rounded-full bg-[#161a2b] border border-white/[0.1] flex items-center justify-center cursor-pointer shadow-xl hover:bg-white/[0.08] transition-colors">
                     <ChevronDown size={15} className="text-gray-400" />
                   </motion.button>
                 )}
@@ -1848,20 +1794,10 @@ Choose a desk to get started, or ask me anything.`,
 
               {/* ── INPUT BAR ── */}
               <div className="shrink-0 border-t border-white/[0.06] bg-[#090c13]/80 backdrop-blur-sm px-4 py-3">
-                <div
-                  className={`
-                    flex items-center gap-2 rounded-2xl px-3 py-2 border transition-all
-                    ${inputFocused
-                      ? 'border-teal-400/60 ring-2 ring-teal-500/15 bg-[#141820]'
-                      : 'border-white/[0.07] hover:border-white/[0.12] bg-white/[0.02]'
-                    }
-                  `}
-                >
+                <div className={`flex items-center gap-2 rounded-2xl px-3 py-2 border transition-all ${inputFocused ? 'border-teal-400/60 ring-2 ring-teal-500/15 bg-[#141820]' : 'border-white/[0.07] hover:border-white/[0.12] bg-white/[0.02]'}`}>
                   <div className="shrink-0 flex items-center gap-1.5 pr-2.5 border-r border-white/[0.07]">
                     <Zap size={13} className="text-teal-400" />
-                    <span className="hidden sm:inline text-[9px] font-black uppercase text-teal-400 tracking-widest">
-                      Capita
-                    </span>
+                    <span className="hidden sm:inline text-[9px] font-black uppercase text-teal-400 tracking-widest">Capita</span>
                   </div>
 
                   <input
@@ -1869,61 +1805,26 @@ Choose a desk to get started, or ask me anything.`,
                     type="text"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
                     placeholder={activeComposerPlaceholder}
                     className="flex-1 bg-transparent border-none outline-none text-sm text-white py-1 px-1 placeholder-gray-600"
-                    disabled={false}
                   />
 
                   <div className="flex items-center gap-1 shrink-0">
-                    <motion.button
-                      whileHover={!isBusy ? { scale: 1.08 } : {}}
-                      whileTap={!isBusy ? { scale: 0.92 } : {}}
-                      onClick={startListening}
-                      disabled={false}
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors
-                        ${isListening
-                          ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                          : (isBusy || isHistoryLoading || isConversationLoading || !isChatReady)
-                            ? 'opacity-30 cursor-not-allowed text-gray-600'
-                            : 'text-gray-500 hover:bg-white/[0.06] hover:text-gray-300'
-                        }`}
-                    >
+                    <motion.button whileHover={!isBusy ? { scale: 1.08 } : {}} whileTap={!isBusy ? { scale: 0.92 } : {}} onClick={startListening} className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${isListening ? 'bg-red-500/10 text-red-400 border border-red-500/20' : isBusy ? 'opacity-30 cursor-not-allowed text-gray-600' : 'text-gray-500 hover:bg-white/[0.06] hover:text-gray-300'}`}>
                       {isListening ? <MicOff size={14} /> : <Mic size={14} />}
                     </motion.button>
 
-                    <motion.button
-                      whileHover={{ scale: query.trim() && !isBusy ? 1.08 : 1 }}
-                      whileTap={{ scale: query.trim() && !isBusy ? 0.92 : 1 }}
-                      onClick={() => handleSend()}
-                      disabled={!query.trim() || isBusy}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-all relative overflow-hidden"
-                      style={
-                        query.trim() && !isBusy
-                          ? { background: `linear-gradient(135deg, ${TEAL}, #06b6d4)`, color: '#0a0d15' }
-                          : { background: 'rgba(255,255,255,0.04)', color: '#374151', cursor: 'not-allowed' }
-                      }
-                    >
+                    <motion.button whileHover={{ scale: query.trim() && !isBusy ? 1.08 : 1 }} whileTap={{ scale: query.trim() && !isBusy ? 0.92 : 1 }} onClick={() => handleSend()} disabled={!query.trim() || isBusy} className="w-8 h-8 rounded-xl flex items-center justify-center transition-all relative overflow-hidden" style={query.trim() && !isBusy ? { background: `linear-gradient(135deg, ${TEAL}, #06b6d4)`, color: '#0a0d15' } : { background: 'rgba(255,255,255,0.04)', color: '#374151', cursor: 'not-allowed' }}>
                       <Send size={13} />
                     </motion.button>
                   </div>
                 </div>
 
                 <div className="mt-1.5 flex items-center justify-between px-1">
-                  <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">
-                    {isConversationLoading
-                      ? 'Loading conversation…'
-                      : !isChatReady
-                        ? 'Preparing chat…'
-                        : 'Finance engine · Encrypted'}
-                  </span>
+                  <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">{isConversationLoading ? 'Loading conversation…' : !isChatReady ? 'Preparing chat…' : 'Finance engine · Encrypted'}</span>
                   {isListening && (
                     <div className="flex items-center gap-1.5">
                       <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
@@ -1934,9 +1835,8 @@ Choose a desk to get started, or ask me anything.`,
               </div>
             </div>
           </div>
-          </div>
         </div>
-
-      </>
+      </div>
+    </>
   );
 }

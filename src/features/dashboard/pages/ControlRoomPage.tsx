@@ -212,13 +212,13 @@ export const ControlRoom = () => {
             <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl -z-10"></div>
             <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-emerald-200/30 blur-[110px] -z-10"></div>
 
-            <div className="p-4 lg:p-8 max-w-7xl mx-auto">
+            <div className="p-[18px] lg:p-8 max-w-7xl mx-auto">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
-                    className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between"
+                    className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
                 >
                     <div>
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
@@ -744,7 +744,6 @@ export const ControlRoom = () => {
                                             ))
                                         ) : (
                                             <div className="text-center py-12 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
-                                                <div className="text-2xl mb-2">🎉</div>
                                                 <h3 className="text-sm font-bold text-gray-900">
                                                     {isSolopreneur ? "No overdue invoices — you're all caught up!" : "No urgent items."}
                                                 </h3>

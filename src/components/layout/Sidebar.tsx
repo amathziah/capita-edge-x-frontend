@@ -69,12 +69,18 @@ const PATH_MAP: Record<string, string> = {
   'integrity': '/dashboard/integrity',
 };
 
-// ── Component ────────────────────────────────────────────────────────────
-export function Sidebar() {
+// ── Reusable Sidebar Content ──────────────────────────────────────────
+interface SidebarContentProps {
+  collapsed?: boolean;
+  onLinkClick?: () => void;
+  transitioning?: boolean;
+}
+
+export function SidebarContent({ collapsed, onLinkClick, transitioning }: SidebarContentProps) {
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
   const { nav, config, planTier } = usePersona();
-
+  const navigate = useNavigate();
 
   const SECTION_LABELS: Record<string, string> = {
     'headquarters': 'Headquarters',
@@ -91,17 +97,8 @@ export function Sidebar() {
       return acc;
     }, {} as Record<string, typeof nav>);
   }, [nav]);
-  const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
-  const [transitioning, setTransitioning] = useState(false);
+
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const toggleSidebar = () => {
-    setTransitioning(true);
-    setCollapsed(c => !c);
-    setTimeout(() => {
-      setTransitioning(false);
-    }, 150); // Matches transition duration + small buffer
-  };
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Close user menu when clicking outside
@@ -139,40 +136,8 @@ export function Sidebar() {
     navigate("/login");
   };
 
-
   return (
-    <aside
-      className={`relative hidden lg:flex flex-col h-screen bg-[#0c0f1a] text-gray-300 select-none transition-all duration-75 overflow-visible border-r border-teal-500/10 ${collapsed ? "w-[68px]" : "w-[220px]"
-        }`}
-    >
-      {/* Gradient separator — fades from teal to transparent */}
-      <div className="absolute right-0 top-0 h-full w-px bg-gradient-to-b from-teal-500/20 via-white/[0.04] to-transparent pointer-events-none z-10" />
-
-      {/* ── Brand (click to toggle) ───────────────────────────── */}
-      <button
-        onClick={toggleSidebar}
-        className={`flex items-center gap-3 h-[72px] border-b border-white/[0.06] hover:bg-white/[0.03] transition-colors duration-200 cursor-pointer ${collapsed ? "px-0 justify-center" : "px-6"
-          }`}
-        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        <Logo size={36} className="flex-shrink-0" />
-        {!collapsed && (
-          <div className="text-left overflow-hidden">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[15px] font-bold text-white tracking-tight block">Capita</span>
-              {planTier ? (
-                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-400 uppercase tracking-tighter">{planTier}</span>
-              ) : (
-                <span className="px-1 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-[8px] font-black text-teal-400/80 uppercase tracking-tighter">v2.5</span>
-              )}
-            </div>
-            <span className="block text-[10px] text-gray-500 font-medium tracking-wide">
-              {config?.label ?? ''}
-            </span>
-          </div>
-        )}
-      </button>
-
+    <>
       {/* ── Navigation Groups ─────────────────────────────────── */}
       <nav className={`flex-1 overflow-y-auto pt-5 pb-4 space-y-6 scrollbar-hide ${collapsed ? "px-1.5" : "px-3"}`}>
         {SECTIONS.map((section) => {
@@ -242,6 +207,7 @@ export function Sidebar() {
                       key={item.id}
                       to={href}
                       end={href === "/" || href === "/dashboard"}
+                      onClick={onLinkClick}
                       title={collapsed ? (t(item.id) || item.label) : undefined}
                       className={({ isActive }) =>
                         `group relative flex items-center rounded-xl text-[13px] font-medium transition-all duration-200 ${collapsed
@@ -344,6 +310,7 @@ export function Sidebar() {
                   {tier.isUpgradable && (
                     <NavLink
                       to="/dashboard/pricing"
+                      onClick={onLinkClick}
                       className="flex items-center justify-between w-full px-3 py-2 rounded-xl text-[11px] font-bold transition-all active:scale-95"
                       style={{
                         background: 'linear-gradient(135deg, rgba(45,212,191,0.2), rgba(6,182,212,0.12))',
@@ -373,7 +340,7 @@ export function Sidebar() {
             <div className="py-1.5">
               <NavLink
                 to="/dashboard/profile"
-                onClick={() => setUserMenuOpen(false)}
+                onClick={() => { setUserMenuOpen(false); onLinkClick?.(); }}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-all duration-150 ${isActive
                     ? "bg-teal-500/10 text-teal-400"
@@ -391,7 +358,7 @@ export function Sidebar() {
 
               <NavLink
                 to="/dashboard/settings"
-                onClick={() => setUserMenuOpen(false)}
+                onClick={() => { setUserMenuOpen(false); onLinkClick?.(); }}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-all duration-150 ${isActive
                     ? "bg-teal-500/10 text-teal-400"
@@ -409,7 +376,7 @@ export function Sidebar() {
 
               <NavLink
                 to="/dashboard/pricing"
-                onClick={() => setUserMenuOpen(false)}
+                onClick={() => { setUserMenuOpen(false); onLinkClick?.(); }}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-all duration-150 ${isActive
                     ? "bg-teal-500/10 text-teal-400"
@@ -429,7 +396,7 @@ export function Sidebar() {
               <div className="mx-3 my-1 border-t border-white/[0.06]" />
 
               <button
-                onClick={() => { setUserMenuOpen(false); handleLogout(); }}
+                onClick={() => { setUserMenuOpen(false); handleLogout(); onLinkClick?.(); }}
                 className="flex items-center gap-3 w-full px-4 py-2.5 text-[13px] font-medium text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-150"
               >
                 <LogOut className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} />
@@ -464,6 +431,58 @@ export function Sidebar() {
           )}
         </button>
       </div>
+    </>
+  );
+}
+
+// ── Main Sidebar Component ───────────────────────────────────────────
+export function Sidebar() {
+  const { config, planTier } = usePersona();
+  const [collapsed, setCollapsed] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+
+  const toggleSidebar = () => {
+    setTransitioning(true);
+    setCollapsed(c => !c);
+    setTimeout(() => {
+      setTransitioning(false);
+    }, 150);
+  };
+
+  return (
+    <aside
+      className={`relative hidden lg:flex flex-col h-screen bg-[#0c0f1a] text-gray-300 select-none transition-all duration-75 overflow-visible border-r border-teal-500/10 ${collapsed ? "w-[68px]" : "w-[220px]"
+        }`}
+    >
+      {/* Gradient separator — fades from teal to transparent */}
+      <div className="absolute right-0 top-0 h-full w-px bg-gradient-to-b from-teal-500/20 via-white/[0.04] to-transparent pointer-events-none z-10" />
+
+      {/* ── Brand (click to toggle) ───────────────────────────── */}
+      <button
+        onClick={toggleSidebar}
+        className={`flex items-center gap-3 h-[72px] border-b border-white/[0.06] hover:bg-white/[0.03] transition-colors duration-200 cursor-pointer ${collapsed ? "px-0 justify-center" : "px-6"
+          }`}
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        <Logo size={36} className="flex-shrink-0" />
+        {!collapsed && (
+          <div className="text-left overflow-hidden">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[15px] font-bold text-white tracking-tight block">Capita</span>
+              {planTier ? (
+                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-400 uppercase tracking-tighter">{planTier}</span>
+              ) : (
+                <span className="px-1 py-0.5 rounded-md bg-teal-500/10 border border-teal-500/20 text-[8px] font-black text-teal-400/80 uppercase tracking-tighter">v2.5</span>
+              )}
+            </div>
+            <span className="block text-[10px] text-gray-500 font-medium tracking-wide">
+              {config?.label ?? ''}
+            </span>
+          </div>
+        )}
+      </button>
+
+      <SidebarContent collapsed={collapsed} transitioning={transitioning} />
     </aside>
   );
 }

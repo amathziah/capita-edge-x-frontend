@@ -10,11 +10,11 @@ import { useLanguage } from "@/app/providers/LanguageProvider";
 import { Logo } from "../common/Logo";
 
 const mobileNavigation = [
-    { name: "dashboard", href: "/", icon: LayoutDashboard },
-    { name: "invoices", href: "/invoices", icon: FileText },
-    { name: "customers", href: "/customers", icon: Users },
-    { name: "payments", href: "/payments", icon: CreditCard },
-    { name: "ai", href: "/ai", icon: () => <Logo size={24} className="rounded-lg shadow-none border-0" /> },
+    { name: "dashboard", href: "/dashboard", icon: LayoutDashboard, end: true },
+    { name: "invoices", href: "/dashboard/invoices", icon: FileText },
+    { name: "customers", href: "/dashboard/customers", icon: Users },
+    { name: "payments", href: "/dashboard/payments", icon: CreditCard },
+    { name: "ai", href: "/dashboard/ai", icon: () => <Logo size={24} className="rounded-lg shadow-none border-0" /> },
 ];
 
 export function BottomNavigation() {
@@ -27,6 +27,7 @@ export function BottomNavigation() {
                     <NavLink
                         key={item.name}
                         to={item.href}
+                        end={item.end}
                         className={({ isActive }) =>
                             `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? "text-primary" : "text-text-muted hover:text-text-main"
                             }`
