@@ -4,9 +4,7 @@ import {
     Send, 
     AlertTriangle, 
     CheckCircle2, 
-    Plus,
-    ArrowRight,
-    Clock
+    ArrowRight
 } from 'lucide-react';
 import { Invoice } from '@/types';
 
@@ -141,13 +139,6 @@ const InvoiceQuickViewBase: React.FC<InvoiceQuickViewProps> = ({ invoices, onSta
                     <h3 className="text-lg font-bold text-white">Invoice Status</h3>
                     <p className="text-sm text-gray-500 mt-1">Track your money flow</p>
                 </div>
-                <button
-                    onClick={() => navigate('/dashboard/invoices/new')}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm transition-all"
-                >
-                    <Plus size={16} />
-                    New Invoice
-                </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
