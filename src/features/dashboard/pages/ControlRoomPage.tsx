@@ -18,7 +18,7 @@ import {
     Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { InvoiceLifecycleMap } from '@/features/invoices/components/InvoiceLifecycleMap';
+import { InvoiceQuickView } from '@/features/invoices/components/InvoiceQuickView';
 import { SYNC_STEPS } from '@/shared/utils/aiLoadingSteps';
 
 const getInvoiceBalanceDue = (invoice: any) => {
@@ -306,8 +306,8 @@ export const ControlRoom = () => {
                                         <Network size={18} className="text-white" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-white">Lifecycle Visualization Map</h3>
-                                        <p className="text-[11px] text-gray-500 mt-0.5">Invoice status • Flow analysis</p>
+                                        <h3 className="text-sm font-bold text-white">Invoice Status</h3>
+                                        <p className="text-[11px] text-gray-500 mt-0.5">Quick overview • Actionable insights</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1.5">
@@ -315,8 +315,8 @@ export const ControlRoom = () => {
                                     <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Live</span>
                                 </div>
                             </div>
-                            <div className="h-[600px]">
-                                <InvoiceLifecycleMap invoices={invoices} />
+                            <div className="p-6">
+                                <InvoiceQuickView invoices={invoices} />
                             </div>
                         </motion.div>
                     ) : (
