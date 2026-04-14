@@ -438,7 +438,6 @@ export function Customers() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                {customers.length > 0 && (
                   <button
                     onClick={() => {
                       setIsEditing(false);
@@ -449,7 +448,6 @@ export function Customers() {
                   >
                     <Plus size={16} /> Add Customer
                   </button>
-                )}
               </div>
             </motion.div>
 
@@ -612,13 +610,7 @@ export function Customers() {
                     <Users className="w-8 h-8 text-teal-400" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: 'Sora, sans-serif' }}>No customers yet</h3>
-                  <p className="text-gray-400 mt-2 text-sm">Add your first client to get started.</p>
-                  <button
-                    onClick={() => { setIsEditing(false); setSelectedCustomer(null); setShowCustomerModal(true); }}
-                    className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
-                  >
-                    <Plus size={14} /> Add Customer
-                  </button>
+                  <p className="text-gray-400 mt-2 text-sm">Add your first client to get started from the button above.</p>
                 </div>
               ) : viewMode === 'grid' ? (
                 <div className={`grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5`}>
