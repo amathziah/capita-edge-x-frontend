@@ -5,8 +5,8 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-background text-text-main font-sans antialiased;
+  html, body {
+    @apply bg-background text-text-main font-sans antialiased overscroll-none;
     font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   }
 

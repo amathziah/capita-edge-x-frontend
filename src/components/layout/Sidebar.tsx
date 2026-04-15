@@ -451,7 +451,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`relative hidden lg:flex flex-col h-screen bg-[#0c0f1a] text-gray-300 select-none transition-all duration-75 overflow-visible border-r border-teal-500/10 ${collapsed ? "w-[68px]" : "w-[220px]"
+      className={`sticky top-0 hidden lg:flex flex-col h-[100dvh] bg-[#0c0f1a] text-gray-300 select-none transition-all duration-75 overflow-visible border-r border-teal-500/10 ${collapsed ? "w-[68px]" : "w-[220px]"
         }`}
     >
       {/* Gradient separator — fades from teal to transparent */}
