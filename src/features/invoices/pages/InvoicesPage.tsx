@@ -8,7 +8,6 @@ import { Invoice } from '@/types';
 import { Toast, ToastType } from '@/components/ui/Toast';
 import RecordPaymentModal from '@/features/invoices/components/RecordPaymentModal';
 import { useData } from "@/app/providers/DataContext";
-import { CustomSelect } from '@/components/ui/CustomSelect';
 import { downloadCsv } from '@/shared/lib/export';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -350,16 +349,16 @@ export function Invoices() {
       </div>
 
       {/* Control Bar - Premium Glass Style */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col xl:flex-row gap-4 justify-between items-center">
+      <div className="bg-white p-3 sm:p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center">
 
         {/* Left: Search & Filter */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
+        <div className="flex flex-col gap-2 w-full md:w-auto">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
             <input
               type="text"
               placeholder="Search by number or customer..."
-              className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -368,24 +367,31 @@ export function Invoices() {
             />
           </div>
 
-          <div className="relative group z-10 w-full sm:w-48">
-            <CustomSelect
-              value={filterStatus}
-              onChange={(val) => {
-                setFilterStatus(val);
-                setPage(1);
-              }}
-              options={(["All", "paid", "sent", "partially_paid", "overdue", "draft", "void", "write_off", "recurring"]).map((s) => ({
-                value: s,
-                label: s === "All" ? "All Statuses" : s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-              }))}
-              className="w-full"
-            />
+          <div className="flex flex-wrap gap-1">
+            {(["All", "paid", "sent", "partially_paid", "overdue", "draft", "void", "write_off", "recurring"] as const).map((s) => {
+              const label: Record<string, string> = {
+                All: "All", paid: "Paid", sent: "Sent", partially_paid: "Partial",
+                overdue: "Overdue", draft: "Draft", void: "Void", write_off: "Write-off", recurring: "Recurring"
+              };
+              return (
+                <button
+                  key={s}
+                  onClick={() => { setFilterStatus(s); setPage(1); }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                    filterStatus === s
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-50 border border-gray-200 text-gray-500 hover:bg-white hover:border-gray-300'
+                  }`}
+                >
+                  {label[s]}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Right: Actions Toolbar */}
-        <div className="flex items-center gap-2 w-full xl:w-auto justify-end">
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
           <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-200">
             {/* Compute if any selected are paid */}
             {(() => {
@@ -450,37 +456,37 @@ export function Invoices() {
                     onChange={toggleSelectAllOnPage}
                   />
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer hover:text-primary transition" onClick={() => setSort("invoiceNumber")}>
+                <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer hover:text-primary transition" onClick={() => setSort("invoiceNumber")}>
                   Number
                   {sortKey === "invoiceNumber" && <span className="ml-1 opacity-70">{sortDir === 'asc' ? '↑' : '↓'}</span>}
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer hover:text-primary transition" onClick={() => setSort("date")}>
+                <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer hover:text-primary transition" onClick={() => setSort("date")}>
                   Date
                   {sortKey === "date" && <span className="ml-1 opacity-70">{sortDir === 'asc' ? '↑' : '↓'}</span>}
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer hover:text-primary transition" onClick={() => setSort("buyer")}>
+                <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer hover:text-primary transition" onClick={() => setSort("buyer")}>
                   Customer
                   {sortKey === "buyer" && <span className="ml-1 opacity-70">{sortDir === 'asc' ? '↑' : '↓'}</span>}
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right cursor-pointer hover:text-primary transition" onClick={() => setSort("total")}>
+                <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right cursor-pointer hover:text-primary transition" onClick={() => setSort("total")}>
                   Total
                   {sortKey === "total" && <span className="ml-1 opacity-70">{sortDir === 'asc' ? '↑' : '↓'}</span>}
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">
+                <th className="hidden lg:table-cell px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">
                   Net Receivable
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer hover:text-primary transition" onClick={() => setSort("status")}>
+                <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer hover:text-primary transition" onClick={() => setSort("status")}>
                   Status
                   {sortKey === "status" && <span className="ml-1 opacity-70">{sortDir === 'asc' ? '↑' : '↓'}</span>}
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Actions</th>
+                <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-gray-50">
               {paged.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-16 text-center text-text-muted bg-gray-50/20">
+                  <td colSpan={8} className="p-8 sm:p-16 text-center text-text-muted bg-gray-50/20">
                     <div className="flex flex-col items-center gap-4 max-w-sm mx-auto">
                       <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center mb-2">
                         <FileText className="w-8 h-8 text-gray-200" />
@@ -504,7 +510,7 @@ export function Invoices() {
               ) : (
                 paged.map((inv) => (
                   <tr key={inv.id} className="group hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       <input
                         aria-label={`Select invoice ${inv.invoiceNumber}`}
                         type="checkbox"
@@ -513,17 +519,17 @@ export function Invoices() {
                         onChange={() => toggleSelect(inv.id)}
                       />
                     </td>
-                    <td className="px-6 py-4 font-medium text-text-main">{inv.invoiceNumber}</td>
-                    <td className="px-6 py-4 text-text-muted">
+                    <td className="px-4 sm:px-6 py-4 font-medium text-text-main">{inv.invoiceNumber}</td>
+                    <td className="hidden sm:table-cell px-6 py-4 text-text-muted">
                       {new Date(inv.date || inv.createdAt || Date.now()).toLocaleDateString('en-IN', {
                         day: '2-digit',
                         month: 'short',
                         year: 'numeric'
                       })}
                     </td>
-                    <td className="px-6 py-4 text-text-main">{inv.buyer?.name || "Unknown"}</td>
-                    <td className="px-6 py-4 text-right font-medium text-text-main">₹{(inv.total || 0).toLocaleString('en-IN')}</td>
-                    <td className="px-6 py-4 text-right text-sm">
+                    <td className="px-4 sm:px-6 py-4 text-text-main max-w-[120px] sm:max-w-none truncate">{inv.buyer?.name || "Unknown"}</td>
+                    <td className="px-4 sm:px-6 py-4 text-right font-medium text-text-main whitespace-nowrap">₹{(inv.total || 0).toLocaleString('en-IN')}</td>
+                    <td className="hidden lg:table-cell px-6 py-4 text-right text-sm">
                       {inv.netReceivable
                         ? <span className="font-medium text-green-600">
                             ₹{Number(inv.netReceivable).toLocaleString('en-IN')}
@@ -531,7 +537,7 @@ export function Invoices() {
                         : <span className="text-gray-400 text-xs">No TDS</span>
                       }
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       {(() => {
                         const dispStatus = inv.status;
                         return (
@@ -541,8 +547,8 @@ export function Invoices() {
                         );
                       })()}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                    <td className="px-2 sm:px-6 py-4">
+                      <div className="flex items-center gap-1 sm:gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => setViewInvoiceId(inv.id)}
                           className="p-1.5 rounded-lg text-primary hover:bg-primary-light transition"
@@ -638,13 +644,14 @@ export function Invoices() {
             {/* Footer: totals */}
             <tfoot className="bg-gray-50/50 border-t border-gray-100">
               <tr>
-                <td colSpan={3} className="px-6 py-4 text-xs font-medium text-text-light uppercase tracking-wide">
-                  Page {page} of {totalPages} • {sorted.length} Total Invoices
+                <td colSpan={2} className="px-4 sm:px-6 py-4 text-xs font-medium text-text-light uppercase tracking-wide">
+                  Page {page} of {totalPages} • {sorted.length} Total
                 </td>
-                <td className="px-6 py-4 text-right text-sm font-bold text-text-main">
-                  Total: ₹{totalVisible.toLocaleString('en-IN')}
+                <td className="hidden sm:table-cell px-6 py-4" />
+                <td className="px-4 sm:px-6 py-4 text-right text-sm font-bold text-text-main whitespace-nowrap">
+                  ₹{totalVisible.toLocaleString('en-IN')}
                 </td>
-                <td className="px-6 py-4 text-right text-sm font-bold text-green-600">
+                <td className="hidden lg:table-cell px-6 py-4 text-right text-sm font-bold text-green-600 whitespace-nowrap">
                   Net: ₹{sorted.reduce((s, i) =>
                     s + (Number(i.netReceivable) || Number(i.total) || 0), 0
                   ).toLocaleString('en-IN')}
@@ -657,7 +664,7 @@ export function Invoices() {
       </div>
 
       {/* Pagination controls */}
-      <div className="flex items-center justify-between gap-4 px-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-2">
         <div className="flex items-center gap-2 text-sm text-text-muted">
           <span>Rows per page</span>
           <select
@@ -715,7 +722,7 @@ export function Invoices() {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-8 bg-white" id="printable-invoice">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-white" id="printable-invoice">
               {viewLoading ? (
                 <div className="flex items-center justify-center h-64">
                   <Loader2 className="w-10 h-10 text-primary animate-spin" />

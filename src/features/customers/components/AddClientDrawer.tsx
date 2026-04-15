@@ -200,35 +200,35 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
               <div className="absolute bottom-10 -left-16 h-48 w-48 rounded-full bg-teal-200/15 blur-[80px] pointer-events-none" />
 
               {/* ── Header ────────────────────────────────────── */}
-              <div className="relative flex items-center justify-between px-7 py-5 border-b border-gray-200 rounded-tl-3xl bg-gray-50/80"
+              <div className="relative flex items-center justify-between gap-3 px-4 sm:px-7 py-4 sm:py-5 border-b border-gray-200 rounded-tl-3xl bg-gray-50/80"
               >
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/25">
-                    <Building2 size={20} className="text-white" />
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/25 shrink-0">
+                    <Building2 size={18} className="text-white" />
                   </div>
-                  <div>
-                    <h1 className="text-lg font-bold text-gray-900 leading-tight tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
+                  <div className="min-w-0">
+                    <h1 className="text-base sm:text-lg font-bold text-gray-900 leading-tight tracking-tight truncate" style={{ fontFamily: 'Sora, sans-serif' }}>
                       {isEditing ? 'Edit Client' : 'Add New Client'}
                     </h1>
-                    <p className="text-[11px] text-gray-500 mt-0.5 font-medium flex items-center gap-1.5">
+                    <p className="text-[11px] text-gray-500 mt-0.5 font-medium hidden sm:flex items-center gap-1.5">
                       <Sparkles size={10} className="text-teal-500" />
                       {isEditing ? 'Update the existing customer record' : 'Create a new customer record'}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0">
                   {/* Status toggle */}
                   <button
                     onClick={() => setCustomerForm(p => ({ ...p, status: p.status === 'Active' ? 'Inactive' : 'Active' }))}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-xl border text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
                       customerForm.status === 'Active'
                         ? 'bg-teal-50 border-gray-200 text-teal-800'
                         : 'bg-gray-100 border-gray-200 text-gray-500'
                     }`}
                   >
-                    <span className={`w-2 h-2 rounded-full transition-colors ${customerForm.status === 'Active' ? 'bg-teal-500' : 'bg-gray-400'}`} />
-                    {customerForm.status}
+                    <span className={`w-2 h-2 rounded-full transition-colors shrink-0 ${customerForm.status === 'Active' ? 'bg-teal-500' : 'bg-gray-400'}`} />
+                    <span className="hidden sm:inline">{customerForm.status}</span>
                   </button>
 
                   {/* Close button */}
@@ -241,8 +241,8 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
                 </div>
               </div>
 
-              {/* ── Body — Two-column layout, NO SCROLL ──────── */}
-              <div className="flex-1 px-7 py-6 grid grid-cols-2 gap-5 content-start">
+              {/* ── Body ──────────────────────────────────────── */}
+              <div className="flex-1 overflow-y-auto px-4 sm:px-7 py-4 sm:py-6 grid grid-cols-1 xl:grid-cols-2 gap-5 content-start">
 
                 {/* ═══════ LEFT COLUMN ═══════ */}
                 <div className="flex flex-col gap-5">
@@ -262,7 +262,7 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
                           onChange={e => setCustomerForm({ ...customerForm, name: e.target.value })}
                           placeholder="Legal Business Name" className={inputCls} />
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <Label>Contact Name</Label>
                           <input type="text" value={customerForm.contactName}
@@ -292,7 +292,7 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
                   </Section>
 
                   {/* Tax Info + Tags row */}
-                  <div className="grid grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <Section icon={CreditCard} title="Tax Info">
                       <div>
                         <Label>GSTIN</Label>
@@ -330,7 +330,7 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
                   >
                     <div className="space-y-3.5">
                       {/* Row 1: Country + Pincode/ZIP — the magic row */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <Label>Country</Label>
                           <SearchableSelect
@@ -396,7 +396,7 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
                       </div>
 
                       {/* Row 3: City + State — auto-filled for India, manual for others */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <Label>City / District</Label>
                           <input
@@ -440,7 +440,7 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
 
                   {/* Billing Options */}
                   <Section icon={CreditCard} title="Billing Options">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label>Currency</Label>
                         <SearchableSelect
@@ -476,18 +476,18 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
               </div>
 
               {/* ── Footer ────────────────────────────────────── */}
-              <div className="border-t border-gray-200 px-7 py-4 flex items-center justify-between rounded-bl-3xl bg-gray-50/90"
+              <div className="border-t border-gray-200 px-4 sm:px-7 py-4 flex flex-wrap items-center justify-between gap-3 rounded-bl-3xl bg-gray-50/90"
               >
                 <p className="text-[11px] text-gray-400 font-medium">
                   <span className="text-red-400">*</span> Required fields
                 </p>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button onClick={onClose}
-                    className="px-6 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors">
+                    className="px-4 sm:px-6 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors">
                     Discard
                   </button>
                   <button onClick={handleSaveCustomer} disabled={savingCustomer}
-                    className="px-7 py-2.5 rounded-xl bg-teal-600 border border-gray-200 text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+                    className="px-5 sm:px-7 py-2.5 rounded-xl bg-teal-600 border border-gray-200 text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center gap-2">
                     {savingCustomer && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     {isEditing ? 'Update Client' : 'Save Client'}
                   </button>

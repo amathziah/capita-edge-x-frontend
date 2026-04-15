@@ -224,13 +224,13 @@ export function Payments() {
       <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-teal-200/40 blur-3xl -z-10" />
       <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-teal-200/30 blur-[110px] -z-10" />
 
-      <div className="p-6 lg:p-10">
+      <div className="p-4 sm:p-6 lg:p-10">
         {/* ─── Header ─────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between"
+          className="mb-6 sm:mb-8 flex flex-col gap-4 sm:gap-5 md:flex-row md:items-center md:justify-between"
         >
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-teal-600">
@@ -245,7 +245,7 @@ export function Payments() {
               Track incoming payments, reconcile quickly and surface anomalies via AI.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setShowRecordModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-black transition shadow-xl shadow-slate-900/10"
@@ -372,7 +372,7 @@ export function Payments() {
             </div>
 
             {/* Second row: sort + view toggle */}
-            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+            <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-y-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort</span>
                 {(['amount', 'date', 'invoice'] as SortField[]).map(field => (

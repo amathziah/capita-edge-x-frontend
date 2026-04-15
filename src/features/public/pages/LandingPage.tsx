@@ -500,7 +500,7 @@ function FaqSection() {
 
     return (
         <section id="faq" className="py-24 relative z-10">
-            <div className="max-w-3xl mx-auto px-6">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6">
                 <div className="text-center mb-14">
                     <SectionEyebrow>FAQ</SectionEyebrow>
                     <h2 className="font-semibold text-white text-3xl md:text-4xl tracking-tight">Frequently asked questions</h2>
@@ -629,7 +629,7 @@ export const Landing: React.FC = () => {
 
             {/* HERO */}
             <section className="relative pt-36 pb-16 lg:pt-48 lg:pb-24 overflow-hidden">
-                <div className="max-w-6xl mx-auto px-6 relative z-10 w-full">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 w-full">
                     <div className="text-center mb-16 max-w-3xl mx-auto">
                         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                             <EarlyAccessBanner />
@@ -691,14 +691,14 @@ export const Landing: React.FC = () => {
                         </motion.div>
                     </div>
                 </div>
-                <div id="product" className="max-w-6xl mx-auto px-6 relative z-10">
+                <div id="product" className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
                     <DashboardMockup />
                 </div>
             </section>
 
             {/* STATS */}
             <section className="py-16 relative z-10">
-                <div className="max-w-5xl mx-auto px-6">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6">
                     <motion.div
                         variants={stagger}
                         initial="hidden"
@@ -722,7 +722,7 @@ export const Landing: React.FC = () => {
 
             {/* FEATURES */}
             <section id="features" className="py-24 relative z-10">
-                <div className="max-w-6xl mx-auto px-6 space-y-28">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-28">
 
                     {/* Header */}
                     <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center max-w-2xl mx-auto">
@@ -1007,7 +1007,7 @@ export const Landing: React.FC = () => {
 
             {/* FEATURE GRID */}
             <section className="py-20 relative z-10">
-                <div className="max-w-6xl mx-auto px-6">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6">
                     <motion.div
                         initial={{ opacity: 0, y: 16 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -1109,7 +1109,7 @@ export const Landing: React.FC = () => {
 
             {/* HOW IT WORKS */}
             <section id="how-it-works" className="py-24 relative z-10">
-                <div className="max-w-5xl mx-auto px-6">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6">
                     <motion.div
                         variants={stagger}
                         initial="hidden"
@@ -1165,7 +1165,7 @@ export const Landing: React.FC = () => {
                         style={{ background: 'radial-gradient(circle at center, rgba(20,184,166,0.10) 0%, transparent 60%)' }}
                     />
                 </div>
-                <div className="max-w-2xl mx-auto px-6 relative z-10">
+                <div className="max-w-2xl mx-auto px-4 sm:px-6 relative z-10">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -1200,7 +1200,7 @@ export const Landing: React.FC = () => {
 
             {/* FOOTER */}
             <footer className="pb-10 pt-16 border-t border-white/[0.06] relative z-10">
-                <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
                     <div className="md:col-span-2 space-y-4">
                         <div className="flex items-center gap-2.5">
                             <div className="w-7 h-7 bg-gradient-to-br from-teal-400 to-cyan-600 rounded-lg flex items-center justify-center">
@@ -1234,7 +1234,7 @@ export const Landing: React.FC = () => {
                         </ul>
                     </div>
                 </div>
-                <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-white/[0.05]">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-white/[0.05]">
                     <div className="text-slate-500 text-[12px]">© {new Date().getFullYear()} CapitaEdgeX. All rights reserved.</div>
                     <div className="text-slate-500 text-[12px]">Made in India · Early access</div>
                 </div>

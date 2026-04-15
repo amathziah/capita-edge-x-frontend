@@ -86,10 +86,10 @@ export function Reports() {
 
   return (
     <div className="h-full w-full overflow-y-auto bg-gray-50">
-      <div className="mx-auto max-w-5xl px-5 py-6">
+      <div className="mx-auto max-w-5xl px-4 sm:px-5 py-4 sm:py-6">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Reports</h1>
             <p className="text-sm text-gray-500 mt-0.5">What came in, what went out, what's pending.</p>
@@ -128,7 +128,7 @@ export function Reports() {
 
             {/* Unpaid */}
             {(pending > 0 || overdue > 0) && (
-              <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-gray-900">Unpaid invoices</p>
                   <p className="text-xs text-gray-500 mt-0.5">

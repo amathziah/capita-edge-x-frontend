@@ -308,26 +308,18 @@ export const ControlRoom = () => {
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.98 }}
-                            className="relative overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0c0f1a] shadow-2xl backdrop-blur-xl"
+                            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
                         >
-                            <div className="flex flex-col gap-3 border-b border-white/[0.06] bg-[#161a2b]/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                                <div className="flex min-w-0 items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                                        <Network size={18} className="text-white" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h3 className="text-sm font-bold text-white">Invoice Status</h3>
-                                        <p className="mt-0.5 text-[11px] text-gray-500">Quick overview • Actionable insights</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1.5 self-start sm:self-auto">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Live</span>
-                                </div>
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                                <h3 className="text-sm font-bold text-gray-900">Invoice Snapshot</h3>
+                                <button
+                                    onClick={() => navigate('/dashboard/invoices')}
+                                    className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors"
+                                >
+                                    View all →
+                                </button>
                             </div>
-                            <div className="p-4 sm:p-6">
-                                <InvoiceQuickView invoices={invoices} />
-                            </div>
+                            <InvoiceQuickView invoices={invoices} />
                         </motion.div>
                     ) : (
                         <motion.div

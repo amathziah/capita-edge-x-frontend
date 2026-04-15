@@ -130,9 +130,9 @@ export function InvoiceDocumentPreview({
     const hasItems = watchedItems.some(i => i.description);
 
     return (
-        <div className="h-full bg-white flex flex-col">
-            <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
-                <div className="flex items-start justify-between mb-6">
+        <div className="w-full bg-white">
+            <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         {invoice.fromName
                             ? <p className="text-base font-bold text-gray-900">{invoice.fromName}</p>
@@ -142,13 +142,13 @@ export function InvoiceDocumentPreview({
                         {invoice.fromAddress && <p className="text-xs text-gray-500 mt-0.5">{invoice.fromAddress}</p>}
                         {invoice.fromGstin && <p className="text-xs text-gray-500 mt-0.5">GSTIN: {invoice.fromGstin}</p>}
                     </div>
-                    <div className="text-right min-w-0 max-w-[11rem]">
-                        <p className="text-2xl font-black tracking-tight text-gray-900 leading-none break-words">{documentTitle}</p>
+                    <div className="min-w-0 sm:max-w-[11rem] sm:text-right">
+                        <p className="text-xl sm:text-2xl font-black tracking-tight text-gray-900 leading-none break-words">{documentTitle}</p>
                         <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest break-all">{invoice.invoiceNumber}</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6 mb-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 mb-5">
                     <div>
                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Billed From</p>
                         {invoice.fromName
@@ -172,7 +172,7 @@ export function InvoiceDocumentPreview({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6 mb-5 pb-4 border-b border-gray-100">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 mb-5 pb-4 border-b border-gray-100">
                     <div>
                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Invoice Date</p>
                         <p className="text-sm font-bold text-gray-800">{fmtDate(invoice.date)}</p>
@@ -184,7 +184,7 @@ export function InvoiceDocumentPreview({
                 </div>
 
                 <div className="border border-gray-200 rounded-lg overflow-hidden mb-5">
-                    <div className="grid grid-cols-12 bg-gray-50 px-4 py-2 border-b border-gray-200">
+                    <div className="hidden sm:grid grid-cols-12 bg-gray-50 px-4 py-2 border-b border-gray-200">
                         <div className="col-span-6 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Description</div>
                         <div className="col-span-2 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-center">Qty</div>
                         <div className="col-span-2 text-[9px] font-bold text-gray-400 uppercase tracking-wider text-right">Rate</div>
@@ -194,19 +194,46 @@ export function InvoiceDocumentPreview({
                         <div className="py-6 text-center">
                             <p className="text-xs text-gray-300 italic">No items added yet</p>
                         </div>
-                    ) : watchedItems.map((item, i) => item.description ? (
-                        <div key={i} className="grid grid-cols-12 px-4 py-2.5 border-b border-gray-100 last:border-0">
-                            <div className="col-span-6 text-xs font-medium text-gray-800">{item.description}</div>
-                            <div className="col-span-2 text-xs text-gray-500 text-center">{item.quantity}</div>
-                            <div className="col-span-2 text-xs text-gray-500 text-right tabular-nums break-all">₹{formatInrAmount(item.price || 0)}</div>
-                            <div className="col-span-2 text-xs font-semibold text-gray-800 text-right tabular-nums break-all">
-                                ₹{formatInrAmount(getLineAmount(item))}
+                    ) : (
+                        <>
+                            <div className="sm:hidden divide-y divide-gray-100">
+                                {watchedItems.map((item, i) => item.description ? (
+                                    <div key={i} className="px-4 py-3 space-y-2">
+                                        <div className="text-sm font-semibold text-gray-800 break-words">{item.description}</div>
+                                        <div className="grid grid-cols-3 gap-3 text-[11px]">
+                                            <div>
+                                                <p className="text-gray-400 uppercase tracking-wide">Qty</p>
+                                                <p className="mt-1 font-medium text-gray-700">{item.quantity}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-400 uppercase tracking-wide">Rate</p>
+                                                <p className="mt-1 font-medium text-gray-700 tabular-nums break-all">₹{formatInrAmount(item.price || 0)}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-gray-400 uppercase tracking-wide">Amount</p>
+                                                <p className="mt-1 font-semibold text-gray-800 tabular-nums break-all">₹{formatInrAmount(getLineAmount(item))}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : null)}
                             </div>
-                        </div>
-                    ) : null)}
+                            <div className="hidden sm:block">
+                                {watchedItems.map((item, i) => item.description ? (
+                                    <div key={i} className="grid grid-cols-12 px-4 py-2.5 border-b border-gray-100 last:border-0">
+                                        <div className="col-span-6 text-xs font-medium text-gray-800 break-words">{item.description}</div>
+                                        <div className="col-span-2 text-xs text-gray-500 text-center">{item.quantity}</div>
+                                        <div className="col-span-2 text-xs text-gray-500 text-right tabular-nums break-all">₹{formatInrAmount(item.price || 0)}</div>
+                                        <div className="col-span-2 text-xs font-semibold text-gray-800 text-right tabular-nums break-all">
+                                            ₹{formatInrAmount(getLineAmount(item))}
+                                        </div>
+                                    </div>
+                                ) : null)}
+                            </div>
+                        </>
+                    )}
                 </div>
 
-                <div className="ml-auto w-60 max-w-full space-y-1.5 mb-1">
+                <div className="ml-auto w-full max-w-[18rem] space-y-1.5 mb-1">
                     <div className="flex justify-between">
                         <span className="text-xs text-gray-400">Subtotal</span>
                         <span className="text-xs font-medium text-gray-700 tabular-nums break-all text-right max-w-[10rem]">₹{formatInrAmount(subtotal)}</span>
@@ -268,26 +295,26 @@ export function InvoiceDocumentPreview({
                 {(invoice.bankName || invoice.upiId || effectivePaymentQrUrl) && (
                     <div className="mt-8 p-4 bg-gray-50/50 rounded-xl border border-gray-100">
                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Payment Instructions</p>
-                        <div className="grid grid-cols-2 gap-4 items-start">
+                        <div className="grid grid-cols-1 gap-4 items-start sm:grid-cols-[minmax(0,1fr)_auto]">
                             <div className="space-y-2">
-                            {invoice.bankName && (
-                                <div className="space-y-1">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Bank Transfer</p>
-                                    <p className="text-[11px] font-bold text-gray-800">{invoice.bankName}</p>
-                                    <p className="text-[10px] text-gray-500">A/C: {invoice.accountNumber}</p>
-                                    <p className="text-[10px] text-gray-500">IFSC: {invoice.ifscCode}</p>
-                                </div>
-                            )}
-                            {invoice.upiId && (
-                                <div className="space-y-1">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">UPI Payment</p>
-                                    <p className="text-[11px] font-bold text-emerald-600">{invoice.upiId}</p>
-                                </div>
-                            )}
+                                {invoice.bankName && (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Bank Transfer</p>
+                                        <p className="text-[11px] font-bold text-gray-800 break-words">{invoice.bankName}</p>
+                                        <p className="text-[10px] text-gray-500 break-all">A/C: {invoice.accountNumber}</p>
+                                        <p className="text-[10px] text-gray-500 break-all">IFSC: {invoice.ifscCode}</p>
+                                    </div>
+                                )}
+                                {invoice.upiId && (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">UPI Payment</p>
+                                        <p className="text-[11px] font-bold text-emerald-600 break-all">{invoice.upiId}</p>
+                                    </div>
+                                )}
                             </div>
                             {effectivePaymentQrUrl && (
-                                <div className="justify-self-end text-center">
-                                    <img src={effectivePaymentQrUrl} alt="Payment QR" className="w-28 h-28 object-contain rounded-lg border border-gray-200 bg-white p-2" />
+                                <div className="text-center sm:justify-self-end">
+                                    <img src={effectivePaymentQrUrl} alt="Payment QR" className="mx-auto h-24 w-24 sm:w-28 sm:h-28 object-contain rounded-lg border border-gray-200 bg-white p-2" />
                                     <p className="text-[9px] text-gray-400 font-medium mt-2">Scan to Pay</p>
                                     {paymentQrSourceLabel && <p className="text-[9px] text-gray-400 mt-1">{paymentQrSourceLabel}</p>}
                                 </div>
@@ -311,8 +338,8 @@ export function InvoiceDocumentPreview({
                 )}
 
                 {invoice.includeSignature && (
-                    <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
-                        <div className="w-40 text-center">
+                    <div className="mt-6 pt-4 border-t border-gray-100 flex justify-start sm:justify-end">
+                        <div className="w-full max-w-[10rem] text-center">
                             <p className="text-lg text-gray-700 italic" style={{ fontFamily: '"Times New Roman", serif' }}>
                                 {invoice.signatureName || invoice.fromName || 'Signature'}
                             </p>

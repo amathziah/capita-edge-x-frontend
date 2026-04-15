@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Search, DollarSign, Tag, Loader2, X, Calendar, Receipt, Trash2, Edit2, Grid, Map as MapIcon, Network, Shield } from "lucide-react";
+import { Plus, Search, DollarSign, Tag, Loader2, X, Calendar, Receipt, Trash2, Edit2, Grid, Map as MapIcon, Shield } from "lucide-react";
 import { motion } from 'framer-motion';
 import { dataService } from '@/shared/services/dataService';
 import { Expense } from '@/types';
@@ -340,7 +340,7 @@ export function Expenses() {
               />
             </div>
 
-            <div className="w-full sm:w-48 z-10">
+            <div className="w-full sm:w-auto min-w-[160px] z-10">
               <CustomSelect
                 value={filterCategory}
                 onChange={(val) => setFilterCategory(val)}
@@ -364,31 +364,13 @@ export function Expenses() {
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
-          className="bg-[#0c0f1a] backdrop-blur-xl rounded-3xl border border-white/[0.08] shadow-2xl overflow-hidden relative"
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
         >
-          {/* Map Header */}
-          <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-[#161a2b]/80">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                <Network size={18} className="text-white" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">
-                  Expense Visualization Map
-                </h3>
-                <p className="text-[11px] text-gray-500 mt-0.5">Category distribution • Spending insights • Flow analysis</p>
-              </div>
-            </div>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-900">Spend by Category</h3>
+            <span className="text-xs text-gray-400">{expenses.length} expense{expenses.length !== 1 ? 's' : ''}</span>
           </div>
-          <div style={{ height: '660px' }}>
-            {expenses.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-text-muted">
-                No expenses to visualize.
-              </div>
-            ) : (
-              <ExpensesMap expenses={expenses} />
-            )}
-          </div>
+          <ExpensesMap expenses={expenses} />
         </motion.div>
       ) : (
         <>

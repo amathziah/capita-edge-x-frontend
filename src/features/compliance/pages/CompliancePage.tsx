@@ -142,10 +142,10 @@ export function Compliance() {
 
   return (
     <div className="h-full w-full overflow-y-auto bg-gray-50">
-      <div className="mx-auto max-w-5xl px-5 py-6">
+      <div className="mx-auto max-w-5xl px-4 sm:px-5 py-4 sm:py-6">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Compliance Tasks</h1>
             <p className="text-sm text-gray-500 mt-0.5">Track your GST filings, TDS payments, audits, and other deadlines.</p>
@@ -196,7 +196,7 @@ export function Compliance() {
               className="w-full pl-9 pr-4 py-2 bg-white rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-gray-300"
             />
           </div>
-          <div className="flex gap-1 p-1 bg-white rounded-lg border border-gray-200">
+          <div className="flex flex-wrap gap-1 p-1 bg-white rounded-lg border border-gray-200">
             {(["all", "pending", "overdue", "completed"] as const).map((s) => (
               <button
                 key={s}
@@ -228,19 +228,19 @@ export function Compliance() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 text-left">
-                    <th className="px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase">Task</th>
-                    <th className="px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase">Description</th>
+                    <th className="px-4 sm:px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase">Task</th>
+                    <th className="hidden md:table-cell px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase">Description</th>
                     <th
-                      className="px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none"
+                      className="px-4 sm:px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none"
                       onClick={() => setSortAsc(!sortAsc)}
                     >
                       <span className="flex items-center gap-1">
                         Due Date <ArrowUpDown className="w-3 h-3" />
                       </span>
                     </th>
-                    <th className="px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase text-center">Priority</th>
-                    <th className="px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase text-center">Status</th>
-                    <th className="px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase text-right">Actions</th>
+                    <th className="hidden sm:table-cell px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase text-center">Priority</th>
+                    <th className="px-4 sm:px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase text-center">Status</th>
+                    <th className="px-4 sm:px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -249,20 +249,20 @@ export function Compliance() {
                     const dueSoon = task.status === "pending" && days >= 0 && days <= 7;
                     return (
                       <tr key={task.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition">
-                        <td className="px-5 py-3 font-medium text-gray-900">{task.type}</td>
-                        <td className="px-5 py-3 text-gray-600 max-w-[200px] truncate">{task.description || "—"}</td>
-                        <td className="px-5 py-3">
+                        <td className="px-4 sm:px-5 py-3 font-medium text-gray-900">{task.type}</td>
+                        <td className="hidden md:table-cell px-5 py-3 text-gray-600 max-w-[200px] truncate">{task.description || "—"}</td>
+                        <td className="px-4 sm:px-5 py-3">
                           <span className={task.status === "overdue" ? "text-red-600 font-semibold" : "text-gray-700"}>
                             {formatDate(task.due_date)}
                           </span>
-                          {dueSoon && <span className="ml-2 text-xs text-yellow-600 font-medium">Due soon</span>}
+                          {dueSoon && <span className="ml-2 text-xs text-yellow-600 font-medium whitespace-nowrap">Due soon</span>}
                         </td>
-                        <td className="px-5 py-3 text-center">
+                        <td className="hidden sm:table-cell px-5 py-3 text-center">
                           <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.medium}`}>
                             {task.priority}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-center">
+                        <td className="px-4 sm:px-5 py-3 text-center">
                           <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize border ${STATUS_COLORS[task.status] || STATUS_COLORS.pending}`}>
                             {task.status === "completed" && <CheckCircle2 className="w-3 h-3" />}
                             {task.status === "pending" && <Clock className="w-3 h-3" />}
@@ -270,7 +270,7 @@ export function Compliance() {
                             {task.status}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-right">
+                        <td className="px-4 sm:px-5 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
                             {task.status !== "completed" && (
                               <button

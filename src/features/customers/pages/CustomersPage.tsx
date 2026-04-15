@@ -190,7 +190,7 @@ export function Customers() {
       <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-teal-200/40 blur-3xl -z-10" />
       <div className="absolute bottom-10 left-10 h-72 w-72 rounded-full bg-teal-200/30 blur-[110px] -z-10" />
 
-      <div className="p-6 lg:p-10">
+      <div className="p-4 sm:p-6 lg:p-10">
 
         {/* ─── ADD/EDIT DRAWER (RIGHT SLIDE OVER) ─────────────────── */}
         <AddClientDrawer
@@ -232,27 +232,27 @@ export function Customers() {
             className="space-y-6"
           >
             {/* Nav & Header */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-start gap-3">
               <button
-                className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition shadow-sm"
+                className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition shadow-sm shrink-0"
                 onClick={() => { setSelectedCustomer(null); setCustomerInsights(null); setCustomerInvoices([]); }}
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-teal-600">
                   <Users size={14} /> Customer Profile
                   <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse" />
                 </div>
-                <h1 className="mt-1 text-2xl font-semibold text-gray-900 tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
+                <h1 className="mt-1 text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight truncate" style={{ fontFamily: 'Sora, sans-serif' }}>
                   {selectedCustomer.name}
                 </h1>
               </div>
-              <div className="ml-auto flex gap-2 items-center">
-                <button onClick={() => handleEditCustomer()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+              <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto">
+                <button onClick={() => handleEditCustomer()} className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
                   <Edit size={15} /> Edit
                 </button>
-                <button onClick={() => handleDeleteCustomer()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
+                <button onClick={() => handleDeleteCustomer()} className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
                   <Trash2 size={15} /> Delete
                 </button>
                 {(() => {
@@ -552,7 +552,7 @@ export function Customers() {
                   </div>
 
                   {/* Sort controls */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort</span>
                     {(['name', 'email', 'createdAt'] as SortField[]).map(field => (
                       <button

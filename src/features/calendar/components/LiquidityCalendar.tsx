@@ -264,7 +264,7 @@ function DayCell({
     return (
         <div
             className={`
-                min-h-[112px] p-2 border-b border-r border-slate-50 flex flex-col gap-0.5
+                min-h-[80px] sm:min-h-[112px] p-1 sm:p-2 border-b border-r border-slate-50 flex flex-col gap-0.5
                 ${!isCurrentMonth ? 'bg-slate-50/40' : 'bg-white hover:bg-slate-50/50'}
                 transition-colors duration-150
             `}
@@ -768,7 +768,7 @@ export function LiquidityCalendar() {
                         </div>
 
                         {/* legend */}
-                        <div className="flex items-center justify-end gap-5 px-5 py-3 border-t border-slate-50">
+                        <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 px-4 sm:px-5 py-3 border-t border-slate-50">
                             {(['paid', 'pending', 'due_today', 'overdue', 'expense'] as const).map((s) => (
                                 <div key={s} className="flex items-center gap-1.5">
                                     <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG[s].dot}`} />

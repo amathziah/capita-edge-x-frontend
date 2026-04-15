@@ -9,7 +9,7 @@ export function Profile() {
     const role = (user as any)?.role || 'User';
 
     return (
-        <div className="p-6 lg:p-10 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="p-4 sm:p-6 lg:p-10 max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
             <div>
                 <h2 className="text-2xl font-bold text-text-main flex items-center gap-3">
                     <User className="w-7 h-7 text-primary" />
@@ -30,8 +30,8 @@ export function Profile() {
                     </div>
                 </div>
 
-                <div className="pt-14 px-8 pb-8">
-                    <div className="flex justify-between items-start mb-8">
+                <div className="pt-14 px-4 sm:px-8 pb-6 sm:pb-8">
+                    <div className="flex flex-wrap justify-between items-start gap-3 mb-6 sm:mb-8">
                         <div>
                             <h3 className="text-xl font-bold text-text-main">{user?.email?.split('@')[0]}</h3>
                             <p className="text-sm text-text-muted">{user?.email}</p>

@@ -160,7 +160,7 @@ function Field({
 
 function SectionCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`relative bg-white rounded-2xl p-5 border border-gray-200 shadow-sm ${className}`}>
+        <div className={`relative bg-white rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm ${className}`}>
              <div className="absolute top-0 left-6 right-6 h-[1.5px] rounded-b-full bg-teal-600/20" />
             {children}
         </div>
@@ -203,40 +203,44 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 ───────────────────────────────────────────────────────────── */
 function StepperHeader({ current }: { current: number }) {
     return (
-        <div className="flex items-center justify-between px-3 xl:px-6 py-4 bg-gray-50/50 border-b border-gray-200 flex-shrink-0">
-            {STEPS.map((s, i) => {
-                const done   = i < current;
-                const active = i === current;
-                return (
-                    <React.Fragment key={s.id}>
-                        <div className="flex flex-col xl:flex-row items-center gap-1.5 xl:gap-2.5 min-w-0">
-                            <div className={`w-6 h-6 xl:w-7 xl:h-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold transition-all shadow-sm ${
-                                done
-                                    ? 'bg-emerald-500 text-white shadow-emerald-500/20'
-                                    : active
-                                        ? 'bg-white border border-teal-500 text-teal-600 ring-4 ring-teal-500/10'
-                                        : 'bg-white border border-gray-200 text-gray-400'
-                            }`}>
-                                {done ? <Check size={12} /> : i + 1}
-                            </div>
-                            <span className={`text-[10px] xl:text-[11px] font-bold uppercase tracking-wider transition-colors ${
-                                active
-                                    ? 'text-gray-900'
-                                    : done
-                                        ? 'text-emerald-600'
-                                        : 'text-gray-400'
-                            }`} style={{ fontFamily: 'Sora, sans-serif' }}>
-                                {s.label}
-                            </span>
-                        </div>
-                        {i < STEPS.length - 1 && (
-                            <div className={`flex-1 min-w-[4px] xl:min-w-[1.5rem] h-[1.5px] mx-1 xl:mx-4 rounded-full transition-colors ${
-                                done ? 'bg-emerald-500/30' : 'bg-gray-200'
-                            }`} />
-                        )}
-                    </React.Fragment>
-                );
-            })}
+        <div className="border-b border-gray-200 bg-gray-50/50 flex-shrink-0">
+            <div className="overflow-x-auto">
+                <div className="flex min-w-[540px] items-center justify-between px-3 sm:px-4 xl:px-6 py-4">
+                    {STEPS.map((s, i) => {
+                        const done   = i < current;
+                        const active = i === current;
+                        return (
+                            <React.Fragment key={s.id}>
+                                <div className="flex flex-col xl:flex-row items-center gap-1.5 xl:gap-2.5 min-w-0">
+                                    <div className={`w-6 h-6 xl:w-7 xl:h-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold transition-all shadow-sm ${
+                                        done
+                                            ? 'bg-emerald-500 text-white shadow-emerald-500/20'
+                                            : active
+                                                ? 'bg-white border border-teal-500 text-teal-600 ring-4 ring-teal-500/10'
+                                                : 'bg-white border border-gray-200 text-gray-400'
+                                    }`}>
+                                        {done ? <Check size={12} /> : i + 1}
+                                    </div>
+                                    <span className={`text-[10px] xl:text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                                        active
+                                            ? 'text-gray-900'
+                                            : done
+                                                ? 'text-emerald-600'
+                                                : 'text-gray-400'
+                                    }`} style={{ fontFamily: 'Sora, sans-serif' }}>
+                                        {s.label}
+                                    </span>
+                                </div>
+                                {i < STEPS.length - 1 && (
+                                    <div className={`flex-1 min-w-[4px] xl:min-w-[1.5rem] h-[1.5px] mx-1 xl:mx-4 rounded-full transition-colors ${
+                                        done ? 'bg-emerald-500/30' : 'bg-gray-200'
+                                    }`} />
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
+            </div>
         </div>
     );
 }
@@ -303,8 +307,8 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
         <div className="space-y-4">
             <SectionCard>
                 <SectionHead icon={Building2} label="Billing from" />
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="sm:col-span-2">
                         <Field label="Your name / business" required error={errors.fromName?.message}>
                             <input
                                 {...register('fromName', { required: 'Required' })}
@@ -313,7 +317,7 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                             />
                         </Field>
                     </div>
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                         <Field label="Professional Title / Designation">
                             <input {...register('fromTitle')} placeholder="e.g. Full Stack Developer" className={INP} />
                         </Field>
@@ -321,7 +325,7 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                     <Field label="GSTIN (if any)">
                         <input {...register('fromGstin')} placeholder="27ABCDE1234F1Z5" className={INP} />
                     </Field>
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                         <Field label="Address">
                             <input {...register('fromAddress')} placeholder="City, State, PIN..." className={INP} />
                         </Field>
@@ -331,7 +335,7 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
 
             <SectionCard>
                 <SectionHead icon={Globe} label="Global Settings" />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label="Currency">
                         <div className="relative">
                             <select {...register('currencyCode')} className={SEL + ' pr-9'}>
@@ -361,8 +365,8 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                         <Plus size={11} /> Add New Client
                     </button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-1 relative z-10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="relative z-10">
                         <Field label="Client name" required error={errors.customerName?.message}>
                             <div className="relative group">
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors">
@@ -416,12 +420,12 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
                     <Field label="Client GSTIN">
                         <input {...register('customerGstin')} placeholder="27ABCDE1234F1Z5" className={INP} />
                     </Field>
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                         <Field label="Project Reference (Optional)">
                             <input {...register('projectReference')} placeholder="Project Alpha Release" className={INP} />
                         </Field>
                     </div>
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                         <Field label="Client address">
                             <input {...register('customerAddress')} placeholder="Client city, state..." className={INP} />
                         </Field>
@@ -431,7 +435,7 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
 
             <SectionCard>
                 <SectionHead icon={Calendar} label="Dates" />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label="Invoice date">
                         <input type="date" {...register('date')} className={INP} />
                     </Field>
@@ -467,69 +471,73 @@ function StepItems({ register, control, watch, calcResult }: { register: any; co
                 </div>
 
                 {/* Table header */}
-                <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-gray-50/50 rounded-t-2xl border border-gray-200">
-                    <div className="col-span-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">Description</div>
-                    <div className="col-span-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] text-center">Qty</div>
-                    <div className="col-span-3 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] text-right">Rate ₹</div>
-                    <div className="col-span-1" />
-                </div>
-
-                {/* Table rows */}
-                <div className="border border-gray-200 border-t-0 rounded-b-2xl overflow-hidden bg-white">
-                    {fields.length === 0 ? (
-                        <div className="py-8 text-center bg-gray-50">
-                            <p className="text-xs text-gray-400 italic">No items yet — click "Add item" above</p>
+                <div className="overflow-x-auto">
+                    <div className="min-w-[640px]">
+                        <div className="grid grid-cols-12 gap-2 px-4 sm:px-6 py-3 bg-gray-50/50 rounded-t-2xl border border-gray-200">
+                            <div className="col-span-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">Description</div>
+                            <div className="col-span-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] text-center">Qty</div>
+                            <div className="col-span-3 text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] text-right">Rate ₹</div>
+                            <div className="col-span-1" />
                         </div>
-                    ) : fields.map((field, i) => {
-                        const amt = (watchedItems[i]?.quantity || 0) * (watchedItems[i]?.price || 0);
-                        return (
-                            <div key={field.id} className="border-b border-gray-100 last:border-0 hover:bg-teal-50/30 group bg-white transition-colors">
-                                <div className="grid grid-cols-12 gap-2 px-6 py-4 items-center">
-                                    <div className="col-span-6">
-                                        <input
-                                            {...register(`items.${i}.description` as const)}
-                                            placeholder="Item description"
-                                            className="w-full text-[13px] font-semibold text-gray-900 bg-transparent focus:outline-none placeholder-gray-300"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <input
-                                            type="number"
-                                            {...register(`items.${i}.quantity` as const, { valueAsNumber: true })}
-                                            className="w-full text-[13px] font-semibold text-gray-600 text-center bg-transparent focus:outline-none"
-                                        />
-                                    </div>
-                                    <div className="col-span-3">
-                                        <input
-                                            type="number"
-                                            {...register(`items.${i}.price` as const, { valueAsNumber: true })}
-                                            className="w-full text-[13px] font-bold text-gray-900 text-right bg-transparent focus:outline-none"
-                                        />
-                                    </div>
-                                    <div className="col-span-1 flex justify-end">
-                                        <button
-                                            type="button"
-                                            onClick={() => remove(i)}
-                                            className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 rounded-xl transition-all hover:bg-red-50"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
+
+                        {/* Table rows */}
+                        <div className="border border-gray-200 border-t-0 rounded-b-2xl overflow-hidden bg-white">
+                            {fields.length === 0 ? (
+                                <div className="py-8 text-center bg-gray-50">
+                                    <p className="text-xs text-gray-400 italic">No items yet — click "Add item" above</p>
                                 </div>
-                                {amt > 0 && (
-                                    <div className="px-3 pb-1.5 text-right">
-                                        <span className="text-[10px] text-gray-400 tabular-nums">= ₹{formatInrAmount(amt)}</span>
+                            ) : fields.map((field, i) => {
+                                const amt = (watchedItems[i]?.quantity || 0) * (watchedItems[i]?.price || 0);
+                                return (
+                                    <div key={field.id} className="border-b border-gray-100 last:border-0 hover:bg-teal-50/30 group bg-white transition-colors">
+                                        <div className="grid grid-cols-12 gap-2 px-4 sm:px-6 py-4 items-center">
+                                            <div className="col-span-6">
+                                                <input
+                                                    {...register(`items.${i}.description` as const)}
+                                                    placeholder="Item description"
+                                                    className="w-full text-[13px] font-semibold text-gray-900 bg-transparent focus:outline-none placeholder-gray-300"
+                                                />
+                                            </div>
+                                            <div className="col-span-2">
+                                                <input
+                                                    type="number"
+                                                    {...register(`items.${i}.quantity` as const, { valueAsNumber: true })}
+                                                    className="w-full text-[13px] font-semibold text-gray-600 text-center bg-transparent focus:outline-none"
+                                                />
+                                            </div>
+                                            <div className="col-span-3">
+                                                <input
+                                                    type="number"
+                                                    {...register(`items.${i}.price` as const, { valueAsNumber: true })}
+                                                    className="w-full text-[13px] font-bold text-gray-900 text-right bg-transparent focus:outline-none"
+                                                />
+                                            </div>
+                                            <div className="col-span-1 flex justify-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => remove(i)}
+                                                    className="p-2 text-gray-400 hover:text-red-500 rounded-xl transition-all hover:bg-red-50 sm:opacity-0 sm:group-hover:opacity-100"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {amt > 0 && (
+                                            <div className="px-3 pb-1.5 text-right">
+                                                <span className="text-[10px] text-gray-400 tabular-nums">= ₹{formatInrAmount(amt)}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <SectionCard>
                 <SectionHead icon={Percent} label="Adjustments" />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label="Discount %">
                         <input
                             type="number"
@@ -619,7 +627,7 @@ function StepGst({ register, watch, setValue, calcResult }: { register: any; wat
 
             <SectionCard>
                 <SectionHead icon={Landmark} label="Direct Tax (TDS)" />
-                <div className="grid grid-cols-2 gap-3 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                     <Field label="TDS Rate (%)">
                         <div className="relative">
                             <input
@@ -755,8 +763,8 @@ function StepPayment({
             {/* Bank Details */}
             <SectionCard>
                 <SectionHead icon={Landmark} label="Bank & UPI Details" />
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="sm:col-span-2">
                         <Field label="Bank Name">
                             <input {...register('bankName')} placeholder="e.g. HDFC Bank" className={INP} />
                         </Field>
@@ -767,7 +775,7 @@ function StepPayment({
                     <Field label="IFSC Code">
                         <input {...register('ifscCode')} placeholder="HDFC0001234" className={INP} />
                     </Field>
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                         <Field label="UPI ID (for easy payment)">
                             <div className="relative">
                                 <input {...register('upiId')} placeholder="yourname@upi" className={INP + ' pr-8'} />
@@ -858,7 +866,7 @@ function AuditPanel({
     onClose: () => void;
 }) {
     return (
-        <div className="absolute inset-y-0 right-0 w-80 bg-white border-l border-gray-200 shadow-2xl flex flex-col z-20">
+        <div className="absolute inset-x-0 bottom-0 top-auto sm:inset-y-0 sm:left-auto sm:right-0 w-full sm:w-80 bg-white border-t sm:border-t-0 sm:border-l border-gray-200 shadow-2xl flex flex-col z-20 max-h-[70vh] sm:max-h-none">
             <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2.5">
                     <Sparkles size={16} className="text-violet-400" />
@@ -1203,7 +1211,7 @@ export function CreateInvoice() {
     ───────────────────────────────────────────────────────────── */
     return (
         <div
-            className="h-full w-full overflow-hidden flex flex-col relative rounded-2xl border border-gray-200 shadow-2xl"
+            className="h-full w-full overflow-hidden flex flex-col relative rounded-xl sm:rounded-2xl border border-gray-200 shadow-2xl"
             style={{
                 fontFamily: "'Inter', system-ui, sans-serif",
                 background: '#f8fafc',
@@ -1218,7 +1226,7 @@ export function CreateInvoice() {
                 </div>
             )}
             {/* ══ TOP BAR ══ */}
-            <header className="shrink-0 flex items-center justify-between px-5 py-4 bg-white/80 backdrop-blur-md border-b border-gray-200 z-10">
+            <header className="shrink-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-4 bg-white/80 backdrop-blur-md border-b border-gray-200 z-10">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
@@ -1235,7 +1243,7 @@ export function CreateInvoice() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                     <button
                         type="button"
                         onClick={() => navigate(-1)}
@@ -1258,15 +1266,15 @@ export function CreateInvoice() {
             </header>
 
             {/* ══ BODY ══ */}
-            <div className="flex flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto xl:overflow-hidden xl:grid xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] 2xl:grid-cols-[minmax(0,1.2fr)_minmax(420px,0.8fr)]">
 
                 {/* ── LEFT: Wizard ── */}
-                <div className="w-[60%] flex flex-col border-r border-gray-200 bg-white min-h-0">
+                <div className="bg-white xl:min-h-0 xl:flex xl:flex-col xl:border-r border-gray-200">
 
                     <StepperHeader current={step} />
 
                     {/* Form content */}
-                    <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-0">
+                    <div className="px-4 sm:px-5 py-4 space-y-0 xl:flex-1 xl:min-h-0 xl:overflow-y-auto">
                         {step === 0 && (
                             <StepClient register={register} errors={errors} watch={watch} setValue={setValue} />
                         )}
@@ -1287,17 +1295,17 @@ export function CreateInvoice() {
                     </div>
 
                     {/* Step nav — pinned bottom */}
-                    <div className="shrink-0 flex items-center justify-between px-5 py-4 border-t border-gray-200 bg-gray-50/50">
+                    <div className="shrink-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-4 border-t border-gray-200 bg-gray-50/50">
                         <button
                             type="button"
                             onClick={goPrev}
                             disabled={step === 0}
-                            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                         >
                             <ChevronLeft size={14} /> Previous
                         </button>
  
-                        <span className="text-[11px] text-gray-400 font-bold uppercase tracking-widest">
+                        <span className="text-center text-[11px] text-gray-400 font-bold uppercase tracking-widest">
                             Step {step + 1} of {STEPS.length}
                         </span>
  
@@ -1306,7 +1314,7 @@ export function CreateInvoice() {
                                 type="button"
                                 onClick={handleSubmit(onSave)}
                                 disabled={saving}
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-teal-500/20"
+                                className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-teal-500/20"
                             >
                                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                                 Create invoice
@@ -1315,7 +1323,7 @@ export function CreateInvoice() {
                             <button
                                 type="button"
                                 onClick={goNext}
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/10"
+                                className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-all shadow-lg shadow-gray-900/10"
                             >
                                 Next Step <ChevronRight size={14} />
                             </button>
@@ -1324,16 +1332,16 @@ export function CreateInvoice() {
                 </div>
 
                 {/* ── RIGHT: Live Preview ── */}
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden" style={{ background: '#f1f5f9' }}>
-                    <div className="shrink-0 flex items-center justify-between px-5 py-2.5 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+                <div className="border-t border-gray-200 bg-[#f1f5f9] xl:min-h-0 xl:border-t-0 xl:flex xl:flex-col" style={{ background: '#f1f5f9' }}>
+                    <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Preview</span>
                         <button className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg bg-white hover:bg-gray-50 transition shadow-sm">
                             <Eye size={12} /> Export PDF
                         </button>
                     </div>
 
-                    <div className="flex-1 min-h-0 p-5 overflow-hidden">
-                        <div className="h-full rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="p-4 sm:p-5 lg:p-6 xl:flex-1 xl:min-h-0 xl:overflow-y-auto">
+                        <div className="mx-auto w-full max-w-[760px] max-h-[68vh] overflow-y-auto rounded-xl shadow-sm border border-gray-200 bg-white xl:max-h-none xl:overflow-visible">
                             <InvoiceDocumentPreview
                                 invoice={w as InvoiceForm}
                                 calcResult={calcResult}
