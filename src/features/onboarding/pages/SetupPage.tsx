@@ -29,6 +29,9 @@ export function SetupPage() {
 
     const [step, setStep] = useState<Step>('identity');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // useRef guard prevents double-submit race: React state batching means two
+    // rapid clicks both see isSubmitting=false before the first re-render.
+    const submittingRef = useRef(false);
 
     // Guard: redirect to login if not authenticated
     useEffect(() => {
@@ -65,65 +68,85 @@ export function SetupPage() {
         }
     }, [user]);
 
+    // Wraps any promise with a timeout that rejects with a clear message.
+    const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+        Promise.race([
+            promise,
+            new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error(`${label} timed out. Please try again.`)), ms)
+            ),
+        ]);
+
     const handleProvisioning = async () => {
-        if (isSubmitting) return;
+        // Synchronous ref check prevents double-submit race before React re-renders
+        if (submittingRef.current) return;
+        submittingRef.current = true;
 
         if (!companyName.trim()) {
             setError('Please enter your business name.');
             setStep('identity');
+            submittingRef.current = false;
             return;
         }
 
         setIsSubmitting(true);
         setError(null);
         try {
-            // 0. Ensure session is ready before proceeding (Fix Bug: Provisioning Race)
-            const { data } = await supabase.auth.getSession();
-            if (!data.session?.access_token) {
+            // 0. Ensure session is valid before calling backend
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (!sessionData.session?.access_token) {
                 throw new Error('Session expired. Please sign in again.');
             }
 
-            // 1. Call backend to provision organization
+            // 1. Provision organization (30-second timeout)
             if (!isOnboarded) {
                 try {
-                    await api.post(ENDPOINTS.AUTH_PROVISION, { 
-                        companyName: companyName.trim(),
-                        businessType: selectedPersona
-                    });
+                    await withTimeout(
+                        api.post(ENDPOINTS.AUTH_PROVISION, {
+                            companyName: companyName.trim(),
+                            businessType: selectedPersona,
+                        }),
+                        30_000,
+                        'Workspace setup'
+                    );
                 } catch (provisionErr: any) {
                     const msg = (provisionErr?.message ?? '').toLowerCase();
-                    // Already provisioned is fine — org exists, just continue
+                    // "Already provisioned" is not an error — org exists, continue
                     if (!msg.includes('already belongs') && !msg.includes('already provisioned')) {
-                        throw provisionErr; // real error — rethrow
+                        throw provisionErr;
                     }
                 }
             }
 
-            // 2. Always refresh persona after provisioning attempt
-            await refreshPersona();
+            // 2. Refresh persona context (10-second timeout)
+            await withTimeout(refreshPersona(), 10_000, 'Profile sync');
 
-            // 3. Redirect immediately once real provisioning completes
+            // 3. Navigate to dashboard
             navigate('/dashboard', { replace: true });
         } catch (err: any) {
             console.error('[SetupPage] provisioning error:', err);
             const msg = (err?.message ?? '').toLowerCase();
             let friendlyError = 'Something went wrong. Please try again.';
-            
-            if (msg.includes('failed to fetch')) {
-                friendlyError = 'We could not reach the server. Please try again.';
+
+            if (msg.includes('timed out')) {
+                friendlyError = 'The server took too long to respond. Please try again.';
+            } else if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('network')) {
+                friendlyError = 'We could not reach the server. Check your connection and try again.';
             } else if (msg.includes('already belongs') || msg.includes('already provisioned')) {
                 friendlyError = 'Your account is already set up. Redirecting...';
-            } else if (msg.includes('session not ready') || msg.includes('session expired') || msg.includes('authentication')) {
-                friendlyError = 'Sign-in timed out. Please refresh and try again.';
+                navigate('/dashboard', { replace: true });
+            } else if (msg.includes('session expired') || msg.includes('session not ready') || msg.includes('authentication')) {
+                friendlyError = 'Your session expired. Please refresh and sign in again.';
             } else if (msg.includes('company name') || msg.includes('required')) {
                 friendlyError = 'Please enter your business name.';
-            } else if (msg.includes('provisioning failed') || msg.includes('seeding') || msg.includes('synchronization') || msg.includes('initialization')) {
-                friendlyError = 'Setup was interrupted. Your account is safe. Please try again.';
+            } else if (msg.includes('seeding') || msg.includes('synchronization') || msg.includes('initialization')) {
+                friendlyError = 'Setup was interrupted. Your account is safe — please try again.';
             }
-            
+
             setError(friendlyError);
             setStep(hasMultiplePersonaChoices && companyName.trim() ? 'persona' : 'identity');
         } finally {
+            submittingRef.current = false;
             setIsSubmitting(false);
         }
     };

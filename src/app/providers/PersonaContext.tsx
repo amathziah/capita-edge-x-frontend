@@ -38,25 +38,34 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const fetchPersona = useCallback(async (userId: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      // Race the Supabase query against a 10-second timeout.
+      // If the query hangs, we resolve to fresh state so the user is sent
+      // to /setup rather than spinning forever.
+      const query = supabase
         .from('profiles')
         .select('business_type, organization_id, organizations(plan_tier)')
         .eq('id', userId)
         .maybeSingle();
 
+      const timeoutFallback = new Promise<{ data: null; error: null }>((resolve) =>
+        setTimeout(() => {
+          console.warn('[PersonaContext] fetchPersona timed out — treating as fresh user');
+          resolve({ data: null, error: null });
+        }, 10_000)
+      );
+
+      const { data, error } = await Promise.race([query, timeoutFallback]) as { data: any; error: any };
+
       // Don't throw on join errors — extract what we can
       if (error && !data) throw error;
 
-      const bType = (data?.business_type as Segment) ?? null;
-      const orgId = data?.organization_id ?? null;
-
-      // Handle the "Fresh Auth" state (Logged in via Google but no public.profiles record yet)
+      // Fresh auth state: logged in but no profile row yet (new OAuth user, or profile not yet created)
       if (!data && !error) {
         setBusinessType(null);
         setOrganizationId(null);
         setOrgId(null);
         setPlanTier(null);
-        markOrgReady();
         return;
       }
 
@@ -67,15 +76,22 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
         : orgData?.plan_tier;
       const resolvedTier = (rawTier as PlanTier) ?? 'free';
 
+      const bType = (data?.business_type as Segment) ?? null;
+      const orgId = data?.organization_id ?? null;
+
       setBusinessType(bType);
       setOrganizationId(orgId);
-      setOrgId(orgId); // Sync with API client memory
-      markOrgReady(); // Signal hydration complete
+      setOrgId(orgId);
       setPlanTier(orgId ? resolvedTier : null);
     } catch (err) {
       console.error('[PersonaContext] fetchPersona error:', err);
       setBusinessType(null);
+      setOrganizationId(null);
+      setOrgId(null);
     } finally {
+      // Always unblock the API client and stop the loading state,
+      // regardless of whether the query succeeded, failed, or timed out.
+      markOrgReady();
       setLoading(false);
     }
   }, []);
