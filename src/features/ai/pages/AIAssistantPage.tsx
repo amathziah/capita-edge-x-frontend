@@ -1,371 +1,167 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import {
-  Send, Mic, MicOff, Zap, RotateCcw, ChevronDown,
-  PanelLeft, X
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Send, Mic, MicOff, Zap, RotateCcw, ChevronDown, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService } from '@/shared/services/aiService';
 import { usePersona } from '@/app/providers/PersonaContext';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
-import * as LucideIcons from 'lucide-react';
-import { GENERAL_CHAT_STEPS } from '@/shared/utils/aiLoadingSteps';
 import { AIWorkspaceRenderer } from '@/features/ai/components/AIWorkspaceRenderer';
 import { AIDomainChoiceCard } from '@/features/ai/components/AIDomainChoiceCard';
-import { LogoSplash } from '@/features/public/components/LogoSplash';
 
-const IconMap: Record<string, any> = {
-  TrendingUp: LucideIcons.TrendingUp,
-  CreditCard: LucideIcons.CreditCard,
-  FileText: LucideIcons.FileText,
-  Zap: LucideIcons.Zap,
-  Users: LucideIcons.Users,
-  Activity: LucideIcons.Activity,
-  Clock: LucideIcons.Clock,
-  AlertTriangle: LucideIcons.AlertTriangle,
-  RotateCcw: LucideIcons.RotateCcw,
-  ShieldCheck: LucideIcons.ShieldCheck,
-};
-
-// ─── Types ──────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
   id: string;
   sender: 'user' | 'bot';
-  /** Raw text — never contains the ▌ cursor character */
   text: string;
-  data?: any;
-  uiBlocks?: Array<{ component: string; data: any }>;
+  timestamp: Date;
+  status?: 'streaming' | 'sent' | 'error';
   uiComponent?: string;
   uiData?: any;
-  timestamp: Date;
-  /** 'streaming' replaces the old 'sending' so the distinction is clearer */
-  status?: 'streaming' | 'sent' | 'error';
-  usage?: {
-    promptTokenCount: number;
-    candidatesTokenCount: number;
-    totalTokenCount: number;
-  };
-  intent?: string;
   domain?: string;
-  specialistLabel?: string;
-  provenance?: Array<{ tool?: string; source?: string | null; generated_at?: string | null }>;
+  data?: any;
 }
 
 const TEAL = '#2dd4bf';
-const AUTO_CLEAR_HISTORY_KEY = 'capita_ai_auto_clear_history';
-const LAST_ACTIVE_KEY = 'capita_ai_last_active_at';
 
-const INTENT_LABELS: Record<string, string> = {
-  conversational: 'Conversation',
-  business_health: 'Business Health',
-  cash_flow: 'Cash Flow',
-  payments_recent: 'Recent Payments',
-  invoices_attention: 'Invoice Attention',
-  expenses_spend: 'Expenses',
-  compliance_status: 'Compliance',
-  compliance_knowledge: 'Compliance Knowledge',
-  customer_insights: 'Customer Insights',
-  action_request: 'Action',
-  general_advice: 'General Advice',
+const WELCOME_MSG: Message = {
+  id: 'welcome',
+  sender: 'bot',
+  text: "Hi! I'm Capita. Ask me anything about your business finances, or pick a workspace to get started.",
+  timestamp: new Date(),
+  status: 'sent',
+  data: {
+    type: 'guided_choice',
+    choices: [
+      { id: 'invoices',    domain: 'invoices',    label: 'Invoices',    description: 'Overdue invoices, collections & receivables', recommended: true },
+      { id: 'payments',   domain: 'payments',    label: 'Payments',    description: 'Recent receipts & cash collected' },
+      { id: 'expenses',   domain: 'expenses',    label: 'Expenses',    description: 'Spend analysis & burn rate' },
+      { id: 'compliance', domain: 'compliance',  label: 'Compliance',  description: 'GST, TDS & tax deadlines' },
+    ],
+  },
 };
 
-const DOMAIN_LABELS: Record<string, string> = {
-  invoices: 'Invoices',
-  payments: 'Payments',
-  expenses: 'Expenses',
-  compliance: 'Compliance',
-  finance: 'Finance',
-  customers: 'Customers',
-  actions: 'Actions',
-  general: 'General',
-};
-
-const getIntentLabel = (intent?: string | null) => {
-  if (!intent) return 'General Advice';
-  return INTENT_LABELS[intent] || intent;
-};
-
-const getDomainLabel = (domain?: string | null) => {
-  if (!domain) return 'Finance';
-  return DOMAIN_LABELS[domain] || domain;
-};
-
-const getComposerPlaceholder = (domain?: string | null) => {
-  switch (domain) {
-    case 'invoices':
-      return 'Ask about overdue invoices, collections, or receivables…';
-    case 'payments':
-      return 'Ask about recent payments, receipts, or reconciliation…';
-    case 'expenses':
-      return 'Ask about spend, categories, or cost control…';
-    case 'compliance':
-      return 'Ask about GST, filings, or compliance tasks…';
-    default:
-      return 'Ask about invoices, payments, expenses, or compliance…';
-  }
-};
-
-const sanitizeAssistantText = (text: string) => {
-  const cleaned = String(text ?? '')
-    .replace(/\r\n/g, '\n')
-    .split('\n')
-    .filter((line) => {
-      const trimmed = line.trim();
-      return trimmed !== '0' && trimmed !== '';
-    })
-    .join('\n')
-    .trim();
-  return cleaned;
-};
-
-const formatTime = (d: any) => {
-  const date = d instanceof Date ? d : new Date(d);
-  return isNaN(date.getTime())
-    ? '--:--'
-    : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
-
-// ─── Markdown renderers ──────────────────────────────────────────────────────
+// ─── Markdown renderers ───────────────────────────────────────────────────────
 const botMd: Components = {
-  p: ({ children }) => (
-    <p className="mb-2.5 last:mb-0 leading-[1.75] text-[13px] text-gray-300">{children}</p>
-  ),
-  ul: ({ children }) => (
-    <ul className="my-2.5 space-y-1.5 pl-0 list-none">{children}</ul>
-  ),
-  ol: ({ children }) => (
-    <ol className="my-2.5 space-y-1.5 pl-5 list-decimal text-gray-300 text-[13px]">{children}</ol>
-  ),
+  p:  ({ children }) => <p className="mb-2.5 last:mb-0 leading-[1.75] text-[13px] text-gray-300">{children}</p>,
+  ul: ({ children }) => <ul className="my-2.5 space-y-1.5 pl-0 list-none">{children}</ul>,
+  ol: ({ children }) => <ol className="my-2.5 space-y-1.5 pl-5 list-decimal text-gray-300 text-[13px]">{children}</ol>,
   li: ({ children }) => (
     <li className="flex items-start gap-2 text-[13px] text-gray-300 leading-[1.65]">
-      <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0 flex-none" />
+      <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />
       <span className="flex-1 min-w-0">{children}</span>
     </li>
   ),
-  h1: ({ children }) => (
-    <h1 className="text-[15px] font-black text-white mt-5 mb-2 tracking-tight border-b border-white/10 pb-2">
-      {children}
-    </h1>
-  ),
-  h2: ({ children }) => (
-    <h2 className="text-[13px] font-bold text-teal-400 mt-4 mb-2 uppercase tracking-widest">
-      {children}
-    </h2>
-  ),
-  h3: ({ children }) => (
-    <h3 className="text-[13px] font-semibold text-white/90 mt-3 mb-1">{children}</h3>
-  ),
-  hr: () => (
-    <hr className="my-4 border-0 h-px bg-gradient-to-r from-teal-500/20 via-white/10 to-transparent" />
-  ),
-  blockquote: ({ children }) => (
-    <div className="my-3 pl-3 border-l-2 border-teal-400/50 bg-teal-400/5 rounded-r-lg py-2 pr-3 text-[12px] text-teal-300/90 italic">
-      {children}
-    </div>
-  ),
-  table: ({ children }) => (
-    <div className="my-4 overflow-x-auto rounded-xl border border-white/10 bg-black/30 shadow-xl shadow-black/20">
-      <table className="w-full text-left text-[12px] border-collapse">{children}</table>
-    </div>
-  ),
-  thead: ({ children }) => (
-    <thead className="bg-white/[0.04] text-[10px] font-bold uppercase tracking-widest text-teal-400/80 border-b border-white/10">
-      {children}
-    </thead>
-  ),
-  th: ({ children }) => <th className="px-4 py-3 whitespace-nowrap">{children}</th>,
-  tbody: ({ children }) => (
-    <tbody className="divide-y divide-white/[0.04]">{children}</tbody>
-  ),
-  td: ({ children }) => <td className="px-4 py-2.5 text-gray-300">{children}</td>,
-  tr: ({ children }) => (
-    <tr className="hover:bg-white/[0.02] transition-colors duration-150">{children}</tr>
-  ),
-  strong: ({ children }) => (
-    <strong className="text-teal-300 font-semibold">{children}</strong>
-  ),
-  em: ({ children }) => <em className="text-gray-400 italic">{children}</em>,
+  h2: ({ children }) => <h2 className="text-[13px] font-bold text-teal-400 mt-4 mb-2 uppercase tracking-widest">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-[13px] font-semibold text-white/90 mt-3 mb-1">{children}</h3>,
+  strong: ({ children }) => <strong className="text-teal-300 font-semibold">{children}</strong>,
+  em:     ({ children }) => <em className="text-gray-400 italic">{children}</em>,
   a: ({ href, children }) => (
-    <a
-      href={href}
-      className="text-teal-400 underline underline-offset-2 decoration-teal-400/30 hover:decoration-teal-400 transition-all"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
+    <a href={href} className="text-teal-400 underline underline-offset-2 hover:text-teal-300 transition-colors" target="_blank" rel="noopener noreferrer">
       {children}
     </a>
   ),
   code: ({ className, children }) =>
     /language-/.test(className || '') ? (
-      <pre className="bg-[#0d1117] rounded-xl p-4 overflow-x-auto my-3 border border-white/[0.06] shadow-inner">
-        <code className="font-mono text-[11px] text-emerald-400/90 leading-relaxed">
-          {children}
-        </code>
+      <pre className="bg-[#0d1117] rounded-xl p-4 overflow-x-auto my-3 border border-white/[0.06]">
+        <code className="font-mono text-[11px] text-emerald-400/90 leading-relaxed">{children}</code>
       </pre>
     ) : (
       <code className="bg-white/[0.08] px-1.5 py-0.5 rounded-md font-mono text-[11px] text-teal-300 border border-white/[0.06]">
         {children}
       </code>
     ),
+  table: ({ children }) => (
+    <div className="my-4 overflow-x-auto rounded-xl border border-white/10 bg-black/30">
+      <table className="w-full text-left text-[12px] border-collapse">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-white/[0.04] text-[10px] font-bold uppercase tracking-widest text-teal-400/80 border-b border-white/10">{children}</thead>,
+  th:    ({ children }) => <th className="px-4 py-3 whitespace-nowrap">{children}</th>,
+  tbody: ({ children }) => <tbody className="divide-y divide-white/[0.04]">{children}</tbody>,
+  td:    ({ children }) => <td className="px-4 py-2.5 text-gray-300">{children}</td>,
+  tr:    ({ children }) => <tr className="hover:bg-white/[0.02] transition-colors">{children}</tr>,
 };
 
 const userMd: Components = {
-  p: ({ children }) => (
-    <p className="mb-0.5 leading-relaxed text-[13px]">{children}</p>
-  ),
+  p: ({ children }) => <p className="mb-0.5 leading-relaxed text-[13px]">{children}</p>,
   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
 };
 
-// ─── Robot SVG ───────────────────────────────────────────────────────────────
-function RobotSVG({ size = 56, animate = false }: { size?: number; animate?: boolean }) {
+// ─── Robot icon ───────────────────────────────────────────────────────────────
+function RobotSVG({ size = 18, animate = false }: { size?: number; animate?: boolean }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 56 56"
-      fill="none"
-      style={animate ? { animation: 'robot-float 3s ease-in-out infinite' } : {}}
-    >
+    <svg width={size} height={size} viewBox="0 0 56 56" fill="none"
+      style={animate ? { animation: 'robot-float 3s ease-in-out infinite' } : {}}>
       <line x1="28" y1="2" x2="28" y2="10" stroke={TEAL} strokeWidth="2" strokeLinecap="round" />
       <circle cx="28" cy="2" r="2.5" fill={TEAL} />
       <rect x="10" y="10" width="36" height="28" rx="8" fill="rgba(255,255,255,0.06)" stroke={TEAL} strokeWidth="1.5" />
       <circle cx="21" cy="24" r="5" fill="rgba(0,0,0,0.4)" stroke={TEAL} strokeWidth="1" />
       <circle cx="35" cy="24" r="5" fill="rgba(0,0,0,0.4)" stroke={TEAL} strokeWidth="1" />
-      <circle cx="21" cy="24" r="2.5" fill="#fff"
-        style={animate ? { animation: 'eye-glow 2s ease-in-out infinite' } : {}} />
-      <circle cx="35" cy="24" r="2.5" fill="#fff"
-        style={animate ? { animation: 'eye-glow 2s ease-in-out infinite 0.3s' } : {}} />
+      <circle cx="21" cy="24" r="2.5" fill="#fff" style={animate ? { animation: 'eye-glow 2s ease-in-out infinite' } : {}} />
+      <circle cx="35" cy="24" r="2.5" fill="#fff" style={animate ? { animation: 'eye-glow 2s ease-in-out infinite 0.3s' } : {}} />
       <rect x="20" y="33" width="16" height="3" rx="1.5" fill={TEAL} opacity="0.7" />
       <rect x="24" y="38" width="8" height="4" rx="2" fill={TEAL} opacity="0.5" />
       <rect x="8" y="42" width="40" height="12" rx="6" fill="rgba(255,255,255,0.05)" stroke={TEAL} strokeWidth="1.5" />
       <circle cx="20" cy="48" r="2" fill={TEAL} opacity="0.6" />
       <circle cx="28" cy="48" r="2" fill={TEAL} opacity="0.8" />
       <circle cx="36" cy="48" r="2" fill={TEAL} opacity="0.6" />
-      <rect x="5" y="18" width="5" height="8" rx="2" fill={TEAL} opacity="0.4" />
-      <rect x="46" y="18" width="5" height="8" rx="2" fill={TEAL} opacity="0.4" />
     </svg>
   );
 }
 
-// ─── Sidebar action card ──────────────────────────────────────────────────────
-function SidebarActionCard({
-  action,
-  onClick,
-  disabled,
-}: {
-  action: any;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  const Icon = typeof action.icon === 'string' ? IconMap[action.icon] || Zap : action.icon;
-
-  return (
-    <motion.button
-      whileHover={!disabled ? { x: 2 } : {}}
-      whileTap={!disabled ? { scale: 0.97 } : {}}
-      onClick={onClick}
-      disabled={disabled}
-      className={`
-        w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left
-        border transition-all relative overflow-hidden group
-        ${disabled
-          ? 'opacity-40 cursor-not-allowed bg-white/[0.01] border-white/[0.04]'
-          : 'bg-white/[0.02] border-white/[0.06] hover:bg-teal-500/[0.06] hover:border-teal-500/25 cursor-pointer'
-        }
-      `}
-    >
-      {!disabled && (
-        <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r bg-teal-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-      )}
-      <div className="p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/15 group-hover:bg-teal-500/20 transition-colors shrink-0">
-        <Icon size={11} className="text-teal-400" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-1 mb-0.5">
-          <span className="text-[11px] font-semibold text-gray-200 truncate leading-tight">
-            {action.label}
-          </span>
-          <span className="text-[7px] font-black tracking-widest uppercase text-teal-500/60 shrink-0">
-            {action.tag}
-          </span>
-        </div>
-        {!disabled && (
-          <span className="text-[9px] text-gray-600 group-hover:text-teal-500/70 transition-colors font-medium">
-            Ask Capita →
-          </span>
-        )}
-      </div>
-    </motion.button>
-  );
-}
-
-// ─── Generative UI Renderer ───────────────────────────────────────────────────
-function GenerativeUIRenderer({
-  component,
-  data,
-  onSelectView,
-  onAction,
-  isLoadingView,
-}: {
-  component: string;
-  data: any;
-  onSelectView?: (viewId: string) => void;
-  onAction?: (action: any) => void;
-  isLoadingView?: boolean;
-}) {
-  return (
-    <AIWorkspaceRenderer
-      component={component}
-      data={data}
-      onSelectView={onSelectView}
-      onAction={onAction}
-      isLoadingView={isLoadingView}
-    />
-  );
-}
-
-// ─── Streaming cursor — rendered as a React element, never injected into text ─
+// ─── Streaming cursor ─────────────────────────────────────────────────────────
 function StreamingCursor() {
   return <span className="ai-streaming-cursor" />;
+}
+
+// ─── Thinking skeleton ────────────────────────────────────────────────────────
+function ThinkingSkeleton() {
+  return (
+    <div className="flex items-end gap-2.5">
+      <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
+        style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)' }}>
+        <RobotSVG animate />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <div className="h-8 w-48 rounded-2xl animate-pulse"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }} />
+        <div className="flex items-center gap-1.5 px-1">
+          <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
+          <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest animate-pulse">
+            Thinking…
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Chat bubble ──────────────────────────────────────────────────────────────
 function ChatBubble({
   msg,
-  onConfirmAction,
-  onCancelAction,
-  onSelectGuidedChoice,
-  onSelectWorkspaceView,
-  onExecuteGuidedAction,
-  disableGuidedChoice,
+  onSelectDomain,
+  onSelectView,
+  onAction,
+  disableChoices,
 }: {
   msg: Message;
-  onConfirmAction?: () => void;
-  onCancelAction?: () => void;
-  onSelectGuidedChoice?: (choice: any) => void;
-  onSelectWorkspaceView?: (message: Message, viewId: string) => void;
-  onExecuteGuidedAction?: (action: any) => void;
-  disableGuidedChoice?: boolean;
+  onSelectDomain: (choice: any) => void;
+  onSelectView: (msg: Message, viewId: string) => void;
+  onAction: (action: any) => void;
+  disableChoices: boolean;
 }) {
   const isBot = msg.sender === 'bot';
   const isStreaming = isBot && msg.status === 'streaming';
-  const isPendingAction = msg.data?.type === 'action_prompt';
-  const actionPromptMessage =
-    isPendingAction && typeof msg.data?.action?.confirmationMessage === 'string'
-      ? msg.data.action.confirmationMessage
-      : null;
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(sanitizeAssistantText(msg.text));
+    navigator.clipboard.writeText(msg.text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Determine whether we're waiting for the very first token
-  const isWaitingForFirstToken =
-    isStreaming && !(msg.uiBlocks?.length || msg.uiComponent) && msg.text.trim().length === 0;
+  const waitingForFirstToken = isStreaming && !msg.uiComponent && msg.text.trim().length === 0;
 
   return (
     <motion.div
@@ -376,220 +172,94 @@ function ChatBubble({
     >
       {/* Avatar */}
       {isBot ? (
-        <div
-          className="relative w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
-          style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)' }}
-        >
-          <RobotSVG size={18} animate={isStreaming} />
+        <div className="relative w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
+          style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)' }}>
+          <RobotSVG animate={isStreaming} />
           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-teal-400 border border-[#0c0f1a]">
             <span className="absolute inset-0 rounded-full bg-teal-400 animate-ping opacity-60" />
           </span>
         </div>
       ) : (
-        <div
-          className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-        >
+        <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <span className="text-[10px] text-gray-400 font-black font-mono">ME</span>
         </div>
       )}
 
-      <div className={`flex max-w-[90%] flex-col gap-1 sm:max-w-[82%] ${isBot ? 'items-start' : 'items-end'}`}>
-        {/* Bubble */}
+      <div className={`flex max-w-[90%] sm:max-w-[82%] flex-col gap-1 ${isBot ? 'items-start' : 'items-end'}`}>
         <motion.div
           className="relative rounded-2xl overflow-hidden shadow-2xl"
-          style={
-            isBot
-              ? {
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
-              }
-              : {
-                background: 'linear-gradient(135deg, rgba(45,212,191,0.18) 0%, rgba(6,182,212,0.12) 100%)',
-                border: '1px solid rgba(45,212,191,0.22)',
-                boxShadow: '0 4px 16px rgba(45,212,191,0.08)',
-              }
+          style={isBot
+            ? { background: 'linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.07)' }
+            : { background: 'linear-gradient(135deg,rgba(45,212,191,0.18),rgba(6,182,212,0.12))', border: '1px solid rgba(45,212,191,0.22)' }
           }
         >
           {isBot && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 1,
-                background:
-                  'linear-gradient(90deg, rgba(45,212,191,0.4) 0%, rgba(45,212,191,0.15) 50%, transparent 100%)',
-              }}
-            />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+              background: 'linear-gradient(90deg,rgba(45,212,191,0.4),rgba(45,212,191,0.15) 50%,transparent)' }} />
           )}
 
           {isBot && (
             <div className="px-4 pt-3 pb-1 flex items-center gap-1.5">
-              <span className="text-[9px] font-black tracking-[0.15em] uppercase text-teal-500/60">
-                Capita
-              </span>
+              <span className="text-[9px] font-black tracking-[0.15em] uppercase text-teal-500/60">Capita</span>
               <span className="text-[9px] text-white/10">·</span>
-              <span className="text-[9px] text-white/25 font-medium">AI CFO</span>
+              <span className="text-[9px] text-white/25 font-medium">Finance AI</span>
             </div>
           )}
 
           <div className={`px-4 ${isBot ? 'pt-0.5 pb-3.5' : 'py-2.5'}`}>
-            {/* Text content */}
+            {/* Text */}
             <div className={isBot ? 'text-gray-300' : 'text-gray-100'}>
-              {isWaitingForFirstToken ? (
-                /* Pure skeleton dots — no text yet at all */
+              {waitingForFirstToken ? (
                 <span className="text-[13px] text-gray-600 tracking-widest animate-pulse">…</span>
               ) : msg.text.length > 0 ? (
                 <>
                   <ReactMarkdown components={isBot ? botMd : userMd}>
-                    {sanitizeAssistantText(msg.text)}
+                    {msg.text}
                   </ReactMarkdown>
-                  {/* Cursor is a React element — never touches the markdown string */}
                   {isStreaming && <StreamingCursor />}
                 </>
-              ) : (msg.uiBlocks?.length || msg.uiComponent) ? (
-                // UI component rendered above, text is empty — still show cursor if streaming
-                isStreaming ? <StreamingCursor /> : null
-                ) : null}
+              ) : isStreaming ? <StreamingCursor /> : null}
             </div>
 
-            {/* Generative UI card */}
-            {msg.uiBlocks && msg.uiBlocks.length > 0 && (
-              <div className="mt-4 space-y-3">
-                {msg.uiBlocks.map((block, index) => (
-                  <GenerativeUIRenderer
-                    key={`${block.component}_${index}`}
-                    component={block.component}
-                    data={block.data}
-                    isLoadingView={msg.status === 'streaming'}
-                    onAction={onExecuteGuidedAction}
-                    onSelectView={
-                      msg.data?.type === 'workspace_view' && onSelectWorkspaceView
-                        ? (viewId) => onSelectWorkspaceView(msg, viewId)
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
-            )}
-
-            {!msg.uiBlocks?.length && msg.uiComponent && (
+            {/* Workspace card */}
+            {msg.uiComponent && msg.uiData && (
               <div className="mt-4">
-                <GenerativeUIRenderer
+                <AIWorkspaceRenderer
                   component={msg.uiComponent}
                   data={msg.uiData}
-                  isLoadingView={msg.status === 'streaming'}
-                  onAction={onExecuteGuidedAction}
+                  isLoadingView={isStreaming}
+                  onAction={onAction}
                   onSelectView={
-                    msg.data?.type === 'workspace_view' && onSelectWorkspaceView
-                      ? (viewId) => onSelectWorkspaceView(msg, viewId)
+                    msg.data?.type === 'workspace_view'
+                      ? (viewId) => onSelectView(msg, viewId)
                       : undefined
                   }
                 />
               </div>
             )}
 
-            {isBot && Boolean(msg.intent || msg.domain || msg.specialistLabel || msg.provenance?.length) && (
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                {msg.specialistLabel && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[8px] font-black uppercase tracking-[0.18em] text-gray-300">
-                    {msg.specialistLabel}
-                  </span>
-                )}
-                {msg.domain && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-[8px] font-black uppercase tracking-[0.18em] text-sky-300">
-                    {getDomainLabel(msg.domain)}
-                  </span>
-                )}
-                {msg.intent && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-[8px] font-black uppercase tracking-[0.18em] text-teal-300">
-                    {INTENT_LABELS[msg.intent] || msg.intent}
-                  </span>
-                )}
-                {msg.provenance?.slice(0, 2).map((entry, index) => (
-                  <span
-                    key={`${entry.tool || 'source'}_${index}`}
-                    className="inline-flex items-center px-2 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[8px] font-black uppercase tracking-[0.18em] text-gray-400"
-                    title={entry.source || entry.tool || 'source'}
-                  >
-                    {entry.tool || 'Source'}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {isBot && msg.data?.type === 'guided_choice' && onSelectGuidedChoice && (
+            {/* Domain choice buttons */}
+            {isBot && msg.data?.type === 'guided_choice' && (
               <AIDomainChoiceCard
                 data={msg.data}
-                disabled={disableGuidedChoice}
-                onSelect={onSelectGuidedChoice}
-                onAction={onExecuteGuidedAction}
+                disabled={disableChoices}
+                onSelect={onSelectDomain}
+                onAction={onAction}
               />
-            )}
-
-            {/* Stat chip */}
-            {msg.data?.type === 'stat' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xl font-black text-teal-300"
-                style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)' }}
-              >
-                ₹{msg.data.value.toLocaleString()}
-              </motion.div>
-            )}
-
-            {/* Action prompt */}
-            {isPendingAction && (
-              <div className="mt-4 space-y-3">
-                {actionPromptMessage && (
-                  <div
-                    className="rounded-xl px-3 py-2 text-[12px] font-medium text-teal-100"
-                    style={{
-                      background: 'rgba(45,212,191,0.08)',
-                      border: '1px solid rgba(45,212,191,0.15)',
-                    }}
-                  >
-                    {actionPromptMessage}
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={onConfirmAction}
-                    className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all hover:scale-[1.02] active:scale-95"
-                    style={{ background: 'linear-gradient(135deg, #2dd4bf, #06b6d4)', color: '#0c0f1a' }}
-                  >
-                    Go ahead →
-                  </button>
-                  <button
-                    onClick={onCancelAction}
-                    className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs transition-all hover:bg-white/10"
-                    style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      color: 'rgba(255,255,255,0.6)',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
             )}
           </div>
         </motion.div>
 
-        {/* Footer: timestamp + copy */}
+        {/* Timestamp + copy */}
         <div className={`flex items-center gap-2 px-1 ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
-          <span className="text-[9px] text-gray-600 font-mono">{formatTime(msg.timestamp)}</span>
+          <span className="text-[9px] text-gray-600 font-mono">
+            {msg.timestamp instanceof Date
+              ? msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : '--:--'}
+          </span>
           {isBot && msg.status !== 'streaming' && (
-            <button
-              onClick={handleCopy}
-              className="text-[9px] text-gray-600 hover:text-teal-400 transition-colors font-medium tracking-wide"
-            >
+            <button onClick={handleCopy} className="text-[9px] text-gray-600 hover:text-teal-400 transition-colors font-medium">
               {copied ? '✓ copied' : 'copy'}
             </button>
           )}
@@ -599,961 +269,288 @@ function ChatBubble({
   );
 }
 
-// ─── Thinking skeleton ────────────────────────────────────────────────────────
-function ThinkingSkeleton({ step }: { step: string }) {
-  return (
-    <div className="flex items-end gap-2.5">
-      <div
-        className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center"
-        style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)' }}
-      >
-        <RobotSVG size={18} animate />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <div
-          className="h-8 w-52 rounded-2xl animate-pulse"
-          style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
-          }}
-        />
-        <div className="flex items-center gap-1.5 px-1">
-          <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
-          <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest animate-pulse">
-            {step}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main component ────────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
 export function AIAssistantPage() {
   const { businessType } = usePersona();
-  const location = useLocation();
   const navigate = useNavigate();
-  const STORAGE_KEY = `capita_ai_config_${businessType || 'default'}`;
 
-  const [dynamicConfig, setDynamicConfig] = useState<{ meta: any; actions: any[] }>(() => {
-    try {
-      const cached = localStorage.getItem(STORAGE_KEY);
-      if (cached) return JSON.parse(cached);
-    } catch (e) {
-      console.error('Cache read error:', e);
-    }
-    return { meta: { greeting: '', label: 'Finance', color: TEAL }, actions: [] };
-  });
-
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  const [isConversationLoading, setIsConversationLoading] = useState(false);
-  const [isChatReady, setIsChatReady] = useState(false);
-  const [autoClearHistory, setAutoClearHistory] = useState(() => {
-    try {
-      return localStorage.getItem(AUTO_CLEAR_HISTORY_KEY) !== 'false';
-    } catch {
-      return true;
-    }
-  });
-
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([{ ...WELCOME_MSG, timestamp: new Date() }]);
   const [query, setQuery] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [aiSplashDone, setAiSplashDone] = useState(false);
-
-  /**
-   * isThinking  — waiting for the first token (show skeleton)
-   * isStreaming  — first token arrived, text is flowing in
-   * We keep isTyping as the union of both for backward-compat with disabled states.
-   */
   const [isThinking, setIsThinking] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [pendingAction, setPendingAction] = useState<any>(null);
-  const [currentStep, setCurrentStep] = useState(GENERAL_CHAT_STEPS[0]);
 
-  // Derived convenience flag
   const isBusy = isThinking || messages.some(m => m.status === 'streaming');
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const streamingMsgIdRef = useRef<string | null>(null);
-  const historyLoadRequestRef = useRef(0);
-  const activeStreamRequestRef = useRef(0);
-  const messagesRef = useRef<Message[]>([]);
-  const currentConversationIdRef = useRef<string | null>(null);
-  const hasLocalInteractionRef = useRef(false);
+  const scrollRef   = useRef<HTMLDivElement>(null);
+  const inputRef    = useRef<HTMLInputElement>(null);
+  const abortRef    = useRef<AbortController | null>(null);
+  const streamIdRef = useRef<string | null>(null);
+  const reqIdRef    = useRef(0);
 
-  const closeMobileSidebar = useCallback(() => {
-    setMobileSidebarOpen(false);
-  }, []);
-
-  const toggleMobileSidebar = useCallback(() => {
-    setMobileSidebarOpen((open) => !open);
-  }, []);
-
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-
-  useEffect(() => {
-    currentConversationIdRef.current = currentConversationId;
-  }, [currentConversationId]);
-
-  // ── Helpers ──────────────────────────────────────────────────────────────
+  // ── Scroll helpers ────────────────────────────────────────────────────────
   const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, []);
 
-  const isNearBottom = () => {
+  const nearBottom = () => {
     if (!scrollRef.current) return true;
     const el = scrollRef.current;
     return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
   };
 
-  const cancelActiveStream = useCallback(() => {
-    activeStreamRequestRef.current += 1;
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    const streamingId = streamingMsgIdRef.current;
-    if (streamingId) {
-      setMessages(prev => prev.filter(m => m.id !== streamingId));
-      streamingMsgIdRef.current = null;
+  useEffect(() => {
+    if (messages.length > 0 && nearBottom()) scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  // ── Cancel active stream ──────────────────────────────────────────────────
+  const cancelStream = useCallback(() => {
+    reqIdRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    if (streamIdRef.current) {
+      setMessages(prev => prev.filter(m => m.id !== streamIdRef.current));
+      streamIdRef.current = null;
     }
     setIsThinking(false);
   }, []);
 
-  const noteLocalInteraction = useCallback(() => {
-    hasLocalInteractionRef.current = true;
-  }, []);
-
-  const canApplyBootstrapState = useCallback(() => {
-    return !hasLocalInteractionRef.current
-      && messagesRef.current.length === 0
-      && !currentConversationIdRef.current;
-  }, []);
-
-  const resetChatContext = useCallback((options?: { invalidateBootstrap?: boolean }) => {
-    const invalidateBootstrap = options?.invalidateBootstrap !== false;
-    cancelActiveStream();
-    if (invalidateBootstrap) {
-      historyLoadRequestRef.current += 1;
-    }
-    setPendingAction(null);
-    setMessages([]);
-    messagesRef.current = [];
-    setCurrentConversationId(null);
-    currentConversationIdRef.current = null;
-  }, [cancelActiveStream]);
-
-  const getTodayKey = useCallback(() => new Date().toISOString().slice(0, 10), []);
-
-  const loadFreshChatState = useCallback((options?: { invalidateBootstrap?: boolean }) => {
-    resetChatContext(options);
-    setShowHistory(false);
-    
-    const welcomeMessage: Message = {
-        id: 'welcome_' + Date.now(),
-        sender: 'bot',
-        text: `Hi! I'm Capita, your strategic finance AI.
-
-Choose a desk to get started, or ask me anything.`,
-        timestamp: new Date(),
-        status: 'sent',
-        data: {
-          type: 'guided_choice',
-          promptTitle: 'Choose A Workspace',
-          promptDescription: 'Select one of the supported workspaces.',
-          choices: [
-            { id: 'invoices', domain: 'invoices', label: 'Invoices', description: 'Overdue invoices, collections & receivables', recommended: true },
-            { id: 'payments', domain: 'payments', label: 'Payments', description: 'Recent receipts & cash-in' },
-            { id: 'expenses', domain: 'expenses', label: 'Expenses', description: 'Spend analysis & burn rate' },
-            { id: 'compliance', domain: 'compliance', label: 'Compliance', description: 'GST, TDS & deadlines' },
-          ],
-        },
-      };
-      setMessages([welcomeMessage]);
-  }, [resetChatContext]);
-
-  const clearPersistedChatHistory = useCallback(async () => {
-    noteLocalInteraction();
-    resetChatContext();
-    await aiService.deleteHistory();
-    const sessions = await aiService.getConversations();
-    setConversations(sessions as any[]);
-  }, [noteLocalInteraction, resetChatContext]);
-
-  const persistAutoClearHistory = useCallback((value: boolean) => {
-    setAutoClearHistory(value);
-    try {
-      localStorage.setItem(AUTO_CLEAR_HISTORY_KEY, String(value));
-    } catch {
-      // Ignore storage failures.
-    }
-  }, []);
-
-  const markChatActive = useCallback(() => {
-    try {
-      localStorage.setItem(LAST_ACTIVE_KEY, new Date().toISOString());
-    } catch {
-      // ignore storage failures
-    }
-  }, []);
-
-  const exitAssistant = useCallback(() => {
-    closeMobileSidebar();
-    navigate('/dashboard');
-    if (autoClearHistory) {
-      void clearPersistedChatHistory().catch((err) => {
-        console.error('Failed to clear chat on exit:', err);
-      });
-    }
-  }, [autoClearHistory, clearPersistedChatHistory, closeMobileSidebar, navigate]);
-
-  // ── Init ──────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const init = async () => {
-      const requestId = ++historyLoadRequestRef.current;
-      try {
-        setIsChatReady(false);
-        setIsHistoryLoading(true);
-        const config = await aiService.getConfig(businessType as string | undefined);
-        if (historyLoadRequestRef.current !== requestId) return;
-        setDynamicConfig(config as any);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-        setIsChatReady(true);
-
-        const sessions = await aiService.getConversations();
-        if (historyLoadRequestRef.current !== requestId) return;
-        setConversations(sessions as any[]);
-
-        if (canApplyBootstrapState()) {
-          let lastActiveAt: Date | null = null;
-          try {
-            const raw = localStorage.getItem(LAST_ACTIVE_KEY);
-            lastActiveAt = raw ? new Date(raw) : null;
-          } catch {
-            lastActiveAt = null;
-          }
-
-          const isSameDay = Boolean(lastActiveAt)
-            && lastActiveAt!.toISOString().slice(0, 10) === getTodayKey();
-
-          if (isSameDay) {
-            const history = await aiService.getHistory();
-            if (historyLoadRequestRef.current !== requestId) return;
-            if (!canApplyBootstrapState()) return;
-            if (Array.isArray(history) && history.length > 0) {
-              setMessages(
-                history.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
-              );
-              setShowHistory(false);
-              setTimeout(() => scrollToBottom(), 100);
-            } else {
-              loadFreshChatState({ invalidateBootstrap: false });
-            }
-          } else {
-            loadFreshChatState({ invalidateBootstrap: false });
-          }
-        }
-      } catch (err) {
-        console.error('Failed to init AI page:', err);
-      }
-      finally {
-        if (historyLoadRequestRef.current === requestId) {
-          setIsHistoryLoading(false);
-          setIsChatReady(true);
-        }
-      }
-    };
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [businessType, STORAGE_KEY, canApplyBootstrapState, getTodayKey, loadFreshChatState, scrollToBottom]);
-
-  useEffect(() => {
-    return () => {
-      if (!autoClearHistory) return;
-      void clearPersistedChatHistory().catch((err) => {
-        console.error('Failed to auto-clear chat on unmount:', err);
-      });
-    };
-  }, [autoClearHistory, clearPersistedChatHistory]);
-
-  useEffect(() => {
-    if (!autoClearHistory) return;
-    const handleBeforeUnload = () => {
-      try {
-        localStorage.removeItem(LAST_ACTIVE_KEY);
-      } catch {
-        // ignore storage failures
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [autoClearHistory]);
-
-  useEffect(() => {
-    closeMobileSidebar();
-  }, [closeMobileSidebar, location.pathname]);
-
-  useEffect(() => {
-    if (!mobileSidebarOpen) return;
-
-    const { body, documentElement } = document;
-    const previousBodyOverflow = body.style.overflow;
-    const previousDocumentOverflow = documentElement.style.overflow;
-    body.style.overflow = 'hidden';
-    documentElement.style.overflow = 'hidden';
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeMobileSidebar();
-      }
-    };
-
-    const mediaQuery = window.matchMedia('(min-width: 1024px)');
-    const handleMediaChange = (event: MediaQueryListEvent) => {
-      if (event.matches) {
-        closeMobileSidebar();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    if (mediaQuery.matches) {
-      closeMobileSidebar();
-    } else if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', handleMediaChange);
-    } else {
-      mediaQuery.addListener(handleMediaChange);
-    }
-
-    return () => {
-      body.style.overflow = previousBodyOverflow;
-      documentElement.style.overflow = previousDocumentOverflow;
-      window.removeEventListener('keydown', handleKeyDown);
-      if (typeof mediaQuery.removeEventListener === 'function') {
-        mediaQuery.removeEventListener('change', handleMediaChange);
-      } else {
-        mediaQuery.removeListener(handleMediaChange);
-      }
-    };
-  }, [closeMobileSidebar, mobileSidebarOpen]);
-
-  // ── Auto-scroll on new messages ──────────────────────────────────────────
-  useEffect(() => {
-    if (messages.length > 0 && isNearBottom()) {
-      scrollToBottom();
-    }
-  }, [messages, scrollToBottom]);
-
-  // ── Step label cycling ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!isThinking) {
-      setCurrentStep(GENERAL_CHAT_STEPS[0]);
-      return;
-    }
-    let idx = 0;
-    const iv = setInterval(() => {
-      idx = (idx + 1) % GENERAL_CHAT_STEPS.length;
-      setCurrentStep(GENERAL_CHAT_STEPS[idx]);
-    }, 1800);
-    return () => clearInterval(iv);
-  }, [isThinking]);
-
-  // ── Focus input on mount ──────────────────────────────────────────────────
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  // ── Scroll FAB visibility ─────────────────────────────────────────────────
-  const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return;
-    const el = scrollRef.current;
-    setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 200);
-  }, []);
+  // ── Clear chat ────────────────────────────────────────────────────────────
+  const clearChat = useCallback(() => {
+    cancelStream();
+    setMessages([{ ...WELCOME_MSG, timestamp: new Date() }]);
+  }, [cancelStream]);
 
   // ── Send message ──────────────────────────────────────────────────────────
   const handleSend = async (textOverride?: string) => {
-    const text = (textOverride || query).trim();
-    if (!text || isConversationLoading) return;
+    const text = (textOverride ?? query).trim();
+    if (!text) return;
 
-    noteLocalInteraction();
-    cancelActiveStream();
-    setPendingAction(null);
-    const streamRequestId = activeStreamRequestRef.current;
+    cancelStream();
+    const reqId = reqIdRef.current;
 
     const userMsg: Message = {
-      id: `user_${Date.now()}_${Math.random()}`,
+      id: `user_${Date.now()}`,
       sender: 'user',
       text,
       timestamp: new Date(),
       status: 'sent',
     };
     setMessages(prev => [...prev, userMsg]);
-    markChatActive();
     setQuery('');
     setIsThinking(true);
-    
-    // Scroll to bottom to show question + thinking skeleton
-    // The small delay ensures the DOM has updated with the user message
-    setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-    }, 50);
+    setTimeout(() => scrollToBottom(), 50);
 
-    // Build conversation history for the AI context window
-    const rawHistory = messagesRef.current
-      .filter(m => m.status !== 'streaming' && m.status !== 'error' && m.text.trim().length > 0)
+    const history = messages
+      .filter(m => m.status !== 'streaming' && m.status !== 'error' && m.text.trim())
       .slice(-10)
-      .map(m => ({
-        role: m.sender === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text.trim() }],
-      }));
-    while (rawHistory.length > 0 && rawHistory[0].role === 'model') rawHistory.shift();
+      .map(m => ({ role: m.sender === 'user' ? 'user' : 'model', parts: [{ text: m.text.trim() }] }));
+    while (history.length > 0 && history[0].role === 'model') history.shift();
 
     const abort = new AbortController();
-    abortControllerRef.current = abort;
+    abortRef.current = abort;
 
     try {
       const stream = aiService.chatStream(
-        {
-          query: text,
-          businessType: businessType || undefined,
-          persona: businessType || undefined,
-          history: rawHistory,
-          conversationId: currentConversationIdRef.current || undefined,
-        },
+        { query: text, businessType: businessType || undefined, persona: businessType || undefined, history },
         abort.signal
       );
 
-      let accumulatedText = '';
-      let botMsgId: string | null = null;
+      let accumulated = '';
+      let botId: string | null = null;
       let firstToken = true;
-      let pendingUiBlocks: Array<{ component: string; data: any }> = [];
 
       for await (const event of stream) {
-        if (abort.signal.aborted || activeStreamRequestRef.current !== streamRequestId) break;
+        if (abort.signal.aborted || reqIdRef.current !== reqId) break;
 
-        if (event.type === 'gen_ui') {
-          pendingUiBlocks = [...pendingUiBlocks, { component: event.component, data: event.data }];
-
-          if (botMsgId) {
-            setMessages(prev =>
-              prev.map(m =>
-                m.id === botMsgId
-                  ? {
-                      ...m,
-                      uiBlocks: pendingUiBlocks,
-                      uiComponent: pendingUiBlocks[0]?.component,
-                      uiData: pendingUiBlocks[0]?.data,
-                    }
-                  : m
-              )
-            );
-          }
-
-        } else if (event.type === 'token') {
-          accumulatedText += event.text;
+        if (event.type === 'token') {
+          accumulated += event.text;
 
           if (firstToken) {
-            // First token — dismiss the skeleton, create the bubble
             firstToken = false;
             setIsThinking(false);
-
-            if (!botMsgId) {
-              botMsgId = `bot_${Date.now()}_${Math.random()}`;
-              streamingMsgIdRef.current = botMsgId;
-              setMessages(prev => [
-                ...prev,
-                {
-                  id: botMsgId!,
-                  sender: 'bot',
-                  text: accumulatedText,
-                  timestamp: new Date(),
-                  status: 'streaming',
-                  uiBlocks: pendingUiBlocks,
-                  uiComponent: pendingUiBlocks[0]?.component,
-                  uiData: pendingUiBlocks[0]?.data,
-                },
-              ]);
-              setTimeout(() => scrollToBottom(), 50);
-            } else {
-              setMessages(prev =>
-                prev.map(m =>
-                  m.id === botMsgId
-                    ? {
-                        ...m,
-                        text: accumulatedText,
-                        status: 'streaming',
-                        uiBlocks: pendingUiBlocks.length > 0 ? pendingUiBlocks : m.uiBlocks,
-                        uiComponent: pendingUiBlocks[0]?.component || m.uiComponent,
-                        uiData: pendingUiBlocks[0]?.data ?? m.uiData,
-                      }
-                    : m
-                )
-              );
-            }
+            botId = `bot_${Date.now()}`;
+            streamIdRef.current = botId;
+            setMessages(prev => [...prev, {
+              id: botId!,
+              sender: 'bot',
+              text: accumulated,
+              timestamp: new Date(),
+              status: 'streaming',
+            }]);
+            setTimeout(() => scrollToBottom(), 50);
           } else {
-            // Subsequent tokens — just update text
-            setMessages(prev =>
-              prev.map(m =>
-                m.id === botMsgId ? { ...m, text: accumulatedText } : m
-              )
-            );
+            setMessages(prev => prev.map(m => m.id === botId ? { ...m, text: accumulated } : m));
+          }
+
+        } else if (event.type === 'gen_ui') {
+          if (!botId) {
+            botId = `bot_${Date.now()}`;
+            streamIdRef.current = botId;
+            setMessages(prev => [...prev, {
+              id: botId!,
+              sender: 'bot',
+              text: accumulated,
+              timestamp: new Date(),
+              status: 'streaming',
+              uiComponent: event.component,
+              uiData: event.data,
+            }]);
+          } else {
+            setMessages(prev => prev.map(m =>
+              m.id === botId ? { ...m, uiComponent: event.component, uiData: event.data } : m
+            ));
           }
 
         } else if (event.type === 'complete') {
           setIsThinking(false);
-          const resolvedText =
-            (typeof event.text === 'string' && event.text.trim().length > 0)
-              ? event.text
-              : (typeof event.action?.confirmationMessage === 'string' ? event.action.confirmationMessage : accumulatedText);
+          const finalText = typeof event.text === 'string' && event.text.trim() ? event.text : accumulated;
 
-          // Handle workspace data from backend (auto-open guided workspace)
-          const workspaceData = event.workspace || event.data?.workspace;
-          const workspaceDomain = workspaceData?.domain;
-          let finalUiBlocks = pendingUiBlocks;
-          let finalUiComponent = pendingUiBlocks[0]?.component;
-          let finalUiData = pendingUiBlocks[0]?.data;
+          // Workspace data embedded in completion event
+          const ws = event.workspace || event.data?.workspace;
 
-          // If workspace data came from backend, use it
-          if (workspaceData && !pendingUiBlocks.length) {
-            finalUiComponent = workspaceData.component;
-            finalUiData = workspaceData.data;
-            // Create a uiBlock from workspace data
-            finalUiBlocks = [{
-              component: workspaceData.component,
-              data: workspaceData.data
-            }];
-          }
-
-          // If we never created a bubble (e.g. only gen_ui events, no tokens), create it now
-          if (!botMsgId) {
-            botMsgId = `bot_${Date.now()}_${Math.random()}`;
-            streamingMsgIdRef.current = botMsgId;
-          }
-
-          setMessages(prev =>
-            prev.some(m => m.id === botMsgId)
-              ? prev.map(m =>
-                  m.id === botMsgId
-                        ? {
-                            ...m,
-                            text: resolvedText,
-                            data: event.action
-                              ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
-                              : event.data,
-                            intent: event.data?.intent || m.intent,
-                            domain: workspaceDomain || event.data?.domain || m.domain,
-                            specialistLabel: event.data?.specialistLabel || m.specialistLabel,
-                            provenance: event.data?.provenance || m.provenance,
-                            usage: event.usage,
-                            status: 'sent',
-                            uiBlocks: finalUiBlocks.length > 0 ? finalUiBlocks : m.uiBlocks,
-                            uiComponent: finalUiComponent || m.uiComponent,
-                            uiData: finalUiData ?? m.uiData,
-                      }
-                    : m
-                )
-              : [
-                  ...prev,
-                  {
-                    id: botMsgId,
-                    sender: 'bot',
-                    text: resolvedText,
-                    timestamp: new Date(),
-                    status: 'sent',
-                    data: event.action
-                      ? { type: 'action_prompt', action: event.action, traceId: event.traceId, meta: event.data }
-                      : event.data,
-                    intent: event.data?.intent,
-                    domain: workspaceDomain || event.data?.domain,
-                    specialistLabel: event.data?.specialistLabel,
-                    provenance: event.data?.provenance,
-                    usage: event.usage,
-                    uiBlocks: finalUiBlocks,
-                    uiComponent: finalUiComponent,
-                    uiData: finalUiData,
-                  },
-                ]
-          );
-
-          if (event.action) setPendingAction(event.action);
-
-          if (event.conversationId && !currentConversationIdRef.current) {
-            currentConversationIdRef.current = event.conversationId;
-            setCurrentConversationId(event.conversationId);
-            const sessions = await aiService.getConversations();
-            if (activeStreamRequestRef.current === streamRequestId) {
-              setConversations(sessions as any[]);
-            }
+          if (!botId) {
+            botId = `bot_${Date.now()}`;
+            streamIdRef.current = botId;
+            setMessages(prev => [...prev, {
+              id: botId!,
+              sender: 'bot',
+              text: finalText,
+              timestamp: new Date(),
+              status: 'sent',
+              uiComponent: ws?.component,
+              uiData: ws?.data,
+              domain: ws?.domain || event.data?.domain,
+              data: event.data,
+            }]);
+          } else {
+            setMessages(prev => prev.map(m => m.id === botId ? {
+              ...m,
+              text: finalText,
+              status: 'sent',
+              uiComponent: ws?.component || m.uiComponent,
+              uiData: ws?.data ?? m.uiData,
+              domain: ws?.domain || event.data?.domain || m.domain,
+              data: event.data,
+            } : m));
           }
 
         } else if (event.type === 'error') {
           setIsThinking(false);
-
-          if (!botMsgId) {
-            botMsgId = `bot_${Date.now()}_${Math.random()}`;
-            streamingMsgIdRef.current = botMsgId;
-            setMessages(prev => [
-              ...prev,
-              {
-                id: botMsgId!,
-                sender: 'bot',
-                text: `⚠️ ${event.message || 'An error occurred. Please try again.'}`,
-                timestamp: new Date(),
-                status: 'error',
-              },
-            ]);
+          const errText = `⚠️ ${event.message || 'An error occurred. Please try again.'}`;
+          if (!botId) {
+            botId = `bot_${Date.now()}`;
+            streamIdRef.current = botId;
+            setMessages(prev => [...prev, { id: botId!, sender: 'bot', text: errText, timestamp: new Date(), status: 'error' }]);
           } else {
-            setMessages(prev =>
-              prev.map(m =>
-                m.id === botMsgId
-                  ? { ...m, text: `⚠️ ${event.message || 'An error occurred.'}`, status: 'error' }
-                  : m
-              )
-            );
+            setMessages(prev => prev.map(m => m.id === botId ? { ...m, text: errText, status: 'error' } : m));
           }
         }
       }
     } catch (err: any) {
-      if (err?.name === 'AbortError') return;
-      if (activeStreamRequestRef.current !== streamRequestId) return;
+      if (err?.name === 'AbortError' || reqIdRef.current !== reqId) return;
       setIsThinking(false);
-      const fallbackId = `bot_err_${Date.now()}_${Math.random()}`;
-      setMessages(prev => [
-        ...prev,
-        {
-          id: fallbackId,
-          sender: 'bot',
-          text: '⚠️ I encountered an issue processing your request. Please try again.',
-          timestamp: new Date(),
-          status: 'error',
-        },
-      ]);
+      setMessages(prev => [...prev, {
+        id: `bot_err_${Date.now()}`,
+        sender: 'bot',
+        text: '⚠️ Something went wrong. Please try again.',
+        timestamp: new Date(),
+        status: 'error',
+      }]);
     } finally {
-      if (activeStreamRequestRef.current === streamRequestId) {
-        if (abortControllerRef.current === abort) abortControllerRef.current = null;
-        streamingMsgIdRef.current = null;
+      if (reqIdRef.current === reqId) {
+        if (abortRef.current === abort) abortRef.current = null;
+        streamIdRef.current = null;
         setIsThinking(false);
       }
     }
   };
 
-  const loadWorkspaceIntoMessage = useCallback(async ({
-    messageId,
-    domain,
-    view,
-    label,
-    specialistLabel,
-    mode,
-  }: {
-    messageId: string;
-    domain: string;
-    view?: string;
-    label?: string;
-    specialistLabel?: string;
-    mode: 'open' | 'switch';
-  }) => {
-    const normalizedDomain = String(domain || '').toLowerCase();
-    if (!normalizedDomain) return;
+  // ── Open workspace from domain choice ─────────────────────────────────────
+  const openWorkspace = useCallback(async (choice: any) => {
+    const domain = String(choice?.domain || '').toLowerCase();
+    if (!domain || isBusy) return;
+
+    cancelStream();
+    const botId = `bot_ws_${Date.now()}`;
+
+    setMessages(prev => [
+      ...prev,
+      { id: `user_ws_${Date.now()}`, sender: 'user', text: `Open ${choice.label}`, timestamp: new Date(), status: 'sent' },
+      { id: botId, sender: 'bot', text: `Loading ${choice.label} workspace…`, timestamp: new Date(), status: 'streaming', domain },
+    ]);
+    setTimeout(() => scrollToBottom(), 50);
 
     try {
-      const workspace = await aiService.getWorkspace(normalizedDomain, view);
-      const response = workspace as any;
-      const meta = response?.meta || {};
-      const selectedViewLabel = response?.availableViews?.find((entry: any) => entry.id === response?.selectedView)?.label
-        || response?.data?.availableViews?.find((entry: any) => entry.id === response?.data?.selectedView)?.label
-        || response?.data?.selectedView
-        || view
-        || 'overview';
+      const ws = await aiService.getWorkspace(domain) as any;
+      setMessages(prev => prev.map(m => m.id === botId ? {
+        ...m,
+        text: `Showing the ${ws?.label || choice.label} with live data.`,
+        status: 'sent',
+        uiComponent: ws?.component,
+        uiData: ws?.data,
+        data: { type: 'workspace_view' },
+      } : m));
+    } catch {
+      setMessages(prev => prev.map(m => m.id === botId ? {
+        ...m,
+        text: '⚠️ Could not load workspace. Please try again.',
+        status: 'error',
+      } : m));
+    }
+  }, [cancelStream, isBusy, scrollToBottom]);
 
-      setMessages((prev) =>
-        prev.map((message) =>
-          message.id === messageId
-            ? {
-                ...message,
-                text: mode === 'switch'
-                  ? `Showing ${selectedViewLabel} in the ${response?.label || label || normalizedDomain} with live backend data.`
-                  : `Showing the ${response?.label || label || normalizedDomain} with live backend data. Use the guided steps below to analyze it.`,
-                status: 'sent',
-                domain: response?.domain || normalizedDomain,
-                specialistLabel: response?.specialistLabel || specialistLabel,
-                provenance: meta?.source
-                  ? [{
-                      tool: response?.component || normalizedDomain,
-                      source: meta.source,
-                      generated_at: meta.generated_at || null,
-                    }]
-                  : [],
-                uiComponent: response?.component,
-                uiData: response?.data,
-                data: {
-                  type: 'workspace_view',
-                  meta,
-                },
-              }
-            : message
-        )
-      );
-    } catch (error) {
-      console.error('Failed to open AI workspace:', error);
-      setMessages((prev) =>
-        prev.map((message) =>
-          message.id === messageId
-            ? {
-                ...message,
-                text: '⚠️ I could not load that workspace. Please try again.',
-                status: 'error',
-              }
-            : message
-        )
-      );
+  // ── Switch workspace view (tab change) ────────────────────────────────────
+  const switchView = useCallback(async (msg: Message, viewId: string) => {
+    const domain = String(msg.domain || '').toLowerCase();
+    if (!domain || !viewId) return;
+
+    setMessages(prev => prev.map(m =>
+      m.id === msg.id ? { ...m, text: `Loading ${viewId.replace(/_/g, ' ')}…`, status: 'streaming' } : m
+    ));
+
+    try {
+      const ws = await aiService.getWorkspace(domain, viewId) as any;
+      setMessages(prev => prev.map(m => m.id === msg.id ? {
+        ...m,
+        text: `Showing ${viewId.replace(/_/g, ' ')} with live data.`,
+        status: 'sent',
+        uiComponent: ws?.component,
+        uiData: ws?.data,
+      } : m));
+    } catch {
+      setMessages(prev => prev.map(m => m.id === msg.id ? {
+        ...m,
+        text: '⚠️ Could not switch view. Please try again.',
+        status: 'error',
+      } : m));
     }
   }, []);
 
-  const openGuidedWorkspace = useCallback(async (choice: any) => {
-    const domain = String(choice?.domain || '').toLowerCase();
-    if (!domain || isBusy || isConversationLoading) return;
-
-    noteLocalInteraction();
-    cancelActiveStream();
-    setPendingAction(null);
-    markChatActive();
-    setShowHistory(false);
-
-    const userMessage: Message = {
-      id: `user_workspace_${Date.now()}_${Math.random()}`,
-      sender: 'user',
-      text: `Open ${choice?.label || domain}`,
-      timestamp: new Date(),
-      status: 'sent',
-    };
-    const botMessageId = `bot_workspace_${Date.now()}_${Math.random()}`;
-
-    setMessages((prev) => [
-      ...prev,
-      userMessage,
-      {
-        id: botMessageId,
-        sender: 'bot',
-        text: `Loading ${choice?.shortLabel || domain} workspace from live backend data…`,
-        timestamp: new Date(),
-        status: 'streaming',
-        domain,
-        specialistLabel: choice?.specialistLabel,
-      },
-    ]);
-
-    setTimeout(() => scrollToBottom(), 50);
-
-    await loadWorkspaceIntoMessage({
-      messageId: botMessageId,
-      domain,
-      view: choice?.defaultView,
-      label: choice?.label,
-      specialistLabel: choice?.specialistLabel,
-      mode: 'open',
-    });
-  }, [cancelActiveStream, isBusy, isConversationLoading, loadWorkspaceIntoMessage, markChatActive, noteLocalInteraction, scrollToBottom]);
-
-  const handleGuidedAction = useCallback((action: any) => {
-    if (!action || isBusy) return;
-
+  // ── Handle action buttons in workspace cards ──────────────────────────────
+  const handleAction = useCallback((action: any) => {
+    if (!action) return;
     if (action.type === 'navigate' && action.to) {
       navigate(action.to);
-      return;
-    }
-
-    if (action.type === 'open_invoice_modal') {
+    } else if (action.type === 'open_invoice_modal') {
       window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail: action.data || {} }));
+    } else if (action.type === 'open_customer_modal') {
+      window.dispatchEvent(new CustomEvent('open-customer-modal', { detail: action.data || {} }));
     }
-  }, [isBusy, navigate]);
-
-  const handleWorkspaceViewChange = useCallback(async (message: Message, viewId: string) => {
-    const domain = String(message.domain || message.uiData?.workspaceDomain || '').toLowerCase();
-    if (!domain || !viewId || isConversationLoading || isBusy) return;
-
-    cancelActiveStream();
-    setPendingAction(null);
-
-    setMessages((prev) =>
-      prev.map((entry) =>
-        entry.id === message.id
-          ? {
-              ...entry,
-              text: `Loading ${viewId.replace(/_/g, ' ')} from live backend data…`,
-              status: 'streaming',
-            }
-          : entry
-      )
-    );
-
-    await loadWorkspaceIntoMessage({
-      messageId: message.id,
-      domain,
-      view: viewId,
-      label: message.uiData?.workspaceLabel,
-      specialistLabel: message.specialistLabel,
-      mode: 'switch',
-    });
-  }, [cancelActiveStream, isBusy, isConversationLoading, loadWorkspaceIntoMessage]);
-
-  // ── Confirm / cancel pending action ──────────────────────────────────────
-  const handleConfirmAction = () => {
-    if (!pendingAction) return;
-    const { type, data, initialData, requiresServerExecution } = pendingAction;
-
-    const run = async () => {
-      if (requiresServerExecution) {
-        const execution = await aiService.executeAction(pendingAction);
-        const result = (execution as any)?.result;
-        setPendingAction(null);
-        setMessages(prev => [
-          ...prev.filter(m => m.data?.type !== 'action_prompt'),
-          {
-            id: `action_done_${Date.now()}`,
-            sender: 'bot',
-            text: result?.message || 'Action executed successfully.',
-            timestamp: new Date(),
-            status: 'sent',
-            data: result,
-          },
-        ]);
-        return;
-      }
-
-      if (type === 'open_invoice_modal' || type === 'EXECUTE_ACTION') {
-        const detail =
-          data && type === 'EXECUTE_ACTION'
-            ? {
-                buyer: { name: data.customer, phone: '' },
-                items: [
-                  {
-                    description: data.description || 'Service',
-                    quantity: 1,
-                    price: data.amount,
-                    unit: 'Qty',
-                    discount: 0,
-                  },
-                ],
-              }
-            : initialData || data;
-        window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail }));
-      } else if (type === 'open_customer_modal') {
-        window.dispatchEvent(new CustomEvent('open-customer-modal', { detail: data || initialData }));
-      } else if (type === 'navigate' && data?.to) {
-        let p = data.to;
-        if (
-          p.startsWith('/') &&
-          !p.startsWith('/dashboard') &&
-          !['/login', '/setup', '/pricing'].includes(p)
-        )
-          p = `/dashboard${p === '/' ? '' : p}`;
-        navigate(p);
-      }
-
-      setPendingAction(null);
-      setMessages(prev => [
-        ...prev.filter(m => m.data?.type !== 'action_prompt'),
-        {
-          id: `action_done_${Date.now()}`,
-          sender: 'bot',
-          text: 'Done! Executing the requested action now.',
-          timestamp: new Date(),
-          status: 'sent',
-        },
-      ]);
-    };
-
-    run().catch((error) => {
-      console.error('AI action execution failed:', error);
-      setPendingAction(null);
-      setMessages(prev => [
-        ...prev.filter(m => m.data?.type !== 'action_prompt'),
-        {
-          id: `action_err_${Date.now()}`,
-          sender: 'bot',
-          text: 'I could not execute that action. Please try again.',
-          timestamp: new Date(),
-          status: 'error',
-        },
-      ]);
-    });
-  };
-
-  const handleCancelAction = () => {
-    setPendingAction(null);
-    setMessages(prev => [
-      ...prev.filter(m => m.data?.type !== 'action_prompt'),
-      {
-        id: `action_cancel_${Date.now()}`,
-        sender: 'bot',
-        text: "No problem. I'll stay on this page.",
-        timestamp: new Date(),
-        status: 'sent',
-      },
-    ]);
-  };
-
-  // ── Load past conversation ────────────────────────────────────────────────
-  const loadConversation = async (id: string) => {
-    if (id === currentConversationId || isBusy || isConversationLoading) return;
-    noteLocalInteraction();
-    const requestId = ++historyLoadRequestRef.current;
-    try {
-      cancelActiveStream();
-      setPendingAction(null);
-      setIsConversationLoading(true);
-      setMessages([]);
-      messagesRef.current = [];
-      const msgs = await aiService.getConversationMessages(id);
-      if (historyLoadRequestRef.current !== requestId) return;
-      setMessages((msgs as any[]).map(m => ({ ...m, timestamp: new Date(m.timestamp) })));
-      setShowHistory(false);
-      setCurrentConversationId(id);
-      currentConversationIdRef.current = id;
-      setTimeout(() => scrollToBottom(), 50);
-    } catch (err) {
-      console.error('Failed to load conversation:', err);
-    }
-    finally {
-      if (historyLoadRequestRef.current === requestId) {
-        setIsConversationLoading(false);
-      }
-    }
-  };
-
-  // ── Clear chat ────────────────────────────────────────────────────────────
-  const clearChat = async () => {
-    try {
-      await clearPersistedChatHistory();
-      setShowHistory(false);
-    } catch (err) {
-      console.error('Failed to clear history:', err);
-    }
-  };
+  }, [navigate]);
 
   // ── Voice input ───────────────────────────────────────────────────────────
   const startListening = () => {
-    const SR: any =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { alert('Voice not supported.'); return; }
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { alert('Voice input not supported in this browser.'); return; }
     const r = new SR();
-    r.lang = 'en-US';
+    r.lang = 'en-IN';
     r.interimResults = false;
     r.onstart = () => setIsListening(true);
-    r.onend = () => setIsListening(false);
+    r.onend   = () => setIsListening(false);
     r.onerror = () => setIsListening(false);
     r.onresult = (e: any) => {
       const t = e.results[0][0].transcript;
@@ -1563,335 +560,179 @@ Choose a desk to get started, or ask me anything.`,
     r.start();
   };
 
-  const { actions } = dynamicConfig;
-  const activeBotContext = [...messages]
-    .reverse()
-    .find((msg) => msg.sender === 'bot' && (msg.intent || msg.domain || msg.specialistLabel));
-  const activeIntentLabel = getIntentLabel(activeBotContext?.intent);
-  const activeSpecialistLabel = activeBotContext?.specialistLabel || activeIntentLabel;
-  const activeComposerPlaceholder = getComposerPlaceholder(activeBotContext?.domain);
-
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <>
-      {!aiSplashDone && <LogoSplash onComplete={() => setAiSplashDone(true)} />}
-
-      {/*
-        Inject the cursor keyframe once — avoids repeating inline animation
-        definitions on every StreamingCursor render.
-      */}
       <style>{`
-        @keyframes capita-cursor-blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-        @keyframes robot-float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-        @keyframes eye-glow {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
+        @keyframes capita-cursor-blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+        @keyframes robot-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-4px); } }
+        @keyframes eye-glow { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+        .ai-streaming-cursor {
+          display: inline-block; width: 2px; height: 14px; background: #2dd4bf;
+          margin-left: 2px; vertical-align: text-bottom; border-radius: 1px;
+          animation: capita-cursor-blink 0.9s ease-in-out infinite;
         }
       `}</style>
 
-      <div className="flex h-[100dvh] min-h-[100dvh] w-full overflow-hidden">
-        {/* Outer shell */}
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden cursor-default bg-[#0c0f1a] font-sans text-gray-300">
-          
-          {/* Background glows */}
-          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-            <div
-              className="absolute -top-1/3 right-0 w-[500px] h-[500px] rounded-full opacity-[0.18]"
-              style={{ background: `radial-gradient(circle, ${TEAL} 0%, transparent 65%)`, filter: 'blur(50px)' }}
-            />
-            <div
-              className="absolute -bottom-1/3 -left-1/4 w-[400px] h-[400px] rounded-full opacity-[0.12]"
-              style={{ background: `radial-gradient(circle, ${TEAL} 0%, transparent 65%)`, filter: 'blur(50px)' }}
-            />
-          </div>
+      <div className="flex flex-col h-[100dvh] w-full overflow-hidden bg-[#0c0f1a] font-sans text-gray-300">
 
-          {/* ── TOP BAR ── */}
-          <div className="relative z-30 shrink-0 flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#090c13]/80 px-3 py-2.5 backdrop-blur-sm sm:px-6 sm:py-3">
-            <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-              <button
-                onClick={toggleMobileSidebar}
-                aria-expanded={mobileSidebarOpen}
-                aria-label={mobileSidebarOpen ? 'Close assistant menu' : 'Open assistant menu'}
-                className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-gray-400 hover:text-white transition-colors"
-                title={mobileSidebarOpen ? 'Close menu' : 'Open menu'}
-              >
-                {mobileSidebarOpen ? <X size={16} /> : <PanelLeft size={16} />}
-              </button>
-              
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shrink-0">
-                <RobotSVG size={20} />
-              </div>
-              <div className="min-w-0">
-                <span className="block truncate text-sm font-bold tracking-tight text-white">Capita AI</span>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
-                  <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Online</span>
-                </div>
-              </div>
-              <div className="hidden min-[380px]:flex min-w-0 flex-col items-start border-l border-white/[0.06] pl-2.5 sm:ml-2 sm:pl-3">
-                <span className="hidden sm:block text-[8px] font-black text-gray-500 uppercase tracking-[0.22em]">Mode</span>
-                <span className="inline-flex max-w-full items-center truncate rounded-full border border-teal-500/20 bg-teal-500/10 px-2 py-0.5 text-[7px] font-black uppercase tracking-[0.18em] text-teal-300 sm:mt-0.5 sm:py-1 sm:text-[8px]">
-                  {activeSpecialistLabel}
-                </span>
-              </div>
+        {/* Background glows */}
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+          <div className="absolute -top-1/3 right-0 w-[500px] h-[500px] rounded-full opacity-[0.15]"
+            style={{ background: `radial-gradient(circle,${TEAL} 0%,transparent 65%)`, filter: 'blur(50px)' }} />
+          <div className="absolute -bottom-1/3 -left-1/4 w-[400px] h-[400px] rounded-full opacity-[0.10]"
+            style={{ background: `radial-gradient(circle,${TEAL} 0%,transparent 65%)`, filter: 'blur(50px)' }} />
+        </div>
+
+        {/* ── TOP BAR ── */}
+        <div className="relative z-30 shrink-0 flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#090c13]/80 px-4 py-2.5 backdrop-blur-sm sm:px-6">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20">
+              <RobotSVG />
             </div>
-
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <button
-                onClick={clearChat}
-                disabled={isBusy}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg border text-[8px] font-bold uppercase tracking-wider transition-colors sm:gap-1.5 sm:px-2.5 sm:text-[9px]
-                  ${isBusy
-                    ? 'opacity-40 cursor-not-allowed text-gray-600 border-gray-600/20 bg-gray-600/10'
-                    : 'text-teal-400 border-teal-500/20 bg-teal-500/10 hover:bg-teal-500/20'
-                  }`}
-              >
-                <RotateCcw size={9} /> <span className="hidden sm:inline">Clear</span>
-              </button>
-
-              <button
-                onClick={() => void exitAssistant()}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-gray-500 transition-all hover:bg-white/[0.08] hover:text-white"
-                title="Close AI Assistant"
-              >
-                <X size={15} />
-              </button>
+            <div>
+              <span className="block text-sm font-bold tracking-tight text-white">Capita AI</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
+                <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Online</span>
+              </div>
             </div>
           </div>
 
-          {/* ── BODY ── */}
-          <div className="flex flex-1 min-h-0 relative z-10 overflow-hidden">
-            
-            {/* ── MOBILE SIDEBAR BACKDROP ── */}
-            <AnimatePresence>
-              {mobileSidebarOpen && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={closeMobileSidebar}
-                  className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden"
-                />
-              )}
-            </AnimatePresence>
-
-            {/* ── LEFT SIDEBAR ── */}
-            <aside 
-              className={`
-                fixed inset-y-0 left-0 z-[70] w-[82vw] max-w-[18rem] transform transition-transform duration-300 ease-in-out sm:w-64 sm:max-w-none lg:relative lg:translate-x-0 lg:z-20 lg:w-56
-                flex flex-col overflow-hidden border-r border-white/[0.06] bg-[#07090f] shadow-[0_0_40px_rgba(0,0,0,0.45)] backdrop-blur-xl lg:bg-[#07090f]/90 lg:shadow-none
-                ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-              `}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={clearChat}
+              disabled={isBusy}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-colors text-teal-400 border-teal-500/20 bg-teal-500/10 hover:bg-teal-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#090c13]">
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Assistant Menu</span>
-                <button onClick={closeMobileSidebar} className="p-1.5 text-gray-500 hover:text-white">
-                  <X size={16} />
-                </button>
-              </div>
+              <RotateCcw size={9} /> Clear
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-gray-500 hover:text-white hover:bg-white/[0.08] transition-colors"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        </div>
 
-              <div className="px-3 pt-3 pb-2 border-b border-white/[0.05] shrink-0">
-                <span className="text-[8px] font-black text-gray-500 tracking-[0.22em] uppercase">Presets</span>
-              </div>
-              <div className="overflow-y-auto py-2 px-2 space-y-1 shrink-0" style={{ maxHeight: '34%', scrollbarWidth: 'none' }}>
-                {actions.map((action: any, i: number) => (
-                  <SidebarActionCard
-                    key={i}
-                    action={action}
-                    onClick={() => { handleSend(action.query); closeMobileSidebar(); }}
-                    disabled={isBusy}
+        {/* ── CHAT AREA ── */}
+        <div className="relative z-10 flex flex-col flex-1 min-h-0">
+          <div
+            ref={scrollRef}
+            onScroll={() => {
+              if (!scrollRef.current) return;
+              const el = scrollRef.current;
+              setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 200);
+            }}
+            className="flex-1 overflow-y-auto"
+            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+          >
+            <div className="mx-auto max-w-3xl px-3 pb-8 pt-4 space-y-5 sm:px-6">
+              <AnimatePresence initial={false}>
+                {messages.map(msg => (
+                  <ChatBubble
+                    key={msg.id}
+                    msg={msg}
+                    onSelectDomain={openWorkspace}
+                    onSelectView={switchView}
+                    onAction={handleAction}
+                    disableChoices={isBusy}
                   />
                 ))}
-              </div>
-
-              <div className="px-3 pt-3 pb-2 border-t border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between shrink-0">
-                <span className="text-[8px] font-black text-teal-500/70 tracking-[0.22em] uppercase">Current Chat</span>
-                <button
-                  onClick={() => setShowHistory((prev) => !prev)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg border text-[8px] font-black uppercase tracking-[0.2em] transition-colors text-gray-400 border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:text-white"
-                >
-                  {showHistory ? 'Hide history' : 'History'}
-                </button>
-              </div>
-
-              {showHistory ? (
-                <div className="flex-1 overflow-y-auto py-2 px-2 space-y-1 bg-[#090c14]/40" style={{ scrollbarWidth: 'none' }}>
-                  <div className="px-2 py-2 mb-1 rounded-lg border border-white/[0.05] bg-white/[0.03] flex flex-col gap-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <button
-                        onClick={() => { if (!isBusy) { resetChatContext(); markChatActive(); closeMobileSidebar(); } }}
-                        disabled={isBusy}
-                        className={`text-[8px] font-black uppercase tracking-[0.2em] transition-colors ${isBusy ? 'text-gray-700 cursor-not-allowed' : 'text-gray-500 hover:text-white'}`}
-                      >
-                        + New Chat
-                      </button>
-                      <label className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 cursor-pointer select-none">
-                        <input type="checkbox" checked={autoClearHistory} onChange={(e) => persistAutoClearHistory(e.target.checked)} className="accent-teal-400" />
-                        Auto-clear
-                      </label>
-                    </div>
-                  </div>
-                  {isHistoryLoading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="h-10 mx-1 rounded-lg bg-white/[0.02] border border-white/[0.03] animate-pulse" />
-                    ))
-                  ) : conversations.length > 0 ? (
-                    conversations.map(conv => (
-                      <button
-                        key={conv.id}
-                        onClick={() => { if (!isBusy) { loadConversation(conv.id); closeMobileSidebar(); } }}
-                        disabled={isBusy}
-                        className={`w-full text-left p-2.5 rounded-xl border transition-all group flex flex-col gap-1 ${isBusy ? 'opacity-40 cursor-not-allowed' : ''} ${currentConversationId === conv.id ? 'bg-teal-500/10 border-teal-500/30 ring-1 ring-teal-500/20' : 'border-transparent hover:bg-white/[0.03] grayscale hover:grayscale-0'}`}
-                      >
-                        <span className={`text-[10px] font-bold truncate ${currentConversationId === conv.id ? 'text-teal-400' : 'text-gray-400 group-hover:text-gray-200'}`}>
-                          {conv.title}
-                        </span>
-                        <span className="text-[7px] font-mono text-gray-600 uppercase tracking-tighter">
-                          {new Date(conv.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' })}
-                        </span>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-20 opacity-30">
-                      <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">No History Yet</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col gap-2 justify-center px-3 text-center bg-[#090c14]/40">
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">Session first</div>
-                    <div className="mt-1 text-[10px] text-gray-600 leading-relaxed">Click History only when you need older sessions.</div>
-                  </div>
-                  <label className="flex items-center justify-center gap-1 text-[8px] font-black uppercase tracking-[0.2em] text-gray-500 cursor-pointer select-none">
-                    <input type="checkbox" checked={autoClearHistory} onChange={(e) => persistAutoClearHistory(e.target.checked)} className="accent-teal-400" />
-                    Auto-clear
-                  </label>
-                </div>
-              )}
-
-              <div className="px-3 py-3 border-t border-white/[0.05] bg-black/20 shrink-0">
-                <span className="text-[8px] text-gray-700 font-bold uppercase tracking-[0.2em] opacity-60 italic leading-none">Finance engine · Encrypted</span>
-              </div>
-            </aside>
-
-            {/* ── CHAT AREA ── */}
-            <div className="flex flex-col flex-1 min-w-0 min-h-0 relative">
-              <div
-                ref={scrollRef}
-                onScroll={handleScroll}
-                className="flex-1 overflow-y-auto"
-                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
-              >
-                {isConversationLoading ? (
-                  <div className="mx-auto max-w-3xl px-3 pb-12 pt-6 space-y-4 sm:px-5">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
-                        <div className="h-16 w-full max-w-[88%] rounded-2xl border border-white/[0.05] bg-white/[0.03] animate-pulse sm:max-w-[75%]" />
-                      </div>
-                    ))}
-                  </div>
-                ) : messages.length === 0 && !isThinking ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="space-y-3 px-5 text-center sm:space-y-4 sm:px-6">
-                      <h2 className="text-xl font-bold text-white sm:text-2xl">Welcome to Capita AI</h2>
-                      <p className="text-gray-400 text-sm">Start a conversation about invoices, payments, expenses, or compliance.</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mx-auto max-w-3xl px-3 pb-8 pt-4 space-y-5 sm:px-6 sm:pb-10 sm:space-y-6">
-                    <AnimatePresence initial={false}>
-                      {messages.map((msg) => (
-                        <ChatBubble
-                          key={msg.id}
-                          msg={msg}
-                          onConfirmAction={handleConfirmAction}
-                          onCancelAction={handleCancelAction}
-                          onSelectGuidedChoice={openGuidedWorkspace}
-                          onSelectWorkspaceView={handleWorkspaceViewChange}
-                          onExecuteGuidedAction={handleGuidedAction}
-                          disableGuidedChoice={isBusy}
-                        />
-                      ))}
-                    </AnimatePresence>
-
-                    {isThinking && <ThinkingSkeleton step={currentStep} />}
-
-                    <AnimatePresence>
-                      {isListening && (
-                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="flex justify-center">
-                          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
-                            <Mic size={12} className="animate-pulse" />
-                            <span className="text-[9px] font-black tracking-widest uppercase">Listening…</span>
-                            <div className="flex gap-1 items-center h-3">
-                              {[3, 5, 4, 7, 3].map((h, i) => (
-                                <div key={i} className="w-0.5 rounded-full bg-red-400 animate-pulse" style={{ height: h * 2, animationDuration: `${0.4 + i * 0.1}s` }} />
-                              ))}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                )}
-              </div>
-
-              <AnimatePresence>
-                {showScrollBtn && (
-                  <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} onClick={() => scrollToBottom()} className="absolute bottom-24 right-4 z-50 w-8 h-8 rounded-full bg-[#161a2b] border border-white/[0.1] flex items-center justify-center cursor-pointer shadow-xl hover:bg-white/[0.08] transition-colors">
-                    <ChevronDown size={15} className="text-gray-400" />
-                  </motion.button>
-                )}
               </AnimatePresence>
 
-              {/* ── INPUT BAR ── */}
-              <div className="shrink-0 border-t border-white/[0.06] bg-[#090c13]/80 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur-sm sm:px-6 sm:py-3">
-                <div className={`flex items-center gap-1.5 rounded-2xl border px-3 py-2 transition-all sm:gap-2 ${inputFocused ? 'border-teal-400/60 ring-2 ring-teal-500/15 bg-[#141820]' : 'border-white/[0.07] hover:border-white/[0.12] bg-white/[0.02]'}`}>
-                  <div className="shrink-0 flex items-center gap-1.5 pr-2.5 border-r border-white/[0.07]">
-                    <Zap size={13} className="text-teal-400" />
-                    <span className="hidden sm:inline text-[9px] font-black uppercase text-teal-400 tracking-widest">Capita</span>
-                  </div>
+              {isThinking && <ThinkingSkeleton />}
 
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    onFocus={() => setInputFocused(true)}
-                    onBlur={() => setInputFocused(false)}
-                    placeholder={activeComposerPlaceholder}
-                    className="flex-1 bg-transparent border-none px-1 py-1 text-[16px] text-white outline-none placeholder-gray-600 sm:text-sm"
-                  />
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    <motion.button whileHover={!isBusy ? { scale: 1.08 } : {}} whileTap={!isBusy ? { scale: 0.92 } : {}} onClick={startListening} className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${isListening ? 'bg-red-500/10 text-red-400 border border-red-500/20' : isBusy ? 'opacity-30 cursor-not-allowed text-gray-600' : 'text-gray-500 hover:bg-white/[0.06] hover:text-gray-300'}`}>
-                      {isListening ? <MicOff size={14} /> : <Mic size={14} />}
-                    </motion.button>
-
-                    <motion.button whileHover={{ scale: query.trim() && !isBusy ? 1.08 : 1 }} whileTap={{ scale: query.trim() && !isBusy ? 0.92 : 1 }} onClick={() => handleSend()} disabled={!query.trim() || isBusy} className="w-8 h-8 rounded-xl flex items-center justify-center transition-all relative overflow-hidden" style={query.trim() && !isBusy ? { background: `linear-gradient(135deg, ${TEAL}, #06b6d4)`, color: '#0a0d15' } : { background: 'rgba(255,255,255,0.04)', color: '#374151', cursor: 'not-allowed' }}>
-                      <Send size={13} />
-                    </motion.button>
-                  </div>
-                </div>
-
-                <div className="mt-1.5 flex items-center justify-between px-1">
-                  <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">{isConversationLoading ? 'Loading conversation…' : !isChatReady ? 'Preparing chat…' : 'Finance engine · Encrypted'}</span>
-                  {isListening && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
-                      <span className="text-[8px] font-bold text-red-500 uppercase tracking-widest">Rec</span>
+              {isListening && (
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                  className="flex justify-center">
+                  <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
+                    <Mic size={12} className="animate-pulse" />
+                    <span className="text-[9px] font-black tracking-widest uppercase">Listening…</span>
+                    <div className="flex gap-1 items-end h-3">
+                      {[3, 5, 4, 7, 3].map((h, i) => (
+                        <div key={i} className="w-0.5 rounded-full bg-red-400 animate-pulse"
+                          style={{ height: h * 2, animationDuration: `${0.4 + i * 0.1}s` }} />
+                      ))}
                     </div>
-                  )}
-                </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+
+          {/* Scroll-to-bottom FAB */}
+          <AnimatePresence>
+            {showScrollBtn && (
+              <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                onClick={scrollToBottom}
+                className="absolute bottom-24 right-4 z-50 w-8 h-8 rounded-full bg-[#161a2b] border border-white/[0.1] flex items-center justify-center shadow-xl hover:bg-white/[0.08] transition-colors">
+                <ChevronDown size={15} className="text-gray-400" />
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          {/* ── INPUT BAR ── */}
+          <div className="shrink-0 border-t border-white/[0.06] bg-[#090c13]/80 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur-sm sm:px-6 sm:py-3">
+            <div className={`flex items-center gap-2 rounded-2xl border px-3 py-2 transition-all ${
+              inputFocused
+                ? 'border-teal-400/60 ring-2 ring-teal-500/15 bg-[#141820]'
+                : 'border-white/[0.07] hover:border-white/[0.12] bg-white/[0.02]'
+            }`}>
+              <div className="shrink-0 flex items-center gap-1.5 pr-2.5 border-r border-white/[0.07]">
+                <Zap size={13} className="text-teal-400" />
+                <span className="hidden sm:inline text-[9px] font-black uppercase text-teal-400 tracking-widest">Capita</span>
+              </div>
+
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                placeholder="Ask about invoices, payments, expenses, or tax deadlines…"
+                className="flex-1 bg-transparent border-none px-1 py-1 text-[16px] sm:text-sm text-white outline-none placeholder-gray-600"
+              />
+
+              <div className="flex items-center gap-1 shrink-0">
+                <motion.button
+                  whileHover={!isBusy ? { scale: 1.08 } : {}}
+                  whileTap={!isBusy ? { scale: 0.92 } : {}}
+                  onClick={startListening}
+                  disabled={isBusy}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                    isListening
+                      ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                      : isBusy
+                        ? 'opacity-30 cursor-not-allowed text-gray-600'
+                        : 'text-gray-500 hover:bg-white/[0.06] hover:text-gray-300'
+                  }`}
+                >
+                  {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: query.trim() && !isBusy ? 1.08 : 1 }}
+                  whileTap={{ scale: query.trim() && !isBusy ? 0.92 : 1 }}
+                  onClick={() => handleSend()}
+                  disabled={!query.trim() || isBusy}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+                  style={query.trim() && !isBusy
+                    ? { background: `linear-gradient(135deg,${TEAL},#06b6d4)`, color: '#0a0d15' }
+                    : { background: 'rgba(255,255,255,0.04)', color: '#374151', cursor: 'not-allowed' }
+                  }
+                >
+                  <Send size={13} />
+                </motion.button>
               </div>
             </div>
+
+            <p className="mt-1.5 px-1 text-[8px] text-gray-600 font-bold uppercase tracking-widest">
+              Finance engine · Encrypted · Built for India
+            </p>
           </div>
         </div>
       </div>

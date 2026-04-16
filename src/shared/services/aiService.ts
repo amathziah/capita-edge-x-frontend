@@ -2,39 +2,42 @@ import { api, API_URL, getOrgId } from '@/shared/api/client';
 import { ENDPOINTS } from '@/shared/api/endpoints';
 import { supabase } from '@/shared/lib/supabaseClient';
 
-export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 export const aiService = {
-  stagger: () => delay(500),
-  chat: (query: string, persona?: string) => api.post(ENDPOINTS.AI_CHAT, { query, persona }),
-  getConfig: (persona?: string) => api.get(persona ? `${ENDPOINTS.AI_CONFIG}?persona=${persona}` : ENDPOINTS.AI_CONFIG),
+  // Simple one-shot chat (non-streaming fallback)
+  chat: (query: string, persona?: string) =>
+    api.post(ENDPOINTS.AI_CHAT, { query, persona }),
 
-  processQuery: (query: string, agentId?: string, persona?: string, history?: any[]) => 
-    api.post<any>(ENDPOINTS.AI_CHAT, { query, agentId, persona, history }),
-
+  // Fetch live workspace data for a domain (invoices / payments / expenses / compliance)
   getWorkspace: (domain: string, view?: string) =>
-    api.get(view ? `${ENDPOINTS.AI_WORKSPACE(domain)}?view=${encodeURIComponent(view)}` : ENDPOINTS.AI_WORKSPACE(domain)),
+    api.get(
+      view
+        ? `${ENDPOINTS.AI_WORKSPACE(domain)}?view=${encodeURIComponent(view)}`
+        : ENDPOINTS.AI_WORKSPACE(domain)
+    ),
 
   /**
-   * Streams the AI response token by token using Server-Sent Events (SSE).
-   * Returns an async generator that yields event objects:
-   *   { type: 'token', text: string }
-   *   { type: 'complete', text, action, usage, provider, conversationId, budget }
-   *   { type: 'error', message: string }
+   * Stream an AI response token-by-token via Server-Sent Events.
    *
-   * Accepts an AbortSignal for interruption (e.g., when the user sends a new message).
+   * Yields:
+   *   { type: 'token',    text: string }
+   *   { type: 'gen_ui',   component: string, data: any }
+   *   { type: 'complete', text, data, workspace, usage }
+   *   { type: 'error',    message: string }
+   *
+   * Pass an AbortSignal to cancel mid-stream (e.g. user sends a new message).
    */
   async *chatStream(
     payload: {
       query: string;
       businessType?: string;
-      history?: any[];
+      history?: { role: string; parts: { text: string }[] }[];
       conversationId?: string | null;
       persona?: string;
     },
     signal?: AbortSignal
   ): AsyncGenerator<{ type: string; [key: string]: any }> {
-    await api.wait(); // Wait for hydration
+    await api.wait();
+
     let token: string | null = null;
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -73,17 +76,13 @@ export const aiService = {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
-        buffer = lines.pop() ?? ''; // Keep last incomplete line in buffer
+        buffer = lines.pop() ?? '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const jsonStr = line.slice(6).trim();
             if (!jsonStr) continue;
-            try {
-              yield JSON.parse(jsonStr);
-            } catch {
-              // Malformed chunk — skip
-            }
+            try { yield JSON.parse(jsonStr); } catch { /* malformed chunk */ }
           }
         }
       }
@@ -92,34 +91,29 @@ export const aiService = {
     }
   },
 
+  // Used by dataService for AI-powered form filling
   magicFill: (text: string) => api.post(ENDPOINTS.AI_MAGIC_FILL, { text }),
 
-  getInsights: (persona?: string) => api.get(persona ? `${ENDPOINTS.AI_INSIGHTS}?persona=${persona}` : ENDPOINTS.AI_INSIGHTS),
-  getUsage: () => api.get(ENDPOINTS.AI_USAGE),
-  getBudget: () => api.get(ENDPOINTS.AI_BUDGET),
-  getHistory: () => api.get(ENDPOINTS.AI_HISTORY),
-  deleteHistory: () => api.delete(ENDPOINTS.AI_HISTORY),
-  getConversations: () => api.get(ENDPOINTS.AI_CONVERSATIONS),
-  getConversationMessages: (id: string) => api.get(ENDPOINTS.AI_CONVERSATION_MESSAGES(id)),
-  executeAction: (action: any) => api.post(ENDPOINTS.AI_ACTION_EXECUTE, { action }),
+  // Used by dataService for financial insights
+  getInsights: (persona?: string) =>
+    api.get(persona ? `${ENDPOINTS.AI_INSIGHTS}?persona=${persona}` : ENDPOINTS.AI_INSIGHTS),
 
-  predictRevenue: (historicalData: any[]) => api.post(ENDPOINTS.AI_PREDICT_REVENUE, { historicalData }),
-
+  // Used by dataService / VoiceAssistant for command processing
   sendCommand: (command: string) => api.post(ENDPOINTS.AI_COMMAND, { command }),
 
-  generateSettlementOffer: (invoiceId: string) => api.post(ENDPOINTS.AI_SETTLEMENT, { invoiceId }),
+  // Used by dataService for invoice settlement offers
+  generateSettlementOffer: (invoiceId: string) =>
+    api.post(ENDPOINTS.AI_SETTLEMENT, { invoiceId }),
 
-  // Helper for converting blob to base64 if needed for other AI tasks
-  blobToBase64: (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
+  // Used by dataService for PDF-to-base64 conversion before AI audit
+  blobToBase64: (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        const base64 = result.includes(',') ? result.split(',')[1] : result;
-        resolve(base64);
+        resolve(result.includes(',') ? result.split(',')[1] : result);
       };
       reader.onerror = reject;
       reader.readAsDataURL(blob);
-    });
-  }
+    }),
 };
