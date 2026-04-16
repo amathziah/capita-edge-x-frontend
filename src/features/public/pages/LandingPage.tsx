@@ -6,11 +6,10 @@ import {
     ChevronDown, Clock, Users,
     FileText, CreditCard, Calendar, Package,
     AlertTriangle, Activity,
-    Mic, Command, MessageSquare, Gavel, Send, Receipt, ShieldCheck, Bell,
+    Mic, MessageSquare, Receipt, ShieldCheck, Bell,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Logo } from '@/components/common/Logo';
-import { Pricing } from '@/features/public/pages/PricingPage';
 import { LegalModal, PolicyType } from '@/features/compliance/components/LegalModal';
 import { LogoSplash } from '@/features/public/components/LogoSplash';
 import { brandProfile } from '@/shared/lib/config/brandProfile';
@@ -368,49 +367,6 @@ function TaxRemindersMock() {
     );
 }
 
-// ─── Reports mock ─────────────────────────────────────────────────────────────
-function ReportsMock() {
-    return (
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
-            <h3 className="font-semibold text-slate-900 text-[15px] tracking-tight">Reports</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5 mb-4">Real-time financial insights</p>
-            <div className="grid grid-cols-4 gap-2 mb-3">
-                {[
-                    { label: 'Total revenue', val: '₹13,17,615', color: 'text-teal-700' },
-                    { label: 'Expenses', val: '₹1,499', color: 'text-orange-600' },
-                    { label: 'Net profit', val: '₹13,16,116', color: 'text-teal-700' },
-                    { label: 'Avg margin', val: '100%', color: 'text-violet-700' },
-                ].map((s, i) => (
-                    <div key={i} className="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
-                        <div className="text-[9px] font-medium uppercase tracking-[0.13em] text-slate-500 mb-1.5">{s.label}</div>
-                        <div className={`font-semibold text-[13px] leading-none tracking-tight ${s.color}`}>{s.val}</div>
-                    </div>
-                ))}
-            </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="text-[11px] font-semibold text-slate-900">Revenue vs expenses</div>
-                    <div className="flex gap-3 text-[10px]">
-                        <span className="flex items-center gap-1 text-teal-600"><span className="w-2 h-2 rounded-full bg-teal-500 inline-block" /> Revenue</span>
-                        <span className="flex items-center gap-1 text-slate-500"><span className="w-2 h-2 rounded-full bg-slate-300 inline-block" /> Expenses</span>
-                    </div>
-                </div>
-                <svg viewBox="0 0 300 70" className="w-full h-20">
-                    <defs>
-                        <linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="rgba(20,184,166,0.2)" />
-                            <stop offset="100%" stopColor="rgba(20,184,166,0)" />
-                        </linearGradient>
-                    </defs>
-                    <path d="M 10 62 C 50 62 90 15 150 6 C 210 -2 270 4 290 1" stroke="rgb(13,148,136)" strokeWidth="2" fill="none" />
-                    <path d="M 10 62 C 50 62 90 15 150 6 C 210 -2 270 4 290 1 L 290 70 L 10 70 Z" fill="url(#rg)" />
-                    <path d="M 10 66 C 80 66 150 63 290 64" stroke="rgb(203,213,225)" strokeWidth="1.5" fill="none" strokeDasharray="4 2" />
-                </svg>
-            </div>
-        </div>
-    );
-}
-
 // ─── AI Workspace chat mock (dark – it's a power-feature callout) ─────────────
 const AI_DOMAINS = [
     { icon: FileText,    label: 'Invoices',    desc: 'Filter, send reminders, view overdue', active: false },
@@ -607,7 +563,6 @@ export const Landing: React.FC = () => {
                             {[
                                 ['#features', 'Features'],
                                 ['#how-it-works', 'How it works'],
-                                ['#pricing', 'Pricing'],
                                 ['#faq', 'FAQ'],
                             ].map(([href, label]) => (
                                 <a key={label} href={href} className={`text-[13px] font-medium transition-colors ${scrolled ? 'text-slate-600 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}>
@@ -1099,14 +1054,6 @@ export const Landing: React.FC = () => {
                 </div>
             </section>
 
-            {/* ── PRICING ── light ──────────────────────────────────────────────── */}
-            <section
-                id="pricing"
-                className="relative z-20 w-full lg:max-w-5xl mx-auto px-4 md:px-6 pt-10 pb-20 scale-100 lg:scale-90 lg:origin-top"
-            >
-                <Pricing isEmbedded={true} />
-            </section>
-
             {/* ── FAQ ── white ──────────────────────────────────────────────────── */}
             <FaqSection />
 
@@ -1173,7 +1120,6 @@ export const Landing: React.FC = () => {
                         <ul className="space-y-2.5">
                             <li><a href="#features" className="text-[13px] text-slate-400 hover:text-white transition-colors">Features</a></li>
                             <li><a href="#how-it-works" className="text-[13px] text-slate-400 hover:text-white transition-colors">How it works</a></li>
-                            <li><a href="#pricing" className="text-[13px] text-slate-400 hover:text-white transition-colors">Pricing</a></li>
                         </ul>
                     </div>
                     <div>

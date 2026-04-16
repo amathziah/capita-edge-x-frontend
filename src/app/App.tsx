@@ -65,7 +65,6 @@ const SharedInvoicePage = lazy(() => import('@/features/invoices/pages/SharedInv
 const AIAssistantPage = lazy(() => import('@/features/ai/pages/AIAssistantPage').then(module => ({ default: module.AIAssistantPage })));
 const Settings = lazy(() => import('@/features/settings/pages/SettingsPage').then(module => ({ default: module.Settings })));
 const Support = lazy(() => import('@/features/public/pages/SupportPage').then(module => ({ default: module.Support })));
-const Pricing = lazy(() => import('@/features/public/pages/PricingPage').then(module => ({ default: module.Pricing })));
 const Landing = lazy(() => import('@/features/public/pages/LandingPage').then(module => ({ default: module.Landing })));
 const ControlRoom = lazy(() => import('@/features/dashboard/pages/ControlRoomPage').then(module => ({ default: module.ControlRoom })));
 
@@ -136,8 +135,6 @@ function App() {
                           <Route path="ai" element={<AIAssistantPage />} />
                           <Route path="profile" element={<Profile />} />
                           <Route path="settings" element={<Settings />} />
-                          <Route path="pricing" element={<Pricing />} />
-
                           <Route path="integrity" element={<Support />} />
                         </Route>
                       </Route>
