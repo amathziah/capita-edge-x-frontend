@@ -63,9 +63,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     });
 
+    // 10s safety valve — must be ≥ PersonaContext's own 10s timeout so that
+    // we never flip loading→false before Supabase/PersonaContext finishes.
+    // On Render free-tier cold starts, getSession() can take 5-8 seconds.
     const timeout = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 4000);
+    }, 10_000);
 
     return () => {
       mounted = false;

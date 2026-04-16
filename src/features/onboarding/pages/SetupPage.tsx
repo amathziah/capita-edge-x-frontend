@@ -57,6 +57,7 @@ export function SetupPage() {
     const [companyName, setCompanyName] = useState(user?.user_metadata?.company_name || '');
     const [selectedPersona, setSelectedPersona] = useState<BusinessType>('solopreneur');
     const [error, setError] = useState<string | null>(null);
+    const [statusMsg, setStatusMsg] = useState<string>('');
     
     const initializedRef = useRef(false);
 
@@ -91,6 +92,7 @@ export function SetupPage() {
 
         setIsSubmitting(true);
         setError(null);
+        setStatusMsg('');
         try {
             // 0. Ensure session is valid before calling backend
             const { data: sessionData } = await supabase.auth.getSession();
@@ -98,22 +100,42 @@ export function SetupPage() {
                 throw new Error('Session expired. Please sign in again.');
             }
 
-            // 1. Provision organization (30-second timeout)
+            // 1. Provision organization
+            // First attempt: 30s timeout. If the server is cold-starting on Render free
+            // tier, that call will time out or fail with a network error before the
+            // server finishes waking. We auto-retry once with a 60s window so the user
+            // never has to manually click again just because of a cold start.
             if (!isOnboarded) {
+                const runProvision = () =>
+                    api.post(ENDPOINTS.AUTH_PROVISION, {
+                        companyName: companyName.trim(),
+                        businessType: selectedPersona,
+                    });
+
                 try {
-                    await withTimeout(
-                        api.post(ENDPOINTS.AUTH_PROVISION, {
-                            companyName: companyName.trim(),
-                            businessType: selectedPersona,
-                        }),
-                        30_000,
-                        'Workspace setup'
-                    );
-                } catch (provisionErr: any) {
-                    const msg = (provisionErr?.message ?? '').toLowerCase();
-                    // "Already provisioned" is not an error — org exists, continue
-                    if (!msg.includes('already belongs') && !msg.includes('already provisioned')) {
-                        throw provisionErr;
+                    await withTimeout(runProvision(), 30_000, 'Workspace setup');
+                } catch (firstErr: any) {
+                    const firstMsg = (firstErr?.message ?? '').toLowerCase();
+                    if (firstMsg.includes('already belongs') || firstMsg.includes('already provisioned')) {
+                        // Not an error — org exists, fall through
+                    } else if (
+                        firstMsg.includes('timed out') ||
+                        firstMsg.includes('failed to fetch') ||
+                        firstMsg.includes('networkerror') ||
+                        firstMsg.includes('network')
+                    ) {
+                        // Cold-start detected: retry with extended timeout and a status hint
+                        setStatusMsg('Server is warming up...');
+                        try {
+                            await withTimeout(runProvision(), 60_000, 'Workspace setup');
+                        } catch (retryErr: any) {
+                            const retryMsg = (retryErr?.message ?? '').toLowerCase();
+                            if (!retryMsg.includes('already belongs') && !retryMsg.includes('already provisioned')) {
+                                throw retryErr;
+                            }
+                        }
+                    } else {
+                        throw firstErr;
                     }
                 }
             }
@@ -284,7 +306,7 @@ export function SetupPage() {
                                         {isSubmitting ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                Setting up...
+                                                {statusMsg || 'Setting up...'}
                                             </>
                                         ) : (
                                             <>
@@ -364,7 +386,7 @@ export function SetupPage() {
                                         {isSubmitting ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                Setting up...
+                                                {statusMsg || 'Setting up...'}
                                             </>
                                         ) : (
                                             <>
