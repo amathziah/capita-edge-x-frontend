@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/shared/lib/supabaseClient';
-import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, FileText, CreditCard, Package, Bell, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/shared/api/client';
 import { ENDPOINTS } from '@/shared/api/endpoints';
@@ -198,13 +198,95 @@ export default function AuthComponent() {
         }
     };
 
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-[#F0F4F8] relative overflow-hidden font-sans">
-            {/* Background Ambience */}
-            <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] bg-emerald-400/20 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-teal-400/20 rounded-full blur-[100px] pointer-events-none" />
+    const features = [
+        { icon: FileText,  label: 'GST Invoicing',      desc: 'Create & send compliant invoices instantly' },
+        { icon: CreditCard,label: 'Payment Records',     desc: 'Track every payment — cash, UPI, bank' },
+        { icon: Package,   label: 'Expense Tracker',     desc: 'Categorise spend, watch your margin' },
+        { icon: Bell,      label: 'Tax Reminders',       desc: 'Never miss GSTR-1, GSTR-3B, or TDS' },
+    ];
 
-            <div className="w-full max-w-[420px] relative z-10 px-4">
+    return (
+        <div className="flex min-h-screen font-sans">
+
+            {/* ── Left panel: branding + features (hidden on mobile) ── */}
+            <div className="hidden lg:flex lg:w-[52%] xl:w-[55%] flex-col bg-[#0f172a] relative overflow-hidden">
+                {/* Subtle grid */}
+                <div
+                    className="absolute inset-0 opacity-[0.025]"
+                    style={{
+                        backgroundImage: 'linear-gradient(rgba(148,163,184,1) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,1) 1px,transparent 1px)',
+                        backgroundSize: '56px 56px',
+                    }}
+                />
+                {/* Teal glow */}
+                <div
+                    className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full pointer-events-none"
+                    style={{ background: 'radial-gradient(ellipse at center, rgba(20,184,166,0.13) 0%, transparent 65%)' }}
+                />
+                <div
+                    className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none"
+                    style={{ background: 'radial-gradient(ellipse at center, rgba(6,182,212,0.08) 0%, transparent 65%)' }}
+                />
+
+                <div className="relative z-10 flex flex-col h-full px-10 xl:px-14 py-12">
+                    {/* Logo + wordmark */}
+                    <div className="flex items-center gap-3 mb-14">
+                        <Logo size={32} />
+                        <span className="font-semibold text-[20px] text-white tracking-tight">
+                            Capita<span className="text-teal-400">EdgeX</span>
+                        </span>
+                    </div>
+
+                    {/* Hero text */}
+                    <div className="mb-12">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-300 text-[11px] font-semibold tracking-wide mb-5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+                            Early access · Free to start
+                        </div>
+                        <h2 className="text-3xl xl:text-4xl font-semibold text-white leading-tight tracking-tight mb-4">
+                            Your complete<br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-cyan-300">
+                                finance workspace.
+                            </span>
+                        </h2>
+                        <p className="text-slate-400 text-[15px] leading-relaxed max-w-sm">
+                            Invoices, payment records, expense tracking, and tax reminders — all in one place, built for Indian businesses.
+                        </p>
+                    </div>
+
+                    {/* Feature list */}
+                    <div className="space-y-3 mb-auto">
+                        {features.map(({ icon: Icon, label, desc }) => (
+                            <div key={label} className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-teal-500/20 transition-colors">
+                                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20 flex-shrink-0">
+                                    <Icon className="w-4 h-4 text-teal-400" />
+                                </div>
+                                <div>
+                                    <div className="text-[13px] font-semibold text-white">{label}</div>
+                                    <div className="text-[11.5px] text-slate-500">{desc}</div>
+                                </div>
+                                <CheckCircle2 className="w-4 h-4 text-teal-500/50 ml-auto flex-shrink-0" />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Trust footer */}
+                    <div className="mt-10 pt-8 border-t border-white/[0.06]">
+                        <div className="flex items-center gap-3 text-[12px] text-slate-500">
+                            <Lock className="w-3.5 h-3.5 text-slate-600" />
+                            <span>256-bit encryption · GST compliant · Made in India</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Right panel: form ── */}
+            <div className="flex-1 flex items-center justify-center bg-slate-50 relative overflow-hidden px-4 py-12">
+                {/* Subtle blobs */}
+                <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-teal-400/10 rounded-full blur-[80px] pointer-events-none" />
+                <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-emerald-400/10 rounded-full blur-[80px] pointer-events-none" />
+
+            <div className="w-full max-w-[420px] relative z-10">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -457,6 +539,7 @@ export default function AuthComponent() {
                         256-bit Secure Encryption
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     );
