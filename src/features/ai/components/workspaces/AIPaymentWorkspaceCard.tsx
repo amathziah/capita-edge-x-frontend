@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import * as LucideIcons from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import {
   createMoneyFormatter,
   formatCount,
@@ -7,7 +7,6 @@ import {
   genCardVariants,
   genItemVariants,
   WorkspaceActionBar,
-  WorkspaceGuidancePanel,
   WorkspaceViewPills,
 } from './workspaceShared';
 
@@ -38,14 +37,8 @@ export function AIPaymentWorkspaceCard({
       className="mt-4 mb-2 rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-emerald-500/8 to-black/40 p-4 shadow-lg shadow-black/20"
     >
       <motion.h4 variants={genItemVariants} className="mb-4 flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-emerald-300">
-        <LucideIcons.CreditCard size={14} /> {data?.workspaceLabel || 'Payments Workspace'}
+        <CreditCard size={14} /> {data?.workspaceLabel || 'Payments Workspace'}
       </motion.h4>
-
-      <WorkspaceGuidancePanel
-        guidance={data?.guidance}
-        onSelectStep={onSelectView}
-        disabled={isLoadingView}
-      />
 
       <WorkspaceActionBar
         actions={data?.actions}

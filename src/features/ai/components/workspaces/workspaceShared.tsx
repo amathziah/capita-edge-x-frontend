@@ -90,69 +90,6 @@ export function WorkspaceViewPills({
   );
 }
 
-export function WorkspaceGuidancePanel({
-  guidance,
-  onSelectStep,
-  disabled,
-}: {
-  guidance?: {
-    title?: string;
-    summary?: string;
-    steps?: Array<{ id: string; label: string; description?: string; view?: string }>;
-  } | null;
-  onSelectStep?: (viewId: string) => void;
-  disabled?: boolean;
-}) {
-  if (!guidance) return null;
-
-  return (
-    <motion.div
-      variants={genItemVariants}
-      className="mb-4 rounded-xl border border-white/[0.06] bg-black/20 p-3"
-    >
-      <div className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-teal-300">
-        {guidance.title || 'How To Analyze'}
-      </div>
-      {guidance.summary && (
-        <div className="mb-3 text-[11px] leading-relaxed text-gray-400">{guidance.summary}</div>
-      )}
-
-      {Array.isArray(guidance.steps) && guidance.steps.length > 0 && (
-        <div className="grid gap-2 md:grid-cols-3">
-          {guidance.steps.map((step, index) => (
-            <button
-              key={step.id || `${step.view}_${index}`}
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                if (!disabled && onSelectStep && step.view) {
-                  onSelectStep(step.view);
-                }
-              }}
-              disabled={disabled || !onSelectStep || !step.view}
-              className={`rounded-xl border p-3 text-left transition-all ${
-                disabled || !onSelectStep || !step.view
-                  ? 'cursor-default border-white/[0.05] bg-white/[0.02]'
-                  : 'border-white/[0.08] bg-white/[0.03] hover:border-teal-500/30 hover:bg-teal-500/[0.05]'
-              }`}
-            >
-              <div className="mb-1 text-[8px] font-black uppercase tracking-[0.2em] text-gray-500">
-                Step {index + 1}
-              </div>
-              <div className="text-[11px] font-semibold text-white">{step.label}</div>
-              {step.description && (
-                <div className="mt-1 text-[10px] leading-relaxed text-gray-500">
-                  {step.description}
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
 export function WorkspaceActionBar({
   actions,
   onAction,

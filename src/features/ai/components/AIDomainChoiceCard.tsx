@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion';
-import * as LucideIcons from 'lucide-react';
+import { FileText, CreditCard, Receipt, ShieldCheck, Users, LayoutDashboard } from 'lucide-react';
 
 const DOMAIN_ICON: Record<string, any> = {
-  invoices: LucideIcons.FileText,
-  payments: LucideIcons.CreditCard,
-  expenses: LucideIcons.Receipt,
-  compliance: LucideIcons.ShieldCheck,
-  customers: LucideIcons.Users,
+  invoices: FileText,
+  payments: CreditCard,
+  expenses: Receipt,
+  compliance: ShieldCheck,
+  customers: Users,
 };
 
 export function AIDomainChoiceCard({
@@ -42,7 +42,7 @@ export function AIDomainChoiceCard({
       {capabilitySummary.length > 0 && (
         <div className="mb-4 grid gap-2 md:grid-cols-2">
           {capabilitySummary.map((item: any) => {
-            const Icon = DOMAIN_ICON[item.domain] || LucideIcons.LayoutDashboard;
+            const Icon = DOMAIN_ICON[item.domain] || LayoutDashboard;
             return (
               <div
                 key={item.id || item.domain}
@@ -80,7 +80,7 @@ export function AIDomainChoiceCard({
 
       <div className="grid gap-2">
         {choices.map((choice: any) => {
-          const Icon = DOMAIN_ICON[choice.domain] || LucideIcons.LayoutDashboard;
+          const Icon = DOMAIN_ICON[choice.domain] || LayoutDashboard;
           const choiceSteps = Array.isArray(choice?.steps) ? choice.steps : [];
           return (
             <button

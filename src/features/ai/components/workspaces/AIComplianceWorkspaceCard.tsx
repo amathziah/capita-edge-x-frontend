@@ -1,12 +1,11 @@
 import { motion } from 'framer-motion';
-import * as LucideIcons from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import {
   formatCount,
   formatDate,
   genCardVariants,
   genItemVariants,
   WorkspaceActionBar,
-  WorkspaceGuidancePanel,
   WorkspaceViewPills,
 } from './workspaceShared';
 
@@ -39,14 +38,8 @@ export function AIComplianceWorkspaceCard({
       className="mt-4 mb-2 rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-500/8 to-black/40 p-4 shadow-lg shadow-black/20"
     >
       <motion.h4 variants={genItemVariants} className="mb-4 flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-violet-300">
-        <LucideIcons.ShieldCheck size={14} /> {data?.workspaceLabel || 'Compliance Workspace'}
+        <ShieldCheck size={14} /> {data?.workspaceLabel || 'Compliance Workspace'}
       </motion.h4>
-
-      <WorkspaceGuidancePanel
-        guidance={data?.guidance}
-        onSelectStep={onSelectView}
-        disabled={isLoadingView}
-      />
 
       <WorkspaceActionBar
         actions={data?.actions}
