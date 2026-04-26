@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Mic, MicOff, Zap, RotateCcw, ChevronDown, X } from 'lucide-react';
+import { Mic, MicOff, RotateCcw, ChevronDown, X, FileText, CreditCard, Receipt, ShieldCheck, LayoutDashboard, ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService } from '@/shared/services/aiService';
 import { usePersona } from '@/app/providers/PersonaContext';
@@ -561,6 +561,13 @@ export function AIAssistantPage() {
   };
 
   // ─── Render ───────────────────────────────────────────────────────────────
+  const NAV_ITEMS = [
+    { id: 'invoices',    label: 'Invoices',    icon: FileText,     desc: 'Overdue & receivables' },
+    { id: 'payments',   label: 'Payments',    icon: CreditCard,   desc: 'Receipts & cash' },
+    { id: 'expenses',   label: 'Expenses',    icon: Receipt,      desc: 'Spend & burn rate' },
+    { id: 'compliance', label: 'Compliance',  icon: ShieldCheck,  desc: 'GST, TDS & deadlines' },
+  ] as const;
+
   return (
     <>
       <style>{`
@@ -574,165 +581,246 @@ export function AIAssistantPage() {
         }
       `}</style>
 
-      <div className="flex flex-col h-[100dvh] w-full overflow-hidden bg-[#0c0f1a] font-sans text-gray-300">
+      <div className="flex h-[100dvh] w-full overflow-hidden bg-[#0c0f1a] font-sans text-gray-300">
 
         {/* Background glows */}
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute -top-1/3 right-0 w-[500px] h-[500px] rounded-full opacity-[0.15]"
-            style={{ background: `radial-gradient(circle,${TEAL} 0%,transparent 65%)`, filter: 'blur(50px)' }} />
-          <div className="absolute -bottom-1/3 -left-1/4 w-[400px] h-[400px] rounded-full opacity-[0.10]"
-            style={{ background: `radial-gradient(circle,${TEAL} 0%,transparent 65%)`, filter: 'blur(50px)' }} />
+          <div className="absolute -top-1/3 right-0 w-[500px] h-[500px] rounded-full opacity-[0.12]"
+            style={{ background: `radial-gradient(circle,${TEAL} 0%,transparent 65%)`, filter: 'blur(60px)' }} />
+          <div className="absolute -bottom-1/3 -left-1/4 w-[400px] h-[400px] rounded-full opacity-[0.07]"
+            style={{ background: `radial-gradient(circle,${TEAL} 0%,transparent 65%)`, filter: 'blur(60px)' }} />
         </div>
 
-        {/* ── TOP BAR ── */}
-        <div className="relative z-30 shrink-0 flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#090c13]/80 px-4 py-2.5 backdrop-blur-sm sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20">
-              <RobotSVG />
+        {/* ── LEFT SIDEBAR ── */}
+        <aside className="relative z-20 hidden md:flex flex-col w-[220px] shrink-0 border-r border-white/[0.06] bg-[#090c13]/70 backdrop-blur-sm">
+          {/* Brand */}
+          <div className="flex items-center gap-2.5 px-4 py-4 border-b border-white/[0.05]">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20 shrink-0">
+              <RobotSVG size={16} />
             </div>
             <div>
-              <span className="block text-sm font-bold tracking-tight text-white">Capita AI</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="block text-[13px] font-bold tracking-tight text-white leading-none">Capita AI</span>
+              <div className="flex items-center gap-1 mt-0.5">
                 <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
-                <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Online</span>
+                <span className="text-[8px] text-teal-500/70 font-bold uppercase tracking-widest">Online</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Domain nav */}
+          <div className="flex-1 overflow-y-auto px-2 pt-3 pb-2 space-y-0.5">
+            <p className="px-2 pb-1.5 text-[8px] font-black uppercase tracking-widest text-gray-600">Workspaces</p>
+            {NAV_ITEMS.map(({ id, label, icon: Icon, desc }) => (
+              <button
+                key={id}
+                onClick={() => !isBusy && openWorkspace({ id, domain: id, label })}
+                disabled={isBusy}
+                className="w-full flex items-start gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all group hover:bg-white/[0.05] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-white/[0.04] border border-white/[0.07] group-hover:border-teal-500/30 group-hover:bg-teal-500/10 transition-all">
+                  <Icon size={12} className="text-gray-500 group-hover:text-teal-400 transition-colors" />
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-[12px] font-semibold text-gray-400 group-hover:text-white transition-colors leading-none mb-0.5">{label}</span>
+                  <span className="block text-[10px] text-gray-600 group-hover:text-gray-500 transition-colors leading-tight">{desc}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Footer actions */}
+          <div className="px-2 pb-3 pt-2 border-t border-white/[0.05] space-y-1">
             <button
               onClick={clearChat}
               disabled={isBusy}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-colors text-teal-400 border-teal-500/20 bg-teal-500/10 hover:bg-teal-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all hover:bg-white/[0.05] disabled:opacity-40 disabled:cursor-not-allowed group"
             >
-              <RotateCcw size={9} /> Clear
+              <RotateCcw size={12} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
+              <span className="text-[11px] text-gray-600 group-hover:text-gray-400 transition-colors font-medium">New chat</span>
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-8 h-8 flex items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-gray-500 hover:text-white hover:bg-white/[0.08] transition-colors"
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all hover:bg-white/[0.05] group"
             >
-              <X size={15} />
+              <LayoutDashboard size={12} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
+              <span className="text-[11px] text-gray-600 group-hover:text-gray-400 transition-colors font-medium">Dashboard</span>
             </button>
           </div>
-        </div>
+        </aside>
 
-        {/* ── CHAT AREA ── */}
-        <div className="relative z-10 flex flex-col flex-1 min-h-0">
-          <div
-            ref={scrollRef}
-            onScroll={() => {
-              if (!scrollRef.current) return;
-              const el = scrollRef.current;
-              setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 200);
-            }}
-            className="flex-1 overflow-y-auto"
-            style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
-          >
-            <div className="mx-auto max-w-3xl px-3 pb-8 pt-4 space-y-5 sm:px-6">
-              <AnimatePresence initial={false}>
-                {messages.map(msg => (
-                  <ChatBubble
-                    key={msg.id}
-                    msg={msg}
-                    onSelectDomain={openWorkspace}
-                    onSelectView={switchView}
-                    onAction={handleAction}
-                    disableChoices={isBusy}
-                  />
+        {/* ── MAIN PANEL ── */}
+        <div className="relative z-10 flex flex-col flex-1 min-w-0">
+
+          {/* ── TOP BAR (mobile + desktop) ── */}
+          <div className="relative z-30 shrink-0 flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#090c13]/80 px-4 py-2 backdrop-blur-sm">
+            {/* Mobile brand */}
+            <div className="flex md:hidden items-center gap-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-teal-500/10 border border-teal-500/20">
+                <RobotSVG size={15} />
+              </div>
+              <span className="text-[13px] font-bold text-white">Capita AI</span>
+            </div>
+
+            {/* Desktop — empty placeholder so flex spacing stays */}
+            <div className="hidden md:block" />
+
+            <div className="flex items-center gap-1.5">
+              {/* Mobile nav shortcuts */}
+              <div className="flex md:hidden items-center gap-1">
+                {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => !isBusy && openWorkspace({ id, domain: id, label })}
+                    disabled={isBusy}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/[0.07] bg-white/[0.03] text-gray-500 hover:text-teal-400 hover:border-teal-500/30 hover:bg-teal-500/10 transition-all disabled:opacity-30"
+                    title={label}
+                  >
+                    <Icon size={12} />
+                  </button>
                 ))}
-              </AnimatePresence>
-
-              {isThinking && <ThinkingSkeleton />}
-
-              {isListening && (
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-                  className="flex justify-center">
-                  <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
-                    <Mic size={12} className="animate-pulse" />
-                    <span className="text-[9px] font-black tracking-widest uppercase">Listening…</span>
-                    <div className="flex gap-1 items-end h-3">
-                      {[3, 5, 4, 7, 3].map((h, i) => (
-                        <div key={i} className="w-0.5 rounded-full bg-red-400 animate-pulse"
-                          style={{ height: h * 2, animationDuration: `${0.4 + i * 0.1}s` }} />
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+              </div>
+              <button
+                onClick={clearChat}
+                disabled={isBusy}
+                className="md:hidden w-7 h-7 flex items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.03] text-gray-500 hover:text-teal-400 transition-colors disabled:opacity-30"
+                title="New chat"
+              >
+                <RotateCcw size={12} />
+              </button>
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.03] text-gray-500 hover:text-white hover:bg-white/[0.08] transition-colors"
+              >
+                <X size={13} />
+              </button>
             </div>
           </div>
 
-          {/* Scroll-to-bottom FAB */}
-          <AnimatePresence>
-            {showScrollBtn && (
-              <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-                onClick={scrollToBottom}
-                className="absolute bottom-24 right-4 z-50 w-8 h-8 rounded-full bg-[#161a2b] border border-white/[0.1] flex items-center justify-center shadow-xl hover:bg-white/[0.08] transition-colors">
-                <ChevronDown size={15} className="text-gray-400" />
-              </motion.button>
-            )}
-          </AnimatePresence>
+          {/* ── CHAT AREA ── */}
+          <div className="relative flex flex-col flex-1 min-h-0">
+            <div
+              ref={scrollRef}
+              onScroll={() => {
+                if (!scrollRef.current) return;
+                const el = scrollRef.current;
+                setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 200);
+              }}
+              className="flex-1 overflow-y-auto"
+              style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+            >
+              <div className="mx-auto max-w-2xl px-3 pb-6 pt-5 space-y-4 sm:px-5">
+                <AnimatePresence initial={false}>
+                  {messages.map(msg => (
+                    <ChatBubble
+                      key={msg.id}
+                      msg={msg}
+                      onSelectDomain={openWorkspace}
+                      onSelectView={switchView}
+                      onAction={handleAction}
+                      disableChoices={isBusy}
+                    />
+                  ))}
+                </AnimatePresence>
 
-          {/* ── INPUT BAR ── */}
-          <div className="shrink-0 border-t border-white/[0.06] bg-[#090c13]/80 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur-sm sm:px-6 sm:py-3">
-            <div className={`flex items-center gap-2 rounded-2xl border px-3 py-2 transition-all ${
-              inputFocused
-                ? 'border-teal-400/60 ring-2 ring-teal-500/15 bg-[#141820]'
-                : 'border-white/[0.07] hover:border-white/[0.12] bg-white/[0.02]'
-            }`}>
-              <div className="shrink-0 flex items-center gap-1.5 pr-2.5 border-r border-white/[0.07]">
-                <Zap size={13} className="text-teal-400" />
-                <span className="hidden sm:inline text-[9px] font-black uppercase text-teal-400 tracking-widest">Capita</span>
-              </div>
+                {isThinking && <ThinkingSkeleton />}
 
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
-                placeholder="Ask about invoices, payments, expenses, or tax deadlines…"
-                className="flex-1 bg-transparent border-none px-1 py-1 text-[16px] sm:text-sm text-white outline-none placeholder-gray-600"
-              />
-
-              <div className="flex items-center gap-1 shrink-0">
-                <motion.button
-                  whileHover={!isBusy ? { scale: 1.08 } : {}}
-                  whileTap={!isBusy ? { scale: 0.92 } : {}}
-                  onClick={startListening}
-                  disabled={isBusy}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-                    isListening
-                      ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                      : isBusy
-                        ? 'opacity-30 cursor-not-allowed text-gray-600'
-                        : 'text-gray-500 hover:bg-white/[0.06] hover:text-gray-300'
-                  }`}
-                >
-                  {isListening ? <MicOff size={14} /> : <Mic size={14} />}
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: query.trim() && !isBusy ? 1.08 : 1 }}
-                  whileTap={{ scale: query.trim() && !isBusy ? 0.92 : 1 }}
-                  onClick={() => handleSend()}
-                  disabled={!query.trim() || isBusy}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
-                  style={query.trim() && !isBusy
-                    ? { background: `linear-gradient(135deg,${TEAL},#06b6d4)`, color: '#0a0d15' }
-                    : { background: 'rgba(255,255,255,0.04)', color: '#374151', cursor: 'not-allowed' }
-                  }
-                >
-                  <Send size={13} />
-                </motion.button>
+                {isListening && (
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                    className="flex justify-center">
+                    <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
+                      <Mic size={12} className="animate-pulse" />
+                      <span className="text-[9px] font-black tracking-widest uppercase">Listening…</span>
+                      <div className="flex gap-1 items-end h-3">
+                        {[3, 5, 4, 7, 3].map((h, i) => (
+                          <div key={i} className="w-0.5 rounded-full bg-red-400 animate-pulse"
+                            style={{ height: h * 2, animationDuration: `${0.4 + i * 0.1}s` }} />
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </div>
 
-            <p className="mt-1.5 px-1 text-[8px] text-gray-600 font-bold uppercase tracking-widest">
-              Finance engine · Encrypted · Built for India
-            </p>
+            {/* Scroll-to-bottom FAB */}
+            <AnimatePresence>
+              {showScrollBtn && (
+                <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                  onClick={scrollToBottom}
+                  className="absolute bottom-20 right-4 z-50 w-7 h-7 rounded-full bg-[#161a2b] border border-white/[0.1] flex items-center justify-center shadow-xl hover:bg-white/[0.08] transition-colors">
+                  <ChevronDown size={13} className="text-gray-400" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+
+            {/* ── INPUT BAR (Emergent-style) ── */}
+            <div className="shrink-0 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:px-5">
+              <div className={`rounded-2xl border transition-all duration-200 ${
+                inputFocused
+                  ? 'border-white/[0.14] bg-[#13161f] shadow-[0_0_0_1px_rgba(45,212,191,0.12),0_8px_32px_rgba(0,0,0,0.4)]'
+                  : 'border-white/[0.08] bg-[#10131c] hover:border-white/[0.12] shadow-[0_4px_24px_rgba(0,0,0,0.35)]'
+              }`}>
+                {/* Textarea */}
+                <textarea
+                  ref={inputRef as any}
+                  rows={1}
+                  value={query}
+                  onChange={e => {
+                    setQuery(e.target.value);
+                    const el = e.target;
+                    el.style.height = 'auto';
+                    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+                  }}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  placeholder="Ask about invoices, payments, expenses, or compliance…"
+                  className="w-full bg-transparent border-none resize-none px-4 pt-3.5 pb-1 text-sm text-white outline-none placeholder-gray-600 leading-relaxed"
+                  style={{ minHeight: 44, maxHeight: 160, scrollbarWidth: 'none' }}
+                />
+
+                {/* Bottom action row */}
+                <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
+                  {/* Left — hint text */}
+                  <span className="text-[10px] text-gray-700 select-none">
+                    {query.trim() ? 'Shift+Enter for new line' : 'Finance engine · Encrypted'}
+                  </span>
+
+                  {/* Right — mic + send */}
+                  <div className="flex items-center gap-1.5">
+                    <motion.button
+                      whileHover={!isBusy ? { scale: 1.08 } : {}}
+                      whileTap={!isBusy ? { scale: 0.92 } : {}}
+                      onClick={startListening}
+                      disabled={isBusy}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                        isListening
+                          ? 'bg-red-500/15 text-red-400 border border-red-500/25'
+                          : isBusy
+                            ? 'opacity-25 cursor-not-allowed text-gray-600'
+                            : 'text-gray-500 hover:bg-white/[0.07] hover:text-gray-300 border border-transparent hover:border-white/[0.08]'
+                      }`}
+                    >
+                      {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+                    </motion.button>
+
+                    <motion.button
+                      whileHover={{ scale: query.trim() && !isBusy ? 1.05 : 1 }}
+                      whileTap={{ scale: query.trim() && !isBusy ? 0.95 : 1 }}
+                      onClick={() => handleSend()}
+                      disabled={!query.trim() || isBusy}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
+                      style={query.trim() && !isBusy
+                        ? { background: TEAL, color: '#0a0d15', boxShadow: `0 0 12px rgba(45,212,191,0.35)` }
+                        : { background: 'rgba(255,255,255,0.06)', color: '#374151', cursor: 'not-allowed' }
+                      }
+                    >
+                      <ArrowUp size={14} strokeWidth={2.5} />
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
