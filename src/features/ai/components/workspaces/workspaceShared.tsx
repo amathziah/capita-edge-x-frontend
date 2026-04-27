@@ -1,15 +1,27 @@
 import { motion } from 'framer-motion';
 
+const C = {
+  surface: '#ffffff',
+  border: '#e5e7eb',
+  borderStrong: '#d1d5db',
+  text: '#1a1f36',
+  textBody: '#4f566b',
+  textMuted: '#697386',
+  textFaint: '#a3acb9',
+  accent: '#635bff',
+  accentSoft: '#f0eeff',
+};
+
 export const genCardVariants = {
-  hidden: { opacity: 0, y: 10, scale: 0.98 },
+  hidden: { opacity: 0, y: 8, scale: 0.99 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
     transition: {
       type: 'spring' as const,
-      damping: 20,
-      stiffness: 250,
+      damping: 22,
+      stiffness: 260,
       staggerChildren: 0.04,
       delayChildren: 0.02,
     },
@@ -17,11 +29,11 @@ export const genCardVariants = {
 };
 
 export const genItemVariants = {
-  hidden: { opacity: 0, y: 8 },
+  hidden: { opacity: 0, y: 6 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.25, ease: 'easeOut' as const },
+    transition: { duration: 0.22, ease: 'easeOut' as const },
   },
 };
 
@@ -60,7 +72,7 @@ export function WorkspaceViewPills({
   if (!views || views.length === 0) return null;
 
   return (
-    <motion.div variants={genItemVariants} className="mb-4 flex flex-wrap gap-2">
+    <motion.div variants={genItemVariants} className="mb-4 flex flex-wrap gap-1.5">
       {views.map((view) => {
         const isSelected = selectedView === view.id;
         return (
@@ -74,13 +86,26 @@ export function WorkspaceViewPills({
               }
             }}
             disabled={disabled || !onSelectView || isSelected}
-            className={`inline-flex items-center rounded-full border px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] ${
+            className="rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors disabled:cursor-not-allowed"
+            style={
               isSelected
-                ? 'border-teal-500/30 bg-teal-500/12 text-teal-300'
+                ? { background: C.accentSoft, color: C.accent, border: `1px solid ${C.accentSoft}` }
                 : disabled
-                  ? 'cursor-not-allowed border-white/[0.08] bg-white/[0.03] text-gray-600'
-                  : 'border-white/[0.08] bg-white/[0.03] text-gray-500 hover:border-white/[0.16] hover:text-gray-300'
-            }`}
+                ? { background: 'transparent', color: C.textFaint, border: `1px solid ${C.border}`, opacity: 0.6 }
+                : { background: C.surface, color: C.textBody, border: `1px solid ${C.border}` }
+            }
+            onMouseEnter={(e) => {
+              if (!isSelected && !disabled && onSelectView) {
+                e.currentTarget.style.borderColor = C.borderStrong;
+                e.currentTarget.style.color = C.text;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSelected && !disabled && onSelectView) {
+                e.currentTarget.style.borderColor = C.border;
+                e.currentTarget.style.color = C.textBody;
+              }
+            }}
           >
             {view.label}
           </button>
@@ -112,15 +137,27 @@ export function WorkspaceActionBar({
             if (!disabled && onAction) onAction(action);
           }}
           disabled={disabled || !onAction}
-          className={`rounded-xl border px-3 py-2 text-left transition-all ${
-            disabled || !onAction
-              ? 'cursor-not-allowed border-white/[0.05] bg-white/[0.02] text-gray-600'
-              : 'border-white/[0.08] bg-white/[0.03] text-gray-200 hover:border-teal-500/30 hover:bg-teal-500/[0.06]'
-          }`}
+          className="rounded-lg px-3 py-2 text-left transition-colors disabled:cursor-not-allowed"
+          style={{
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            color: C.text,
+            opacity: disabled || !onAction ? 0.5 : 1,
+          }}
+          onMouseEnter={(e) => {
+            if (!disabled && onAction) {
+              e.currentTarget.style.borderColor = C.accent;
+              e.currentTarget.style.background = C.accentSoft;
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = C.border;
+            e.currentTarget.style.background = C.surface;
+          }}
         >
-          <div className="text-[10px] font-black uppercase tracking-[0.18em]">{action.label}</div>
+          <div className="text-[13px] font-semibold">{action.label}</div>
           {action.description && (
-            <div className="mt-1 text-[10px] leading-relaxed text-gray-500">{action.description}</div>
+            <div className="mt-0.5 text-[11px]" style={{ color: C.textMuted }}>{action.description}</div>
           )}
         </button>
       ))}
