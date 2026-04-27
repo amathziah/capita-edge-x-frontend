@@ -34,7 +34,7 @@ export function AIInvoiceWorkspaceCard({
   const showDebtors = selectedView === 'overview' || selectedView === 'debtors';
   const accent = '#7dd3fc';
   const cardStyle = {
-    background: 'linear-gradient(180deg, rgba(13, 22, 30, 0.96) 0%, rgba(9, 16, 23, 0.98) 100%)',
+    background: '#ffffff',
     border: `1px solid ${AI_THEME.border}`,
     boxShadow: AI_THEME.shadow,
   };
@@ -150,7 +150,7 @@ export function AIInvoiceWorkspaceCard({
             {topOverdue && (
               <div
                 className="mt-3 rounded-xl px-3 py-2 text-[11px]"
-                style={{ border: `1px solid ${AI_THEME.dangerSoft}`, background: 'rgba(11, 15, 18, 0.42)', color: '#ffd5d1' }}
+                style={{ border: `1px solid #fecaca`, background: '#fef2f2', color: '#dc2626' }}
               >
                 Next action: follow up on #{topOverdue.invoiceNumber}
                 {topOverdue.buyer?.name ? ` for ${topOverdue.buyer.name}` : ''} first.

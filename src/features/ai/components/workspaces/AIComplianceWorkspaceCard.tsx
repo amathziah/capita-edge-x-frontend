@@ -32,7 +32,7 @@ export function AIComplianceWorkspaceCard({
   const primaryTitle = selectedView === 'due_this_week' ? 'Due This Week' : 'Priority Tasks';
   const accent = '#c59cf8';
   const cardStyle = {
-    background: 'linear-gradient(180deg, rgba(13, 22, 30, 0.96) 0%, rgba(9, 16, 23, 0.98) 100%)',
+    background: '#ffffff',
     border: `1px solid ${AI_THEME.border}`,
     boxShadow: AI_THEME.shadow,
   };

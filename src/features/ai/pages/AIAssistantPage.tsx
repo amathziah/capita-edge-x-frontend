@@ -47,14 +47,33 @@ type NavItem = {
   accent: string;
 };
 
+const DARK = '#0c0f1a';
+const WHITE = '#ffffff';
+
 const COLORS = {
   ...AI_THEME,
-  userBubble: 'linear-gradient(180deg, rgba(22, 66, 60, 0.88) 0%, rgba(17, 49, 45, 0.94) 100%)',
-  userBorder: 'rgba(96, 214, 185, 0.22)',
-  botBubble: 'linear-gradient(180deg, rgba(17, 25, 33, 0.96) 0%, rgba(13, 20, 28, 0.98) 100%)',
-  composer: 'rgba(13, 20, 28, 0.98)',
-  header: 'rgba(11, 17, 23, 0.86)',
-  overlay: 'rgba(5, 10, 14, 0.72)',
+  bg: WHITE,
+  bgSecondary: WHITE,
+  sidebar: DARK,
+  surface: WHITE,
+  surfaceRaised: 'rgba(12,15,26,0.06)',
+  surfaceSoft: 'rgba(12,15,26,0.04)',
+  border: 'rgba(12,15,26,0.10)',
+  borderStrong: 'rgba(12,15,26,0.20)',
+  text: DARK,
+  textBody: 'rgba(12,15,26,0.80)',
+  textMuted: 'rgba(12,15,26,0.50)',
+  textFaint: 'rgba(12,15,26,0.35)',
+  accent: DARK,
+  accentSoft: 'rgba(12,15,26,0.08)',
+  shadow: '0 1px 3px rgba(12,15,26,0.08)',
+  panelShadow: '0 1px 2px rgba(12,15,26,0.06)',
+  userBubble: DARK,
+  userBorder: DARK,
+  botBubble: WHITE,
+  composer: WHITE,
+  header: WHITE,
+  overlay: 'rgba(12,15,26,0.5)',
 };
 
 const INPUT_PLACEHOLDER = 'Ask about overdue invoices, payment collection, monthly expenses, or compliance deadlines';
@@ -104,7 +123,7 @@ const botMd: Components = {
   ),
   li: ({ children }) => (
     <li className="flex items-start gap-2.5 text-[14px] leading-[1.65]" style={{ color: COLORS.textBody }}>
-      <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: COLORS.accent }} />
+      <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: COLORS.textMuted }} />
       <span className="min-w-0 flex-1">{children}</span>
     </li>
   ),
@@ -141,16 +160,16 @@ const botMd: Components = {
     /language-/.test(className || '') ? (
       <pre
         className="my-3 overflow-x-auto rounded-2xl p-3"
-        style={{ background: 'rgba(8, 13, 19, 0.88)', border: `1px solid ${COLORS.border}` }}
+        style={{ background: '#f3f4f6', border: `1px solid ${COLORS.border}` }}
       >
-        <code className="font-mono text-[12px] leading-relaxed" style={{ color: '#cce5f6' }}>
+        <code className="font-mono text-[12px] leading-relaxed" style={{ color: '#1f2937' }}>
           {children}
         </code>
       </pre>
     ) : (
       <code
         className="rounded-md px-1.5 py-0.5 font-mono text-[12px]"
-        style={{ background: 'rgba(8, 13, 19, 0.88)', color: '#cce5f6', border: `1px solid ${COLORS.border}` }}
+        style={{ background: '#f3f4f6', color: '#1f2937', border: `1px solid ${COLORS.border}` }}
       >
         {children}
       </code>
@@ -191,9 +210,9 @@ function ThinkingIndicator() {
   return (
     <div className="flex items-center gap-2 text-[13px]" style={{ color: COLORS.textMuted }}>
       <div className="flex gap-1">
-        <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: COLORS.accent, animationDelay: '0s' }} />
-        <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: COLORS.accent, animationDelay: '0.15s' }} />
-        <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: COLORS.accent, animationDelay: '0.3s' }} />
+        <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: COLORS.textMuted, animationDelay: '0s' }} />
+        <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: COLORS.textMuted, animationDelay: '0.15s' }} />
+        <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: COLORS.textMuted, animationDelay: '0.3s' }} />
       </div>
       <span>Generating response</span>
     </div>
@@ -321,114 +340,81 @@ function SidebarPanel({
   onClose?: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col p-3 sm:p-4">
-      <div className="mb-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-2xl"
-            style={{ background: COLORS.accentSoft, color: COLORS.accent }}
-          >
-            <Sparkles size={17} />
-          </div>
-          <div>
-            <div className="text-[15px] font-semibold" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
-              Capita AI
-            </div>
-            <div className="text-[12px]" style={{ color: COLORS.textFaint }}>
-              Finance workspace
-            </div>
-          </div>
+    <div className="flex h-full flex-col">
+      {/* Brand header — mirrors original sidebar brand row */}
+      <div className="flex h-[72px] shrink-0 items-center gap-3 border-b border-white/[0.06] px-5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-500/10 border border-teal-500/20">
+          <Sparkles size={16} className="text-teal-400" />
         </div>
-
+        <div className="min-w-0 flex-1">
+          <div className="text-[15px] font-bold text-white tracking-tight leading-none">Capita AI</div>
+          <div className="mt-0.5 text-[10px] text-gray-500 font-medium">Finance workspace</div>
+        </div>
         {onClose ? (
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-2xl lg:hidden"
-            style={{ color: COLORS.textMuted }}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-colors lg:hidden"
           >
-            <X size={16} />
+            <X size={15} />
           </button>
         ) : null}
       </div>
 
-      <button
-        type="button"
-        onClick={onNewChat}
-        disabled={isBusy}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[13px] font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50"
-        style={{ background: COLORS.text, color: COLORS.bg }}
-      >
-        <Plus size={14} strokeWidth={2.5} />
-        New thread
-      </button>
+      {/* Scrollable nav area */}
+      <div className="flex-1 overflow-y-auto px-3 pt-5 pb-4 space-y-5 scrollbar-hide">
+        {/* New thread button */}
+        <button
+          type="button"
+          onClick={onNewChat}
+          disabled={isBusy}
+          className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.10] transition-all disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Plus size={14} strokeWidth={2.5} />
+          New thread
+        </button>
 
-      <div className="mt-7">
-        <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: COLORS.textFaint }}>
-          Workspaces
-        </div>
+        {/* Workspace nav items */}
+        <div>
+          <div className="flex items-center gap-2 px-1 mb-2">
+            <span className="text-[10px] font-bold tracking-[0.12em] text-gray-400 uppercase whitespace-nowrap">
+              Workspaces
+            </span>
+            <div className="flex-1 h-px bg-white/[0.08]" />
+          </div>
 
-        <div className="space-y-2">
-          {navItems.map(({ id, label, icon: Icon, desc, accent }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => !isBusy && onOpenWorkspace({ id, domain: id, label })}
-              disabled={isBusy}
-              className="flex w-full items-start gap-3 rounded-[18px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ background: COLORS.surfaceSoft, borderColor: COLORS.border }}
-              onMouseEnter={(e) => {
-                if (!isBusy) {
-                  e.currentTarget.style.borderColor = accent;
-                  e.currentTarget.style.background = COLORS.surfaceRaised;
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = COLORS.border;
-                e.currentTarget.style.background = COLORS.surfaceSoft;
-              }}
-            >
-              <span
-                className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
-                style={{ background: `${accent}18`, color: accent }}
+          <div className="space-y-0.5">
+            {navItems.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => !isBusy && onOpenWorkspace({ id, domain: id, label })}
+                disabled={isBusy}
+                className="group relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] transition-all disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Icon size={16} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[14px] font-semibold" style={{ color: COLORS.text }}>
-                  {label}
-                </span>
-                <span className="mt-1 block text-[12px] leading-[1.5]" style={{ color: COLORS.textMuted }}>
-                  {desc}
-                </span>
-              </span>
-            </button>
-          ))}
+                <Icon
+                  size={18}
+                  strokeWidth={1.8}
+                  className="shrink-0 text-gray-500 group-hover:text-gray-400 transition-colors"
+                  style={{ color: undefined }}
+                />
+                <span className="flex-1 truncate">{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="mt-auto pt-5">
+      {/* Footer — dashboard exit button */}
+      <div className="shrink-0 border-t border-white/[0.06] px-3 py-3">
         <button
           type="button"
           onClick={onDashboard}
-          className="flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left transition-all"
-          style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textBody }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = COLORS.borderStrong;
-            e.currentTarget.style.background = COLORS.surfaceRaised;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = COLORS.border;
-            e.currentTarget.style.background = COLORS.surfaceSoft;
-          }}
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] transition-all"
         >
-          <span className="flex items-center gap-2 text-[13px] font-semibold">
-            <LayoutDashboard size={15} />
-            Dashboard
-          </span>
-          <span className="text-[11px]" style={{ color: COLORS.textFaint }}>
-            Exit
-          </span>
+          <LayoutDashboard size={18} strokeWidth={1.8} className="shrink-0 text-gray-500" />
+          <span className="flex-1 text-left">Dashboard</span>
+          <span className="text-[10px] text-gray-600 font-medium">Exit</span>
         </button>
       </div>
     </div>
@@ -482,7 +468,7 @@ function ChatBubble({
           style={
             isBot
               ? {
-                  background: isError ? 'rgba(87, 28, 31, 0.2)' : COLORS.botBubble,
+                  background: isError ? COLORS.dangerSoft : COLORS.botBubble,
                   border: `1px solid ${isError ? COLORS.dangerSoft : isStreaming ? COLORS.borderStrong : COLORS.border}`,
                   color: COLORS.textBody,
                   boxShadow: COLORS.panelShadow,
@@ -893,7 +879,7 @@ export function AIAssistantPage() {
           margin-left: 2px;
           vertical-align: text-bottom;
           border-radius: 1px;
-          background: ${COLORS.accent};
+          background: ${COLORS.text};
           animation: capita-cursor-blink 0.9s ease-in-out infinite;
         }
       `}</style>
@@ -905,18 +891,13 @@ export function AIAssistantPage() {
         <div className="pointer-events-none absolute inset-0">
           <div
             className="absolute inset-0"
-            style={{
-              background: `
-                radial-gradient(circle at top, rgba(39, 199, 166, 0.08), transparent 34%),
-                linear-gradient(180deg, ${COLORS.bgSecondary} 0%, ${COLORS.bg} 100%)
-              `,
-            }}
+            style={{ background: COLORS.bg }}
           />
         </div>
 
         <aside
           className="relative z-10 hidden h-full w-[272px] shrink-0 border-r xl:w-[286px] lg:block"
-          style={{ borderColor: COLORS.border, background: 'rgba(15, 21, 28, 0.92)', backdropFilter: 'blur(14px)' }}
+          style={{ borderColor: 'rgba(45,212,191,0.1)', background: DARK }}
         >
           <SidebarPanel
             navItems={NAV_ITEMS}
@@ -945,7 +926,7 @@ export function AIAssistantPage() {
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 26, stiffness: 220 }}
                 className="absolute inset-y-0 left-0 z-40 w-[90vw] max-w-[340px] border-r lg:hidden"
-                style={{ borderColor: COLORS.border, background: 'rgba(15, 21, 28, 0.98)', backdropFilter: 'blur(18px)' }}
+                style={{ borderColor: 'rgba(45,212,191,0.1)', background: DARK }}
               >
                 <SidebarPanel
                   navItems={NAV_ITEMS}
@@ -963,7 +944,7 @@ export function AIAssistantPage() {
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">
           <header
             className="border-b px-4 py-4 sm:px-6"
-            style={{ borderColor: COLORS.border, background: COLORS.header, backdropFilter: 'blur(12px)' }}
+            style={{ borderColor: 'rgba(12,15,26,0.08)', background: WHITE }}
           >
             <div className="mx-auto flex w-full max-w-[1120px] items-center justify-between gap-4">
               <div className="flex min-w-0 items-center gap-3">
@@ -1037,7 +1018,7 @@ export function AIAssistantPage() {
                 setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 220);
               }}
               className="custom-scrollbar flex-1 overflow-y-auto"
-              style={{ scrollbarWidth: 'thin', scrollbarColor: `${COLORS.borderStrong} transparent` }}
+              style={{ scrollbarWidth: 'thin', scrollbarColor: `${COLORS.border} transparent` }}
             >
               <div className="mx-auto flex min-h-full w-full max-w-[1040px] flex-col px-4 pb-36 pt-5 sm:px-6 sm:pt-6">
                 {isEmpty ? (
@@ -1105,7 +1086,7 @@ export function AIAssistantPage() {
             </AnimatePresence>
 
             <div className="relative z-20 px-4 pb-[calc(env(safe-area-inset-bottom)+0.9rem)] pt-3 sm:px-6 sm:pt-4">
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[-56px]" style={{ background: `linear-gradient(180deg, rgba(11,17,23,0) 0%, ${COLORS.bg} 42%, ${COLORS.bg} 100%)` }} />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[-56px]" style={{ background: `linear-gradient(180deg, rgba(255,255,255,0) 0%, ${WHITE} 42%, ${WHITE} 100%)` }} />
 
               <div className="relative mx-auto w-full max-w-[1040px]">
                 <div

@@ -31,7 +31,7 @@ export function AICustomerWorkspaceCard({
   const avgValue = customers.length > 0 ? totalRevenue / customers.length : 0;
   const accent = '#6fe4d8';
   const cardStyle = {
-    background: 'linear-gradient(180deg, rgba(13, 22, 30, 0.96) 0%, rgba(9, 16, 23, 0.98) 100%)',
+    background: '#ffffff',
     border: `1px solid ${AI_THEME.border}`,
     boxShadow: AI_THEME.shadow,
   };
