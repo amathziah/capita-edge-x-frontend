@@ -237,37 +237,37 @@ function EmptyState({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24 }}
-      className="mx-auto flex w-full max-w-[920px] flex-1 flex-col justify-center py-6 sm:py-8"
+      className="mx-auto flex w-full max-w-[920px] flex-1 flex-col justify-center py-4 sm:py-8"
     >
       <div className="mx-auto w-full max-w-[760px] text-center">
         <div
-          className="mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em]"
+          className="mb-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] sm:mb-4 sm:py-1.5 sm:text-[11px]"
           style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textMuted }}
         >
-          <Sparkles size={12} style={{ color: COLORS.accent }} />
+          <Sparkles size={11} style={{ color: COLORS.accent }} />
           Capita AI
         </div>
 
         <h1
-          className="text-[28px] font-semibold leading-[1.08] tracking-[-0.03em] sm:text-[36px] lg:text-[42px]"
+          className="text-[22px] font-semibold leading-[1.12] tracking-[-0.02em] sm:text-[30px] lg:text-[38px]"
           style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}
         >
-          Ask about invoices, cash flow, expenses, and compliance in one place.
+          Ask about invoices, cash flow, expenses, and compliance.
         </h1>
 
-        <p className="mx-auto mt-4 max-w-2xl text-[14px] leading-[1.8] sm:text-[15px]" style={{ color: COLORS.textMuted }}>
+        <p className="mx-auto mt-3 max-w-xl text-[13px] leading-[1.75] sm:mt-4 sm:text-[14px]" style={{ color: COLORS.textMuted }}>
           Get direct answers from your business data and jump into the right workspace when you need detail.
           {businessType ? ` Optimized for your ${businessType} workflow.` : ''}
         </p>
 
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="mt-4 flex flex-wrap justify-center gap-1.5 sm:mt-5 sm:gap-2">
           {navItems.map(({ id, label, icon: Icon, accent }) => (
             <button
               key={id}
               type="button"
               onClick={() => !disabled && onOpenWorkspace({ id, domain: id, label })}
               disabled={disabled}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border px-3 py-2 text-[12px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50"
               style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textBody }}
               onMouseEnter={(e) => {
                 if (!disabled) {
@@ -280,21 +280,21 @@ function EmptyState({
                 e.currentTarget.style.background = COLORS.surfaceSoft;
               }}
             >
-              <Icon size={13} style={{ color: accent }} />
+              <Icon size={12} style={{ color: accent }} />
               {label}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="mx-auto mt-8 grid w-full max-w-[860px] gap-3 sm:grid-cols-2">
+      <div className="mx-auto mt-5 grid w-full max-w-[860px] gap-2 sm:mt-7 sm:grid-cols-2 sm:gap-3">
         {SUGGESTED_PROMPTS.map((prompt) => (
           <button
             key={prompt.label}
             type="button"
             onClick={() => !disabled && onPrompt(prompt.query)}
             disabled={disabled}
-            className="rounded-[22px] border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:p-5"
+            className="rounded-[18px] border p-3.5 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:rounded-[22px] sm:p-4"
             style={{
               background: COLORS.botBubble,
               borderColor: COLORS.border,
@@ -311,10 +311,10 @@ function EmptyState({
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
-            <div className="mb-2 text-[15px] font-semibold" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
+            <div className="mb-1 text-[13px] font-semibold sm:mb-1.5 sm:text-[14px]" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
               {prompt.label}
             </div>
-            <p className="text-[13px] leading-[1.7]" style={{ color: COLORS.textMuted }}>
+            <p className="text-[12px] leading-[1.65] sm:text-[13px] sm:leading-[1.7]" style={{ color: COLORS.textMuted }}>
               {prompt.description}
             </p>
           </button>
@@ -341,46 +341,46 @@ function SidebarPanel({
 }) {
   return (
     <div className="flex h-full flex-col">
-      {/* Brand header — mirrors original sidebar brand row */}
-      <div className="flex h-[72px] shrink-0 items-center gap-3 border-b border-white/[0.06] px-5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-500/10 border border-teal-500/20">
-          <Sparkles size={16} className="text-teal-400" />
+      {/* Brand header */}
+      <div className="flex h-[60px] shrink-0 items-center gap-2.5 border-b border-white/[0.06] px-4">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-500/10 border border-teal-500/20">
+          <Sparkles size={13} className="text-teal-400" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-bold text-white tracking-tight leading-none">Capita AI</div>
+          <div className="text-[13px] font-bold text-white tracking-tight leading-none">Capita AI</div>
           <div className="mt-0.5 text-[10px] text-gray-500 font-medium">Finance workspace</div>
         </div>
         {onClose ? (
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-colors lg:hidden"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-colors lg:hidden"
           >
-            <X size={15} />
+            <X size={13} />
           </button>
         ) : null}
       </div>
 
       {/* Scrollable nav area */}
-      <div className="flex-1 overflow-y-auto px-3 pt-5 pb-4 space-y-5 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto px-2.5 pt-4 pb-3 space-y-4 scrollbar-hide">
         {/* New thread button */}
         <button
           type="button"
           onClick={onNewChat}
           disabled={isBusy}
-          className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.10] transition-all disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold text-white bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.10] transition-all disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <Plus size={14} strokeWidth={2.5} />
+          <Plus size={12} strokeWidth={2.5} />
           New thread
         </button>
 
         {/* Workspace nav items */}
         <div>
-          <div className="flex items-center gap-2 px-1 mb-2">
-            <span className="text-[10px] font-bold tracking-[0.12em] text-gray-400 uppercase whitespace-nowrap">
+          <div className="flex items-center gap-2 px-1 mb-1.5">
+            <span className="text-[9px] font-bold tracking-[0.12em] text-gray-500 uppercase whitespace-nowrap">
               Workspaces
             </span>
-            <div className="flex-1 h-px bg-white/[0.08]" />
+            <div className="flex-1 h-px bg-white/[0.06]" />
           </div>
 
           <div className="space-y-0.5">
@@ -390,10 +390,10 @@ function SidebarPanel({
                 type="button"
                 onClick={() => !isBusy && onOpenWorkspace({ id, domain: id, label })}
                 disabled={isBusy}
-                className="group relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                className="group relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[12px] font-medium text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] transition-all disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Icon
-                  size={18}
+                  size={15}
                   strokeWidth={1.8}
                   className="shrink-0 text-gray-500 group-hover:text-gray-400 transition-colors"
                   style={{ color: undefined }}
@@ -406,15 +406,15 @@ function SidebarPanel({
       </div>
 
       {/* Footer — dashboard exit button */}
-      <div className="shrink-0 border-t border-white/[0.06] px-3 py-3">
+      <div className="shrink-0 border-t border-white/[0.06] px-2.5 py-2.5">
         <button
           type="button"
           onClick={onDashboard}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] transition-all"
+          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] font-medium text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] transition-all"
         >
-          <LayoutDashboard size={18} strokeWidth={1.8} className="shrink-0 text-gray-500" />
+          <LayoutDashboard size={15} strokeWidth={1.8} className="shrink-0 text-gray-500" />
           <span className="flex-1 text-left">Dashboard</span>
-          <span className="text-[10px] text-gray-600 font-medium">Exit</span>
+          <span className="text-[9px] text-gray-600 font-medium">Exit</span>
         </button>
       </div>
     </div>
@@ -457,8 +457,8 @@ function ChatBubble({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <div className={`flex max-w-full flex-col sm:max-w-[88%] xl:max-w-[82%] ${isBot ? 'items-start' : 'items-end'}`}>
-        <div className="mb-2 flex items-center gap-2 px-1 text-[10px] uppercase tracking-[0.2em] sm:text-[11px]" style={{ color: COLORS.textFaint }}>
+      <div className={`flex max-w-[95%] flex-col sm:max-w-[88%] xl:max-w-[82%] ${isBot ? 'items-start' : 'items-end'}`}>
+        <div className="mb-1.5 flex items-center gap-1.5 px-1 text-[10px] uppercase tracking-[0.18em] sm:mb-2 sm:gap-2 sm:tracking-[0.2em]" style={{ color: COLORS.textFaint }}>
           {isBot ? <Bot size={12} /> : <span className="h-2 w-2 rounded-full" style={{ background: COLORS.accent }} />}
           <span>{isBot ? 'Capita AI' : 'You'}</span>
         </div>
@@ -896,7 +896,7 @@ export function AIAssistantPage() {
         </div>
 
         <aside
-          className="relative z-10 hidden h-full w-[272px] shrink-0 border-r xl:w-[286px] lg:block"
+          className="relative z-10 hidden h-full w-[220px] shrink-0 border-r xl:w-[236px] lg:block"
           style={{ borderColor: 'rgba(45,212,191,0.1)', background: DARK }}
         >
           <SidebarPanel
@@ -969,9 +969,9 @@ export function AIAssistantPage() {
                       Live
                     </span>
                   </div>
-                  <p className="mt-1 max-w-[620px] truncate text-[11px] sm:text-[12px]" style={{ color: COLORS.textMuted }}>
-                    Professional assistant for invoices, cash flow, expenses, and compliance
-                    {businessType ? ` • ${businessType}` : ''}
+                  <p className="mt-0.5 hidden max-w-[480px] truncate text-[11px] sm:block sm:text-[12px]" style={{ color: COLORS.textMuted }}>
+                    Invoices · cash flow · expenses · compliance
+                    {businessType ? ` · ${businessType}` : ''}
                   </p>
                 </div>
               </div>
@@ -1020,7 +1020,7 @@ export function AIAssistantPage() {
               className="custom-scrollbar flex-1 overflow-y-auto"
               style={{ scrollbarWidth: 'thin', scrollbarColor: `${COLORS.border} transparent` }}
             >
-              <div className="mx-auto flex min-h-full w-full max-w-[1040px] flex-col px-4 pb-36 pt-5 sm:px-6 sm:pt-6">
+              <div className="mx-auto flex min-h-full w-full max-w-[1040px] flex-col px-3 pb-28 pt-4 sm:px-6 sm:pb-36 sm:pt-6">
                 {isEmpty ? (
                   <EmptyState
                     onPrompt={(q) => handleSend(q)}
@@ -1085,7 +1085,7 @@ export function AIAssistantPage() {
               ) : null}
             </AnimatePresence>
 
-            <div className="relative z-20 px-4 pb-[calc(env(safe-area-inset-bottom)+0.9rem)] pt-3 sm:px-6 sm:pt-4">
+            <div className="relative z-20 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 sm:px-6 sm:pt-4">
               <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[-56px]" style={{ background: `linear-gradient(180deg, rgba(255,255,255,0) 0%, ${WHITE} 42%, ${WHITE} 100%)` }} />
 
               <div className="relative mx-auto w-full max-w-[1040px]">
@@ -1097,8 +1097,8 @@ export function AIAssistantPage() {
                     boxShadow: inputFocused ? `0 0 0 3px ${COLORS.accentSoft}` : COLORS.shadow,
                   }}
                 >
-                  <div className="flex items-center gap-2 px-4 pt-4 text-[12px] font-medium" style={{ color: COLORS.textMuted }}>
-                    <Sparkles size={13} style={{ color: COLORS.accent }} />
+                  <div className="flex items-center gap-2 px-4 pt-3 text-[11px] font-medium sm:pt-4 sm:text-[12px]" style={{ color: COLORS.textMuted }}>
+                    <Sparkles size={12} style={{ color: COLORS.accent }} />
                     Ask Capita AI
                   </div>
 
@@ -1110,7 +1110,7 @@ export function AIAssistantPage() {
                       setQuery(e.target.value);
                       const el = e.target;
                       el.style.height = 'auto';
-                      el.style.height = `${Math.min(el.scrollHeight, 170)}px`;
+                      el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -1125,32 +1125,32 @@ export function AIAssistantPage() {
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
                     placeholder={INPUT_PLACEHOLDER}
-                    className="min-h-[64px] w-full resize-none border-none bg-transparent px-4 pb-2 pt-3 text-[14px] leading-[1.75] outline-none placeholder:opacity-100 sm:text-[15px]"
+                    className="min-h-[52px] w-full resize-none border-none bg-transparent px-4 pb-2 pt-2 text-[13px] leading-[1.75] outline-none placeholder:opacity-100 sm:min-h-[60px] sm:pt-3 sm:text-[14px]"
                     style={{
                       color: COLORS.text,
-                      maxHeight: 170,
+                      maxHeight: 140,
                       scrollbarWidth: 'none',
                     }}
                   />
 
-                  <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: COLORS.border }}>
-                    <div className="text-[11px]" style={{ color: COLORS.textFaint }}>
-                      Enter to send. Shift+Enter for a new line.
+                  <div className="flex items-center justify-between gap-2 border-t px-4 py-2.5 sm:py-3" style={{ borderColor: COLORS.border }}>
+                    <div className="hidden text-[11px] sm:block" style={{ color: COLORS.textFaint }}>
+                      Enter to send · Shift+Enter for new line
                     </div>
 
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-2 sm:justify-start">
                       <button
                         type="button"
                         onClick={startListening}
                         disabled={isBusy}
-                        className="flex h-10 w-10 items-center justify-center rounded-2xl transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl transition-all disabled:cursor-not-allowed disabled:opacity-40 sm:h-10 sm:w-10 sm:rounded-2xl"
                         style={{
                           border: `1px solid ${isListening ? COLORS.dangerSoft : COLORS.border}`,
                           background: isListening ? COLORS.dangerSoft : COLORS.surfaceSoft,
                           color: isListening ? COLORS.danger : COLORS.textMuted,
                         }}
                       >
-                        {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                        {isListening ? <MicOff size={15} /> : <Mic size={15} />}
                       </button>
 
                       <button
@@ -1163,7 +1163,7 @@ export function AIAssistantPage() {
                           }
                         }}
                         disabled={!isBusy && !query.trim()}
-                        className="flex h-10 min-w-[108px] items-center justify-center gap-2 rounded-2xl px-4 transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-9 min-w-[90px] items-center justify-center gap-1.5 rounded-xl px-3 transition-all disabled:cursor-not-allowed disabled:opacity-40 sm:h-10 sm:min-w-[108px] sm:rounded-2xl sm:px-4 sm:gap-2"
                         style={
                           isBusy || query.trim()
                             ? { background: COLORS.text, color: COLORS.bg }
