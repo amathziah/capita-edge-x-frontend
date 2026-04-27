@@ -75,7 +75,7 @@ export function AICustomerWorkspaceCard({
         disabled={isLoadingView}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
           <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.24em]" style={{ color: AI_THEME.textFaint }}>Total Clients</div>
           <div className="text-[16px] font-black" style={{ color: AI_THEME.text }}>{formatCount(customers.length)}</div>

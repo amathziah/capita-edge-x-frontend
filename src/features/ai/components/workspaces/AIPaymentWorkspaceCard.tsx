@@ -75,7 +75,7 @@ export function AIPaymentWorkspaceCard({
         disabled={isLoadingView}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
         {[
           ['Collected', formatMoney(summary.totalCollected), 'money'],
           ['This Month', formatMoney(summary.collectedThisMonth), 'money'],
@@ -91,7 +91,7 @@ export function AIPaymentWorkspaceCard({
         ))}
       </div>
 
-      <div className={`grid gap-3 ${showRecent && showPending ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
+      <div className={`grid gap-3 ${showRecent && showPending ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
       {showRecent && (
       <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
         <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>Recent Payments</div>

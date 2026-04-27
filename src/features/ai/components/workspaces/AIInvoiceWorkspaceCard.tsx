@@ -78,7 +78,7 @@ export function AIInvoiceWorkspaceCard({
         disabled={isLoadingView}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
         {[
           ['Tracked', summary.totalInvoices, 'count'],
           ['Drafts', summary.draftCount, 'count'],
@@ -94,7 +94,7 @@ export function AIInvoiceWorkspaceCard({
         ))}
       </div>
 
-      <div className={`grid gap-3 ${showRecent && showOverdue ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
+      <div className={`grid gap-3 ${showRecent && showOverdue ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
         {showRecent && (
         <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
           <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>Recent Invoices</div>

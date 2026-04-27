@@ -57,6 +57,8 @@ const COLORS = {
   overlay: 'rgba(5, 10, 14, 0.72)',
 };
 
+const INPUT_PLACEHOLDER = 'Ask about overdue invoices, payment collection, monthly expenses, or compliance deadlines';
+
 const NAV_ITEMS: NavItem[] = [
   { id: 'invoices', label: 'Invoices', icon: FileText, desc: 'Receivables and collections', accent: '#7dd3fc' },
   { id: 'payments', label: 'Payments', icon: CreditCard, desc: 'Cash in and settlement status', accent: '#77f7c9' },
@@ -216,7 +218,7 @@ function EmptyState({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24 }}
-      className="mx-auto flex w-full max-w-[920px] flex-1 flex-col justify-center py-8"
+      className="mx-auto flex w-full max-w-[920px] flex-1 flex-col justify-center py-6 sm:py-8"
     >
       <div className="mx-auto w-full max-w-[760px] text-center">
         <div
@@ -228,13 +230,13 @@ function EmptyState({
         </div>
 
         <h1
-          className="text-[30px] font-semibold leading-[1.08] tracking-[-0.03em] sm:text-[42px]"
+          className="text-[28px] font-semibold leading-[1.08] tracking-[-0.03em] sm:text-[36px] lg:text-[42px]"
           style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}
         >
           Ask about invoices, cash flow, expenses, and compliance in one place.
         </h1>
 
-        <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-[1.8]" style={{ color: COLORS.textMuted }}>
+        <p className="mx-auto mt-4 max-w-2xl text-[14px] leading-[1.8] sm:text-[15px]" style={{ color: COLORS.textMuted }}>
           Get direct answers from your business data and jump into the right workspace when you need detail.
           {businessType ? ` Optimized for your ${businessType} workflow.` : ''}
         </p>
@@ -246,7 +248,7 @@ function EmptyState({
               type="button"
               onClick={() => !disabled && onOpenWorkspace({ id, domain: id, label })}
               disabled={disabled}
-              className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[12px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border px-3 py-2 text-[12px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textBody }}
               onMouseEnter={(e) => {
                 if (!disabled) {
@@ -266,14 +268,14 @@ function EmptyState({
         </div>
       </div>
 
-      <div className="mx-auto mt-8 grid w-full max-w-[860px] gap-3 md:grid-cols-2">
+      <div className="mx-auto mt-8 grid w-full max-w-[860px] gap-3 sm:grid-cols-2">
         {SUGGESTED_PROMPTS.map((prompt) => (
           <button
             key={prompt.label}
             type="button"
             onClick={() => !disabled && onPrompt(prompt.query)}
             disabled={disabled}
-            className="rounded-[22px] border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-[22px] border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:p-5"
             style={{
               background: COLORS.botBubble,
               borderColor: COLORS.border,
@@ -319,7 +321,7 @@ function SidebarPanel({
   onClose?: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col p-4">
+    <div className="flex h-full flex-col p-3 sm:p-4">
       <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
@@ -469,14 +471,14 @@ function ChatBubble({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <div className={`flex max-w-[92%] flex-col sm:max-w-[82%] ${isBot ? 'items-start' : 'items-end'}`}>
-        <div className="mb-2 flex items-center gap-2 px-1 text-[11px] uppercase tracking-[0.2em]" style={{ color: COLORS.textFaint }}>
+      <div className={`flex max-w-full flex-col sm:max-w-[88%] xl:max-w-[82%] ${isBot ? 'items-start' : 'items-end'}`}>
+        <div className="mb-2 flex items-center gap-2 px-1 text-[10px] uppercase tracking-[0.2em] sm:text-[11px]" style={{ color: COLORS.textFaint }}>
           {isBot ? <Bot size={12} /> : <span className="h-2 w-2 rounded-full" style={{ background: COLORS.accent }} />}
           <span>{isBot ? 'Capita AI' : 'You'}</span>
         </div>
 
         <div
-          className={`rounded-[24px] px-4 py-4 ${isBot ? '' : 'text-white'}`}
+          className={`w-full rounded-[22px] px-4 py-4 sm:rounded-[24px] ${isBot ? '' : 'text-white'}`}
           style={
             isBot
               ? {
@@ -530,7 +532,7 @@ function ChatBubble({
         </div>
 
         {isBot && !isStreaming ? (
-          <div className={`mt-2 flex items-center gap-3 px-1 transition-opacity ${hover || copied ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`mt-2 hidden items-center gap-3 px-1 transition-opacity sm:flex ${hover || copied ? 'opacity-100' : 'opacity-0'}`}>
             <button
               type="button"
               onClick={handleCopy}
@@ -571,6 +573,7 @@ export function AIAssistantPage() {
 
   const isBusy = isThinking || messages.some((m) => m.status === 'streaming');
   const isEmpty = messages.length === 0;
+  const primaryActionLabel = isBusy ? 'Stop' : 'Send';
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -912,7 +915,7 @@ export function AIAssistantPage() {
         </div>
 
         <aside
-          className="relative z-10 hidden h-full w-[286px] shrink-0 border-r lg:block"
+          className="relative z-10 hidden h-full w-[272px] shrink-0 border-r xl:w-[286px] lg:block"
           style={{ borderColor: COLORS.border, background: 'rgba(15, 21, 28, 0.92)', backdropFilter: 'blur(14px)' }}
         >
           <SidebarPanel
@@ -941,7 +944,7 @@ export function AIAssistantPage() {
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-                className="absolute inset-y-0 left-0 z-40 w-[88vw] max-w-[320px] border-r lg:hidden"
+                className="absolute inset-y-0 left-0 z-40 w-[90vw] max-w-[340px] border-r lg:hidden"
                 style={{ borderColor: COLORS.border, background: 'rgba(15, 21, 28, 0.98)', backdropFilter: 'blur(18px)' }}
               >
                 <SidebarPanel
@@ -962,7 +965,7 @@ export function AIAssistantPage() {
             className="border-b px-4 py-4 sm:px-6"
             style={{ borderColor: COLORS.border, background: COLORS.header, backdropFilter: 'blur(12px)' }}
           >
-            <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between gap-4">
+            <div className="mx-auto flex w-full max-w-[1120px] items-center justify-between gap-4">
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
@@ -975,7 +978,7 @@ export function AIAssistantPage() {
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[17px] font-semibold" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
+                    <span className="text-[16px] font-semibold sm:text-[17px]" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
                       Capita AI
                     </span>
                     <span
@@ -985,7 +988,7 @@ export function AIAssistantPage() {
                       Live
                     </span>
                   </div>
-                  <p className="mt-1 truncate text-[12px]" style={{ color: COLORS.textMuted }}>
+                  <p className="mt-1 max-w-[620px] truncate text-[11px] sm:text-[12px]" style={{ color: COLORS.textMuted }}>
                     Professional assistant for invoices, cash flow, expenses, and compliance
                     {businessType ? ` • ${businessType}` : ''}
                   </p>
@@ -1036,7 +1039,7 @@ export function AIAssistantPage() {
               className="custom-scrollbar flex-1 overflow-y-auto"
               style={{ scrollbarWidth: 'thin', scrollbarColor: `${COLORS.borderStrong} transparent` }}
             >
-              <div className="mx-auto flex min-h-full w-full max-w-[980px] flex-col px-4 pb-32 pt-6 sm:px-6">
+              <div className="mx-auto flex min-h-full w-full max-w-[1040px] flex-col px-4 pb-36 pt-5 sm:px-6 sm:pt-6">
                 {isEmpty ? (
                   <EmptyState
                     onPrompt={(q) => handleSend(q)}
@@ -1046,7 +1049,7 @@ export function AIAssistantPage() {
                     businessType={businessType}
                   />
                 ) : (
-                  <div className="space-y-6 pb-8">
+                  <div className="space-y-5 pb-8 sm:space-y-6">
                     {messages.map((msg) => (
                       <ChatBubble
                         key={msg.id}
@@ -1093,7 +1096,7 @@ export function AIAssistantPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
                   onClick={scrollToBottom}
-                  className="absolute bottom-28 right-5 z-20 flex h-10 w-10 items-center justify-center rounded-full transition-colors"
+                  className="absolute bottom-28 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full transition-colors sm:right-5"
                   style={{ background: COLORS.surfaceRaised, border: `1px solid ${COLORS.border}`, boxShadow: COLORS.panelShadow }}
                 >
                   <ChevronDown size={15} style={{ color: COLORS.textMuted }} />
@@ -1101,12 +1104,12 @@ export function AIAssistantPage() {
               ) : null}
             </AnimatePresence>
 
-            <div className="relative z-20 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 sm:px-6">
+            <div className="relative z-20 px-4 pb-[calc(env(safe-area-inset-bottom)+0.9rem)] pt-3 sm:px-6 sm:pt-4">
               <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[-56px]" style={{ background: `linear-gradient(180deg, rgba(11,17,23,0) 0%, ${COLORS.bg} 42%, ${COLORS.bg} 100%)` }} />
 
-              <div className="relative mx-auto w-full max-w-[980px]">
+              <div className="relative mx-auto w-full max-w-[1040px]">
                 <div
-                  className="overflow-hidden rounded-[28px] border"
+                  className="overflow-hidden rounded-[24px] border sm:rounded-[28px]"
                   style={{
                     background: COLORS.composer,
                     borderColor: inputFocused ? COLORS.borderStrong : COLORS.border,
@@ -1140,8 +1143,8 @@ export function AIAssistantPage() {
                     }}
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
-                    placeholder="Ask about overdue invoices, payment collection, monthly expenses, or compliance deadlines"
-                    className="min-h-[64px] w-full resize-none border-none bg-transparent px-4 pb-2 pt-3 text-[15px] leading-[1.75] outline-none placeholder:opacity-100"
+                    placeholder={INPUT_PLACEHOLDER}
+                    className="min-h-[64px] w-full resize-none border-none bg-transparent px-4 pb-2 pt-3 text-[14px] leading-[1.75] outline-none placeholder:opacity-100 sm:text-[15px]"
                     style={{
                       color: COLORS.text,
                       maxHeight: 170,
@@ -1179,7 +1182,7 @@ export function AIAssistantPage() {
                           }
                         }}
                         disabled={!isBusy && !query.trim()}
-                        className="flex h-10 min-w-[48px] items-center justify-center rounded-2xl px-3 transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-10 min-w-[108px] items-center justify-center gap-2 rounded-2xl px-4 transition-all disabled:cursor-not-allowed disabled:opacity-40"
                         style={
                           isBusy || query.trim()
                             ? { background: COLORS.text, color: COLORS.bg }
@@ -1187,6 +1190,7 @@ export function AIAssistantPage() {
                         }
                       >
                         {isBusy ? <Square size={14} fill="currentColor" /> : <ArrowUp size={16} strokeWidth={2.5} />}
+                        <span className="text-[13px] font-semibold">{primaryActionLabel}</span>
                       </button>
                     </div>
                   </div>

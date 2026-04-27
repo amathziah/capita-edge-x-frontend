@@ -88,7 +88,7 @@ export function WorkspaceViewPills({
   if (!views || views.length === 0) return null;
 
   return (
-    <motion.div variants={genItemVariants} className="mb-4 flex flex-wrap gap-1.5">
+    <motion.div variants={genItemVariants} className="mb-4 flex flex-wrap gap-2">
       {views.map((view) => {
         const isSelected = selectedView === view.id;
         return (
@@ -102,7 +102,7 @@ export function WorkspaceViewPills({
               }
             }}
             disabled={disabled || !onSelectView || isSelected}
-            className="rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors disabled:cursor-not-allowed"
+            className="rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors disabled:cursor-not-allowed"
             style={
               isSelected
                 ? {
@@ -158,7 +158,7 @@ export function WorkspaceActionBar({
   if (!Array.isArray(actions) || actions.length === 0) return null;
 
   return (
-    <motion.div variants={genItemVariants} className="mb-4 flex flex-wrap gap-2">
+    <motion.div variants={genItemVariants} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
       {actions.map((action) => (
         <button
           key={action.id}
@@ -168,7 +168,7 @@ export function WorkspaceActionBar({
             if (!disabled && onAction) onAction(action);
           }}
           disabled={disabled || !onAction}
-          className="rounded-lg px-3 py-2 text-left transition-colors disabled:cursor-not-allowed"
+          className="w-full rounded-xl px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed sm:w-auto"
           style={{
             background: AI_THEME.surfaceSoft,
             border: `1px solid ${AI_THEME.border}`,
