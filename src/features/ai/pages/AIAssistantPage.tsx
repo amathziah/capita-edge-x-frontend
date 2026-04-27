@@ -16,8 +16,6 @@ import {
   Users,
   Menu,
   Bot,
-  Globe,
-  BookOpen,
   Square,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,39 +49,41 @@ type NavItem = {
 
 const COLORS = {
   ...AI_THEME,
-  userBubble: 'linear-gradient(135deg, rgba(19, 39, 48, 0.94) 0%, rgba(24, 88, 73, 0.92) 100%)',
-  userBorder: 'rgba(74, 204, 168, 0.36)',
-  botBubble: 'linear-gradient(180deg, rgba(13, 22, 30, 0.98) 0%, rgba(8, 14, 20, 0.98) 100%)',
-  overlay: 'rgba(2, 6, 10, 0.7)',
+  userBubble: 'linear-gradient(180deg, rgba(22, 66, 60, 0.88) 0%, rgba(17, 49, 45, 0.94) 100%)',
+  userBorder: 'rgba(96, 214, 185, 0.22)',
+  botBubble: 'linear-gradient(180deg, rgba(17, 25, 33, 0.96) 0%, rgba(13, 20, 28, 0.98) 100%)',
+  composer: 'rgba(13, 20, 28, 0.98)',
+  header: 'rgba(11, 17, 23, 0.86)',
+  overlay: 'rgba(5, 10, 14, 0.72)',
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'invoices', label: 'Invoices', icon: FileText, desc: 'Track receivables and overdue accounts', accent: '#7dd3fc' },
-  { id: 'payments', label: 'Payments', icon: CreditCard, desc: 'Monitor settlements and cash in', accent: '#77f7c9' },
-  { id: 'expenses', label: 'Expenses', icon: Receipt, desc: 'Review monthly spend and categories', accent: '#f6c775' },
-  { id: 'compliance', label: 'Compliance', icon: ShieldCheck, desc: 'Stay ahead of filings and tasks', accent: '#c59cf8' },
-  { id: 'customers', label: 'Customers', icon: Users, desc: 'Rank your top clients and revenue', accent: '#6fe4d8' },
+  { id: 'invoices', label: 'Invoices', icon: FileText, desc: 'Receivables and collections', accent: '#7dd3fc' },
+  { id: 'payments', label: 'Payments', icon: CreditCard, desc: 'Cash in and settlement status', accent: '#77f7c9' },
+  { id: 'expenses', label: 'Expenses', icon: Receipt, desc: 'Spend visibility and categories', accent: '#f6c775' },
+  { id: 'compliance', label: 'Compliance', icon: ShieldCheck, desc: 'Deadlines, filings, and tasks', accent: '#c59cf8' },
+  { id: 'customers', label: 'Customers', icon: Users, desc: 'Top clients and revenue', accent: '#6fe4d8' },
 ];
 
 const SUGGESTED_PROMPTS = [
   {
-    label: 'What needs attention first?',
-    hint: 'Priority scan',
+    label: 'Today’s priorities',
+    description: 'Surface overdue invoices, pending collections, and urgent compliance items.',
     query: 'What needs attention first across invoices, payments, expenses, and compliance today?',
   },
   {
-    label: 'Show overdue risk',
-    hint: 'Collections',
+    label: 'Collections overview',
+    description: 'Identify who owes the most and where follow-up should start.',
     query: 'Which invoices are overdue, who owes me the most, and what should I follow up on first?',
   },
   {
-    label: 'Summarize this month',
-    hint: 'Cash flow',
+    label: 'Monthly summary',
+    description: 'Review cash collected, expenses booked, and pending obligations.',
     query: 'Give me a summary of cash collected, expenses, and pending obligations for this month.',
   },
   {
-    label: 'Find upcoming deadlines',
-    hint: 'Compliance',
+    label: 'Upcoming deadlines',
+    description: 'Check the next compliance tasks and what is due this week.',
     query: 'What compliance deadlines or urgent tasks are due this week?',
   },
 ];
@@ -107,18 +107,12 @@ const botMd: Components = {
     </li>
   ),
   h2: ({ children }) => (
-    <h2
-      className="mb-2 mt-4 text-[15px] font-semibold"
-      style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}
-    >
+    <h2 className="mb-2 mt-4 text-[15px] font-semibold" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3
-      className="mb-1.5 mt-3 text-[13px] font-semibold"
-      style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}
-    >
+    <h3 className="mb-1.5 mt-3 text-[13px] font-semibold" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
       {children}
     </h3>
   ),
@@ -145,7 +139,7 @@ const botMd: Components = {
     /language-/.test(className || '') ? (
       <pre
         className="my-3 overflow-x-auto rounded-2xl p-3"
-        style={{ background: 'rgba(4, 10, 16, 0.76)', border: `1px solid ${COLORS.border}` }}
+        style={{ background: 'rgba(8, 13, 19, 0.88)', border: `1px solid ${COLORS.border}` }}
       >
         <code className="font-mono text-[12px] leading-relaxed" style={{ color: '#cce5f6' }}>
           {children}
@@ -154,7 +148,7 @@ const botMd: Components = {
     ) : (
       <code
         className="rounded-md px-1.5 py-0.5 font-mono text-[12px]"
-        style={{ background: 'rgba(4, 10, 16, 0.76)', color: '#cce5f6', border: `1px solid ${COLORS.border}` }}
+        style={{ background: 'rgba(8, 13, 19, 0.88)', color: '#cce5f6', border: `1px solid ${COLORS.border}` }}
       >
         {children}
       </code>
@@ -199,7 +193,7 @@ function ThinkingIndicator() {
         <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: COLORS.accent, animationDelay: '0.15s' }} />
         <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: COLORS.accent, animationDelay: '0.3s' }} />
       </div>
-      <span>Thinking</span>
+      <span>Generating response</span>
     </div>
   );
 }
@@ -219,67 +213,69 @@ function EmptyState({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28 }}
-      className="mx-auto flex w-full max-w-[860px] flex-1 flex-col items-center justify-center py-8 text-center"
+      transition={{ duration: 0.24 }}
+      className="mx-auto flex w-full max-w-[920px] flex-1 flex-col justify-center py-8"
     >
-      <div
-        className="mb-5 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em]"
-        style={{ borderColor: COLORS.borderStrong, background: COLORS.accentSoft, color: COLORS.text }}
-      >
-        <span className="h-2 w-2 rounded-full" style={{ background: COLORS.accent }} />
-        Live finance context
+      <div className="mx-auto w-full max-w-[760px] text-center">
+        <div
+          className="mb-4 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em]"
+          style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textMuted }}
+        >
+          <Sparkles size={12} style={{ color: COLORS.accent }} />
+          Capita AI
+        </div>
+
+        <h1
+          className="text-[30px] font-semibold leading-[1.08] tracking-[-0.03em] sm:text-[42px]"
+          style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}
+        >
+          Ask about invoices, cash flow, expenses, and compliance in one place.
+        </h1>
+
+        <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-[1.8]" style={{ color: COLORS.textMuted }}>
+          Get direct answers from your business data and jump into the right workspace when you need detail.
+          {businessType ? ` Optimized for your ${businessType} workflow.` : ''}
+        </p>
+
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          {navItems.map(({ id, label, icon: Icon, accent }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => !disabled && onOpenWorkspace({ id, domain: id, label })}
+              disabled={disabled}
+              className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[12px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textBody }}
+              onMouseEnter={(e) => {
+                if (!disabled) {
+                  e.currentTarget.style.borderColor = accent;
+                  e.currentTarget.style.background = COLORS.surfaceRaised;
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = COLORS.border;
+                e.currentTarget.style.background = COLORS.surfaceSoft;
+              }}
+            >
+              <Icon size={13} style={{ color: accent }} />
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <h1
-        className="max-w-3xl text-[34px] font-semibold leading-[1.05] tracking-[-0.04em] sm:text-[48px]"
-        style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}
-      >
-        Ask Capita the way you’d search with a modern answer engine.
-      </h1>
-
-      <p className="mt-4 max-w-2xl text-[15px] leading-[1.8] sm:text-[16px]" style={{ color: COLORS.textMuted }}>
-        Search invoices, cash collection, spend, and compliance from one command bar.
-        {businessType ? ` Tuned for your ${businessType} workflow.` : ' Tuned for your business workflow.'}
-      </p>
-
-      <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
-        {navItems.map(({ id, label, icon: Icon, accent }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => !disabled && onOpenWorkspace({ id, domain: id, label })}
-            disabled={disabled}
-            className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[12px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50"
-            style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textBody }}
-            onMouseEnter={(e) => {
-              if (!disabled) {
-                e.currentTarget.style.borderColor = accent;
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = COLORS.border;
-              e.currentTarget.style.background = COLORS.surfaceSoft;
-            }}
-          >
-            <Icon size={14} style={{ color: accent }} />
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-8 grid w-full gap-3 md:grid-cols-2">
+      <div className="mx-auto mt-8 grid w-full max-w-[860px] gap-3 md:grid-cols-2">
         {SUGGESTED_PROMPTS.map((prompt) => (
           <button
             key={prompt.label}
             type="button"
             onClick={() => !disabled && onPrompt(prompt.query)}
             disabled={disabled}
-            className="rounded-[24px] border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-[22px] border p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50"
             style={{
-              background: 'linear-gradient(180deg, rgba(16, 27, 37, 0.94) 0%, rgba(11, 19, 27, 0.98) 100%)',
+              background: COLORS.botBubble,
               borderColor: COLORS.border,
               boxShadow: COLORS.panelShadow,
             }}
@@ -294,22 +290,11 @@ function EmptyState({
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: COLORS.textFaint }}>
-                {prompt.hint}
-              </span>
-              <span
-                className="flex h-8 w-8 items-center justify-center rounded-2xl"
-                style={{ background: COLORS.accentSoft, color: COLORS.accent }}
-              >
-                <Sparkles size={14} />
-              </span>
-            </div>
-            <div className="text-[16px] font-semibold leading-snug" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
+            <div className="mb-2 text-[15px] font-semibold" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
               {prompt.label}
             </div>
-            <p className="mt-2 text-[13px] leading-[1.7]" style={{ color: COLORS.textMuted }}>
-              {prompt.query}
+            <p className="text-[13px] leading-[1.7]" style={{ color: COLORS.textMuted }}>
+              {prompt.description}
             </p>
           </button>
         ))}
@@ -334,26 +319,26 @@ function SidebarPanel({
   onClose?: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b px-4 py-4" style={{ borderColor: COLORS.border }}>
+    <div className="flex h-full flex-col p-4">
+      <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
             className="flex h-10 w-10 items-center justify-center rounded-2xl"
             style={{ background: COLORS.accentSoft, color: COLORS.accent }}
           >
-            <Sparkles size={18} />
+            <Sparkles size={17} />
           </div>
           <div>
             <div className="text-[15px] font-semibold" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
               Capita AI
             </div>
             <div className="text-[12px]" style={{ color: COLORS.textFaint }}>
-              Search your business graph
+              Finance workspace
             </div>
           </div>
         </div>
 
-        {onClose && (
+        {onClose ? (
           <button
             type="button"
             onClick={onClose}
@@ -362,26 +347,25 @@ function SidebarPanel({
           >
             <X size={16} />
           </button>
-        )}
+        ) : null}
       </div>
 
-      <div className="px-4 pt-4">
-        <button
-          type="button"
-          onClick={onNewChat}
-          disabled={isBusy}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[13px] font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ background: COLORS.text, color: '#061017' }}
-        >
-          <Plus size={14} strokeWidth={2.5} />
-          New thread
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={onNewChat}
+        disabled={isBusy}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[13px] font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50"
+        style={{ background: COLORS.text, color: COLORS.bg }}
+      >
+        <Plus size={14} strokeWidth={2.5} />
+        New thread
+      </button>
 
-      <div className="px-4 pt-6">
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: COLORS.textFaint }}>
-          Workspace modes
+      <div className="mt-7">
+        <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: COLORS.textFaint }}>
+          Workspaces
         </div>
+
         <div className="space-y-2">
           {navItems.map(({ id, label, icon: Icon, desc, accent }) => (
             <button
@@ -389,7 +373,7 @@ function SidebarPanel({
               type="button"
               onClick={() => !isBusy && onOpenWorkspace({ id, domain: id, label })}
               disabled={isBusy}
-              className="flex w-full items-start gap-3 rounded-[20px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-start gap-3 rounded-[18px] border px-3 py-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50"
               style={{ background: COLORS.surfaceSoft, borderColor: COLORS.border }}
               onMouseEnter={(e) => {
                 if (!isBusy) {
@@ -404,7 +388,7 @@ function SidebarPanel({
             >
               <span
                 className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
-                style={{ background: `${accent}1f`, color: accent }}
+                style={{ background: `${accent}18`, color: accent }}
               >
                 <Icon size={16} />
               </span>
@@ -412,7 +396,7 @@ function SidebarPanel({
                 <span className="block text-[14px] font-semibold" style={{ color: COLORS.text }}>
                   {label}
                 </span>
-                <span className="mt-1 block text-[12px] leading-[1.55]" style={{ color: COLORS.textMuted }}>
+                <span className="mt-1 block text-[12px] leading-[1.5]" style={{ color: COLORS.textMuted }}>
                   {desc}
                 </span>
               </span>
@@ -421,38 +405,7 @@ function SidebarPanel({
         </div>
       </div>
 
-      <div className="mt-6 px-4">
-        <div
-          className="rounded-[24px] border p-4"
-          style={{
-            borderColor: COLORS.border,
-            background: 'linear-gradient(180deg, rgba(17, 29, 39, 0.96) 0%, rgba(10, 17, 24, 0.98) 100%)',
-          }}
-        >
-          <div className="mb-3 flex items-center gap-2">
-            <Bot size={15} style={{ color: COLORS.accent }} />
-            <span className="text-[12px] font-semibold uppercase tracking-[0.24em]" style={{ color: COLORS.textFaint }}>
-              Connected signals
-            </span>
-          </div>
-          <div className="space-y-2 text-[12px] leading-[1.6]" style={{ color: COLORS.textMuted }}>
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full" style={{ background: COLORS.accent }} />
-              Invoices and collections context
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full" style={{ background: COLORS.accent }} />
-              Payments, spend, and cash view
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full" style={{ background: COLORS.accent }} />
-              Compliance and customer workspaces
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-auto p-4">
+      <div className="mt-auto pt-5">
         <button
           type="button"
           onClick={onDashboard}
@@ -472,7 +425,7 @@ function SidebarPanel({
             Dashboard
           </span>
           <span className="text-[11px]" style={{ color: COLORS.textFaint }}>
-            Exit AI
+            Exit
           </span>
         </button>
       </div>
@@ -516,18 +469,18 @@ function ChatBubble({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <div className={`flex max-w-[94%] flex-col sm:max-w-[86%] ${isBot ? 'items-start' : 'items-end'}`}>
-        <div className="mb-2 flex items-center gap-2 px-1 text-[11px] uppercase tracking-[0.24em]" style={{ color: COLORS.textFaint }}>
+      <div className={`flex max-w-[92%] flex-col sm:max-w-[82%] ${isBot ? 'items-start' : 'items-end'}`}>
+        <div className="mb-2 flex items-center gap-2 px-1 text-[11px] uppercase tracking-[0.2em]" style={{ color: COLORS.textFaint }}>
           {isBot ? <Bot size={12} /> : <span className="h-2 w-2 rounded-full" style={{ background: COLORS.accent }} />}
           <span>{isBot ? 'Capita AI' : 'You'}</span>
         </div>
 
         <div
-          className={`rounded-[28px] px-4 py-4 ${isBot ? '' : 'text-white'}`}
+          className={`rounded-[24px] px-4 py-4 ${isBot ? '' : 'text-white'}`}
           style={
             isBot
               ? {
-                  background: isError ? 'rgba(87, 28, 31, 0.24)' : COLORS.botBubble,
+                  background: isError ? 'rgba(87, 28, 31, 0.2)' : COLORS.botBubble,
                   border: `1px solid ${isError ? COLORS.dangerSoft : isStreaming ? COLORS.borderStrong : COLORS.border}`,
                   color: COLORS.textBody,
                   boxShadow: COLORS.panelShadow,
@@ -551,7 +504,7 @@ function ChatBubble({
           ) : null}
 
           {msg.uiComponent && msg.uiData && (
-            <div className="mt-4 -mx-1">
+            <div className="mt-5 -mx-1">
               <AIWorkspaceRenderer
                 component={msg.uiComponent}
                 data={msg.uiData}
@@ -576,7 +529,7 @@ function ChatBubble({
           )}
         </div>
 
-        {isBot && !isStreaming && (
+        {isBot && !isStreaming ? (
           <div className={`mt-2 flex items-center gap-3 px-1 transition-opacity ${hover || copied ? 'opacity-100' : 'opacity-0'}`}>
             <button
               type="button"
@@ -598,7 +551,7 @@ function ChatBubble({
                 : ''}
             </span>
           </div>
-        )}
+        ) : null}
       </div>
     </motion.div>
   );
@@ -832,7 +785,7 @@ export function AIAssistantPage() {
     setMessages((prev) => [
       ...prev,
       { id: `user_ws_${Date.now()}`, sender: 'user', text: `Open ${choice.label}`, timestamp: new Date(), status: 'sent' },
-      { id: botId, sender: 'bot', text: `Loading ${choice.label}…`, timestamp: new Date(), status: 'streaming', domain },
+      { id: botId, sender: 'bot', text: `Loading ${choice.label}...`, timestamp: new Date(), status: 'streaming', domain },
     ]);
     setTimeout(() => scrollToBottom(), 50);
 
@@ -842,7 +795,7 @@ export function AIAssistantPage() {
         m.id === botId
           ? {
               ...m,
-              text: `Here’s your ${ws?.label || choice.label}.`,
+              text: `Here is your ${ws?.label || choice.label}.`,
               status: 'sent',
               uiComponent: ws?.component,
               uiData: ws?.data,
@@ -951,19 +904,16 @@ export function AIAssistantPage() {
             className="absolute inset-0"
             style={{
               background: `
-                radial-gradient(circle at 14% 12%, rgba(39, 199, 166, 0.16), transparent 28%),
-                radial-gradient(circle at 84% 10%, rgba(93, 134, 255, 0.16), transparent 24%),
-                radial-gradient(circle at 50% 60%, rgba(255, 255, 255, 0.04), transparent 36%),
-                linear-gradient(180deg, #081018 0%, #050a10 100%)
+                radial-gradient(circle at top, rgba(39, 199, 166, 0.08), transparent 34%),
+                linear-gradient(180deg, ${COLORS.bgSecondary} 0%, ${COLORS.bg} 100%)
               `,
             }}
           />
-          <div className="absolute inset-y-0 left-0 w-px" style={{ background: 'rgba(255, 255, 255, 0.03)' }} />
         </div>
 
         <aside
-          className="relative z-10 hidden h-full w-[320px] shrink-0 border-r lg:block"
-          style={{ borderColor: COLORS.border, background: 'rgba(9, 16, 22, 0.84)', backdropFilter: 'blur(18px)' }}
+          className="relative z-10 hidden h-full w-[286px] shrink-0 border-r lg:block"
+          style={{ borderColor: COLORS.border, background: 'rgba(15, 21, 28, 0.92)', backdropFilter: 'blur(14px)' }}
         >
           <SidebarPanel
             navItems={NAV_ITEMS}
@@ -975,7 +925,7 @@ export function AIAssistantPage() {
         </aside>
 
         <AnimatePresence>
-          {mobileNavOpen && (
+          {mobileNavOpen ? (
             <>
               <motion.button
                 type="button"
@@ -991,8 +941,8 @@ export function AIAssistantPage() {
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-                className="absolute inset-y-0 left-0 z-40 w-[88vw] max-w-[340px] border-r lg:hidden"
-                style={{ borderColor: COLORS.border, background: 'rgba(9, 16, 22, 0.96)', backdropFilter: 'blur(20px)' }}
+                className="absolute inset-y-0 left-0 z-40 w-[88vw] max-w-[320px] border-r lg:hidden"
+                style={{ borderColor: COLORS.border, background: 'rgba(15, 21, 28, 0.98)', backdropFilter: 'blur(18px)' }}
               >
                 <SidebarPanel
                   navItems={NAV_ITEMS}
@@ -1004,12 +954,15 @@ export function AIAssistantPage() {
                 />
               </motion.aside>
             </>
-          )}
+          ) : null}
         </AnimatePresence>
 
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-          <div className="border-b px-3 py-3 sm:px-5" style={{ borderColor: COLORS.border, background: 'rgba(6, 11, 16, 0.58)', backdropFilter: 'blur(14px)' }}>
-            <div className="flex items-center justify-between gap-3">
+          <header
+            className="border-b px-4 py-4 sm:px-6"
+            style={{ borderColor: COLORS.border, background: COLORS.header, backdropFilter: 'blur(12px)' }}
+          >
+            <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between gap-4">
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
@@ -1022,37 +975,40 @@ export function AIAssistantPage() {
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-semibold" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
-                      Finance Search
+                    <span className="text-[17px] font-semibold" style={{ color: COLORS.text, fontFamily: COLORS.headingFont }}>
+                      Capita AI
                     </span>
-                    <span className="hidden rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] sm:inline-flex" style={{ borderColor: COLORS.border, color: COLORS.textFaint }}>
-                      AI
+                    <span
+                      className="hidden rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] sm:inline-flex"
+                      style={{ borderColor: COLORS.border, color: COLORS.textFaint }}
+                    >
+                      Live
                     </span>
                   </div>
-                  <div className="mt-1 text-[12px]" style={{ color: COLORS.textMuted }}>
-                    Answers grounded in your business data
-                  </div>
+                  <p className="mt-1 truncate text-[12px]" style={{ color: COLORS.textMuted }}>
+                    Professional assistant for invoices, cash flow, expenses, and compliance
+                    {businessType ? ` • ${businessType}` : ''}
+                  </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="hidden items-center gap-2 md:flex">
-                  <span className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-medium" style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textBody }}>
-                    <Globe size={13} style={{ color: COLORS.accent }} />
-                    Live graph
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-medium" style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textBody }}>
-                    <BookOpen size={13} style={{ color: '#8fb7ff' }} />
-                    {businessType || 'Business context'}
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={clearChat}
+                  disabled={isBusy}
+                  className="hidden rounded-2xl px-4 py-2.5 text-[13px] font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-40 sm:inline-flex"
+                  style={{ border: `1px solid ${COLORS.border}`, background: COLORS.surfaceSoft, color: COLORS.text }}
+                >
+                  New thread
+                </button>
 
                 <button
                   type="button"
                   onClick={clearChat}
                   disabled={isBusy}
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl transition-all disabled:cursor-not-allowed disabled:opacity-40"
-                  style={{ border: `1px solid ${COLORS.border}`, background: COLORS.surfaceSoft, color: COLORS.textMuted }}
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl transition-all disabled:cursor-not-allowed disabled:opacity-40 sm:hidden"
+                  style={{ border: `1px solid ${COLORS.border}`, background: COLORS.surfaceSoft, color: COLORS.text }}
                 >
                   <Plus size={15} />
                 </button>
@@ -1067,7 +1023,7 @@ export function AIAssistantPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </header>
 
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div
@@ -1080,7 +1036,7 @@ export function AIAssistantPage() {
               className="custom-scrollbar flex-1 overflow-y-auto"
               style={{ scrollbarWidth: 'thin', scrollbarColor: `${COLORS.borderStrong} transparent` }}
             >
-              <div className="mx-auto flex min-h-full w-full max-w-[920px] flex-col px-4 pb-32 pt-6 sm:px-6 lg:px-8">
+              <div className="mx-auto flex min-h-full w-full max-w-[980px] flex-col px-4 pb-32 pt-6 sm:px-6">
                 {isEmpty ? (
                   <EmptyState
                     onPrompt={(q) => handleSend(q)}
@@ -1090,45 +1046,32 @@ export function AIAssistantPage() {
                     businessType={businessType}
                   />
                 ) : (
-                  <div className="space-y-6 pb-6">
-                    <div className="flex flex-wrap gap-2">
-                      <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-medium" style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textMuted }}>
-                        <Bot size={12} style={{ color: COLORS.accent }} />
-                        Answer mode
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-medium" style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textMuted }}>
-                        <Globe size={12} style={{ color: '#8fb7ff' }} />
-                        Business graph connected
-                      </span>
-                    </div>
+                  <div className="space-y-6 pb-8">
+                    {messages.map((msg) => (
+                      <ChatBubble
+                        key={msg.id}
+                        msg={msg}
+                        onSelectDomain={openWorkspace}
+                        onSelectView={switchView}
+                        onAction={handleAction}
+                        disableChoices={isBusy}
+                      />
+                    ))}
 
-                    <AnimatePresence initial={false}>
-                      {messages.map((msg) => (
-                        <ChatBubble
-                          key={msg.id}
-                          msg={msg}
-                          onSelectDomain={openWorkspace}
-                          onSelectView={switchView}
-                          onAction={handleAction}
-                          disableChoices={isBusy}
-                        />
-                      ))}
-                    </AnimatePresence>
-
-                    {isThinking && (
+                    {isThinking ? (
                       <div className="flex justify-start">
                         <div
-                          className="rounded-[24px] px-4 py-3"
+                          className="rounded-[22px] px-4 py-3"
                           style={{ background: COLORS.botBubble, border: `1px solid ${COLORS.borderStrong}`, boxShadow: COLORS.panelShadow }}
                         >
                           <ThinkingIndicator />
                         </div>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 )}
 
-                {isListening && (
+                {isListening ? (
                   <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="mt-3 flex justify-center">
                     <div
                       className="flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-medium"
@@ -1138,120 +1081,77 @@ export function AIAssistantPage() {
                       <span>Listening</span>
                     </div>
                   </motion.div>
-                )}
+                ) : null}
               </div>
             </div>
 
             <AnimatePresence>
-              {showScrollBtn && (
+              {showScrollBtn ? (
                 <motion.button
                   type="button"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
                   onClick={scrollToBottom}
-                  className="absolute bottom-32 right-5 z-20 flex h-10 w-10 items-center justify-center rounded-full transition-colors"
+                  className="absolute bottom-28 right-5 z-20 flex h-10 w-10 items-center justify-center rounded-full transition-colors"
                   style={{ background: COLORS.surfaceRaised, border: `1px solid ${COLORS.border}`, boxShadow: COLORS.panelShadow }}
                 >
                   <ChevronDown size={15} style={{ color: COLORS.textMuted }} />
                 </motion.button>
-              )}
+              ) : null}
             </AnimatePresence>
 
             <div className="relative z-20 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 sm:px-6">
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[-64px]" style={{ background: 'linear-gradient(180deg, rgba(5,10,16,0) 0%, rgba(5,10,16,0.84) 35%, rgba(5,10,16,0.98) 100%)' }} />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[-56px]" style={{ background: `linear-gradient(180deg, rgba(11,17,23,0) 0%, ${COLORS.bg} 42%, ${COLORS.bg} 100%)` }} />
 
-              <div className="relative mx-auto w-full max-w-[920px]">
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {NAV_ITEMS.map(({ id, label, icon: Icon, accent }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => !isBusy && openWorkspace({ id, domain: id, label })}
-                      disabled={isBusy}
-                      className="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[12px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50"
-                      style={{ borderColor: COLORS.border, background: COLORS.surfaceSoft, color: COLORS.textMuted }}
-                      onMouseEnter={(e) => {
-                        if (!isBusy) {
-                          e.currentTarget.style.borderColor = accent;
-                          e.currentTarget.style.background = COLORS.surfaceRaised;
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = COLORS.border;
-                        e.currentTarget.style.background = COLORS.surfaceSoft;
-                      }}
-                    >
-                      <Icon size={13} style={{ color: accent }} />
-                      {label}
-                    </button>
-                  ))}
-                </div>
-
+              <div className="relative mx-auto w-full max-w-[980px]">
                 <div
-                  className="overflow-hidden rounded-[30px] border"
+                  className="overflow-hidden rounded-[28px] border"
                   style={{
-                    background: 'linear-gradient(180deg, rgba(17, 28, 38, 0.96) 0%, rgba(11, 19, 27, 0.98) 100%)',
+                    background: COLORS.composer,
                     borderColor: inputFocused ? COLORS.borderStrong : COLORS.border,
-                    boxShadow: inputFocused ? `0 0 0 4px ${COLORS.accentSoft}` : COLORS.shadow,
+                    boxShadow: inputFocused ? `0 0 0 3px ${COLORS.accentSoft}` : COLORS.shadow,
                   }}
                 >
-                  <div className="flex items-start gap-3 px-4 pt-4">
-                    <div
-                      className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
-                      style={{ background: COLORS.accentSoft, color: COLORS.accent }}
-                    >
-                      <Sparkles size={16} />
-                    </div>
-
-                    <textarea
-                      ref={inputRef}
-                      rows={1}
-                      value={query}
-                      onChange={(e) => {
-                        setQuery(e.target.value);
-                        const el = e.target;
-                        el.style.height = 'auto';
-                        el.style.height = `${Math.min(el.scrollHeight, 170)}px`;
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          if (isBusy) {
-                            cancelStream();
-                          } else {
-                            handleSend();
-                          }
-                        }
-                      }}
-                      onFocus={() => setInputFocused(true)}
-                      onBlur={() => setInputFocused(false)}
-                      placeholder="Ask anything about overdue invoices, payment collection, monthly spend, or compliance deadlines"
-                      className="min-h-[52px] w-full resize-none border-none bg-transparent pb-2 pt-1 text-[15px] leading-[1.75] outline-none placeholder:opacity-100"
-                      style={{
-                        color: COLORS.text,
-                        maxHeight: 170,
-                        scrollbarWidth: 'none',
-                      }}
-                    />
+                  <div className="flex items-center gap-2 px-4 pt-4 text-[12px] font-medium" style={{ color: COLORS.textMuted }}>
+                    <Sparkles size={13} style={{ color: COLORS.accent }} />
+                    Ask Capita AI
                   </div>
 
-                  <div className="flex flex-col gap-3 border-t px-3 py-3 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: COLORS.border }}>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px]" style={{ color: COLORS.textFaint }}>
-                      <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5" style={{ borderColor: COLORS.border, background: 'rgba(255,255,255,0.02)' }}>
-                        <Bot size={12} style={{ color: COLORS.accent }} />
-                        Finance answer mode
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5" style={{ borderColor: COLORS.border, background: 'rgba(255,255,255,0.02)' }}>
-                        <Globe size={12} style={{ color: '#8fb7ff' }} />
-                        Enter to send
-                      </span>
-                      {query.trim() ? (
-                        <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5" style={{ borderColor: COLORS.border, background: 'rgba(255,255,255,0.02)' }}>
-                          <BookOpen size={12} style={{ color: COLORS.textMuted }} />
-                          Shift+Enter for a new line
-                        </span>
-                      ) : null}
+                  <textarea
+                    ref={inputRef}
+                    rows={1}
+                    value={query}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      const el = e.target;
+                      el.style.height = 'auto';
+                      el.style.height = `${Math.min(el.scrollHeight, 170)}px`;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (isBusy) {
+                          cancelStream();
+                        } else {
+                          handleSend();
+                        }
+                      }
+                    }}
+                    onFocus={() => setInputFocused(true)}
+                    onBlur={() => setInputFocused(false)}
+                    placeholder="Ask about overdue invoices, payment collection, monthly expenses, or compliance deadlines"
+                    className="min-h-[64px] w-full resize-none border-none bg-transparent px-4 pb-2 pt-3 text-[15px] leading-[1.75] outline-none placeholder:opacity-100"
+                    style={{
+                      color: COLORS.text,
+                      maxHeight: 170,
+                      scrollbarWidth: 'none',
+                    }}
+                  />
+
+                  <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: COLORS.border }}>
+                    <div className="text-[11px]" style={{ color: COLORS.textFaint }}>
+                      Enter to send. Shift+Enter for a new line.
                     </div>
 
                     <div className="flex items-center justify-end gap-2">
@@ -1281,9 +1181,7 @@ export function AIAssistantPage() {
                         disabled={!isBusy && !query.trim()}
                         className="flex h-10 min-w-[48px] items-center justify-center rounded-2xl px-3 transition-all disabled:cursor-not-allowed disabled:opacity-40"
                         style={
-                          isBusy
-                            ? { background: COLORS.text, color: COLORS.bg }
-                            : query.trim()
+                          isBusy || query.trim()
                             ? { background: COLORS.text, color: COLORS.bg }
                             : { background: COLORS.surfaceSoft, color: COLORS.textFaint, border: `1px solid ${COLORS.border}` }
                         }
