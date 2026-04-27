@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
 import {
+  AI_THEME,
   formatCount,
   formatDate,
   genCardVariants,
@@ -29,16 +30,37 @@ export function AIComplianceWorkspaceCard({
   const showRecent = selectedView === 'overview' || selectedView === 'recent';
   const primaryTaskList = selectedView === 'due_this_week' ? dueThisWeekTasks : urgentTasks;
   const primaryTitle = selectedView === 'due_this_week' ? 'Due This Week' : 'Priority Tasks';
+  const accent = '#c59cf8';
+  const cardStyle = {
+    background: 'linear-gradient(180deg, rgba(13, 22, 30, 0.96) 0%, rgba(9, 16, 23, 0.98) 100%)',
+    border: `1px solid ${AI_THEME.border}`,
+    boxShadow: AI_THEME.shadow,
+  };
+  const sectionStyle = {
+    background: AI_THEME.surfaceSoft,
+    border: `1px solid ${AI_THEME.border}`,
+  };
 
   return (
     <motion.div
       variants={genCardVariants}
       initial="hidden"
       animate="visible"
-      className="mt-4 mb-2 rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-500/8 to-black/40 p-4 shadow-lg shadow-black/20"
+      className="mt-4 mb-2 rounded-[28px] p-4 sm:p-5"
+      style={cardStyle}
     >
-      <motion.h4 variants={genItemVariants} className="mb-4 flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-violet-300">
-        <ShieldCheck size={14} /> {data?.workspaceLabel || 'Compliance Workspace'}
+      <motion.h4
+        variants={genItemVariants}
+        className="mb-4 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.24em]"
+        style={{ color: accent }}
+      >
+        <span
+          className="flex h-8 w-8 items-center justify-center rounded-2xl"
+          style={{ background: 'rgba(197, 156, 248, 0.12)', color: accent }}
+        >
+          <ShieldCheck size={14} />
+        </span>
+        {data?.workspaceLabel || 'Compliance Workspace'}
       </motion.h4>
 
       <WorkspaceActionBar
@@ -61,30 +83,35 @@ export function AIComplianceWorkspaceCard({
           ['Overdue', summary.overdueCount, 'count'],
           ['Due This Week', summary.dueThisWeekCount, 'count'],
         ].map(([label, value]) => (
-          <motion.div key={label} variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
-            <div className="mb-1 text-[9px] font-bold uppercase tracking-widest text-gray-500">{label}</div>
-            <div className="text-[16px] font-black text-white">{formatCount(value as number | undefined | null)}</div>
+          <motion.div key={label} variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
+            <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.24em]" style={{ color: AI_THEME.textFaint }}>{label}</div>
+            <div className="text-[16px] font-black" style={{ color: AI_THEME.text }}>{formatCount(value as number | undefined | null)}</div>
           </motion.div>
         ))}
       </div>
 
       <div className={`grid gap-3 ${showUrgent && showRecent ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
         {showUrgent && (
-        <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-violet-300">{primaryTitle}</div>
+        <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>{primaryTitle}</div>
           <div className="space-y-2">
             {primaryTaskList.length === 0 ? (
-              <div className="text-[11px] text-gray-500">No active compliance tasks.</div>
+              <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No active compliance tasks.</div>
             ) : (
               primaryTaskList.map((task: any) => (
                 <div key={task.id} className="flex items-center justify-between gap-3 text-[11px]">
                   <div className="min-w-0">
-                    <div className="truncate font-semibold text-gray-200">{task.type || task.description || 'Compliance task'}</div>
-                    <div className="uppercase text-gray-500">{task.priority || 'medium'} priority</div>
+                    <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{task.type || task.description || 'Compliance task'}</div>
+                    <div className="uppercase" style={{ color: AI_THEME.textFaint }}>{task.priority || 'medium'} priority</div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <div className={`font-bold ${task.status === 'overdue' ? 'text-red-300' : 'text-white'}`}>{task.status}</div>
-                    <div className="text-[10px] text-gray-500">{formatDate(task.due_date)}</div>
+                    <div
+                      className="font-bold"
+                      style={{ color: task.status === 'overdue' ? AI_THEME.danger : AI_THEME.text }}
+                    >
+                      {task.status}
+                    </div>
+                    <div className="text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(task.due_date)}</div>
                   </div>
                 </div>
               ))
@@ -94,19 +121,19 @@ export function AIComplianceWorkspaceCard({
         )}
 
         {showRecent && (
-        <motion.div variants={genItemVariants} className="rounded-xl border border-white/[0.05] bg-white/[0.03] p-3">
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-violet-300">Recent Tasks</div>
+        <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>Recent Tasks</div>
           <div className="space-y-2">
             {recentTasks.length === 0 ? (
-              <div className="text-[11px] text-gray-500">No recent compliance tasks available.</div>
+              <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No recent compliance tasks available.</div>
             ) : (
               recentTasks.slice(0, 4).map((task: any) => (
                 <div key={task.id} className="flex items-center justify-between gap-3 text-[11px]">
                   <div className="min-w-0">
-                    <div className="truncate font-semibold text-gray-200">{task.type || task.description || 'Compliance task'}</div>
-                    <div className="uppercase text-gray-500">{task.status}</div>
+                    <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{task.type || task.description || 'Compliance task'}</div>
+                    <div className="uppercase" style={{ color: AI_THEME.textFaint }}>{task.status}</div>
                   </div>
-                  <div className="shrink-0 text-right text-[10px] text-gray-500">
+                  <div className="shrink-0 text-right text-[10px]" style={{ color: AI_THEME.textFaint }}>
                     {formatDate(task.due_date)}
                   </div>
                 </div>

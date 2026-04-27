@@ -1,15 +1,31 @@
 import { motion } from 'framer-motion';
 
-const C = {
-  surface: '#ffffff',
-  border: '#e5e7eb',
-  borderStrong: '#d1d5db',
-  text: '#1a1f36',
-  textBody: '#4f566b',
-  textMuted: '#697386',
-  textFaint: '#a3acb9',
-  accent: '#635bff',
-  accentSoft: '#f0eeff',
+export const AI_THEME = {
+  bg: '#060b10',
+  bgSecondary: '#09121a',
+  sidebar: '#0b1218',
+  surface: 'rgba(12, 20, 28, 0.88)',
+  surfaceRaised: 'rgba(16, 27, 37, 0.96)',
+  surfaceSoft: 'rgba(20, 32, 43, 0.72)',
+  border: 'rgba(154, 179, 198, 0.14)',
+  borderStrong: 'rgba(39, 199, 166, 0.34)',
+  text: '#f5f9fc',
+  textBody: '#d7e2eb',
+  textMuted: '#9db0c1',
+  textFaint: '#6a7b8d',
+  accent: '#27c7a6',
+  accentHover: '#3ad7b5',
+  accentSoft: 'rgba(39, 199, 166, 0.14)',
+  accentSoftStrong: 'rgba(39, 199, 166, 0.22)',
+  accentGlow: 'rgba(39, 199, 166, 0.34)',
+  danger: '#ff8a80',
+  dangerSoft: 'rgba(255, 138, 128, 0.14)',
+  warning: '#f7c26d',
+  warningSoft: 'rgba(247, 194, 109, 0.12)',
+  shadow: '0 18px 50px rgba(0, 0, 0, 0.32)',
+  panelShadow: '0 10px 30px rgba(0, 0, 0, 0.22)',
+  headingFont: "'Sora', ui-sans-serif, system-ui, sans-serif",
+  bodyFont: "'Manrope', ui-sans-serif, system-ui, sans-serif",
 };
 
 export const genCardVariants = {
@@ -89,21 +105,36 @@ export function WorkspaceViewPills({
             className="rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors disabled:cursor-not-allowed"
             style={
               isSelected
-                ? { background: C.accentSoft, color: C.accent, border: `1px solid ${C.accentSoft}` }
+                ? {
+                    background: AI_THEME.accentSoftStrong,
+                    color: AI_THEME.text,
+                    border: `1px solid ${AI_THEME.borderStrong}`,
+                  }
                 : disabled
-                ? { background: 'transparent', color: C.textFaint, border: `1px solid ${C.border}`, opacity: 0.6 }
-                : { background: C.surface, color: C.textBody, border: `1px solid ${C.border}` }
+                ? {
+                    background: 'transparent',
+                    color: AI_THEME.textFaint,
+                    border: `1px solid ${AI_THEME.border}`,
+                    opacity: 0.6,
+                  }
+                : {
+                    background: AI_THEME.surfaceSoft,
+                    color: AI_THEME.textMuted,
+                    border: `1px solid ${AI_THEME.border}`,
+                  }
             }
             onMouseEnter={(e) => {
               if (!isSelected && !disabled && onSelectView) {
-                e.currentTarget.style.borderColor = C.borderStrong;
-                e.currentTarget.style.color = C.text;
+                e.currentTarget.style.borderColor = AI_THEME.borderStrong;
+                e.currentTarget.style.color = AI_THEME.text;
+                e.currentTarget.style.background = AI_THEME.surfaceRaised;
               }
             }}
             onMouseLeave={(e) => {
               if (!isSelected && !disabled && onSelectView) {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.color = C.textBody;
+                e.currentTarget.style.borderColor = AI_THEME.border;
+                e.currentTarget.style.color = AI_THEME.textMuted;
+                e.currentTarget.style.background = AI_THEME.surfaceSoft;
               }
             }}
           >
@@ -139,25 +170,25 @@ export function WorkspaceActionBar({
           disabled={disabled || !onAction}
           className="rounded-lg px-3 py-2 text-left transition-colors disabled:cursor-not-allowed"
           style={{
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            color: C.text,
+            background: AI_THEME.surfaceSoft,
+            border: `1px solid ${AI_THEME.border}`,
+            color: AI_THEME.text,
             opacity: disabled || !onAction ? 0.5 : 1,
           }}
           onMouseEnter={(e) => {
             if (!disabled && onAction) {
-              e.currentTarget.style.borderColor = C.accent;
-              e.currentTarget.style.background = C.accentSoft;
+              e.currentTarget.style.borderColor = AI_THEME.borderStrong;
+              e.currentTarget.style.background = AI_THEME.accentSoft;
             }
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = C.border;
-            e.currentTarget.style.background = C.surface;
+            e.currentTarget.style.borderColor = AI_THEME.border;
+            e.currentTarget.style.background = AI_THEME.surfaceSoft;
           }}
         >
           <div className="text-[13px] font-semibold">{action.label}</div>
           {action.description && (
-            <div className="mt-0.5 text-[11px]" style={{ color: C.textMuted }}>{action.description}</div>
+            <div className="mt-0.5 text-[11px]" style={{ color: AI_THEME.textMuted }}>{action.description}</div>
           )}
         </button>
       ))}

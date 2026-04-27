@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { FileText, CreditCard, Receipt, ShieldCheck, Users, LayoutDashboard, ArrowRight } from 'lucide-react';
+import { AI_THEME } from './workspaces/workspaceShared';
 
 const DOMAIN_ICON: Record<string, any> = {
   invoices: FileText,
@@ -7,18 +8,6 @@ const DOMAIN_ICON: Record<string, any> = {
   expenses: Receipt,
   compliance: ShieldCheck,
   customers: Users,
-};
-
-const C = {
-  surface: '#ffffff',
-  border: '#e5e7eb',
-  borderStrong: '#d1d5db',
-  text: '#1a1f36',
-  textBody: '#4f566b',
-  textMuted: '#697386',
-  textFaint: '#a3acb9',
-  accent: '#635bff',
-  accentSoft: '#f0eeff',
 };
 
 export function AIDomainChoiceCard({
@@ -44,7 +33,7 @@ export function AIDomainChoiceCard({
       className="mt-3 space-y-1.5"
     >
       {data?.promptDescription && (
-        <p className="px-1 mb-2 text-[13px] leading-relaxed" style={{ color: C.textMuted }}>
+        <p className="mb-2 px-1 text-[13px] leading-relaxed" style={{ color: AI_THEME.textMuted }}>
           {data.promptDescription}
         </p>
       )}
@@ -59,11 +48,11 @@ export function AIDomainChoiceCard({
             >
               <span
                 className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-semibold mt-px"
-                style={{ background: C.accentSoft, color: C.accent }}
+                style={{ background: AI_THEME.accentSoft, color: AI_THEME.accent }}
               >
                 {index + 1}
               </span>
-              <span className="flex-1">{step}</span>
+              <span className="flex-1" style={{ color: AI_THEME.textBody }}>{step}</span>
             </li>
           ))}
         </ol>
@@ -83,40 +72,41 @@ export function AIDomainChoiceCard({
               }}
               className="group w-full rounded-xl px-3 py-3 text-left transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: C.surface,
-                border: `1px solid ${C.border}`,
+                background: AI_THEME.surfaceSoft,
+                border: `1px solid ${AI_THEME.border}`,
+                boxShadow: AI_THEME.panelShadow,
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.borderColor = C.accent;
-                  e.currentTarget.style.background = C.accentSoft;
+                  e.currentTarget.style.borderColor = AI_THEME.borderStrong;
+                  e.currentTarget.style.background = AI_THEME.surfaceRaised;
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.background = C.surface;
+                e.currentTarget.style.borderColor = AI_THEME.border;
+                e.currentTarget.style.background = AI_THEME.surfaceSoft;
               }}
             >
               <div
                 className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
-                style={{ background: C.accentSoft, color: C.accent }}
+                style={{ background: AI_THEME.accentSoft, color: AI_THEME.accent }}
               >
                 <Icon size={16} />
               </div>
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[14px] font-semibold" style={{ color: C.text }}>{choice.label}</span>
+                  <span className="text-[14px] font-semibold" style={{ color: AI_THEME.text }}>{choice.label}</span>
                   {choice.recommended && (
                     <span
                       className="text-[10px] font-semibold px-1.5 py-px rounded"
-                      style={{ background: C.accentSoft, color: C.accent }}
+                      style={{ background: AI_THEME.accentSoft, color: AI_THEME.accent }}
                     >
                       Recommended
                     </span>
                   )}
                 </div>
-                <div className="mt-0.5 text-[12px] leading-relaxed" style={{ color: C.textMuted }}>
+                <div className="mt-0.5 text-[12px] leading-relaxed" style={{ color: AI_THEME.textMuted }}>
                   {choice.description}
                 </div>
 
@@ -133,19 +123,19 @@ export function AIDomainChoiceCard({
                         }}
                         className="rounded-md px-2 py-1 text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{
-                          background: C.surface,
-                          border: `1px solid ${C.border}`,
-                          color: C.textBody,
+                          background: AI_THEME.surface,
+                          border: `1px solid ${AI_THEME.border}`,
+                          color: AI_THEME.textBody,
                         }}
                         onMouseEnter={(e) => {
                           if (!disabled && onAction) {
-                            e.currentTarget.style.borderColor = C.borderStrong;
-                            e.currentTarget.style.color = C.text;
+                            e.currentTarget.style.borderColor = AI_THEME.borderStrong;
+                            e.currentTarget.style.color = AI_THEME.text;
                           }
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = C.border;
-                          e.currentTarget.style.color = C.textBody;
+                          e.currentTarget.style.borderColor = AI_THEME.border;
+                          e.currentTarget.style.color = AI_THEME.textBody;
                         }}
                       >
                         {action.label}
@@ -158,7 +148,7 @@ export function AIDomainChoiceCard({
               <ArrowRight
                 size={14}
                 className="shrink-0 transition-transform group-hover:translate-x-0.5"
-                style={{ color: C.textFaint }}
+                style={{ color: AI_THEME.textFaint }}
               />
             </button>
           );
