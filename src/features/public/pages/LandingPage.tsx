@@ -8,7 +8,7 @@ import {
     AlertTriangle, Activity,
     Mic, MessageSquare, Receipt, ShieldCheck, Bell,
     Send, Plus, IndianRupee, Sparkles, TrendingUp, TrendingDown,
-    CircleCheck, CircleDot, ChevronRight,
+    CheckCircle, XCircle, ChevronRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Logo } from '@/components/common/Logo';
@@ -595,7 +595,7 @@ function PaymentRecordSim() {
                         animate={{ opacity: 1, y: 0 }}
                         className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 rounded-lg text-[13px] font-semibold text-white flex items-center justify-center gap-2 transition-colors"
                     >
-                        <CircleCheck className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4" />
                         Confirm Payment
                     </motion.button>
                 )}
@@ -857,8 +857,8 @@ function ControlRoomSim() {
                     >
                         <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${ev.ok ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
                             {ev.ok
-                                ? <CircleCheck className="w-3 h-3 text-emerald-400" />
-                                : <CircleDot className="w-3 h-3 text-rose-400" />
+                                ? <CheckCircle className="w-3 h-3 text-emerald-400" />
+                                : <XCircle className="w-3 h-3 text-rose-400" />
                             }
                         </div>
                         <div className="flex-1 min-w-0">
