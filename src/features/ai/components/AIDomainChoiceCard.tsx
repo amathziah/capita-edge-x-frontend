@@ -1,4 +1,4 @@
-chimport { motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { FileText, CreditCard, Receipt, ShieldCheck, Users, LayoutDashboard, ArrowRight } from 'lucide-react';
 import { AI_THEME } from './workspaces/workspaceShared';
 
