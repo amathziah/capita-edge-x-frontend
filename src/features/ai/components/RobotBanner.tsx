@@ -31,10 +31,6 @@ function CapitaRobot() {
   const head = useRef<Group>(null);
   const leftEye = useRef<Mesh>(null);
   const rightEye = useRef<Mesh>(null);
-  const leftPupil = useRef<Mesh>(null);
-  const rightPupil = useRef<Mesh>(null);
-  const antennaBall = useRef<Mesh>(null);
-  const antennaMat = useRef<MeshStandardMaterial>(null);
   const mouth = useRef<Mesh>(null);
   const chestLed = useRef<Mesh>(null);
   const chestMat = useRef<MeshStandardMaterial>(null);
@@ -50,44 +46,37 @@ function CapitaRobot() {
 
     // ── Whole-rig float + subtle drift ─────────────────────────────────
     if (rig.current) {
-      rig.current.position.y = Math.sin(t * 0.9) * 0.045;
-      rig.current.position.x = Math.sin(t * 0.55) * 0.02;
-      rig.current.rotation.z = Math.sin(t * 0.7) * 0.025;
+      rig.current.position.y = Math.sin(t * 1.5) * 0.08;
+      rig.current.position.x = Math.sin(t * 1.1) * 0.05;
+      rig.current.rotation.z = Math.sin(t * 1.3) * 0.06;
     }
 
     // ── Head turn — gentle "looking around" lerped to target ───────────
     if (head.current) {
-      // Pick a new look target every 2–4s
+      // Pick a new look target more frequently for snappier movement
       lookState.current.nextChange -= cdt;
       if (lookState.current.nextChange <= 0) {
-        lookState.current.targetX = (Math.random() - 0.5) * 0.32; // yaw
-        lookState.current.targetY = (Math.random() - 0.5) * 0.14; // pitch
-        lookState.current.nextChange = 2 + Math.random() * 2.2;
+        lookState.current.targetX = (Math.random() - 0.5) * 0.6; // wider yaw
+        lookState.current.targetY = (Math.random() - 0.5) * 0.3; // wider pitch
+        lookState.current.nextChange = 0.8 + Math.random() * 1.5; // faster changes
       }
+      
+      // Add a continuous playful shake/bobble to the target
+      const shakeX = Math.sin(t * 4.2) * 0.04;
+      const shakeY = Math.cos(t * 3.8) * 0.04;
+
       head.current.rotation.y = MathUtils.damp(
         head.current.rotation.y,
-        lookState.current.targetX,
-        2.4,
+        lookState.current.targetX + shakeX,
+        4.5, // faster dampening
         cdt,
       );
       head.current.rotation.x = MathUtils.damp(
         head.current.rotation.x,
-        lookState.current.targetY,
-        2.4,
+        lookState.current.targetY + shakeY,
+        4.5,
         cdt,
       );
-    }
-
-    // ── Pupils follow head turn slightly (parallax look) ───────────────
-    const pupilOffsetX = (head.current?.rotation.y ?? 0) * 0.18;
-    const pupilOffsetY = (head.current?.rotation.x ?? 0) * 0.12;
-    if (leftPupil.current) {
-      leftPupil.current.position.x = -0.22 + pupilOffsetX;
-      leftPupil.current.position.y = 0.04 + pupilOffsetY;
-    }
-    if (rightPupil.current) {
-      rightPupil.current.position.x = 0.22 + pupilOffsetX;
-      rightPupil.current.position.y = 0.04 + pupilOffsetY;
     }
 
     // ── Natural blink (single + occasional double) ─────────────────────
@@ -109,15 +98,6 @@ function CapitaRobot() {
       leftEye.current.scale.y = MathUtils.damp(leftEye.current.scale.y, target, 18, cdt);
     if (rightEye.current)
       rightEye.current.scale.y = MathUtils.damp(rightEye.current.scale.y, target, 18, cdt);
-
-    // ── Antenna ball pulse glow ────────────────────────────────────────
-    if (antennaBall.current) {
-      const s = 1 + Math.sin(t * 2.1) * 0.05;
-      antennaBall.current.scale.setScalar(s);
-    }
-    if (antennaMat.current) {
-      antennaMat.current.emissiveIntensity = 1.3 + Math.sin(t * 2.1) * 0.45;
-    }
 
     // ── Mouth subtle bob (suggests speech-readiness) ───────────────────
     if (mouth.current) {
@@ -187,26 +167,6 @@ function CapitaRobot() {
     <group ref={rig} scale={0.82}>
       {/* ── Head + body (single rig, head turns as one) ───────────────── */}
       <group ref={head}>
-        {/* Antenna stem */}
-        <mesh position={[0, 0.78, 0]} material={detailMat}>
-          <cylinderGeometry args={[0.022, 0.028, 0.32, 16]} />
-        </mesh>
-        {/* Antenna base ring */}
-        <mesh position={[0, 0.62, 0]} material={accentMat}>
-          <cylinderGeometry args={[0.07, 0.085, 0.05, 22]} />
-        </mesh>
-        {/* Antenna ball — emissive coral */}
-        <mesh ref={antennaBall} position={[0, 0.96, 0]}>
-          <sphereGeometry args={[0.075, 24, 24]} />
-          <meshStandardMaterial
-            ref={antennaMat}
-            color={COLORS.accent}
-            emissive={COLORS.accentGlow}
-            emissiveIntensity={1.45}
-            roughness={0.28}
-          />
-        </mesh>
-
         {/* Side speaker/ear pods — left */}
         <group position={[-0.78, -0.02, 0.04]} rotation={[0, 0, 0.06]}>
           <RoundedBox args={[0.24, 0.5, 0.32]} radius={0.12} smoothness={12} material={accentMat} />
@@ -281,16 +241,6 @@ function CapitaRobot() {
           position={[0.22, 0.04, 0.535]}
           material={eyeMat}
         />
-
-        {/* Pupils — small dark dots that drift with head turn */}
-        <mesh ref={leftPupil} position={[-0.22, 0.04, 0.56]}>
-          <sphereGeometry args={[0.028, 14, 14]} />
-          <meshStandardMaterial color={COLORS.detail} roughness={0.4} />
-        </mesh>
-        <mesh ref={rightPupil} position={[0.22, 0.04, 0.56]}>
-          <sphereGeometry args={[0.028, 14, 14]} />
-          <meshStandardMaterial color={COLORS.detail} roughness={0.4} />
-        </mesh>
 
         {/* Eye glints — small white highlights for "alive" feel */}
         <mesh position={[-0.16, 0.075, 0.56]}>
