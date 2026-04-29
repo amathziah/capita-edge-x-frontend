@@ -254,8 +254,10 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
     const customerName = watch('customerName') || '';
     const invoiceDate = watch('date') || '';
 
-    const getCustomerAddress = (customer: any) =>
-        [
+    const getCustomerAddress = (customer: any) => {
+        // Support both flat `address` field and structured addressLine1/2 fields
+        if (customer.address && !customer.addressLine1) return customer.address;
+        return [
             customer.addressLine1,
             customer.addressLine2,
             customer.city,
@@ -265,6 +267,7 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
         ]
             .filter(Boolean)
             .join(', ');
+    };
 
     const applyCustomerToForm = (customer: any) => {
         setValue('customerName', customer.name || '', { shouldValidate: true, shouldDirty: true });
@@ -272,9 +275,11 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
         setValue('customerGstin', customer.gstin || customer.taxId || '', { shouldDirty: true });
         setValue('customerAddress', getCustomerAddress(customer), { shouldDirty: true });
 
-        if (customer.paymentTerms && invoiceDate) {
+        // Use payment_terms OR avg_days_to_pay (whichever exists) to auto-set due date
+        const termDays = customer.paymentTerms || customer.payment_terms || customer.avg_days_to_pay || customer.avg_payment_days;
+        if (termDays && invoiceDate) {
             const dueDate = new Date(invoiceDate);
-            dueDate.setDate(dueDate.getDate() + Number(customer.paymentTerms));
+            dueDate.setDate(dueDate.getDate() + Number(termDays));
             if (!Number.isNaN(dueDate.getTime())) {
                 setValue('dueDate', dueDate.toISOString().split('T')[0], { shouldDirty: true });
             }
@@ -293,15 +298,17 @@ function StepClient({ register, errors, watch, setValue }: { register: any; erro
     const filtered = customers?.filter((c: any) => c.name.toLowerCase().includes(customerName.toLowerCase())) || [];
     const customerReg = register('customerName', { required: 'Required' });
 
+    // Only auto-fill when the field is NOT focused (i.e. user picked from dropdown and blurred)
+    // Prevents mid-typing field overwrites
     useEffect(() => {
+        if (isFocused) return;
         const normalized = customerName.trim().toLowerCase();
         if (!normalized) return;
-
         const exactMatch = customers?.find((customer: any) => customer.name?.trim().toLowerCase() === normalized);
         if (exactMatch) {
             applyCustomerToForm(exactMatch);
         }
-    }, [customerName, customers, invoiceDate]);
+    }, [customerName, isFocused, customers, invoiceDate]);
 
     return (
         <div className="space-y-4">

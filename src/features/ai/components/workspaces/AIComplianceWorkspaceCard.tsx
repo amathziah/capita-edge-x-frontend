@@ -6,6 +6,8 @@ import {
   formatDate,
   genCardVariants,
   genItemVariants,
+  StatTile,
+  StatValue,
   WorkspaceActionBar,
   WorkspaceViewPills,
 } from './workspaceShared';
@@ -51,16 +53,16 @@ export function AIComplianceWorkspaceCard({
     >
       <motion.h4
         variants={genItemVariants}
-        className="mb-4 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.24em]"
+        className="mb-4 flex items-center gap-2 min-w-0 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.24em]"
         style={{ color: accent }}
       >
         <span
-          className="flex h-8 w-8 items-center justify-center rounded-2xl"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl"
           style={{ background: 'rgba(197, 156, 248, 0.12)', color: accent }}
         >
           <ShieldCheck size={14} />
         </span>
-        {data?.workspaceLabel || 'Compliance Workspace'}
+        <span className="min-w-0 truncate">{data?.workspaceLabel || 'Compliance Workspace'}</span>
       </motion.h4>
 
       <WorkspaceActionBar
@@ -76,16 +78,17 @@ export function AIComplianceWorkspaceCard({
         disabled={isLoadingView}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           ['Total Tasks', summary.totalTasks, 'count'],
           ['Pending', summary.pendingCount, 'count'],
           ['Overdue', summary.overdueCount, 'count'],
           ['Due This Week', summary.dueThisWeekCount, 'count'],
         ].map(([label, value]) => (
-          <motion.div key={label} variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
-            <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.24em]" style={{ color: AI_THEME.textFaint }}>{label}</div>
-            <div className="text-[16px] font-black" style={{ color: AI_THEME.text }}>{formatCount(value as number | undefined | null)}</div>
+          <motion.div key={label as string} variants={genItemVariants}>
+            <StatTile label={label as string} style={sectionStyle}>
+              <StatValue>{formatCount(value as number | undefined | null)}</StatValue>
+            </StatTile>
           </motion.div>
         ))}
       </div>
@@ -99,19 +102,19 @@ export function AIComplianceWorkspaceCard({
               <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No active compliance tasks.</div>
             ) : (
               primaryTaskList.map((task: any) => (
-                <div key={task.id} className="flex items-center justify-between gap-3 text-[11px]">
-                  <div className="min-w-0">
+                <div key={task.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{task.type || task.description || 'Compliance task'}</div>
-                    <div className="uppercase" style={{ color: AI_THEME.textFaint }}>{task.priority || 'medium'} priority</div>
+                    <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.textFaint }}>{task.priority || 'medium'} priority</div>
                   </div>
-                  <div className="shrink-0 text-right">
+                  <div className="shrink-0 text-right max-w-[45%]">
                     <div
-                      className="font-bold"
+                      className="truncate font-bold uppercase"
                       style={{ color: task.status === 'overdue' ? AI_THEME.danger : AI_THEME.text }}
                     >
                       {task.status}
                     </div>
-                    <div className="text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(task.due_date)}</div>
+                    <div className="truncate text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(task.due_date)}</div>
                   </div>
                 </div>
               ))
@@ -128,12 +131,12 @@ export function AIComplianceWorkspaceCard({
               <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No recent compliance tasks available.</div>
             ) : (
               recentTasks.slice(0, 4).map((task: any) => (
-                <div key={task.id} className="flex items-center justify-between gap-3 text-[11px]">
-                  <div className="min-w-0">
+                <div key={task.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{task.type || task.description || 'Compliance task'}</div>
-                    <div className="uppercase" style={{ color: AI_THEME.textFaint }}>{task.status}</div>
+                    <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.textFaint }}>{task.status}</div>
                   </div>
-                  <div className="shrink-0 text-right text-[10px]" style={{ color: AI_THEME.textFaint }}>
+                  <div className="shrink-0 truncate text-right text-[10px] max-w-[40%]" style={{ color: AI_THEME.textFaint }}>
                     {formatDate(task.due_date)}
                   </div>
                 </div>

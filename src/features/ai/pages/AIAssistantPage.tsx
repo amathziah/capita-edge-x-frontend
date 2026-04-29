@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Mic,
@@ -31,6 +31,19 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import { AIWorkspaceRenderer } from '@/features/ai/components/AIWorkspaceRenderer';
 import { AIDomainChoiceCard } from '@/features/ai/components/AIDomainChoiceCard';
+const RobotBanner = lazy(() =>
+  import('@/features/ai/components/RobotBanner').then((m) => ({ default: m.RobotBanner })),
+);
+
+function RobotBannerPlaceholder() {
+  return (
+    <div
+      aria-hidden
+      className="w-full min-w-0 rounded-2xl border border-gray-200/80 bg-white shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08),0_1px_4px_-1px_rgba(0,0,0,0.04)]"
+      style={{ height: 252 }}
+    />
+  );
+}
 
 interface Message {
   id: string;
@@ -53,15 +66,16 @@ type NavItem = {
   accentBg: string;
 };
 
-const SIDEBAR_BG = '#0f1117';
+// Match the app's primary sidebar (Sidebar.tsx) for brand cohesion
+const SIDEBAR_BG = '#0c0f1a';
 const SIDEBAR_BORDER = 'rgba(255,255,255,0.06)';
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'invoices',   label: 'Invoices',    icon: FileText,   desc: 'Receivables & collections', accent: '#60a5fa', accentBg: 'rgba(96,165,250,0.12)' },
-  { id: 'payments',   label: 'Payments',    icon: CreditCard, desc: 'Cash in & settlements',     accent: '#34d399', accentBg: 'rgba(52,211,153,0.12)' },
-  { id: 'expenses',   label: 'Expenses',    icon: Receipt,    desc: 'Spend & categories',        accent: '#fbbf24', accentBg: 'rgba(251,191,36,0.12)'  },
-  { id: 'compliance', label: 'Compliance',  icon: ShieldCheck,desc: 'Deadlines & filings',       accent: '#a78bfa', accentBg: 'rgba(167,139,250,0.12)' },
-  { id: 'customers',  label: 'Customers',   icon: Users,      desc: 'Top clients & revenue',     accent: '#2dd4bf', accentBg: 'rgba(45,212,191,0.12)'  },
+  { id: 'invoices',   label: 'Invoices',    icon: FileText,   desc: 'Receivables & collections', accent: '#14B8B8', accentBg: 'rgba(20,184,184,0.12)' },
+  { id: 'payments',   label: 'Payments',    icon: CreditCard, desc: 'Cash in & settlements',     accent: '#22C55E', accentBg: 'rgba(34,197,94,0.12)' },
+  { id: 'expenses',   label: 'Expenses',    icon: Receipt,    desc: 'Spend & categories',        accent: '#F59E0B', accentBg: 'rgba(245,158,11,0.12)'  },
+  { id: 'compliance', label: 'Compliance',  icon: ShieldCheck,desc: 'Deadlines & filings',       accent: '#8B5CF6', accentBg: 'rgba(139,92,246,0.12)' },
+  { id: 'customers',  label: 'Customers',   icon: Users,      desc: 'Top clients & revenue',     accent: '#3B82F6', accentBg: 'rgba(59,130,246,0.12)'  },
 ];
 
 const SUGGESTED_PROMPTS = [
@@ -70,32 +84,32 @@ const SUGGESTED_PROMPTS = [
     label: "Today's priorities",
     description: 'Overdue invoices, pending collections, and urgent compliance items.',
     query: 'What needs attention first across invoices, payments, expenses, and compliance today?',
-    color: '#f87171',
-    bg: 'rgba(248,113,113,0.08)',
+    color: '#EF4444',
+    bg: 'rgba(239,68,68,0.08)',
   },
   {
     icon: TrendingUp,
     label: 'Collections overview',
     description: 'Who owes the most and where follow-up should start.',
     query: 'Which invoices are overdue, who owes me the most, and what should I follow up on first?',
-    color: '#34d399',
-    bg: 'rgba(52,211,153,0.08)',
+    color: '#14B8B8',
+    bg: 'rgba(20,184,184,0.08)',
   },
   {
     icon: Zap,
     label: 'Monthly summary',
     description: 'Cash collected, expenses booked, and pending obligations.',
     query: 'Give me a summary of cash collected, expenses, and pending obligations for this month.',
-    color: '#60a5fa',
-    bg: 'rgba(96,165,250,0.08)',
+    color: '#0E8A8A',
+    bg: 'rgba(14,138,138,0.08)',
   },
   {
     icon: Calendar,
     label: 'Upcoming deadlines',
     description: 'Next compliance tasks and what is due this week.',
     query: 'What compliance deadlines or urgent tasks are due this week?',
-    color: '#a78bfa',
-    bg: 'rgba(167,139,250,0.08)',
+    color: '#8B5CF6',
+    bg: 'rgba(139,92,246,0.08)',
   },
 ];
 
@@ -186,13 +200,19 @@ function ThinkingIndicator() {
   );
 }
 
-function CapitaAvatar({ size = 28 }: { size?: number }) {
+function CapitaAvatar({ size = 28, animated = false }: { size?: number; animated?: boolean }) {
   return (
     <div
-      className="shrink-0 rounded-lg bg-gray-900 flex items-center justify-center"
-      style={{ width: size, height: size }}
+      className={`shrink-0 rounded-xl flex items-center justify-center relative overflow-hidden ${animated ? 'capita-avatar-glow' : ''}`}
+      style={{
+        width: size,
+        height: size,
+        background: 'linear-gradient(135deg, #14B8B8 0%, #0E8A8A 100%)',
+        boxShadow: '0 4px 12px -2px rgba(20,184,184,0.35)',
+      }}
     >
-      <Sparkles size={size * 0.45} className="text-white" strokeWidth={1.8} />
+      <Sparkles size={size * 0.46} className="text-white relative z-10" strokeWidth={2} />
+      {animated && <span className="capita-avatar-shimmer" />}
     </div>
   );
 }
@@ -211,22 +231,19 @@ function EmptyState({
   businessType?: string | null;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="mx-auto flex w-full max-w-[860px] flex-1 flex-col justify-center py-6 sm:py-10"
-    >
+    <div className="capita-empty-fade mx-auto flex w-full max-w-[760px] flex-1 flex-col justify-center py-4 sm:py-6">
+      {/* 3D Robot banner — lazy so the chat shell paints first */}
+      <Suspense fallback={<RobotBannerPlaceholder />}>
+        <RobotBanner />
+      </Suspense>
+
       {/* Hero */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gray-900 mb-4 shadow-lg">
-          <Sparkles size={20} className="text-white" strokeWidth={1.8} />
-        </div>
-        <h1 className="text-[26px] font-bold tracking-[-0.03em] text-gray-900 sm:text-[32px] leading-[1.1]">
-          What do you want to know?
+      <div className="text-center mt-6 mb-5">
+        <h1 className="text-[20px] font-bold tracking-[-0.02em] text-gray-900 sm:text-[22px] leading-[1.2] font-display">
+          What can I help you with?
         </h1>
-        <p className="mx-auto mt-3 max-w-md text-[14px] leading-[1.7] text-gray-500">
-          Ask about your invoices, cash flow, expenses, or compliance — get answers from live workspace data.
+        <p className="mx-auto mt-1.5 max-w-md text-[12.5px] leading-[1.55] text-gray-500">
+          Pick a workspace or try a suggestion below.
           {businessType ? ` Tuned for ${businessType}.` : ''}
         </p>
 
@@ -263,38 +280,35 @@ function EmptyState({
       </div>
 
       {/* Suggestion cards */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {SUGGESTED_PROMPTS.map((prompt, i) => {
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        {SUGGESTED_PROMPTS.map((prompt) => {
           const Icon = prompt.icon;
           return (
-            <motion.button
+            <button
               key={prompt.label}
               type="button"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06, duration: 0.25, ease: 'easeOut' }}
               onClick={() => !disabled && onPrompt(prompt.query)}
               disabled={disabled}
-              className="group flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm hover:border-gray-200 hover:shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.99]"
+              className="group flex items-start gap-2.5 rounded-xl border border-gray-100 bg-white p-3 text-left transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.99] hover:border-primary/30 hover:shadow-soft"
             >
               <div
-                className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5"
+                className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 transition-transform group-hover:scale-110"
                 style={{ background: prompt.bg }}
               >
-                <Icon size={15} style={{ color: prompt.color }} />
+                <Icon size={13} style={{ color: prompt.color }} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-semibold text-gray-900">{prompt.label}</span>
-                  <ArrowRight size={13} className="text-gray-300 group-hover:text-gray-400 shrink-0 transition-colors group-hover:translate-x-0.5 transform" />
+                  <span className="text-[12.5px] font-semibold text-gray-900">{prompt.label}</span>
+                  <ArrowRight size={12} className="text-gray-300 group-hover:text-primary shrink-0 transition-all group-hover:translate-x-0.5" />
                 </div>
-                <p className="mt-0.5 text-[12px] leading-[1.6] text-gray-500">{prompt.description}</p>
+                <p className="mt-0.5 text-[11.5px] leading-[1.55] text-gray-500 line-clamp-2">{prompt.description}</p>
               </div>
-            </motion.button>
+            </button>
           );
         })}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -317,12 +331,16 @@ function SidebarPanel({
     <div className="flex h-full flex-col" style={{ background: SIDEBAR_BG }}>
       {/* Brand */}
       <div className="flex h-[56px] shrink-0 items-center gap-2.5 px-4 border-b" style={{ borderColor: SIDEBAR_BORDER }}>
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.08] border border-white/[0.10]">
-          <Sparkles size={13} className="text-white" strokeWidth={1.8} />
+        <div
+          className="flex h-7 w-7 items-center justify-center rounded-lg relative overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #14B8B8 0%, #0E8A8A 100%)', boxShadow: '0 2px 8px -1px rgba(20,184,184,0.4)' }}
+        >
+          <Sparkles size={13} className="text-white relative z-10" strokeWidth={2} />
+          <span className="capita-avatar-shimmer" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-semibold text-white leading-none">Capita AI</div>
-          <div className="mt-0.5 text-[10px] text-white/30 font-medium">Finance workspace</div>
+          <div className="text-[13px] font-semibold text-white leading-none tracking-tight">Capita AI</div>
+          <div className="mt-0.5 text-[10px] text-white/40 font-medium">Finance workspace</div>
         </div>
         {onClose && (
           <button
@@ -396,13 +414,17 @@ function ChatBubble({
   onSelectDomain,
   onSelectView,
   onAction,
+  onOpenInCanvas,
   disableChoices,
+  showInCanvas,
 }: {
   msg: Message;
   onSelectDomain: (choice: any) => void;
   onSelectView: (msg: Message, viewId: string) => void;
   onAction: (action: any) => void;
+  onOpenInCanvas: (msg: Message) => void;
   disableChoices: boolean;
+  showInCanvas: boolean;
 }) {
   const isBot = msg.sender === 'bot';
   const isStreaming = isBot && msg.status === 'streaming';
@@ -427,10 +449,13 @@ function ChatBubble({
         className="flex justify-end"
       >
         <div className="flex flex-col items-end max-w-[80%] sm:max-w-[72%]">
-          <div className="rounded-2xl rounded-br-sm bg-gray-900 px-4 py-3 shadow-sm">
+          <div
+            className="rounded-2xl rounded-br-sm px-4 py-3 shadow-sm"
+            style={{ background: 'linear-gradient(135deg, #14B8B8 0%, #0E8A8A 100%)' }}
+          >
             <ReactMarkdown components={userMd}>{msg.text}</ReactMarkdown>
           </div>
-          <span className="mt-1.5 px-1 text-[10px] text-gray-300">
+          <span className="mt-1.5 px-1 text-[10px] text-gray-400">
             {msg.timestamp instanceof Date
               ? msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : ''}
@@ -449,14 +474,14 @@ function ChatBubble({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <CapitaAvatar size={28} />
+      <CapitaAvatar size={28} animated={isStreaming} />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-[12px] font-semibold text-gray-900">Capita AI</span>
           {isStreaming && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-500">
-              <span className="w-1 h-1 rounded-full bg-blue-400 animate-pulse" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary-light border border-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary-dark">
+              <span className="w-1 h-1 rounded-full bg-primary animate-pulse" />
               Generating
             </span>
           )}
@@ -481,19 +506,31 @@ function ChatBubble({
           ) : null}
 
           {msg.uiComponent && msg.uiData && (
-            <div className="mt-4 -mx-1">
-              <AIWorkspaceRenderer
-                component={msg.uiComponent}
-                data={msg.uiData}
-                isLoadingView={isStreaming}
-                onAction={onAction}
-                onSelectView={
-                  msg.data?.type === 'workspace_view'
-                    ? (viewId) => onSelectView(msg, viewId)
-                    : undefined
-                }
-              />
-            </div>
+            showInCanvas ? (
+              <button
+                type="button"
+                onClick={() => onOpenInCanvas(msg)}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary-light border border-primary/20 px-2.5 py-1 text-[11px] font-medium text-primary-dark hover:bg-primary/10 transition-colors"
+              >
+                <LayoutDashboard size={11} />
+                Showing in canvas
+                <ArrowRight size={10} />
+              </button>
+            ) : (
+              <div className="mt-4 -mx-1">
+                <AIWorkspaceRenderer
+                  component={msg.uiComponent}
+                  data={msg.uiData}
+                  isLoadingView={isStreaming}
+                  onAction={onAction}
+                  onSelectView={
+                    msg.data?.type === 'workspace_view'
+                      ? (viewId) => onSelectView(msg, viewId)
+                      : undefined
+                  }
+                />
+              </div>
+            )
           )}
 
           {isBot && msg.data?.type === 'guided_choice' && (
@@ -542,9 +579,18 @@ export function AIAssistantPage() {
   const [inputFocused, setInputFocused] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [canvasMsgId, setCanvasMsgId] = useState<string | null>(null);
+  const [canvasClosed, setCanvasClosed] = useState(false);
+  const [canvasMobileOpen, setCanvasMobileOpen] = useState(false);
 
   const isBusy = isThinking || messages.some((m) => m.status === 'streaming');
   const isEmpty = messages.length === 0;
+
+  // Most recent bot message that has a workspace; auto-becomes the canvas target
+  const latestWorkspaceMsg = [...messages].reverse().find((m) => m.uiComponent && m.uiData);
+  const pinned = canvasMsgId ? messages.find((m) => m.id === canvasMsgId && m.uiComponent && m.uiData) : null;
+  const canvasMsg = canvasClosed ? null : (pinned || latestWorkspaceMsg || null);
+  const canvasOpen = !!canvasMsg;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -566,6 +612,14 @@ export function AIAssistantPage() {
     if (messages.length > 0 && nearBottom()) scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // When a new workspace message arrives, re-open the canvas
+  useEffect(() => {
+    if (latestWorkspaceMsg) {
+      setCanvasClosed(false);
+      setCanvasMsgId(null); // follow latest by default
+    }
+  }, [latestWorkspaceMsg?.id]);
+
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -585,6 +639,9 @@ export function AIAssistantPage() {
     cancelStream();
     setMessages([]);
     setMobileNavOpen(false);
+    setCanvasMsgId(null);
+    setCanvasClosed(false);
+    setCanvasMobileOpen(false);
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [cancelStream]);
 
@@ -787,9 +844,36 @@ export function AIAssistantPage() {
         @keyframes capita-cursor-blink { 0%,100%{opacity:1} 50%{opacity:0} }
         .ai-streaming-cursor {
           display: inline-block; width: 2px; height: 14px; margin-left: 2px;
-          vertical-align: text-bottom; border-radius: 1px; background: #374151;
+          vertical-align: text-bottom; border-radius: 1px;
+          background: linear-gradient(180deg, #14B8B8 0%, #0E8A8A 100%);
           animation: capita-cursor-blink 0.9s ease-in-out infinite;
         }
+        @keyframes capita-shimmer-sweep {
+          0% { transform: translateX(-120%) skewX(-20deg); }
+          100% { transform: translateX(220%) skewX(-20deg); }
+        }
+        .capita-avatar-shimmer, .capita-hero-shimmer {
+          position: absolute; inset: 0;
+          background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.45) 50%, transparent 70%);
+          animation: capita-shimmer-sweep 2.6s ease-in-out infinite;
+          pointer-events: none;
+        }
+        .capita-hero-shimmer { animation-duration: 3.2s; }
+        @keyframes capita-glow-pulse {
+          0%,100% { box-shadow: 0 4px 12px -2px rgba(20,184,184,0.35), 0 0 0 0 rgba(20,184,184,0.45); }
+          50%     { box-shadow: 0 4px 16px -2px rgba(20,184,184,0.55), 0 0 0 6px rgba(20,184,184,0); }
+        }
+        .capita-avatar-glow { animation: capita-glow-pulse 1.8s ease-in-out infinite; }
+        @keyframes capita-pulse-dot {
+          0%,100% { opacity: 1; transform: scale(1); }
+          50%     { opacity: 0.5; transform: scale(0.85); }
+        }
+        .capita-pulse-dot { animation: capita-pulse-dot 1.6s ease-in-out infinite; }
+        @keyframes capita-empty-fade {
+          0%   { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .capita-empty-fade { animation: capita-empty-fade 0.32s ease-out both; }
       `}</style>
 
       <div className="relative flex h-[100dvh] w-full overflow-hidden bg-white">
@@ -830,7 +914,7 @@ export function AIAssistantPage() {
 
           {/* Header */}
           <header className="flex h-[56px] shrink-0 items-center border-b border-gray-100 px-4 sm:px-5">
-            <div className="mx-auto flex w-full max-w-[860px] items-center justify-between gap-3">
+            <div className={`mx-auto flex w-full ${canvasOpen ? 'max-w-[640px]' : 'max-w-[860px]'} items-center justify-between gap-3 transition-[max-width] duration-200`}>
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   type="button"
@@ -842,14 +926,25 @@ export function AIAssistantPage() {
 
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[15px] font-bold text-gray-900 tracking-tight">Capita AI</span>
-                  <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                  <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary-light border border-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary-dark">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary capita-pulse-dot" />
                     Live
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
+                {latestWorkspaceMsg && !canvasOpen && (
+                  <button
+                    type="button"
+                    onClick={() => { setCanvasMsgId(latestWorkspaceMsg.id); setCanvasClosed(false); }}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary-light border border-primary/20 px-3 py-1.5 text-[12px] font-medium text-primary-dark hover:bg-primary/10 transition-all"
+                    title="Open canvas"
+                  >
+                    <LayoutDashboard size={12} />
+                    <span className="hidden sm:inline">Canvas</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={clearChat}
@@ -883,7 +978,7 @@ export function AIAssistantPage() {
               className="flex-1 overflow-y-auto"
               style={{ scrollbarWidth: 'thin', scrollbarColor: '#e5e7eb transparent' }}
             >
-              <div className="mx-auto flex min-h-full w-full max-w-[860px] flex-col px-4 pb-36 pt-4 sm:px-6 sm:pt-6">
+              <div className={`mx-auto flex min-h-full w-full ${canvasOpen ? 'max-w-[640px]' : 'max-w-[860px]'} flex-col px-4 pb-36 pt-4 sm:px-6 sm:pt-6 transition-[max-width] duration-200`}>
                 {isEmpty ? (
                   <EmptyState
                     onPrompt={(q) => handleSend(q)}
@@ -901,13 +996,19 @@ export function AIAssistantPage() {
                         onSelectDomain={openWorkspace}
                         onSelectView={switchView}
                         onAction={handleAction}
+                        onOpenInCanvas={(m) => {
+                          setCanvasMsgId(m.id);
+                          setCanvasClosed(false);
+                          setCanvasMobileOpen(true);
+                        }}
                         disableChoices={isBusy}
+                        showInCanvas={canvasOpen && canvasMsg?.id === msg.id}
                       />
                     ))}
 
                     {isThinking && (
                       <div className="flex items-start gap-3">
-                        <CapitaAvatar size={28} />
+                        <CapitaAvatar size={28} animated />
                         <div className="rounded-2xl rounded-tl-sm border border-gray-100 bg-white px-4 py-3.5 shadow-sm">
                           <ThinkingIndicator />
                         </div>
@@ -953,12 +1054,12 @@ export function AIAssistantPage() {
               {/* Gradient fade */}
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[72px]" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, white 60%)' }} />
 
-              <div className="relative mx-auto w-full max-w-[860px]">
+              <div className={`relative mx-auto w-full ${canvasOpen ? 'max-w-[640px]' : 'max-w-[860px]'} transition-[max-width] duration-200`}>
                 <div
-                  className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-150 ${
+                  className={`overflow-hidden rounded-2xl border bg-white transition-all duration-200 ${
                     inputFocused
-                      ? 'border-gray-300 shadow-[0_0_0_3px_rgba(0,0,0,0.05)]'
-                      : 'border-gray-200'
+                      ? 'border-primary/40 shadow-[0_0_0_4px_rgba(20,184,184,0.12),0_4px_20px_-4px_rgba(20,184,184,0.18)]'
+                      : 'border-gray-200 shadow-sm hover:border-gray-300'
                   }`}
                 >
                   <textarea
@@ -1009,9 +1110,14 @@ export function AIAssistantPage() {
                         disabled={!isBusy && !query.trim()}
                         className={`flex h-8 min-w-[80px] items-center justify-center gap-1.5 rounded-xl px-3 text-[13px] font-semibold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 ${
                           isBusy || query.trim()
-                            ? 'bg-gray-900 text-white hover:bg-gray-700'
+                            ? 'text-white shadow-[0_4px_14px_-2px_rgba(20,184,184,0.45)] hover:shadow-[0_6px_18px_-2px_rgba(20,184,184,0.6)]'
                             : 'border border-gray-200 bg-gray-50 text-gray-400'
                         }`}
+                        style={
+                          isBusy || query.trim()
+                            ? { background: 'linear-gradient(135deg, #14B8B8 0%, #0E8A8A 100%)' }
+                            : undefined
+                        }
                       >
                         {isBusy ? <Square size={12} fill="currentColor" /> : <ArrowUp size={14} strokeWidth={2.5} />}
                         {isBusy ? 'Stop' : 'Send'}
@@ -1027,7 +1133,119 @@ export function AIAssistantPage() {
             </div>
           </div>
         </div>
+
+        {/* Desktop canvas pane */}
+        <AnimatePresence>
+          {canvasOpen && canvasMsg && (
+            <motion.aside
+              key="canvas-desktop"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 'var(--canvas-w)', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              className="hidden lg:flex h-full shrink-0 flex-col border-l border-gray-100 bg-background overflow-hidden"
+              style={{ ['--canvas-w' as any]: 'min(560px, 44vw)' } as any}
+            >
+              <CanvasPaneInner
+                msg={canvasMsg}
+                navItems={NAV_ITEMS}
+                onClose={() => { setCanvasClosed(true); setCanvasMsgId(null); }}
+                onAction={handleAction}
+                onSelectView={(viewId) => switchView(canvasMsg, viewId)}
+              />
+            </motion.aside>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile canvas drawer */}
+        <AnimatePresence>
+          {canvasOpen && canvasMsg && canvasMobileOpen && (
+            <>
+              <motion.button
+                type="button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setCanvasMobileOpen(false)}
+                className="absolute inset-0 z-30 lg:hidden bg-black/40 backdrop-blur-sm"
+              />
+              <motion.aside
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 240 }}
+                className="absolute inset-y-0 right-0 z-40 w-[94vw] max-w-[480px] border-l border-gray-100 bg-background lg:hidden flex flex-col"
+              >
+                <CanvasPaneInner
+                  msg={canvasMsg}
+                  navItems={NAV_ITEMS}
+                  onClose={() => setCanvasMobileOpen(false)}
+                  onAction={handleAction}
+                  onSelectView={(viewId) => switchView(canvasMsg, viewId)}
+                />
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </>
+  );
+}
+
+function CanvasPaneInner({
+  msg,
+  navItems,
+  onClose,
+  onAction,
+  onSelectView,
+}: {
+  msg: Message;
+  navItems: NavItem[];
+  onClose: () => void;
+  onAction: (action: any) => void;
+  onSelectView: (viewId: string) => void;
+}) {
+  const domain = String(msg.domain || '').toLowerCase();
+  const navItem = navItems.find((n) => n.id === domain);
+  const Icon = navItem?.icon || LayoutDashboard;
+  const accent = navItem?.accent || '#14B8B8';
+  const accentBg = navItem?.accentBg || 'rgba(20,184,184,0.12)';
+  const isStreaming = msg.status === 'streaming';
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex h-[56px] shrink-0 items-center gap-2.5 border-b border-gray-100 px-4">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: accentBg }}>
+          <Icon size={14} style={{ color: accent }} strokeWidth={2} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-gray-900 leading-none capitalize truncate">
+            {navItem?.label || domain || 'Workspace'}
+          </div>
+          <div className="mt-1 text-[10px] font-medium text-gray-400">
+            {isStreaming ? 'Loading…' : 'Live workspace'}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
+          title="Close canvas"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#e5e7eb transparent' }}>
+        {msg.uiComponent && msg.uiData ? (
+          <AIWorkspaceRenderer
+            component={msg.uiComponent}
+            data={msg.uiData}
+            isLoadingView={isStreaming}
+            onAction={onAction}
+            onSelectView={msg.data?.type === 'workspace_view' ? onSelectView : undefined}
+          />
+        ) : null}
+      </div>
+    </div>
   );
 }

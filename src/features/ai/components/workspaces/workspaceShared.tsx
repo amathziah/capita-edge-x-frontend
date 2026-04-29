@@ -53,6 +53,48 @@ export const genItemVariants = {
   },
 };
 
+// Fluid, truncating value used inside stat tiles. Shrinks on narrow widths
+// so long currency strings (e.g. ₹1,23,45,678) never overflow the tile.
+export function StatValue({ children, color }: { children: any; color?: string }) {
+  return (
+    <div
+      className="font-black tabular-nums leading-tight tracking-tight truncate"
+      style={{
+        color: color ?? AI_THEME.text,
+        fontSize: 'clamp(13px, 3.6cqi, 17px)',
+      }}
+      title={typeof children === 'string' || typeof children === 'number' ? String(children) : undefined}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Wraps a stat tile so child fonts can scale with container width.
+export function StatTile({
+  label,
+  children,
+  style,
+  labelColor,
+}: {
+  label: string;
+  children: any;
+  style?: any;
+  labelColor?: string;
+}) {
+  return (
+    <div className="rounded-2xl p-3 min-w-0 overflow-hidden" style={{ ...style, containerType: 'inline-size' } as any}>
+      <div
+        className="mb-1 text-[9px] font-bold uppercase tracking-[0.2em] truncate"
+        style={{ color: labelColor ?? AI_THEME.textFaint }}
+      >
+        {label}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function createMoneyFormatter(currencyCode = 'INR') {
   const currencySymbol = currencyCode === 'USD' ? '$' : '₹';
   return (value: number | undefined | null) => {

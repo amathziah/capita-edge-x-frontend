@@ -7,6 +7,8 @@ import {
   formatDate,
   genCardVariants,
   genItemVariants,
+  StatTile,
+  StatValue,
   WorkspaceActionBar,
   WorkspaceViewPills,
 } from './workspaceShared';
@@ -53,16 +55,16 @@ export function AIInvoiceWorkspaceCard({
     >
       <motion.h4
         variants={genItemVariants}
-        className="mb-4 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.24em]"
+        className="mb-4 flex items-center gap-2 min-w-0 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.24em]"
         style={{ color: accent }}
       >
         <span
-          className="flex h-8 w-8 items-center justify-center rounded-2xl"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl"
           style={{ background: 'rgba(125, 211, 252, 0.12)', color: accent }}
         >
           <FileText size={14} />
         </span>
-        {data?.workspaceLabel || 'Invoice Workspace'}
+        <span className="min-w-0 truncate">{data?.workspaceLabel || 'Invoice Workspace'}</span>
       </motion.h4>
 
       <WorkspaceActionBar
@@ -78,18 +80,19 @@ export function AIInvoiceWorkspaceCard({
         disabled={isLoadingView}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           ['Tracked', summary.totalInvoices, 'count'],
           ['Drafts', summary.draftCount, 'count'],
           ['Outstanding', formatMoney(summary.totalOutstanding), 'money'],
           ['Overdue', formatMoney(summary.overdueAmount), 'money'],
         ].map(([label, value, kind]) => (
-          <motion.div key={label} variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
-            <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.24em]" style={{ color: AI_THEME.textFaint }}>{label}</div>
-            <div className="text-[16px] font-black" style={{ color: AI_THEME.text }}>
-              {kind === 'count' ? formatCount(value as number | undefined | null) : value}
-            </div>
+          <motion.div key={label as string} variants={genItemVariants}>
+            <StatTile label={label as string} style={sectionStyle}>
+              <StatValue>
+                {kind === 'count' ? formatCount(value as number | undefined | null) : (value as any)}
+              </StatValue>
+            </StatTile>
           </motion.div>
         ))}
       </div>
@@ -103,14 +106,14 @@ export function AIInvoiceWorkspaceCard({
               <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No recent invoices available.</div>
             ) : (
               recentInvoices.slice(0, 4).map((invoice: any) => (
-                <div key={invoice.id} className="flex items-center justify-between gap-3 text-[11px]">
-                  <div className="min-w-0">
+                <div key={invoice.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>#{invoice.invoiceNumber}</div>
-                    <div className="uppercase" style={{ color: AI_THEME.textFaint }}>{invoice.status}</div>
+                    <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.textFaint }}>{invoice.status}</div>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <div className="font-mono" style={{ color: AI_THEME.text }}>{formatMoney(invoice.total)}</div>
-                    <div className="text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(invoice.dueDate)}</div>
+                  <div className="shrink-0 text-right max-w-[45%]">
+                    <div className="font-mono tabular-nums truncate" style={{ color: AI_THEME.text }}>{formatMoney(invoice.total)}</div>
+                    <div className="truncate text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(invoice.dueDate)}</div>
                   </div>
                 </div>
               ))
@@ -131,19 +134,19 @@ export function AIInvoiceWorkspaceCard({
               <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No overdue invoices right now.</div>
             ) : (
               overdueInvoices.slice(0, 4).map((invoice: any) => (
-                <div key={invoice.id} className="flex items-center justify-between gap-3 text-[11px]">
-                  <div className="min-w-0">
+                <div key={invoice.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>
                       #{invoice.invoiceNumber}
                       {invoice.buyer?.name ? ` · ${invoice.buyer.name}` : ''}
                     </div>
-                    <div className="uppercase" style={{ color: AI_THEME.danger }}>
+                    <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.danger }}>
                       {typeof invoice.daysOverdue === 'number' && invoice.daysOverdue > 0
                         ? `${invoice.daysOverdue} days overdue`
                         : 'Overdue'}
                     </div>
                   </div>
-                  <div className="shrink-0 font-mono" style={{ color: AI_THEME.text }}>{formatMoney(invoice.balanceDue)}</div>
+                  <div className="shrink-0 font-mono tabular-nums truncate max-w-[45%] text-right" style={{ color: AI_THEME.text }}>{formatMoney(invoice.balanceDue)}</div>
                 </div>
               ))
             )}
@@ -169,9 +172,9 @@ export function AIInvoiceWorkspaceCard({
             <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No debtor concentration available.</div>
           ) : (
             topDebtors.map((debtor: any) => (
-              <div key={debtor.name} className="flex items-center justify-between gap-3 text-[11px]">
-                <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{debtor.name}</div>
-                <div className="shrink-0 font-mono" style={{ color: AI_THEME.text }}>{formatMoney(debtor.balanceDue)}</div>
+              <div key={debtor.name} className="flex items-center justify-between gap-2 text-[11px]">
+                <div className="min-w-0 flex-1 truncate font-semibold" style={{ color: AI_THEME.textBody }}>{debtor.name}</div>
+                <div className="shrink-0 font-mono tabular-nums truncate max-w-[45%] text-right" style={{ color: AI_THEME.text }}>{formatMoney(debtor.balanceDue)}</div>
               </div>
             ))
           )}

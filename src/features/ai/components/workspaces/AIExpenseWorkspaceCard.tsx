@@ -7,6 +7,8 @@ import {
   formatDate,
   genCardVariants,
   genItemVariants,
+  StatTile,
+  StatValue,
   WorkspaceActionBar,
   WorkspaceViewPills,
 } from './workspaceShared';
@@ -50,16 +52,16 @@ export function AIExpenseWorkspaceCard({
     >
       <motion.h4
         variants={genItemVariants}
-        className="mb-4 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.24em]"
+        className="mb-4 flex items-center gap-2 min-w-0 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.24em]"
         style={{ color: accent }}
       >
         <span
-          className="flex h-8 w-8 items-center justify-center rounded-2xl"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl"
           style={{ background: 'rgba(246, 199, 117, 0.12)', color: accent }}
         >
           <Receipt size={14} />
         </span>
-        {data?.workspaceLabel || 'Expenses Workspace'}
+        <span className="min-w-0 truncate">{data?.workspaceLabel || 'Expenses Workspace'}</span>
       </motion.h4>
 
       <WorkspaceActionBar
@@ -75,18 +77,19 @@ export function AIExpenseWorkspaceCard({
         disabled={isLoadingView}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           ['Total Spend', formatMoney(summary.totalSpend), 'money'],
           ['This Month', formatMoney(summary.spendThisMonth), 'money'],
           ['Expenses', summary.totalExpenses, 'count'],
           ['Avg Expense', formatMoney(summary.averageExpense), 'money'],
         ].map(([label, value, kind]) => (
-          <motion.div key={label} variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
-            <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.24em]" style={{ color: AI_THEME.textFaint }}>{label}</div>
-            <div className="text-[16px] font-black" style={{ color: AI_THEME.text }}>
-              {kind === 'count' ? formatCount(value as number | undefined | null) : value}
-            </div>
+          <motion.div key={label as string} variants={genItemVariants}>
+            <StatTile label={label as string} style={sectionStyle}>
+              <StatValue>
+                {kind === 'count' ? formatCount(value as number | undefined | null) : (value as any)}
+              </StatValue>
+            </StatTile>
           </motion.div>
         ))}
       </div>
@@ -100,14 +103,14 @@ export function AIExpenseWorkspaceCard({
               <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No recent expenses available.</div>
             ) : (
               recentExpenses.slice(0, 4).map((expense: any) => (
-                <div key={expense.id} className="flex items-center justify-between gap-3 text-[11px]">
-                  <div className="min-w-0">
+                <div key={expense.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{expense.description || expense.category || 'Expense'}</div>
-                    <div className="uppercase" style={{ color: AI_THEME.textFaint }}>{expense.category || 'other'}</div>
+                    <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.textFaint }}>{expense.category || 'other'}</div>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <div className="font-mono" style={{ color: AI_THEME.text }}>{formatMoney(expense.amount)}</div>
-                    <div className="text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(expense.date)}</div>
+                  <div className="shrink-0 text-right max-w-[45%]">
+                    <div className="font-mono tabular-nums truncate" style={{ color: AI_THEME.text }}>{formatMoney(expense.amount)}</div>
+                    <div className="truncate text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(expense.date)}</div>
                   </div>
                 </div>
               ))
@@ -124,9 +127,9 @@ export function AIExpenseWorkspaceCard({
               <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No category breakdown available.</div>
             ) : (
               topCategories.map((entry: any) => (
-                <div key={entry.category} className="flex items-center justify-between gap-3 text-[11px]">
-                  <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{entry.category}</div>
-                  <div className="shrink-0 font-mono" style={{ color: AI_THEME.text }}>{formatMoney(entry.amount)}</div>
+                <div key={entry.category} className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0 flex-1 truncate font-semibold" style={{ color: AI_THEME.textBody }}>{entry.category}</div>
+                  <div className="shrink-0 font-mono tabular-nums truncate max-w-[45%] text-right" style={{ color: AI_THEME.text }}>{formatMoney(entry.amount)}</div>
                 </div>
               ))
             )}
