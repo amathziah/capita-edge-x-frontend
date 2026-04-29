@@ -1,80 +1,373 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { PerspectiveCamera, RoundedBox } from '@react-three/drei';
 import {
-  PerspectiveCamera,
-  RoundedBox,
-} from '@react-three/drei';
-import { Group, MathUtils, Mesh } from 'three';
+  Group,
+  MathUtils,
+  Mesh,
+  MeshStandardMaterial,
+} from 'three';
 
-function NeoRobotHead() {
+// ─── Brand palette ─────────────────────────────────────────────────────────
+// Cream chassis · coral/red accents · dark glossy face · warm yellow eyes ·
+// soft amber rim light. Matches the banner's white→cream→peach background.
+const COLORS = {
+  shell: '#F4ECDA',       // ivory/cream chassis
+  shellShadow: '#E8DEC4', // darker cream for back/side accents
+  faceScreen: '#0A0D11',  // glossy near-black face panel
+  eye: '#FFE89A',         // warm yellow eye
+  eyeGlow: '#FFC93C',     // amber emissive
+  accent: '#E33C39',      // brand coral/red (ear pods, antenna ball)
+  accentGlow: '#FF7A45',  // coral→orange emissive
+  cheek: '#FF8B7A',       // soft coral cheek dot
+  chestLed: '#34D399',    // status LED green
+  detail: '#1A1D22',      // dark detail color (mouth grille, pupils)
+};
+
+// ─── Robot ────────────────────────────────────────────────────────────────
+
+function CapitaRobot() {
   const rig = useRef<Group>(null);
+  const head = useRef<Group>(null);
   const leftEye = useRef<Mesh>(null);
   const rightEye = useRef<Mesh>(null);
+  const leftPupil = useRef<Mesh>(null);
+  const rightPupil = useRef<Mesh>(null);
+  const antennaBall = useRef<Mesh>(null);
+  const antennaMat = useRef<MeshStandardMaterial>(null);
+  const mouth = useRef<Mesh>(null);
+  const chestLed = useRef<Mesh>(null);
+  const chestMat = useRef<MeshStandardMaterial>(null);
+
+  // Reusable look-target state (eye tracking around)
+  const lookState = useRef({ targetX: 0, targetY: 0, nextChange: 1.5 });
+  // Random natural blink scheduler — singles + occasional doubles
+  const blinkState = useRef({ next: 1.6, until: 0, second: false });
 
   useFrame((state, dt) => {
     const t = state.clock.elapsedTime;
+    const cdt = Math.min(dt, 0.05); // cap delta to avoid huge jumps after pause
 
+    // ── Whole-rig float + subtle drift ─────────────────────────────────
     if (rig.current) {
-      rig.current.position.y = Math.sin(t * 0.95) * 0.025;
-      rig.current.position.x = Math.sin(t * 1.45) * 0.025;
-      rig.current.rotation.y = MathUtils.lerp(
-        rig.current.rotation.y,
-        Math.sin(t * 1.35) * 0.12 + Math.sin(t * 0.42) * 0.04,
-        Math.min(1, dt * 3.2),
-      );
-      rig.current.rotation.z = Math.sin(t * 1.25) * 0.025;
-      rig.current.rotation.x = Math.sin(t * 0.82) * 0.018;
+      rig.current.position.y = Math.sin(t * 0.9) * 0.045;
+      rig.current.position.x = Math.sin(t * 0.55) * 0.02;
+      rig.current.rotation.z = Math.sin(t * 0.7) * 0.025;
     }
 
-    const blink = Math.sin(t * 1.9) > 0.94 ? 0.24 : 1;
-    if (leftEye.current) leftEye.current.scale.y = MathUtils.lerp(leftEye.current.scale.y, blink, dt * 12);
-    if (rightEye.current) rightEye.current.scale.y = MathUtils.lerp(rightEye.current.scale.y, blink, dt * 12);
+    // ── Head turn — gentle "looking around" lerped to target ───────────
+    if (head.current) {
+      // Pick a new look target every 2–4s
+      lookState.current.nextChange -= cdt;
+      if (lookState.current.nextChange <= 0) {
+        lookState.current.targetX = (Math.random() - 0.5) * 0.32; // yaw
+        lookState.current.targetY = (Math.random() - 0.5) * 0.14; // pitch
+        lookState.current.nextChange = 2 + Math.random() * 2.2;
+      }
+      head.current.rotation.y = MathUtils.damp(
+        head.current.rotation.y,
+        lookState.current.targetX,
+        2.4,
+        cdt,
+      );
+      head.current.rotation.x = MathUtils.damp(
+        head.current.rotation.x,
+        lookState.current.targetY,
+        2.4,
+        cdt,
+      );
+    }
+
+    // ── Pupils follow head turn slightly (parallax look) ───────────────
+    const pupilOffsetX = (head.current?.rotation.y ?? 0) * 0.18;
+    const pupilOffsetY = (head.current?.rotation.x ?? 0) * 0.12;
+    if (leftPupil.current) {
+      leftPupil.current.position.x = -0.22 + pupilOffsetX;
+      leftPupil.current.position.y = 0.04 + pupilOffsetY;
+    }
+    if (rightPupil.current) {
+      rightPupil.current.position.x = 0.22 + pupilOffsetX;
+      rightPupil.current.position.y = 0.04 + pupilOffsetY;
+    }
+
+    // ── Natural blink (single + occasional double) ─────────────────────
+    blinkState.current.next -= cdt;
+    blinkState.current.until -= cdt;
+    if (blinkState.current.next <= 0 && blinkState.current.until <= 0) {
+      blinkState.current.until = 0.13;
+      blinkState.current.next = 2.5 + Math.random() * 3.5;
+      // 25% chance of a double-blink
+      blinkState.current.second = Math.random() < 0.25;
+    } else if (blinkState.current.until <= 0 && blinkState.current.second) {
+      blinkState.current.second = false;
+      blinkState.current.until = 0.13;
+      blinkState.current.next = 0.18; // tiny gap before next
+    }
+    const blinking = blinkState.current.until > 0;
+    const target = blinking ? 0.08 : 1;
+    if (leftEye.current)
+      leftEye.current.scale.y = MathUtils.damp(leftEye.current.scale.y, target, 18, cdt);
+    if (rightEye.current)
+      rightEye.current.scale.y = MathUtils.damp(rightEye.current.scale.y, target, 18, cdt);
+
+    // ── Antenna ball pulse glow ────────────────────────────────────────
+    if (antennaBall.current) {
+      const s = 1 + Math.sin(t * 2.1) * 0.05;
+      antennaBall.current.scale.setScalar(s);
+    }
+    if (antennaMat.current) {
+      antennaMat.current.emissiveIntensity = 1.3 + Math.sin(t * 2.1) * 0.45;
+    }
+
+    // ── Mouth subtle bob (suggests speech-readiness) ───────────────────
+    if (mouth.current) {
+      mouth.current.scale.x = 1 + Math.sin(t * 3.2) * 0.05;
+      mouth.current.scale.y = 1 + Math.cos(t * 2.8) * 0.07;
+    }
+
+    // ── Chest LED breathing ────────────────────────────────────────────
+    if (chestMat.current) {
+      chestMat.current.emissiveIntensity = 1.2 + Math.sin(t * 1.6) * 0.55;
+    }
+    if (chestLed.current) {
+      const s = 1 + Math.sin(t * 1.6) * 0.08;
+      chestLed.current.scale.set(s, s, 1);
+    }
   });
 
+  // Memoize materials so we don't recreate per frame
+  const shellMat = useMemo(
+    () =>
+      new MeshStandardMaterial({
+        color: COLORS.shell,
+        roughness: 0.42,
+        metalness: 0.06,
+        envMapIntensity: 0.85,
+      }),
+    [],
+  );
+  const screenMat = useMemo(
+    () =>
+      new MeshStandardMaterial({
+        color: COLORS.faceScreen,
+        roughness: 0.18,
+        metalness: 0.18,
+      }),
+    [],
+  );
+  const accentMat = useMemo(
+    () =>
+      new MeshStandardMaterial({
+        color: COLORS.accent,
+        roughness: 0.38,
+        metalness: 0.08,
+      }),
+    [],
+  );
+  const eyeMat = useMemo(
+    () =>
+      new MeshStandardMaterial({
+        color: COLORS.eye,
+        emissive: COLORS.eyeGlow,
+        emissiveIntensity: 1.7,
+        roughness: 0.3,
+      }),
+    [],
+  );
+  const detailMat = useMemo(
+    () =>
+      new MeshStandardMaterial({
+        color: COLORS.detail,
+        roughness: 0.4,
+      }),
+    [],
+  );
+
   return (
-    <group ref={rig} scale={0.88}>
-      <group position={[-0.76, -0.03, 0.02]} rotation={[0, 0, 0.05]}>
-        <RoundedBox args={[0.26, 0.46, 0.28]} radius={0.12} smoothness={14} castShadow receiveShadow>
-          <meshStandardMaterial color="#D92F2D" roughness={0.42} metalness={0.05} />
+    <group ref={rig} scale={0.82}>
+      {/* ── Head + body (single rig, head turns as one) ───────────────── */}
+      <group ref={head}>
+        {/* Antenna stem */}
+        <mesh position={[0, 0.78, 0]} material={detailMat}>
+          <cylinderGeometry args={[0.022, 0.028, 0.32, 16]} />
+        </mesh>
+        {/* Antenna base ring */}
+        <mesh position={[0, 0.62, 0]} material={accentMat}>
+          <cylinderGeometry args={[0.07, 0.085, 0.05, 22]} />
+        </mesh>
+        {/* Antenna ball — emissive coral */}
+        <mesh ref={antennaBall} position={[0, 0.96, 0]}>
+          <sphereGeometry args={[0.075, 24, 24]} />
+          <meshStandardMaterial
+            ref={antennaMat}
+            color={COLORS.accent}
+            emissive={COLORS.accentGlow}
+            emissiveIntensity={1.45}
+            roughness={0.28}
+          />
+        </mesh>
+
+        {/* Side speaker/ear pods — left */}
+        <group position={[-0.78, -0.02, 0.04]} rotation={[0, 0, 0.06]}>
+          <RoundedBox args={[0.24, 0.5, 0.32]} radius={0.12} smoothness={12} material={accentMat} />
+          {/* cream inset */}
+          <RoundedBox
+            args={[0.13, 0.3, 0.04]}
+            radius={0.05}
+            smoothness={8}
+            position={[0.018, 0, 0.18]}
+            material={shellMat}
+          />
+          {/* dark center ring */}
+          <mesh position={[0.025, 0, 0.205]}>
+            <cylinderGeometry args={[0.038, 0.038, 0.02, 22]} />
+            <meshStandardMaterial color={COLORS.detail} roughness={0.25} metalness={0.2} />
+          </mesh>
+        </group>
+
+        {/* Side speaker/ear pods — right */}
+        <group position={[0.78, -0.02, 0.04]} rotation={[0, 0, -0.06]}>
+          <RoundedBox args={[0.24, 0.5, 0.32]} radius={0.12} smoothness={12} material={accentMat} />
+          <RoundedBox
+            args={[0.13, 0.3, 0.04]}
+            radius={0.05}
+            smoothness={8}
+            position={[-0.018, 0, 0.18]}
+            material={shellMat}
+          />
+          <mesh position={[-0.025, 0, 0.205]}>
+            <cylinderGeometry args={[0.038, 0.038, 0.02, 22]} />
+            <meshStandardMaterial color={COLORS.detail} roughness={0.25} metalness={0.2} />
+          </mesh>
+        </group>
+
+        {/* Main head shell */}
+        <RoundedBox
+          args={[1.4, 1.2, 0.92]}
+          radius={0.36}
+          smoothness={20}
+          material={shellMat}
+        />
+
+        {/* Subtle top "dome" highlight strip — slightly darker cream band */}
+        <mesh position={[0, 0.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.42, 0.012, 12, 48, Math.PI]} />
+          <meshStandardMaterial color={COLORS.shellShadow} roughness={0.5} />
+        </mesh>
+
+        {/* Face screen — dark glossy panel */}
+        <RoundedBox
+          args={[1.14, 0.92, 0.1]}
+          radius={0.34}
+          smoothness={22}
+          position={[0, -0.005, 0.475]}
+          material={screenMat}
+        />
+
+        {/* Eye whites/glow shapes */}
+        <RoundedBox
+          ref={leftEye}
+          args={[0.24, 0.14, 0.04]}
+          radius={0.06}
+          smoothness={10}
+          position={[-0.22, 0.04, 0.535]}
+          material={eyeMat}
+        />
+        <RoundedBox
+          ref={rightEye}
+          args={[0.24, 0.14, 0.04]}
+          radius={0.06}
+          smoothness={10}
+          position={[0.22, 0.04, 0.535]}
+          material={eyeMat}
+        />
+
+        {/* Pupils — small dark dots that drift with head turn */}
+        <mesh ref={leftPupil} position={[-0.22, 0.04, 0.56]}>
+          <sphereGeometry args={[0.028, 14, 14]} />
+          <meshStandardMaterial color={COLORS.detail} roughness={0.4} />
+        </mesh>
+        <mesh ref={rightPupil} position={[0.22, 0.04, 0.56]}>
+          <sphereGeometry args={[0.028, 14, 14]} />
+          <meshStandardMaterial color={COLORS.detail} roughness={0.4} />
+        </mesh>
+
+        {/* Eye glints — small white highlights for "alive" feel */}
+        <mesh position={[-0.16, 0.075, 0.56]}>
+          <sphereGeometry args={[0.018, 12, 12]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+        <mesh position={[0.28, 0.075, 0.56]}>
+          <sphereGeometry args={[0.018, 12, 12]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+
+        {/* Cheek dots — soft coral, on the cream cheeks beside the screen */}
+        <mesh position={[-0.62, -0.18, 0.42]}>
+          <sphereGeometry args={[0.07, 16, 16]} />
+          <meshStandardMaterial
+            color={COLORS.cheek}
+            emissive={COLORS.cheek}
+            emissiveIntensity={0.35}
+            roughness={0.55}
+          />
+        </mesh>
+        <mesh position={[0.62, -0.18, 0.42]}>
+          <sphereGeometry args={[0.07, 16, 16]} />
+          <meshStandardMaterial
+            color={COLORS.cheek}
+            emissive={COLORS.cheek}
+            emissiveIntensity={0.35}
+            roughness={0.55}
+          />
+        </mesh>
+
+        {/* Mouth — friendly speaker grille (rounded pill, subtle pulse) */}
+        <RoundedBox
+          ref={mouth}
+          args={[0.22, 0.06, 0.025]}
+          radius={0.03}
+          smoothness={8}
+          position={[0, -0.27, 0.545]}
+        >
+          <meshStandardMaterial
+            color={COLORS.eyeGlow}
+            emissive={COLORS.eyeGlow}
+            emissiveIntensity={0.7}
+            roughness={0.4}
+          />
         </RoundedBox>
-        <RoundedBox args={[0.16, 0.28, 0.04]} radius={0.055} smoothness={10} position={[0.015, 0, 0.16]}>
-          <meshStandardMaterial color="#F0E5CF" roughness={0.38} metalness={0.04} />
-        </RoundedBox>
-        <mesh position={[0.02, 0, 0.19]}>
-          <cylinderGeometry args={[0.035, 0.035, 0.018, 24]} />
-          <meshStandardMaterial color="#111313" roughness={0.24} metalness={0.08} />
+      </group>
+
+      {/* ── Floating chest panel (below the head, doesn't turn) ────────── */}
+      <group position={[0, -0.92, 0.02]}>
+        <RoundedBox args={[0.52, 0.22, 0.32]} radius={0.08} smoothness={12} material={shellMat} />
+        {/* Status LED */}
+        <mesh ref={chestLed} position={[0, 0, 0.165]}>
+          <sphereGeometry args={[0.035, 16, 16]} />
+          <meshStandardMaterial
+            ref={chestMat}
+            color={COLORS.chestLed}
+            emissive={COLORS.chestLed}
+            emissiveIntensity={1.4}
+            roughness={0.3}
+          />
+        </mesh>
+        {/* Two small detail lines */}
+        <mesh position={[-0.13, 0, 0.165]}>
+          <boxGeometry args={[0.04, 0.005, 0.005]} />
+          <meshStandardMaterial color={COLORS.detail} />
+        </mesh>
+        <mesh position={[0.13, 0, 0.165]}>
+          <boxGeometry args={[0.04, 0.005, 0.005]} />
+          <meshStandardMaterial color={COLORS.detail} />
         </mesh>
       </group>
-      <group position={[0.76, -0.03, 0.02]} rotation={[0, 0, -0.05]}>
-        <RoundedBox args={[0.26, 0.46, 0.28]} radius={0.12} smoothness={14} castShadow receiveShadow>
-          <meshStandardMaterial color="#D92F2D" roughness={0.42} metalness={0.05} />
-        </RoundedBox>
-        <RoundedBox args={[0.16, 0.28, 0.04]} radius={0.055} smoothness={10} position={[-0.015, 0, 0.16]}>
-          <meshStandardMaterial color="#F0E5CF" roughness={0.38} metalness={0.04} />
-        </RoundedBox>
-        <mesh position={[-0.02, 0, 0.19]}>
-          <cylinderGeometry args={[0.035, 0.035, 0.018, 24]} />
-          <meshStandardMaterial color="#111313" roughness={0.24} metalness={0.08} />
-        </mesh>
-      </group>
-
-      <RoundedBox args={[1.34, 1.12, 0.84]} radius={0.34} smoothness={20} castShadow receiveShadow>
-        <meshStandardMaterial color="#EDE3CF" roughness={0.35} metalness={0.05} envMapIntensity={1.05} />
-      </RoundedBox>
-
-      <RoundedBox args={[1.08, 0.84, 0.09]} radius={0.34} smoothness={22} position={[0, -0.01, 0.435]}>
-        <meshStandardMaterial color="#0A0D0D" roughness={0.18} metalness={0.08} />
-      </RoundedBox>
-
-      <RoundedBox ref={leftEye} args={[0.22, 0.085, 0.028]} radius={0.045} smoothness={8} position={[-0.22, 0.03, 0.49]}>
-        <meshStandardMaterial color="#FFE793" emissive="#FFD166" emissiveIntensity={1.55} />
-      </RoundedBox>
-      <RoundedBox ref={rightEye} args={[0.22, 0.085, 0.028]} radius={0.045} smoothness={8} position={[0.22, 0.03, 0.49]}>
-        <meshStandardMaterial color="#FFE793" emissive="#FFD166" emissiveIntensity={1.55} />
-      </RoundedBox>
     </group>
   );
 }
+
+// ─── Banner ───────────────────────────────────────────────────────────────
 
 export function RobotBanner() {
   const [canvasReady, setCanvasReady] = useState(false);
@@ -114,7 +407,13 @@ export function RobotBanner() {
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
         .capita-robot-appear { animation: capita-robot-appear 0.55s cubic-bezier(0.34, 1.3, 0.64, 1) both; }
+        @keyframes capita-glow-pulse {
+          0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
+          50%      { opacity: 0.85; transform: translate(-50%, -50%) scale(1.08); }
+        }
+        .capita-glow-pulse { animation: capita-glow-pulse 3.6s ease-in-out infinite; }
       `}</style>
+
       {/* Subtle dot grid */}
       <div
         aria-hidden
@@ -135,12 +434,12 @@ export function RobotBanner() {
         }}
       />
 
-      {/* Ambient glows — right side, robot zone */}
+      {/* Ambient glows behind the robot */}
       <div className="pointer-events-none absolute -right-6 top-1/2 h-[200px] w-[200px] -translate-y-1/2 rounded-full bg-amber-200/25 blur-3xl" />
       <div className="pointer-events-none absolute right-8 bottom-0 h-[100px] w-[160px] rounded-full bg-red-200/20 blur-2xl" />
       <div className="pointer-events-none absolute right-16 top-0 h-[80px] w-[120px] rounded-full bg-orange-100/30 blur-2xl" />
 
-      {/* Top accent line — brand coral/red */}
+      {/* Top accent line */}
       <div
         className="absolute left-0 top-0 w-full h-[3px]"
         style={{ background: 'linear-gradient(90deg, #D92F2D 0%, #F97316 55%, transparent 100%)' }}
@@ -148,8 +447,20 @@ export function RobotBanner() {
 
       {/* Robot — right panel */}
       <div className="absolute inset-y-0 right-0 z-10 flex h-full w-[150px] items-center justify-center sm:w-[180px]">
-<div
-          className={`absolute inset-0 transition-opacity duration-500 ${canvasReady ? 'opacity-100 capita-robot-appear' : 'opacity-0'}`}
+        {/* Behind-robot pulsing halo for premium feel */}
+        <div
+          aria-hidden
+          className="capita-glow-pulse pointer-events-none absolute left-1/2 top-1/2 h-[150px] w-[150px] rounded-full"
+          style={{
+            background:
+              'radial-gradient(circle, rgba(255,170,90,0.32) 0%, rgba(255,170,90,0) 70%)',
+          }}
+        />
+
+        <div
+          className={`absolute inset-0 transition-opacity duration-500 ${
+            canvasReady ? 'opacity-100 capita-robot-appear' : 'opacity-0'
+          }`}
         >
           <Canvas
             className="h-full w-full"
@@ -159,14 +470,22 @@ export function RobotBanner() {
             onCreated={() => setCanvasReady(true)}
           >
             <Suspense fallback={null}>
-              <PerspectiveCamera makeDefault position={[0, 0, 7.2]} fov={28} near={0.1} far={50} />
+              <PerspectiveCamera makeDefault position={[0, 0, 7.6]} fov={28} near={0.1} far={50} />
 
-              <ambientLight intensity={0.95} />
-              <hemisphereLight args={['#FFF7E6', '#FDE8D0', 0.9]} />
-              <directionalLight position={[3.2, 4.8, 4.3]} intensity={1.2} color="#ffffff" />
-              <directionalLight position={[-3, 2.4, -2]} intensity={0.4} color="#FED7AA" />
+              {/* Soft ambient + warm hemisphere */}
+              <ambientLight intensity={0.85} />
+              <hemisphereLight args={['#FFF6E0', '#FBE4C4', 0.85]} />
 
-              <NeoRobotHead />
+              {/* Key light — top-right warm */}
+              <directionalLight position={[3.6, 5.2, 4.5]} intensity={1.2} color="#FFFFFF" />
+
+              {/* Coral rim light from the left to pick up brand color */}
+              <directionalLight position={[-3.4, 1.2, -1.2]} intensity={0.9} color="#FF8A5C" />
+
+              {/* Front fill — gentle */}
+              <pointLight position={[0, 0.6, 3.4]} intensity={0.3} color="#FFE6C2" />
+
+              <CapitaRobot />
             </Suspense>
           </Canvas>
         </div>
@@ -174,7 +493,6 @@ export function RobotBanner() {
 
       {/* Text content — left */}
       <div className="absolute inset-y-0 left-0 z-10 flex w-full min-w-0 flex-col justify-center gap-3 pl-6 pr-[160px] sm:pl-8 sm:pr-[190px]">
-        {/* Status pill */}
         <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500 shadow-sm">
           <span className="capita-pulse-dot h-1.5 w-1.5 rounded-full bg-emerald-400" />
           Capita AI · Online
@@ -194,7 +512,6 @@ export function RobotBanner() {
           Ask anything about your invoices, payments, expenses, or compliance — answered from live data.
         </p>
 
-        {/* Quick action chips */}
         <div className="flex flex-wrap gap-1.5">
           {['Invoices', 'Payments', 'Expenses', 'Compliance'].map((label) => (
             <span
