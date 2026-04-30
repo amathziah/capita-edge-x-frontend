@@ -2,12 +2,14 @@ import { useState, useRef } from 'react';
 import { Mic, MicOff, Command } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { dataService } from '@/shared/services/dataService';
+import { useToast } from '@/app/providers/ToastContext';
 
 interface VoiceAssistantProps {
     onCommand: (action: any) => void;
 }
 
 export default function VoiceAssistant({ onCommand }: VoiceAssistantProps) {
+    const { showToast } = useToast();
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
     const [processing, setProcessing] = useState(false);
@@ -16,7 +18,7 @@ export default function VoiceAssistant({ onCommand }: VoiceAssistantProps) {
     const startListening = () => {
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            alert("Voice not supported");
+            showToast("Voice input is not supported in this browser.", 'error');
             return;
         }
 

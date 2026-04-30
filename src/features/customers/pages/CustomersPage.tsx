@@ -6,6 +6,8 @@ import { Customer, Invoice, CustomerInsights } from '@/types';
 import { useData } from '@/app/providers/DataContext';
 import { usePersona } from '@/app/providers/PersonaContext';
 import { AddClientDrawer } from "@/features/customers/components/AddClientDrawer";
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/app/providers/ToastContext';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -32,6 +34,8 @@ type ViewMode = 'grid' | 'list';
 export function Customers() {
   const { customers, loading, refreshData, setData } = useData();
   const { businessType } = usePersona();
+  const { confirm } = useConfirm();
+  const { showToast } = useToast();
   const isSolopreneur = businessType === 'solopreneur';
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerInsights, setCustomerInsights] = useState<CustomerInsights | null>(null);
@@ -127,26 +131,21 @@ export function Customers() {
     const targetName = name || selectedCustomer?.name || 'this client';
     if (!targetId) return;
     
-    if (!window.confirm(`Are you sure you want to delete ${targetName}? This action cannot be undone.`)) return;
-    
+    const ok = await confirm({ title: `Delete ${targetName}?`, message: 'This action cannot be undone.', confirmLabel: 'Delete', variant: 'danger' });
+    if (!ok) return;
+
     try {
-      // 1. Optimistically update local state so the item vanishes instantly
       setData({ customers: customers.filter(c => c.id !== targetId) });
       if (selectedCustomer?.id === targetId) {
         setSelectedCustomer(null);
         setCustomerInsights(null);
         setCustomerInvoices([]);
       }
-      
-      // 2. Perform actual deletion
       await dataService.deleteCustomer(targetId);
-      
-      // 3. Force a refresh in the background to sync stats (client counts)
       refreshData(['customers', 'stats'], true);
     } catch (err) {
       console.error("Delete error:", err);
-      alert("Failed to delete client: " + (err as Error).message);
-      // Revert if it fails
+      showToast("Failed to delete client: " + (err as Error).message, 'error');
       refreshData(['customers'], true);
     }
   };

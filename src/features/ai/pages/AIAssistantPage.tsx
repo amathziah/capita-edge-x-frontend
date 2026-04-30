@@ -825,7 +825,7 @@ export function AIAssistantPage() {
 
   const startListening = () => {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { alert('Voice input not supported in this browser.'); return; }
+    if (!SR) { setMessages((prev) => [...prev, { id: `bot_err_${Date.now()}`, sender: 'bot', text: 'Voice input is not supported in this browser.', timestamp: new Date(), status: 'error' }]); return; }
     const r = new SR();
     r.lang = 'en-IN';
     r.interimResults = false;

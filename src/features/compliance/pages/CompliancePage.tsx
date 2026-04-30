@@ -15,6 +15,7 @@ import {
 import { dataService } from '@/shared/services/dataService';
 import { useNotifications } from '@/app/providers/NotificationContext';
 import { useData } from '@/app/providers/DataContext';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { ComplianceTask } from '@/types';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 
@@ -53,6 +54,7 @@ function daysUntil(dateStr: string) {
 export function Compliance() {
   const { complianceTasks: tasks, loading, refreshData } = useData();
   const { addNotification } = useNotifications();
+  const { confirm } = useConfirm();
   const [statusFilter, setStatusFilter] = useState<"all" | "completed" | "pending" | "overdue">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortAsc, setSortAsc] = useState(true);
@@ -93,7 +95,8 @@ export function Compliance() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this compliance task?")) return;
+    const ok = await confirm({ title: 'Delete this compliance task?', confirmLabel: 'Delete', variant: 'danger' });
+    if (!ok) return;
     try {
       await dataService.deleteComplianceTask(id);
       refreshData(['complianceTasks'], true);

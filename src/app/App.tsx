@@ -45,6 +45,8 @@ import { LiquidityCalendar } from '@/features/calendar/components/LiquidityCalen
 import { AuthProvider, useAuth } from '@/app/providers/AuthContext';
 import { PersonaProvider } from '@/app/providers/PersonaContext';
 import { NotificationProvider } from '@/app/providers/NotificationContext';
+import { ToastProvider } from '@/app/providers/ToastContext';
+import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
 import { usePersona } from '@/app/providers/PersonaContext';
 import { hasCompletedOnboarding } from '@/shared/lib/authFlow';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
@@ -108,6 +110,8 @@ function App() {
       <AuthProvider>
         <PersonaProvider>
             <NotificationProvider>
+              <ToastProvider>
+              <ConfirmProvider>
               <DataProvider>
                 <BrowserRouter>
                   <Suspense fallback={<RouteFallback />}>
@@ -145,6 +149,8 @@ function App() {
                   </Suspense>
                 </BrowserRouter>
               </DataProvider>
+              </ConfirmProvider>
+              </ToastProvider>
             </NotificationProvider>
         </PersonaProvider>
       </AuthProvider>

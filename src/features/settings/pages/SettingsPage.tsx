@@ -6,6 +6,7 @@ import {
   } from 'lucide-react';
 import { dataService } from '@/shared/services/dataService';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/app/providers/ToastContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab = 'general' | 'branding' | 'payments' | 'email';
@@ -550,6 +551,7 @@ interface TabProps {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export function Settings() {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -655,7 +657,7 @@ export function Settings() {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error(`Save failed (${sectionName}):`, err);
-      alert(`Failed to save ${sectionName}. Please try again.`);
+      showToast(`Failed to save ${sectionName}. Please try again.`, 'error');
     } finally {
       setSaving(false);
     }

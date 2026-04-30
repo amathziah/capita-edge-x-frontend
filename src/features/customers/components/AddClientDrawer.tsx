@@ -5,6 +5,7 @@ import { RegionDropdown } from "react-country-region-selector";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Customer } from "@/types";
 import { dataService } from "@/shared/services/dataService";
+import { useToast } from "@/app/providers/ToastContext";
 
 interface AddClientDrawerProps {
   isOpen: boolean;
@@ -100,6 +101,7 @@ function Section({ icon: Icon, title, children, action }: {
 }
 
 export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSaveSuccess }: AddClientDrawerProps) {
+  const { showToast } = useToast();
   const [customerForm, setCustomerForm] = useState(defaultForm);
   const [savingCustomer, setSavingCustomer] = useState(false);
   const [pincodeLoading, setPincodeLoading] = useState(false);
@@ -140,7 +142,7 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
 
   const handleSaveCustomer = async () => {
     if (!customerForm.name || !customerForm.email) {
-      alert("Name and email are required");
+      showToast("Name and email are required", 'error');
       return;
     }
     setSavingCustomer(true);
@@ -162,7 +164,7 @@ export function AddClientDrawer({ isOpen, onClose, isEditing, initialData, onSav
       onClose();
     } catch (err) {
       console.error("Save error:", err);
-      alert("Failed to save client: " + (err as Error).message);
+      showToast("Failed to save client: " + (err as Error).message, 'error');
     } finally {
       setSavingCustomer(false);
     }

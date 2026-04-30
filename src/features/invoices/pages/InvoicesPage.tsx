@@ -9,6 +9,7 @@ import { Toast, ToastType } from '@/components/ui/Toast';
 import RecordPaymentModal from '@/features/invoices/components/RecordPaymentModal';
 import { useData } from "@/app/providers/DataContext";
 import { downloadCsv } from '@/shared/lib/export';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 const STATUS_COLORS: Record<string, string> = {
   paid: "bg-status-success-bg text-status-success border-status-success/10",
@@ -75,7 +76,7 @@ export function Invoices() {
 
   // Toast State
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-
+  const { confirm } = useConfirm();
 
   const showToast = (message: string, type: ToastType = 'info') => {
     setToast({ message, type });
@@ -620,7 +621,8 @@ export function Invoices() {
                         </button>
                         <button
                           onClick={async () => {
-                            if (!window.confirm(`Delete invoice ${inv.invoiceNumber}? This action cannot be undone.`)) return;
+                            const ok = await confirm({ title: `Delete invoice ${inv.invoiceNumber}?`, message: 'This action cannot be undone.', confirmLabel: 'Delete', variant: 'danger' });
+                            if (!ok) return;
                             try {
                               await dataService.deleteInvoice(inv.id);
                               setData({ invoices: invoices.filter(i => i.id !== inv.id) });

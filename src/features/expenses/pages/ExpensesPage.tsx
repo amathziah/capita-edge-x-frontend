@@ -7,11 +7,13 @@ import { Expense } from '@/types';
 import { ExpensesMap } from '@/features/expenses/components/ExpensesMap';
 import { useData } from "@/app/providers/DataContext";
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { useToast } from '@/app/providers/ToastContext';
 
 const CATEGORIES = ["Travel", "Meals", "Supplies", "Utilities", "Marketing", "Rent", "Salary", "Other"];
 
 export function Expenses() {
   const { expenses, loading, refreshData } = useData();
+  const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("All");
   const [showModal, setShowModal] = useState(false);
@@ -45,7 +47,7 @@ export function Expenses() {
 
   const handleCreateOrUpdateExpense = async () => {
     if (!expenseForm.description || !expenseForm.amount) {
-      alert("Description and amount are required");
+      showToast("Description and amount are required", 'error');
       return;
     }
 
@@ -81,7 +83,7 @@ export function Expenses() {
       refreshData(['expenses'], true);
     } catch (error) {
       console.error("Failed to save expense", error);
-      alert("Failed to save expense. Please try again.");
+      showToast("Failed to save expense. Please try again.", 'error');
     } finally {
       setSavingExpense(false);
     }
@@ -122,7 +124,7 @@ export function Expenses() {
       setDeleteId(null);
     } catch (error) {
       console.error("Failed to delete expense", error);
-      alert("Failed to delete expense. Please try again.");
+      showToast("Failed to delete expense. Please try again.", 'error');
     } finally {
       setIsDeleting(false);
     }

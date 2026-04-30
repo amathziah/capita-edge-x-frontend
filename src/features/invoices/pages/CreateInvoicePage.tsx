@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useToast } from '@/app/providers/ToastContext';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { dataService } from '@/shared/services/dataService';
@@ -930,6 +931,7 @@ export function CreateInvoice() {
     const { id: invoiceId } = useParams();
     const { businessType } = usePersona();
     const { refreshData } = useData();
+    const { showToast } = useToast();
     const [step, setStep]               = useState(0);
     const [saving, setSaving]           = useState(false);
     const [savedDraft, setSavedDraft]   = useState(false);
@@ -1132,7 +1134,7 @@ export function CreateInvoice() {
 
     /* ── Save ── */
     const onSave = async (data: InvoiceForm) => {
-        if (!data.customerName) { alert('Please enter a Client Name'); return; }
+        if (!data.customerName) { showToast('Please enter a Client Name', 'error'); return; }
         setSaving(true);
         try {
             await dataService.saveInvoice({
@@ -1178,7 +1180,7 @@ export function CreateInvoice() {
         } catch (err) {
             console.error(err);
             const message = err instanceof Error ? err.message : 'Failed to save invoice.';
-            alert(message);
+            showToast(message, 'error');
         } finally {
             setSaving(false);
         }

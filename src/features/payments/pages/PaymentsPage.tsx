@@ -9,6 +9,7 @@ import { dataService } from '@/shared/services/dataService';
 import { useData } from '@/app/providers/DataContext';
 import { downloadCsv } from '@/shared/lib/export';
 import RecordPaymentModal from '@/features/invoices/components/RecordPaymentModal';
+import { useToast } from '@/app/providers/ToastContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -73,6 +74,7 @@ function methodIcon(method: string) {
 // ---------------------------------------------------------------------------
 export function Payments() {
   const { payments: apiPayments, invoices: allInvoices, loading, refreshData } = useData();
+  const { showToast } = useToast();
 
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState<"All" | string>("All");
@@ -155,7 +157,7 @@ export function Payments() {
       await dataService.reconcilePayment(paymentId);
       refreshData(['payments', 'invoices'], true);
     } catch (err: any) {
-      alert(`Error reconciling payment: ${err.message}`);
+      showToast(`Error reconciling payment: ${err.message}`, 'error');
     } finally {
       setSaving(false);
     }
@@ -169,7 +171,7 @@ export function Payments() {
       // Optional cleanup after a short delay
       setTimeout(() => window.URL.revokeObjectURL(url), 5000);
     } catch (err: any) {
-      alert(`Error viewing receipt: ${err.message}`);
+      showToast(`Error viewing receipt: ${err.message}`, 'error');
     }
   };
 
@@ -185,7 +187,7 @@ export function Payments() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err: any) {
-      alert(`Error downloading receipt: ${err.message}`);
+      showToast(`Error downloading receipt: ${err.message}`, 'error');
     }
   };
 
