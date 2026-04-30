@@ -37,8 +37,19 @@ const POLICY_CONTENT: Record<PolicyType, { title: string; content: React.ReactNo
                     </div>
                     <div>
                         <strong className="text-white block mb-1">Email Support:</strong>
-                        <a href="mailto:akoshipa@gmail.com" className="text-teal-400 hover:underline">akoshipa@gmail.com</a>,{' '}
-                        <a href="mailto:akashjerry788@gmail.com" className="text-teal-400 hover:underline">akashjerry788@gmail.com</a>
+                        <a href="mailto:support@capitaedgex.com" className="text-teal-400 hover:underline">support@capitaedgex.com</a>
+                    </div>
+                    <div>
+                        <strong className="text-white block mb-1">Finance & Invoicing:</strong>
+                        <a href="mailto:finance@capitaedgex.com" className="text-teal-400 hover:underline">finance@capitaedgex.com</a>
+                    </div>
+                    <div>
+                        <strong className="text-white block mb-1">Billing & Subscriptions:</strong>
+                        <a href="mailto:billing@capitaedgex.com" className="text-teal-400 hover:underline">billing@capitaedgex.com</a>
+                    </div>
+                    <div>
+                        <strong className="text-white block mb-1">General Enquiries:</strong>
+                        <a href="mailto:info@capitaedgex.com" className="text-teal-400 hover:underline">info@capitaedgex.com</a>
                     </div>
                     <div>
                         <strong className="text-white block mb-1">Phone:</strong>
