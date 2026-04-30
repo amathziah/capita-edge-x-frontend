@@ -8,7 +8,7 @@ import { Group, MathUtils, Mesh, MeshStandardMaterial } from 'three';
 function HeadAgent() {
   const rig = useRef<Group>(null);
   const head = useRef<Group>(null);
-  const textRef = useRef<any>(null);
+  const textRef = useRef<{ fillOpacity: number; material?: { transparent: boolean; opacity: number } }>(null);
   const mb1 = useRef<Mesh>(null);
   const mb2 = useRef<Mesh>(null);
   const mb3 = useRef<Mesh>(null);
@@ -154,7 +154,9 @@ function HeadAgent() {
 // ─── Banner ───────────────────────────────────────────────────────────────
 
 export function RobotBanner() {
+  const [canvasKey, setCanvasKey] = useState(0);
   const [canvasReady, setCanvasReady] = useState(false);
+  const [contextLost, setContextLost] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
   const [tabVisible, setTabVisible] = useState(() =>
@@ -177,7 +179,18 @@ export function RobotBanner() {
     return () => obs.disconnect();
   }, []);
 
-  const animate = inView && tabVisible;
+  // When context is lost: unmount the Canvas, then remount after 2 s to reclaim a fresh context
+  useEffect(() => {
+    if (!contextLost) return;
+    const t = setTimeout(() => {
+      setContextLost(false);
+      setCanvasReady(false);
+      setCanvasKey((k) => k + 1);
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [contextLost]);
+
+  const animate = inView && tabVisible && !contextLost;
 
   return (
     <div
@@ -228,90 +241,93 @@ export function RobotBanner() {
         style={{ background: 'linear-gradient(90deg, #06B6D4 0%, #10B981 55%, transparent 100%)' }}
       />
 
-      {/* AI Robot — right panel */}
-      <div className="absolute inset-y-0 right-0 z-10 flex h-full w-[160px] items-center justify-center sm:w-[200px]">
-        {/* Behind-robot pulsing halo */}
-        <div
-          aria-hidden
-          className="capita-glow-pulse pointer-events-none absolute left-1/2 top-1/2 h-[150px] w-[150px] rounded-full"
-          style={{
-            background:
-              'radial-gradient(circle, rgba(6,182,212,0.2) 0%, rgba(6,182,212,0) 70%)',
-          }}
-        />
+      {/* Content layout — stacks vertically on mobile, side-by-side on md+ */}
+      <div className="relative z-10 flex flex-col md:flex-row md:items-stretch">
 
-        <div
-          className={`absolute inset-0 transition-opacity duration-500 ${
-            canvasReady ? 'opacity-100 capita-robot-appear' : 'opacity-0'
-          }`}
-        >
-          <Canvas
-            className="h-full w-full"
-            dpr={[1, Math.min(window.devicePixelRatio, 2)]} // High-def retina support
-            camera={{ position: [0, 0, 5], fov: 35 }}
-            gl={{ 
-              antialias: true, 
-              alpha: true, 
-              powerPreference: 'high-performance',
-              stencil: false,
-              depth: true
-            }}
-            frameloop={animate ? 'always' : 'never'}
-            onCreated={() => setCanvasReady(true)}
-          >
-            <Suspense fallback={null}>
-              <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={35} near={0.1} far={50} />
-
-              {/* Lighting optimized for the highly reflective white ceramic body */}
-              <ambientLight intensity={0.7} />
-              <hemisphereLight args={['#ffffff', '#0F172A', 1.5]} />
-
-              {/* Key light */}
-              <directionalLight position={[3, 5, 4]} intensity={3} color="#ffffff" />
-
-              {/* Cyan rim light from the left */}
-              <directionalLight position={[-4, 1, -1]} intensity={2.5} color="#06B6D4" />
-
-              {/* Gentle front fill */}
-              <pointLight position={[0, 0.5, 3]} intensity={0.8} color="#E0F2FE" />
-
-              <HeadAgent />
-            </Suspense>
-          </Canvas>
-        </div>
-      </div>
-
-      {/* Text content — left - Optimized for fluid responsiveness */}
-      <div className="relative z-10 flex h-full w-full flex-col justify-center gap-3 px-6 py-8 sm:px-8 md:pr-[240px]">
-        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-400 shadow-sm">
-          <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
-          CapitaEdgeX Core
-        </span>
-
-        <h2 className="font-display text-[18px] font-bold leading-[1.18] text-white sm:text-[22px]">
-          Your autonomous finance agent,{' '}
-          <span
-            className="bg-clip-text text-transparent"
-            style={{ backgroundImage: 'linear-gradient(135deg, #06B6D4 0%, #10B981 100%)' }}
-          >
-            processing real-time.
+        {/* Text content */}
+        <div className="flex flex-col justify-center gap-3 px-6 py-8 sm:px-8 md:flex-1">
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-teal-400 shadow-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
+            CapitaEdgeX Core
           </span>
-        </h2>
 
-        <p className="max-w-[340px] text-[11px] leading-[1.6] text-slate-400 sm:text-[12px]">
-          Seamlessly orchestrating your invoices, payments, expenses, and compliance with data-driven precision.
-        </p>
-
-        <div className="flex flex-wrap gap-1.5">
-          {['Invoices', 'Payments', 'Expenses', 'Compliance'].map((label) => (
+          <h2 className="font-display text-[18px] font-bold leading-[1.18] text-white sm:text-[22px]">
+            Your autonomous finance agent,{' '}
             <span
-              key={label}
-              className="rounded-full border border-slate-700 bg-slate-800/80 px-2 py-0.5 text-[10px] font-medium text-slate-300"
+              className="bg-clip-text text-transparent"
+              style={{ backgroundImage: 'linear-gradient(135deg, #06B6D4 0%, #10B981 100%)' }}
             >
-              {label}
+              processing real-time.
             </span>
-          ))}
+          </h2>
+
+          <p className="max-w-[340px] text-[11px] leading-[1.6] text-slate-400 sm:text-[12px]">
+            Seamlessly orchestrating your invoices, payments, expenses, and compliance with data-driven precision.
+          </p>
+
+          <div className="flex flex-wrap gap-1.5">
+            {['Invoices', 'Payments', 'Expenses', 'Compliance'].map((label) => (
+              <span
+                key={label}
+                className="rounded-full border border-slate-700 bg-slate-800/80 px-2 py-0.5 text-[10px] font-medium text-slate-300"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
         </div>
+
+        {/* AI Robot — bottom on mobile, right panel on md+ */}
+        <div className="relative flex h-[160px] w-full items-center justify-center md:h-auto md:w-[200px] md:flex-shrink-0">
+          {/* Behind-robot pulsing halo */}
+          <div
+            aria-hidden
+            className="capita-glow-pulse pointer-events-none absolute left-1/2 top-1/2 h-[150px] w-[150px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.2) 0%, rgba(6,182,212,0) 70%)' }}
+          />
+
+          <div
+            className={`absolute inset-0 transition-opacity duration-500 ${
+              canvasReady ? 'opacity-100 capita-robot-appear' : 'opacity-0'
+            }`}
+          >
+            <Canvas
+              key={canvasKey}
+              className="h-full w-full"
+              dpr={[1, Math.min(window.devicePixelRatio, 2)]}
+              camera={{ position: [0, 0, 5], fov: 35 }}
+              gl={{
+                antialias: true,
+                alpha: true,
+                powerPreference: 'high-performance',
+                stencil: false,
+                depth: true,
+              }}
+              frameloop={animate && !contextLost ? 'always' : 'never'}
+              onCreated={({ gl }) => {
+                setCanvasReady(true);
+                gl.domElement.addEventListener('webglcontextlost', (e) => {
+                  e.preventDefault();
+                  setContextLost(true);
+                });
+                gl.domElement.addEventListener('webglcontextrestored', () => {
+                  setContextLost(false);
+                });
+              }}
+            >
+              <Suspense fallback={null}>
+                <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={35} near={0.1} far={50} />
+                <ambientLight intensity={0.7} />
+                <hemisphereLight args={['#ffffff', '#0F172A', 1.5]} />
+                <directionalLight position={[3, 5, 4]} intensity={3} color="#ffffff" />
+                <directionalLight position={[-4, 1, -1]} intensity={2.5} color="#06B6D4" />
+                <pointLight position={[0, 0.5, 3]} intensity={0.8} color="#E0F2FE" />
+                <HeadAgent />
+              </Suspense>
+            </Canvas>
+          </div>
+        </div>
+
       </div>
     </div>
   );
