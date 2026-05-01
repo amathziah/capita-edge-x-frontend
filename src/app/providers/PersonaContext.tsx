@@ -96,16 +96,22 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
+  // Depend on user.id, not the user object itself.
+  // Supabase creates a new User object on every TOKEN_REFRESHED event even when
+  // the userId hasn't changed. Depending on the whole object causes fetchPersona
+  // to re-run, which sets loading:true and unmounts the current page.
+  const userId = user?.id ?? null;
+
   useEffect(() => {
-    if (user) fetchPersona(user.id);
+    if (userId) fetchPersona(userId);
     else {
       setBusinessType(null);
       setOrganizationId(null);
       setOrgId(null);
-      markOrgReady(); // Allow unauthenticated flows to proceed
+      markOrgReady();
       setLoading(false);
     }
-  }, [user, fetchPersona]);
+  }, [userId, fetchPersona]);
 
 
   const config = businessType ? (PERSONA_CONFIGS[businessType] ?? null) : null;
@@ -124,25 +130,23 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const refreshPersona = useCallback(async () => {
-    if (user) {
-      await fetchPersona(user.id);
-    }
-  }, [user, fetchPersona]);
+    if (userId) await fetchPersona(userId);
+  }, [userId, fetchPersona]);
 
   const updatePersona = useCallback(async (newType: Segment) => {
-    if (!user) return;
+    if (!userId) return;
     try {
       setLoading(true);
       const { error } = await supabase
         .from('profiles')
         .update({ business_type: newType })
-        .eq('id', user.id);
+        .eq('id', userId);
       if (error) throw new Error(error.message);
       setBusinessType(newType);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [userId]);
 
   return (
     <PersonaContext.Provider value={{

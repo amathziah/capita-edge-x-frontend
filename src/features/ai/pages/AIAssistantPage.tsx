@@ -50,11 +50,12 @@ interface Message {
   sender: 'user' | 'bot';
   text: string;
   timestamp: Date;
-  status?: 'streaming' | 'sent' | 'error';
+  status?: 'streaming' | 'sent' | 'error' | 'interrupted';
   uiComponent?: string;
   uiData?: any;
   domain?: string;
   data?: any;
+  retryQuery?: string; // original query so the user can retry
 }
 
 type NavItem = {
@@ -415,6 +416,7 @@ function ChatBubble({
   onSelectView,
   onAction,
   onOpenInCanvas,
+  onRetry,
   disableChoices,
   showInCanvas,
 }: {
@@ -423,12 +425,14 @@ function ChatBubble({
   onSelectView: (msg: Message, viewId: string) => void;
   onAction: (action: any) => void;
   onOpenInCanvas: (msg: Message) => void;
+  onRetry: (query: string) => void;
   disableChoices: boolean;
   showInCanvas: boolean;
 }) {
   const isBot = msg.sender === 'bot';
   const isStreaming = isBot && msg.status === 'streaming';
   const isError = msg.status === 'error';
+  const isInterrupted = msg.status === 'interrupted';
   const [copied, setCopied] = useState(false);
   const [hover, setHover] = useState(false);
 
@@ -489,7 +493,7 @@ function ChatBubble({
 
         <div
           className={`rounded-2xl rounded-tl-sm border px-4 py-3.5 ${
-            isError
+            isError || isInterrupted
               ? 'border-red-100 bg-red-50'
               : 'border-gray-100 bg-white shadow-sm'
           }`}
@@ -504,6 +508,22 @@ function ChatBubble({
           ) : isStreaming ? (
             <ThinkingIndicator />
           ) : null}
+
+          {isInterrupted && (
+            <div className="mt-3 flex items-center gap-3">
+              <span className="text-[12px] text-red-500">Connection interrupted.</span>
+              {msg.retryQuery && (
+                <button
+                  type="button"
+                  onClick={() => onRetry(msg.retryQuery!)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  <ArrowRight size={10} />
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
 
           {msg.uiComponent && msg.uiData && (
             showInCanvas ? (
@@ -566,13 +586,41 @@ function ChatBubble({
   );
 }
 
+// ─── sessionStorage helpers ────────────────────────────────────────────────
+
+const STORAGE_KEY = 'capita_ai_chat_v1';
+
+function loadMessages(): Message[] {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: Message[] = JSON.parse(raw);
+    return parsed.map((m) => ({
+      ...m,
+      timestamp: new Date(m.timestamp),
+      // Any message that was streaming when the session ended is interrupted
+      status: m.status === 'streaming' ? 'interrupted' : m.status,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(msgs: Message[]) {
+  try {
+    // Only persist terminal messages — not ones actively streaming
+    const toSave = msgs.filter((m) => m.status !== 'streaming');
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch { /* quota exceeded — ignore */ }
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────
 
 export function AIAssistantPage() {
   const { businessType } = usePersona();
   const navigate = useNavigate();
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => loadMessages());
   const [query, setQuery] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -583,7 +631,7 @@ export function AIAssistantPage() {
   const [canvasClosed, setCanvasClosed] = useState(false);
   const [canvasMobileOpen, setCanvasMobileOpen] = useState(false);
 
-  const isBusy = isThinking || messages.some((m) => m.status === 'streaming');
+  const isBusy = isThinking || messages.some((m) => m.status === 'streaming' && m.sender === 'bot');
   const isEmpty = messages.length === 0;
 
   // Most recent bot message that has a workspace; auto-becomes the canvas target
@@ -597,6 +645,8 @@ export function AIAssistantPage() {
   const abortRef = useRef<AbortController | null>(null);
   const streamIdRef = useRef<string | null>(null);
   const reqIdRef = useRef(0);
+  const heartbeatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastQueryRef = useRef<string>('');
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -612,6 +662,11 @@ export function AIAssistantPage() {
     if (messages.length > 0 && nearBottom()) scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Persist chat to sessionStorage so it survives tab switches and navigating away/back
+  useEffect(() => {
+    saveMessages(messages);
+  }, [messages]);
+
   // When a new workspace message arrives, re-open the canvas
   useEffect(() => {
     if (latestWorkspaceMsg) {
@@ -624,7 +679,65 @@ export function AIAssistantPage() {
     inputRef.current?.focus();
   }, []);
 
+  // ── Heartbeat watchdog helpers ──────────────────────────────────────────────
+  // The backend sends a heartbeat comment every 5 s. We reset a 25 s timer on
+  // each heartbeat/token. If it fires, the stream is considered dead and the
+  // message is marked as interrupted so the user can retry.
+
+  const clearHeartbeatTimer = useCallback(() => {
+    if (heartbeatTimerRef.current) {
+      clearTimeout(heartbeatTimerRef.current);
+      heartbeatTimerRef.current = null;
+    }
+  }, []);
+
+  const resetHeartbeatTimer = useCallback((botId: string) => {
+    clearHeartbeatTimer();
+    heartbeatTimerRef.current = setTimeout(() => {
+      // No data received for 25 s while streaming → mark interrupted
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botId && m.status === 'streaming'
+            ? { ...m, status: 'interrupted', retryQuery: lastQueryRef.current }
+            : m,
+        ),
+      );
+      setIsThinking(false);
+      abortRef.current?.abort();
+      abortRef.current = null;
+      streamIdRef.current = null;
+    }, 25_000);
+  }, [clearHeartbeatTimer]);
+
+  // ── Page-visibility recovery ────────────────────────────────────────────────
+  // When the user switches back to this tab after a long absence, any message
+  // still in `streaming` state is almost certainly dead. Mark it interrupted.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+
+      setMessages((prev) => {
+        const hasStuck = prev.some((m) => m.status === 'streaming');
+        if (!hasStuck) return prev;
+        // Give the stream 2 s to produce output after we regain focus; if it
+        // doesn't, the timer above will fire. But if the timer is gone (stream
+        // already cleaned up), mark interrupted immediately.
+        if (!heartbeatTimerRef.current) {
+          return prev.map((m) =>
+            m.status === 'streaming'
+              ? { ...m, status: 'interrupted', retryQuery: lastQueryRef.current }
+              : m,
+          );
+        }
+        return prev;
+      });
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
   const cancelStream = useCallback(() => {
+    clearHeartbeatTimer();
     reqIdRef.current += 1;
     abortRef.current?.abort();
     abortRef.current = null;
@@ -633,10 +746,11 @@ export function AIAssistantPage() {
       streamIdRef.current = null;
     }
     setIsThinking(false);
-  }, []);
+  }, [clearHeartbeatTimer]);
 
   const clearChat = useCallback(() => {
     cancelStream();
+    sessionStorage.removeItem(STORAGE_KEY);
     setMessages([]);
     setMobileNavOpen(false);
     setCanvasMsgId(null);
@@ -650,6 +764,7 @@ export function AIAssistantPage() {
     if (!text) return;
 
     cancelStream();
+    lastQueryRef.current = text;
     const reqId = reqIdRef.current;
 
     const userMsg: Message = {
@@ -689,6 +804,24 @@ export function AIAssistantPage() {
       for await (const event of stream) {
         if (abort.signal.aborted || reqIdRef.current !== reqId) break;
 
+        if (event.type === 'heartbeat') {
+          // Backend keepalive — reset the watchdog so we don't mark it interrupted
+          if (botId) resetHeartbeatTimer(botId);
+          continue;
+        }
+
+        if (event.type === 'error' && event.message === 'stream_timeout') {
+          // Per-chunk timeout fired inside the generator — treat as interrupted
+          if (botId) {
+            setMessages((prev) => prev.map((m) =>
+              m.id === botId ? { ...m, status: 'interrupted', retryQuery: text } : m,
+            ));
+          }
+          setIsThinking(false);
+          clearHeartbeatTimer();
+          break;
+        }
+
         if (event.type === 'token') {
           accumulated += event.text;
           if (firstToken) {
@@ -700,8 +833,10 @@ export function AIAssistantPage() {
               ...prev,
               { id: botId!, sender: 'bot', text: accumulated, timestamp: new Date(), status: 'streaming' },
             ]);
+            resetHeartbeatTimer(botId);
             setTimeout(() => scrollToBottom(), 50);
           } else {
+            resetHeartbeatTimer(botId!);
             setMessages((prev) => prev.map((m) => (m.id === botId ? { ...m, text: accumulated } : m)));
           }
         } else if (event.type === 'gen_ui') {
@@ -716,6 +851,7 @@ export function AIAssistantPage() {
             setMessages((prev) => prev.map((m) => (m.id === botId ? { ...m, uiComponent: event.component, uiData: event.data } : m)));
           }
         } else if (event.type === 'complete') {
+          clearHeartbeatTimer();
           setIsThinking(false);
           const finalText = typeof event.text === 'string' && event.text.trim() ? event.text : accumulated;
           const ws = event.workspace || event.data?.workspace;
@@ -735,6 +871,7 @@ export function AIAssistantPage() {
             )));
           }
         } else if (event.type === 'error') {
+          clearHeartbeatTimer();
           setIsThinking(false);
           const errText = event.message || 'Something went wrong. Please try again.';
           if (!botId) {
@@ -750,6 +887,7 @@ export function AIAssistantPage() {
         }
       }
     } catch (err: any) {
+      clearHeartbeatTimer();
       if (err?.name === 'AbortError' || reqIdRef.current !== reqId) return;
       setIsThinking(false);
       setMessages((prev) => [
@@ -758,6 +896,7 @@ export function AIAssistantPage() {
       ]);
     } finally {
       if (reqIdRef.current === reqId) {
+        clearHeartbeatTimer();
         if (abortRef.current === abort) abortRef.current = null;
         streamIdRef.current = null;
         setIsThinking(false);
@@ -1001,6 +1140,7 @@ export function AIAssistantPage() {
                           setCanvasClosed(false);
                           setCanvasMobileOpen(true);
                         }}
+                        onRetry={(q) => handleSend(q)}
                         disableChoices={isBusy}
                         showInCanvas={canvasOpen && canvasMsg?.id === msg.id}
                       />

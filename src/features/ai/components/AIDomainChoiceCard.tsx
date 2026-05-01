@@ -1,6 +1,9 @@
 import { motion } from 'framer-motion';
 import { FileText, CreditCard, Receipt, ShieldCheck, Users, LayoutDashboard, ArrowRight } from 'lucide-react';
-import { AI_THEME } from './workspaces/workspaceShared';
+import { T } from './workspaces/workspaceShared';
+
+const ACCENT    = '#6366f1';
+const ACCENT_BG = 'rgba(99,102,241,0.10)';
 
 const DOMAIN_ICON: Record<string, any> = {
   invoices: FileText,
@@ -33,7 +36,7 @@ export function AIDomainChoiceCard({
       className="mt-3 space-y-2"
     >
       {data?.promptDescription && (
-        <p className="mb-2 px-1 text-[13px] leading-relaxed" style={{ color: AI_THEME.textMuted }}>
+        <p className="mb-2 px-1 text-[13px] leading-relaxed" style={{ color: T.muted }}>
           {data.promptDescription}
         </p>
       )}
@@ -44,15 +47,15 @@ export function AIDomainChoiceCard({
             <li
               key={`${step}_${index}`}
               className="flex items-start gap-2.5 text-[13px] leading-relaxed"
-              style={{ color: AI_THEME.textBody }}
+              style={{ color: T.body }}
             >
               <span
                 className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-semibold mt-px"
-                style={{ background: AI_THEME.accentSoft, color: AI_THEME.accent }}
+                style={{ background: ACCENT_BG, color: ACCENT }}
               >
                 {index + 1}
               </span>
-              <span className="flex-1" style={{ color: AI_THEME.textBody }}>{step}</span>
+              <span className="flex-1" style={{ color: T.body }}>{step}</span>
             </li>
           ))}
         </ol>
@@ -67,9 +70,7 @@ export function AIDomainChoiceCard({
               role="button"
               tabIndex={disabled ? -1 : 0}
               aria-disabled={disabled}
-              onClick={() => {
-                if (!disabled) onSelect(choice);
-              }}
+              onClick={() => { if (!disabled) onSelect(choice); }}
               onKeyDown={(event) => {
                 if (disabled) return;
                 if (event.key === 'Enter' || event.key === ' ') {
@@ -77,46 +78,45 @@ export function AIDomainChoiceCard({
                   onSelect(choice);
                 }
               }}
-              className="group w-full rounded-2xl px-3 py-3 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group w-full rounded-2xl px-3 py-3 text-left transition-all"
               style={{
-                background: AI_THEME.surfaceSoft,
-                border: `1px solid ${AI_THEME.border}`,
-                boxShadow: AI_THEME.panelShadow,
+                background: T.surface,
+                border: `1px solid ${T.border}`,
                 opacity: disabled ? 0.5 : 1,
                 cursor: disabled ? 'not-allowed' : 'pointer',
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {
-                  e.currentTarget.style.borderColor = AI_THEME.borderStrong;
-                  e.currentTarget.style.background = AI_THEME.surfaceRaised;
+                  e.currentTarget.style.borderColor = T.muted;
+                  e.currentTarget.style.background = '#f3f4f6';
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = AI_THEME.border;
-                e.currentTarget.style.background = AI_THEME.surfaceSoft;
+                e.currentTarget.style.borderColor = T.border;
+                e.currentTarget.style.background = T.surface;
               }}
             >
               <div className="flex items-start gap-3">
                 <div
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors"
-                  style={{ background: AI_THEME.accentSoft, color: AI_THEME.accent }}
+                  style={{ background: ACCENT_BG, color: ACCENT }}
                 >
                   <Icon size={16} />
                 </div>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[14px] font-semibold" style={{ color: AI_THEME.text }}>{choice.label}</span>
+                    <span className="text-[14px] font-semibold" style={{ color: T.text }}>{choice.label}</span>
                     {choice.recommended && (
                       <span
                         className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                        style={{ background: AI_THEME.accentSoft, color: AI_THEME.accent }}
+                        style={{ background: ACCENT_BG, color: ACCENT }}
                       >
                         Recommended
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 text-[12px] leading-relaxed" style={{ color: AI_THEME.textMuted }}>
+                  <div className="mt-1 text-[12px] leading-relaxed" style={{ color: T.muted }}>
                     {choice.description}
                   </div>
                 </div>
@@ -124,7 +124,7 @@ export function AIDomainChoiceCard({
                 <ArrowRight
                   size={14}
                   className="mt-1 hidden shrink-0 transition-transform group-hover:translate-x-0.5 sm:block"
-                  style={{ color: AI_THEME.textFaint }}
+                  style={{ color: T.faint }}
                 />
               </div>
 
@@ -141,19 +141,19 @@ export function AIDomainChoiceCard({
                       }}
                       className="rounded-xl px-3 py-2 text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
-                        background: AI_THEME.surface,
-                        border: `1px solid ${AI_THEME.border}`,
-                        color: AI_THEME.textBody,
+                        background: '#ffffff',
+                        border: `1px solid ${T.border}`,
+                        color: T.body,
                       }}
                       onMouseEnter={(e) => {
                         if (!disabled && onAction) {
-                          e.currentTarget.style.borderColor = AI_THEME.borderStrong;
-                          e.currentTarget.style.color = AI_THEME.text;
+                          e.currentTarget.style.borderColor = T.muted;
+                          e.currentTarget.style.color = T.text;
                         }
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = AI_THEME.border;
-                        e.currentTarget.style.color = AI_THEME.textBody;
+                        e.currentTarget.style.borderColor = T.border;
+                        e.currentTarget.style.color = T.body;
                       }}
                     >
                       {action.label}

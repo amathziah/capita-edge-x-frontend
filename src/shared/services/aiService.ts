@@ -69,9 +69,37 @@ export const aiService = {
     const decoder = new TextDecoder();
     let buffer = '';
 
+    // Wrap reader.read() with a per-chunk timeout so a background-throttled tab
+    // doesn't leave the stream hanging silently forever. If no bytes arrive within
+    // CHUNK_TIMEOUT_MS we abort and yield a timeout event so the caller can recover.
+    const CHUNK_TIMEOUT_MS = 30_000;
+
+    const readWithTimeout = (): Promise<ReadableStreamReadResult<Uint8Array>> =>
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new DOMException('Stream chunk timeout', 'TimeoutError')),
+          CHUNK_TIMEOUT_MS,
+        );
+        reader.read().then(
+          (result) => { clearTimeout(timer); resolve(result); },
+          (err)    => { clearTimeout(timer); reject(err); },
+        );
+      });
+
     try {
       while (true) {
-        const { value, done } = await reader.read();
+        let value: Uint8Array | undefined;
+        let done: boolean;
+
+        try {
+          ({ value, done } = await readWithTimeout());
+        } catch (err: any) {
+          if (err?.name === 'TimeoutError') {
+            yield { type: 'error', message: 'stream_timeout' };
+          }
+          break;
+        }
+
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -79,7 +107,10 @@ export const aiService = {
         buffer = lines.pop() ?? '';
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith(': ')) {
+            // SSE comment — backend heartbeat; let the caller reset its watchdog
+            yield { type: 'heartbeat' };
+          } else if (line.startsWith('data: ')) {
             const jsonStr = line.slice(6).trim();
             if (!jsonStr) continue;
             try { yield JSON.parse(jsonStr); } catch { /* malformed chunk */ }

@@ -1,151 +1,98 @@
-import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
 import {
-  AI_THEME,
-  formatCount,
-  formatDate,
-  genCardVariants,
-  genItemVariants,
-  StatTile,
-  StatValue,
-  WorkspaceActionBar,
-  WorkspaceViewPills,
+  AgentCard, AgentInsight, StatGrid, Section, PriorityRow, Row, Empty,
+  T, fmtCount, fmtDate,
 } from './workspaceShared';
 
-export function AIComplianceWorkspaceCard({
-  data,
-  onSelectView,
-  onAction,
-  isLoadingView,
-}: {
-  data: any;
-  onSelectView?: (viewId: string) => void;
-  onAction?: (action: any) => void;
-  isLoadingView?: boolean;
+const ACCENT    = '#8B5CF6';
+const ACCENT_BG = '#F5F3FF';
+const ACCENT_BD = '#DDD6FE';
+
+export function AIComplianceWorkspaceCard({ data, onSelectView, onAction, isLoadingView }: {
+  data: any; onSelectView?: (id: string) => void; onAction?: (a: any) => void; isLoadingView?: boolean;
 }) {
-  const summary = data?.summary || {};
-  const urgentTasks = data?.urgentTasks || [];
-  const dueThisWeekTasks = data?.dueThisWeekTasks || [];
-  const recentTasks = data?.recentTasks || [];
-  const selectedView = data?.selectedView || 'overview';
-  const showUrgent = selectedView === 'overview' || selectedView === 'urgent' || selectedView === 'due_this_week';
-  const showRecent = selectedView === 'overview' || selectedView === 'recent';
-  const primaryTaskList = selectedView === 'due_this_week' ? dueThisWeekTasks : urgentTasks;
-  const primaryTitle = selectedView === 'due_this_week' ? 'Due This Week' : 'Priority Tasks';
-  const accent = '#c59cf8';
-  const cardStyle = {
-    background: '#ffffff',
-    border: `1px solid ${AI_THEME.border}`,
-    boxShadow: AI_THEME.shadow,
-  };
-  const sectionStyle = {
-    background: AI_THEME.surfaceSoft,
-    border: `1px solid ${AI_THEME.border}`,
-  };
+  const s        = data?.summary || {};
+  const sel      = data?.selectedView || 'overview';
+  const guidance = data?.guidance || {};
+
+  const showUrgent = sel === 'overview' || sel === 'urgent' || sel === 'due_this_week';
+  const showRecent = sel === 'overview' || sel === 'recent';
+
+  const primaryList  = sel === 'due_this_week' ? (data?.dueThisWeekTasks || []) : (data?.urgentTasks || []);
+  const primaryLabel = sel === 'due_this_week' ? 'Due This Week' : 'Priority Queue';
+  const recent       = (data?.recentTasks || []).slice(0, 5);
+
+  const overdueCount     = Number(s.overdueCount     || 0);
+  const dueThisWeekCount = Number(s.dueThisWeekCount || 0);
+
+  const insightLevel = overdueCount > 0 ? 'critical' : dueThisWeekCount > 0 ? 'warn' : 'ok';
+  const insightText  = guidance.summary
+    || (overdueCount > 0
+      ? `${overdueCount} compliance task${overdueCount > 1 ? 's are' : ' is'} overdue. File immediately to avoid penalties.`
+      : dueThisWeekCount > 0
+        ? `${dueThisWeekCount} filing${dueThisWeekCount > 1 ? 's' : ''} due this week. Stay ahead of the deadline.`
+        : 'All compliance tasks are on track. Nothing overdue.');
 
   return (
-    <motion.div
-      variants={genCardVariants}
-      initial="hidden"
-      animate="visible"
-      className="mt-4 mb-2 rounded-[28px] p-4 sm:p-5"
-      style={cardStyle}
+    <AgentCard
+      icon={ShieldCheck} label={data?.workspaceLabel || 'Compliance Workspace'}
+      accent={ACCENT} accentBg={ACCENT_BG}
+      views={data?.availableViews} selectedView={sel} onSelectView={onSelectView}
+      actions={data?.actions} onAction={onAction} isLoading={isLoadingView}
     >
-      <motion.h4
-        variants={genItemVariants}
-        className="mb-4 flex items-center gap-2 min-w-0 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.24em]"
-        style={{ color: accent }}
-      >
-        <span
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl"
-          style={{ background: 'rgba(197, 156, 248, 0.12)', color: accent }}
-        >
-          <ShieldCheck size={14} />
-        </span>
-        <span className="min-w-0 truncate">{data?.workspaceLabel || 'Compliance Workspace'}</span>
-      </motion.h4>
-
-      <WorkspaceActionBar
-        actions={data?.actions}
-        onAction={onAction}
-        disabled={isLoadingView}
+      <AgentInsight
+        summary={insightText}
+        level={insightLevel}
+        action={overdueCount > 0 ? { id: 'view_urgent', label: 'See Overdue' } : undefined}
+        onAction={() => onSelectView?.('urgent')}
       />
 
-      <WorkspaceViewPills
-        views={data?.availableViews}
-        selectedView={selectedView}
-        onSelectView={onSelectView}
-        disabled={isLoadingView}
-      />
+      <StatGrid stats={[
+        { label: 'Total Tasks',   value: fmtCount(s.totalTasks) },
+        { label: 'Pending',       value: fmtCount(s.pendingCount) },
+        { label: 'Overdue',       value: fmtCount(s.overdueCount),       accent: overdueCount > 0 ? T.danger : T.text },
+        { label: 'Due This Week', value: fmtCount(s.dueThisWeekCount),   accent: dueThisWeekCount > 0 ? ACCENT : T.text },
+      ]} />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[
-          ['Total Tasks', summary.totalTasks, 'count'],
-          ['Pending', summary.pendingCount, 'count'],
-          ['Overdue', summary.overdueCount, 'count'],
-          ['Due This Week', summary.dueThisWeekCount, 'count'],
-        ].map(([label, value]) => (
-          <motion.div key={label as string} variants={genItemVariants}>
-            <StatTile label={label as string} style={sectionStyle}>
-              <StatValue>{formatCount(value as number | undefined | null)}</StatValue>
-            </StatTile>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className={`grid gap-3 ${showUrgent && showRecent ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
+      <div className={`grid gap-3 ${showUrgent && showRecent ? 'sm:grid-cols-2' : ''}`}>
         {showUrgent && (
-        <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>{primaryTitle}</div>
-          <div className="space-y-2">
-            {primaryTaskList.length === 0 ? (
-              <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No active compliance tasks.</div>
-            ) : (
-              primaryTaskList.map((task: any) => (
-                <div key={task.id} className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{task.type || task.description || 'Compliance task'}</div>
-                    <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.textFaint }}>{task.priority || 'medium'} priority</div>
-                  </div>
-                  <div className="shrink-0 text-right max-w-[45%]">
-                    <div
-                      className="truncate font-bold uppercase"
-                      style={{ color: task.status === 'overdue' ? AI_THEME.danger : AI_THEME.text }}
-                    >
-                      {task.status}
-                    </div>
-                    <div className="truncate text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(task.due_date)}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </motion.div>
+          <Section label={primaryLabel} accent={ACCENT} bg={ACCENT_BG} borderColor={ACCENT_BD}>
+            {primaryList.length === 0
+              ? <Empty text="No active compliance tasks." />
+              : primaryList.slice(0, 5).map((t: any) => {
+                const isOverdue = t.status === 'overdue';
+                return (
+                  <PriorityRow
+                    key={t.id}
+                    primary={t.type || t.description || 'Compliance task'}
+                    secondary={`${t.priority || 'medium'} priority`}
+                    meta={fmtDate(t.due_date) !== '—' ? `Due ${fmtDate(t.due_date)}` : undefined}
+                    badge={isOverdue ? 'Overdue' : undefined}
+                    badgeBg={isOverdue ? T.dangerBg : undefined}
+                    action={{ id: `file_${t.id}`, label: isOverdue ? 'File Now' : 'Review' }}
+                    onAction={onAction}
+                  />
+                );
+              })
+            }
+          </Section>
         )}
 
         {showRecent && (
-        <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>Recent Tasks</div>
-          <div className="space-y-2">
-            {recentTasks.length === 0 ? (
-              <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No recent compliance tasks available.</div>
-            ) : (
-              recentTasks.slice(0, 4).map((task: any) => (
-                <div key={task.id} className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{task.type || task.description || 'Compliance task'}</div>
-                    <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.textFaint }}>{task.status}</div>
-                  </div>
-                  <div className="shrink-0 truncate text-right text-[10px] max-w-[40%]" style={{ color: AI_THEME.textFaint }}>
-                    {formatDate(task.due_date)}
-                  </div>
-                </div>
+          <Section label="Recent Activity" accent={ACCENT}>
+            {recent.length === 0
+              ? <Empty text="No recent tasks." />
+              : recent.map((t: any) => (
+                <Row key={t.id}
+                  primary={t.type || t.description || 'Compliance task'}
+                  secondary={t.status}
+                  sub={fmtDate(t.due_date) !== '—' ? fmtDate(t.due_date) : undefined}
+                />
               ))
-            )}
-          </div>
-        </motion.div>
+            }
+          </Section>
         )}
       </div>
-    </motion.div>
+    </AgentCard>
   );
 }

@@ -1,115 +1,107 @@
-import { motion } from 'framer-motion';
 import { Users } from 'lucide-react';
 import {
-  AI_THEME,
-  createMoneyFormatter,
-  formatCount,
-  genCardVariants,
-  genItemVariants,
-  StatTile,
-  StatValue,
-  WorkspaceActionBar,
-  WorkspaceViewPills,
+  AgentCard, AgentInsight, StatGrid, Section, PriorityRow, Empty,
+  T, fmt, fmtCount,
 } from './workspaceShared';
 
-export function AICustomerWorkspaceCard({
-  data,
-  onSelectView,
-  onAction,
-  isLoadingView,
-}: {
-  data: any;
-  onSelectView?: (viewId: string) => void;
-  onAction?: (action: any) => void;
-  isLoadingView?: boolean;
-}) {
-  const customers = Array.isArray(data?.customers) ? data.customers : [];
-  const formatMoney = createMoneyFormatter(data?.currency || 'INR');
-  const selectedView = data?.selectedView || 'overview';
-  const showTopClients = selectedView === 'overview' || selectedView === 'top_clients';
+const ACCENT    = '#3B82F6';
+const ACCENT_BG = '#EFF6FF';
+const ACCENT_BD = '#BFDBFE';
 
-  const sortedByRevenue = [...customers].sort((a, b) => (b.total_revenue || 0) - (a.total_revenue || 0));
+export function AICustomerWorkspaceCard({ data, onSelectView, onAction, isLoadingView }: {
+  data: any; onSelectView?: (id: string) => void; onAction?: (a: any) => void; isLoadingView?: boolean;
+}) {
+  const cur      = data?.currency || 'USD';
+  const sel      = data?.selectedView || 'overview';
+  const guidance = data?.guidance || {};
+  const customers = Array.isArray(data?.customers) ? data.customers : [];
+
+  const showTopClients  = sel === 'overview' || sel === 'top_clients';
+  const showRiskAnalysis = sel === 'overview' || sel === 'risk_analysis';
+
+  const sorted       = [...customers].sort((a, b) => (b.total_revenue || 0) - (a.total_revenue || 0));
   const totalRevenue = customers.reduce((acc: number, c: any) => acc + (c.total_revenue || 0), 0);
-  const avgValue = customers.length > 0 ? totalRevenue / customers.length : 0;
-  const accent = '#6fe4d8';
-  const cardStyle = {
-    background: '#ffffff',
-    border: `1px solid ${AI_THEME.border}`,
-    boxShadow: AI_THEME.shadow,
-  };
-  const sectionStyle = {
-    background: AI_THEME.surfaceSoft,
-    border: `1px solid ${AI_THEME.border}`,
-  };
+  const avgValue     = customers.length > 0 ? totalRevenue / customers.length : 0;
+
+  // Classify churn risk: clients with 0 recent orders in last period = at risk
+  const atRisk = customers.filter((c: any) => Number(c.order_count || 0) === 0).length;
+  const insightLevel = atRisk > 2 ? 'warn' : customers.length === 0 ? 'info' : 'ok';
+  const insightText  = guidance.summary
+    || (atRisk > 0
+      ? `${atRisk} client${atRisk > 1 ? 's have' : ' has'} no recorded orders — potential churn risk. Re-engage them.`
+      : customers.length > 0
+        ? `${customers.length} active clients generating ${fmt(totalRevenue, cur)} total revenue.`
+        : 'No client data available yet.');
 
   return (
-    <motion.div
-      variants={genCardVariants}
-      initial="hidden"
-      animate="visible"
-      className="mt-4 mb-2 rounded-[28px] p-4 sm:p-5"
-      style={cardStyle}
+    <AgentCard
+      icon={Users} label={data?.workspaceLabel || 'Customer Intelligence'}
+      accent={ACCENT} accentBg={ACCENT_BG}
+      views={data?.availableViews} selectedView={sel} onSelectView={onSelectView}
+      actions={data?.actions} onAction={onAction} isLoading={isLoadingView}
     >
-      <motion.h4
-        variants={genItemVariants}
-        className="mb-4 flex items-center gap-2 min-w-0 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.24em]"
-        style={{ color: accent }}
-      >
-        <span
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl"
-          style={{ background: 'rgba(111, 228, 216, 0.12)', color: accent }}
-        >
-          <Users size={14} />
-        </span>
-        <span className="min-w-0 truncate">{data?.workspaceLabel || 'Customers'}</span>
-      </motion.h4>
-
-      <WorkspaceActionBar
-        actions={data?.actions}
-        onAction={onAction}
-        disabled={isLoadingView}
+      <AgentInsight
+        summary={insightText}
+        level={insightLevel}
+        action={atRisk > 0 ? { id: 'view_risk', label: 'See At Risk' } : undefined}
+        onAction={() => onSelectView?.('risk_analysis')}
       />
 
-      <WorkspaceViewPills
-        views={data?.availableViews}
-        selectedView={selectedView}
-        onSelectView={onSelectView}
-        disabled={isLoadingView}
-      />
+      <StatGrid stats={[
+        { label: 'Total Clients', value: fmtCount(customers.length) },
+        { label: 'Avg Value',     value: fmt(avgValue, cur),     accent: ACCENT },
+        { label: 'Total Revenue', value: fmt(totalRevenue, cur), accent: ACCENT },
+        { label: 'At Risk',       value: fmtCount(atRisk),       accent: atRisk > 0 ? T.warning : T.text },
+      ]} />
 
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <motion.div variants={genItemVariants}>
-          <StatTile label="Total Clients" style={sectionStyle}>
-            <StatValue>{formatCount(customers.length)}</StatValue>
-          </StatTile>
-        </motion.div>
-        <motion.div variants={genItemVariants}>
-          <StatTile label="Avg Value" style={sectionStyle}>
-            <StatValue>{formatMoney(avgValue)}</StatValue>
-          </StatTile>
-        </motion.div>
-      </div>
+      <div className={`grid gap-3 ${showTopClients && showRiskAnalysis && atRisk > 0 ? 'sm:grid-cols-2' : ''}`}>
+        {showTopClients && (
+          <Section label="Top Clients by Revenue" accent={ACCENT} bg={ACCENT_BG} borderColor={ACCENT_BD}>
+            {sorted.length === 0
+              ? <Empty text="No client data available." />
+              : sorted.slice(0, 5).map((c: any, i: number) => {
+                const revenueShare = totalRevenue > 0
+                  ? Math.round((Number(c.total_revenue) / totalRevenue) * 100) : 0;
+                return (
+                  <PriorityRow
+                    key={c.id}
+                    primary={c.name}
+                    secondary={`${c.order_count || 0} orders`}
+                    meta={revenueShare > 0 ? `${revenueShare}% of revenue` : undefined}
+                    amount={fmt(c.total_revenue, cur)}
+                    amountColor={i === 0 ? ACCENT : T.text}
+                    badge={i === 0 ? 'Top Client' : undefined}
+                    badgeBg={ACCENT_BG}
+                    action={{ id: `engage_${c.id}`, label: 'Engage' }}
+                    onAction={onAction}
+                  />
+                );
+              })
+            }
+          </Section>
+        )}
 
-      {showTopClients && (
-        <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>Top Revenue Clients</div>
-          <div className="space-y-2">
-            {sortedByRevenue.length === 0 ? (
-              <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No client data available.</div>
-            ) : (
-              sortedByRevenue.slice(0, 5).map((customer: any) => (
-                <div key={customer.id} className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{customer.name}</div>
-                    <div className="truncate text-[9px] uppercase" style={{ color: AI_THEME.textFaint }}>{customer.order_count || 0} orders</div>
-                  </div>
-                  <div className="shrink-0 font-mono tabular-nums truncate max-w-[45%] text-right" style={{ color: AI_THEME.text }}>{formatMoney(customer.total_revenue)}</div>
-                </div>
+        {showRiskAnalysis && atRisk > 0 && (
+          <Section label="Churn Risk" accent={T.warning} bg={T.warningBg} borderColor={T.warningBorder}>
+            {customers
+              .filter((c: any) => Number(c.order_count || 0) === 0)
+              .slice(0, 4)
+              .map((c: any) => (
+                <PriorityRow
+                  key={c.id}
+                  primary={c.name}
+                  secondary="No recent orders"
+                  badge="At Risk"
+                  badgeBg={T.warningBg}
+                  amount={fmt(c.total_revenue, cur)}
+                  action={{ id: `reactivate_${c.id}`, label: 'Re-engage' }}
+                  onAction={onAction}
+                />
               ))
-            )}
-          </div>
-        </motion.div>
-      )}
-    </motion.div>
+            }
+          </Section>
+        )}
+      </div>
+    </AgentCard>
   );
 }

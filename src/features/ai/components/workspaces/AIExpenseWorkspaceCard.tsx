@@ -1,142 +1,100 @@
-import { motion } from 'framer-motion';
 import { Receipt } from 'lucide-react';
 import {
-  AI_THEME,
-  createMoneyFormatter,
-  formatCount,
-  formatDate,
-  genCardVariants,
-  genItemVariants,
-  StatTile,
-  StatValue,
-  WorkspaceActionBar,
-  WorkspaceViewPills,
+  AgentCard, AgentInsight, StatGrid, Section, Row, Empty,
+  T, fmt, fmtCount, fmtDate,
 } from './workspaceShared';
 
-export function AIExpenseWorkspaceCard({
-  data,
-  onSelectView,
-  onAction,
-  isLoadingView,
-}: {
-  data: any;
-  onSelectView?: (viewId: string) => void;
-  onAction?: (action: any) => void;
-  isLoadingView?: boolean;
+const ACCENT    = '#F59E0B';
+const ACCENT_BG = '#FFFBEB';
+
+export function AIExpenseWorkspaceCard({ data, onSelectView, onAction, isLoadingView }: {
+  data: any; onSelectView?: (id: string) => void; onAction?: (a: any) => void; isLoadingView?: boolean;
 }) {
-  const summary = data?.summary || {};
-  const recentExpenses = data?.recentExpenses || [];
-  const topCategories = data?.topCategories || [];
-  const formatMoney = createMoneyFormatter(data?.currency || 'INR');
-  const selectedView = data?.selectedView || 'overview';
-  const showRecent = selectedView === 'overview' || selectedView === 'recent' || selectedView === 'monthly';
-  const showCategories = selectedView === 'overview' || selectedView === 'categories';
-  const accent = '#f6c775';
-  const cardStyle = {
-    background: '#ffffff',
-    border: `1px solid ${AI_THEME.border}`,
-    boxShadow: AI_THEME.shadow,
-  };
-  const sectionStyle = {
-    background: AI_THEME.surfaceSoft,
-    border: `1px solid ${AI_THEME.border}`,
-  };
+  const s        = data?.summary || {};
+  const cur      = data?.currency || 'USD';
+  const sel      = data?.selectedView || 'overview';
+  const guidance = data?.guidance || {};
+
+  const showRecent     = sel === 'overview' || sel === 'recent' || sel === 'monthly';
+  const showCategories = sel === 'overview' || sel === 'categories';
+
+  const recent     = (data?.recentExpenses || []).slice(0, 5);
+  const categories = (data?.topCategories  || []).slice(0, 5);
+
+  const spendThisMonth = Number(s.spendThisMonth || 0);
+  const totalExpenses  = Number(s.totalExpenses  || 0);
+
+  // Spot anomalies: top category consuming >60% of spend
+  const topCat       = categories[0];
+  const topCatAmount = Number(topCat?.amount || 0);
+  const topCatShare  = spendThisMonth > 0 ? (topCatAmount / spendThisMonth) * 100 : 0;
+  const hasConcentration = topCatShare > 60 && topCat;
+
+  const insightLevel = hasConcentration ? 'warn' : spendThisMonth > 0 ? 'info' : 'ok';
+  const insightText  = guidance.summary
+    || (hasConcentration
+      ? `${topCat.category} is ${Math.round(topCatShare)}% of your spend this month (${fmt(topCatAmount, cur)}). Check if this is expected.`
+      : spendThisMonth > 0
+        ? `${fmt(spendThisMonth, cur)} spent this month across ${totalExpenses} expense${totalExpenses !== 1 ? 's' : ''}.`
+        : 'No expenses recorded this month.');
 
   return (
-    <motion.div
-      variants={genCardVariants}
-      initial="hidden"
-      animate="visible"
-      className="mt-4 mb-2 rounded-[28px] p-4 sm:p-5"
-      style={cardStyle}
+    <AgentCard
+      icon={Receipt} label={data?.workspaceLabel || 'Expenses Workspace'}
+      accent={ACCENT} accentBg={ACCENT_BG}
+      views={data?.availableViews} selectedView={sel} onSelectView={onSelectView}
+      actions={data?.actions} onAction={onAction} isLoading={isLoadingView}
     >
-      <motion.h4
-        variants={genItemVariants}
-        className="mb-4 flex items-center gap-2 min-w-0 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.24em]"
-        style={{ color: accent }}
-      >
-        <span
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl"
-          style={{ background: 'rgba(246, 199, 117, 0.12)', color: accent }}
-        >
-          <Receipt size={14} />
-        </span>
-        <span className="min-w-0 truncate">{data?.workspaceLabel || 'Expenses Workspace'}</span>
-      </motion.h4>
-
-      <WorkspaceActionBar
-        actions={data?.actions}
-        onAction={onAction}
-        disabled={isLoadingView}
+      <AgentInsight
+        summary={insightText}
+        level={insightLevel}
+        action={hasConcentration ? { id: 'view_categories', label: 'See Breakdown' } : undefined}
+        onAction={() => onSelectView?.('categories')}
       />
 
-      <WorkspaceViewPills
-        views={data?.availableViews}
-        selectedView={selectedView}
-        onSelectView={onSelectView}
-        disabled={isLoadingView}
-      />
+      <StatGrid stats={[
+        { label: 'Total Spend',  value: fmt(s.totalSpend, cur) },
+        { label: 'This Month',   value: fmt(s.spendThisMonth, cur), accent: ACCENT },
+        { label: 'Expenses',     value: fmtCount(s.totalExpenses) },
+        { label: 'Avg Expense',  value: fmt(s.averageExpense, cur) },
+      ]} />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[
-          ['Total Spend', formatMoney(summary.totalSpend), 'money'],
-          ['This Month', formatMoney(summary.spendThisMonth), 'money'],
-          ['Expenses', summary.totalExpenses, 'count'],
-          ['Avg Expense', formatMoney(summary.averageExpense), 'money'],
-        ].map(([label, value, kind]) => (
-          <motion.div key={label as string} variants={genItemVariants}>
-            <StatTile label={label as string} style={sectionStyle}>
-              <StatValue>
-                {kind === 'count' ? formatCount(value as number | undefined | null) : (value as any)}
-              </StatValue>
-            </StatTile>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className={`grid gap-3 ${showRecent && showCategories ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
+      <div className={`grid gap-3 ${showRecent && showCategories ? 'sm:grid-cols-2' : ''}`}>
         {showRecent && (
-        <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>Recent Expenses</div>
-          <div className="space-y-2">
-            {recentExpenses.length === 0 ? (
-              <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No recent expenses available.</div>
-            ) : (
-              recentExpenses.slice(0, 4).map((expense: any) => (
-                <div key={expense.id} className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{expense.description || expense.category || 'Expense'}</div>
-                    <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.textFaint }}>{expense.category || 'other'}</div>
-                  </div>
-                  <div className="shrink-0 text-right max-w-[45%]">
-                    <div className="font-mono tabular-nums truncate" style={{ color: AI_THEME.text }}>{formatMoney(expense.amount)}</div>
-                    <div className="truncate text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(expense.date)}</div>
-                  </div>
-                </div>
+          <Section label="Recent Expenses" accent={ACCENT} bg={ACCENT_BG} borderColor={T.warningBorder}>
+            {recent.length === 0
+              ? <Empty text="No recent expenses." />
+              : recent.map((e: any) => (
+                <Row key={e.id}
+                  primary={e.description || e.category || 'Expense'}
+                  secondary={e.category || 'other'}
+                  amount={fmt(e.amount, cur)}
+                  sub={fmtDate(e.date)}
+                />
               ))
-            )}
-          </div>
-        </motion.div>
+            }
+          </Section>
         )}
 
         {showCategories && (
-        <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>Top Categories</div>
-          <div className="space-y-2">
-            {topCategories.length === 0 ? (
-              <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No category breakdown available.</div>
-            ) : (
-              topCategories.map((entry: any) => (
-                <div key={entry.category} className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0 flex-1 truncate font-semibold" style={{ color: AI_THEME.textBody }}>{entry.category}</div>
-                  <div className="shrink-0 font-mono tabular-nums truncate max-w-[45%] text-right" style={{ color: AI_THEME.text }}>{formatMoney(entry.amount)}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </motion.div>
+          <Section label="Top Categories" accent={ACCENT}>
+            {categories.length === 0
+              ? <Empty text="No category breakdown." />
+              : categories.map((c: any, i: number) => {
+                const share = spendThisMonth > 0 ? Math.round((Number(c.amount) / spendThisMonth) * 100) : 0;
+                return (
+                  <Row key={c.category}
+                    primary={c.category}
+                    secondary={share > 0 ? `${share}% of spend` : undefined}
+                    amount={fmt(c.amount, cur)}
+                    amountColor={i === 0 && topCatShare > 60 ? T.warning : T.text}
+                  />
+                );
+              })
+            }
+          </Section>
         )}
       </div>
-    </motion.div>
+    </AgentCard>
   );
 }

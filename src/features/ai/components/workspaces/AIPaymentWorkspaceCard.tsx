@@ -1,152 +1,95 @@
-import { motion } from 'framer-motion';
 import { CreditCard } from 'lucide-react';
 import {
-  AI_THEME,
-  createMoneyFormatter,
-  formatCount,
-  formatDate,
-  genCardVariants,
-  genItemVariants,
-  StatTile,
-  StatValue,
-  WorkspaceActionBar,
-  WorkspaceViewPills,
+  AgentCard, AgentInsight, StatGrid, Section, Row, Empty,
+  T, fmt, fmtCount, fmtDate,
 } from './workspaceShared';
 
-export function AIPaymentWorkspaceCard({
-  data,
-  onSelectView,
-  onAction,
-  isLoadingView,
-}: {
-  data: any;
-  onSelectView?: (viewId: string) => void;
-  onAction?: (action: any) => void;
-  isLoadingView?: boolean;
+const ACCENT    = '#22C55E';
+const ACCENT_BG = '#ECFDF5';
+
+export function AIPaymentWorkspaceCard({ data, onSelectView, onAction, isLoadingView }: {
+  data: any; onSelectView?: (id: string) => void; onAction?: (a: any) => void; isLoadingView?: boolean;
 }) {
-  const summary = data?.summary || {};
-  const recentPayments = data?.recentPayments || [];
-  const pendingPayments = data?.pendingPayments || [];
-  const formatMoney = createMoneyFormatter(data?.currency || 'INR');
-  const selectedView = data?.selectedView || 'overview';
-  const showRecent = selectedView === 'overview' || selectedView === 'recent';
-  const showPending = selectedView === 'overview' || selectedView === 'pending';
-  const accent = '#77f7c9';
-  const cardStyle = {
-    background: '#ffffff',
-    border: `1px solid ${AI_THEME.border}`,
-    boxShadow: AI_THEME.shadow,
-  };
-  const sectionStyle = {
-    background: AI_THEME.surfaceSoft,
-    border: `1px solid ${AI_THEME.border}`,
-  };
+  const s        = data?.summary || {};
+  const cur      = data?.currency || 'USD';
+  const sel      = data?.selectedView || 'overview';
+  const guidance = data?.guidance || {};
+
+  const showRecent  = sel === 'overview' || sel === 'recent'  || sel === 'monthly';
+  const showPending = sel === 'overview' || sel === 'pending';
+
+  const recent  = (data?.recentPayments  || []).slice(0, 5);
+  const pending = (data?.pendingPayments || []).slice(0, 5);
+
+  const monthCollected = Number(s.collectedThisMonth || 0);
+  const pendingCount   = Number(s.pendingCount || 0);
+  const insightLevel   = pendingCount > 3 ? 'warn' : monthCollected > 0 ? 'ok' : 'info';
+  const insightText    = guidance.summary
+    || (monthCollected > 0
+      ? `${fmt(monthCollected, cur)} collected this month. ${pendingCount > 0 ? `${pendingCount} payment${pendingCount > 1 ? 's' : ''} still pending.` : 'No outstanding items.'}`
+      : 'No payments recorded yet this month.');
 
   return (
-    <motion.div
-      variants={genCardVariants}
-      initial="hidden"
-      animate="visible"
-      className="mt-4 mb-2 rounded-[28px] p-4 sm:p-5"
-      style={cardStyle}
+    <AgentCard
+      icon={CreditCard} label={data?.workspaceLabel || 'Payments Workspace'}
+      accent={ACCENT} accentBg={ACCENT_BG}
+      views={data?.availableViews} selectedView={sel} onSelectView={onSelectView}
+      actions={data?.actions} onAction={onAction} isLoading={isLoadingView}
     >
-      <motion.h4
-        variants={genItemVariants}
-        className="mb-4 flex items-center gap-2 min-w-0 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.24em]"
-        style={{ color: accent }}
-      >
-        <span
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl"
-          style={{ background: 'rgba(119, 247, 201, 0.12)', color: accent }}
-        >
-          <CreditCard size={14} />
-        </span>
-        <span className="min-w-0 truncate">{data?.workspaceLabel || 'Payments Workspace'}</span>
-      </motion.h4>
-
-      <WorkspaceActionBar
-        actions={data?.actions}
-        onAction={onAction}
-        disabled={isLoadingView}
+      <AgentInsight
+        summary={insightText}
+        level={insightLevel}
+        action={pendingCount > 0 ? { id: 'view_pending', label: 'See Pending' } : undefined}
+        onAction={() => onSelectView?.('pending')}
       />
 
-      <WorkspaceViewPills
-        views={data?.availableViews}
-        selectedView={selectedView}
-        onSelectView={onSelectView}
-        disabled={isLoadingView}
-      />
+      <StatGrid stats={[
+        { label: 'Total Collected', value: fmt(s.totalCollected, cur),    accent: ACCENT },
+        { label: 'This Month',      value: fmt(s.collectedThisMonth, cur), accent: ACCENT },
+        { label: 'Completed',       value: fmtCount(s.completedCount) },
+        { label: 'Pending',         value: fmtCount(s.pendingCount),       accent: pendingCount > 0 ? T.warning : T.text },
+      ]} />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[
-          ['Collected', formatMoney(summary.totalCollected), 'money'],
-          ['This Month', formatMoney(summary.collectedThisMonth), 'money'],
-          ['Completed', summary.completedCount, 'count'],
-          ['Pending', summary.pendingCount, 'count'],
-        ].map(([label, value, kind]) => (
-          <motion.div key={label as string} variants={genItemVariants}>
-            <StatTile label={label as string} style={sectionStyle}>
-              <StatValue>
-                {kind === 'count' ? formatCount(value as number | undefined | null) : (value as any)}
-              </StatValue>
-            </StatTile>
-          </motion.div>
-        ))}
+      <div className={`grid gap-3 ${showRecent && showPending ? 'sm:grid-cols-2' : ''}`}>
+        {showRecent && (
+          <Section label="Recent Payments" accent={ACCENT} bg={ACCENT_BG} borderColor={T.successBorder}>
+            {recent.length === 0
+              ? <Empty text="No recent payments." />
+              : recent.map((p: any) => (
+                <Row key={p.id}
+                  primary={p.reference_number || p.method || 'Payment'}
+                  secondary={p.payment_mode || p.status || 'received'}
+                  amount={fmt(p.amount, cur)}
+                  sub={fmtDate(p.date)}
+                  amountColor={ACCENT}
+                />
+              ))
+            }
+          </Section>
+        )}
+
+        {showPending && (
+          <Section label="Pending Items" accent={T.warning} bg={T.warningBg} borderColor={T.warningBorder}>
+            {pending.length === 0
+              ? <Empty text="No pending items." />
+              : pending.map((p: any) => (
+                <Row key={p.id}
+                  primary={p.reference_number || 'Pending payment'}
+                  secondary={p.status || 'pending'}
+                  amount={fmt(p.amount, cur)}
+                  sub={fmtDate(p.date)}
+                  amountColor={T.warning}
+                />
+              ))
+            }
+            {pending.length > 0 && (
+              <p className="pt-1 text-[10px]" style={{ color: T.warning }}>
+                Follow up to close these out.
+              </p>
+            )}
+          </Section>
+        )}
       </div>
-
-      <div className={`grid gap-3 ${showRecent && showPending ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
-      {showRecent && (
-      <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
-        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>Recent Payments</div>
-        <div className="space-y-2">
-          {recentPayments.length === 0 ? (
-            <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No recent payments available.</div>
-          ) : (
-            recentPayments.slice(0, 5).map((payment: any) => (
-              <div key={payment.id} className="flex items-center justify-between gap-2 text-[11px]">
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{payment.reference_number || payment.method || 'Payment received'}</div>
-                  <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.textFaint }}>{payment.payment_mode || payment.method || payment.status || 'payment'}</div>
-                </div>
-                <div className="shrink-0 text-right max-w-[45%]">
-                  <div className="font-mono tabular-nums truncate" style={{ color: AI_THEME.text }}>{formatMoney(payment.amount)}</div>
-                  <div className="truncate text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(payment.date)}</div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </motion.div>
-      )}
-
-      {showPending && (
-      <motion.div
-        variants={genItemVariants}
-        className="rounded-2xl p-3"
-        style={{ ...sectionStyle, border: `1px solid ${AI_THEME.warningSoft}`, background: 'rgba(80, 60, 23, 0.18)' }}
-      >
-        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: AI_THEME.warning }}>Pending Items</div>
-        <div className="space-y-2">
-          {pendingPayments.length === 0 ? (
-            <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No pending payment items available.</div>
-          ) : (
-            pendingPayments.map((payment: any) => (
-              <div key={payment.id} className="flex items-center justify-between gap-2 text-[11px]">
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>{payment.reference_number || payment.method || 'Pending payment'}</div>
-                  <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.warning }}>{payment.status || 'pending'}</div>
-                </div>
-                <div className="shrink-0 text-right max-w-[45%]">
-                  <div className="font-mono tabular-nums truncate" style={{ color: AI_THEME.text }}>{formatMoney(payment.amount)}</div>
-                  <div className="truncate text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(payment.date)}</div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </motion.div>
-      )}
-      </div>
-    </motion.div>
+    </AgentCard>
   );
 }

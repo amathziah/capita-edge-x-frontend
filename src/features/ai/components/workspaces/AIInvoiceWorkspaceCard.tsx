@@ -1,186 +1,130 @@
-import { motion } from 'framer-motion';
 import { FileText } from 'lucide-react';
 import {
-  AI_THEME,
-  createMoneyFormatter,
-  formatCount,
-  formatDate,
-  genCardVariants,
-  genItemVariants,
-  StatTile,
-  StatValue,
-  WorkspaceActionBar,
-  WorkspaceViewPills,
+  AgentCard, AgentInsight, StatGrid, Section, PriorityRow, Row, Empty,
+  T, fmt, fmtCount, fmtDate, fmtDays, itemVariants,
 } from './workspaceShared';
+import { motion } from 'framer-motion';
 
-export function AIInvoiceWorkspaceCard({
-  data,
-  onSelectView,
-  onAction,
-  isLoadingView,
-}: {
-  data: any;
-  onSelectView?: (viewId: string) => void;
-  onAction?: (action: any) => void;
-  isLoadingView?: boolean;
+const ACCENT    = '#14B8B8'; // app primary
+const ACCENT_BG = '#ECF6F8';
+
+export function AIInvoiceWorkspaceCard({ data, onSelectView, onAction, isLoadingView }: {
+  data: any; onSelectView?: (id: string) => void; onAction?: (a: any) => void; isLoadingView?: boolean;
 }) {
-  const summary = data?.summary || {};
-  const recentInvoices = data?.recentInvoices || [];
-  const overdueInvoices = data?.overdueInvoices || [];
-  const topDebtors = data?.topDebtors || [];
-  const topOverdue = overdueInvoices[0];
-  const formatMoney = createMoneyFormatter(data?.currency || 'INR');
-  const selectedView = data?.selectedView || 'overview';
-  const showRecent = selectedView === 'overview' || selectedView === 'recent';
-  const showOverdue = selectedView === 'overview' || selectedView === 'overdue';
-  const showDebtors = selectedView === 'overview' || selectedView === 'debtors';
-  const accent = '#7dd3fc';
-  const cardStyle = {
-    background: '#ffffff',
-    border: `1px solid ${AI_THEME.border}`,
-    boxShadow: AI_THEME.shadow,
-  };
-  const sectionStyle = {
-    background: AI_THEME.surfaceSoft,
-    border: `1px solid ${AI_THEME.border}`,
-  };
+  const s       = data?.summary || {};
+  const cur     = data?.currency || 'USD';
+  const sel     = data?.selectedView || 'overview';
+  const guidance = data?.guidance || {};
+
+  const showOverdue = sel === 'overview' || sel === 'overdue';
+  const showRecent  = sel === 'overview' || sel === 'recent';
+  const showDebtors = sel === 'overview' || sel === 'debtors';
+
+  const overdue = (data?.overdueInvoices || []).slice(0, 5);
+  const recent  = (data?.recentInvoices  || []).slice(0, 4);
+  const debtors = (data?.topDebtors      || []).slice(0, 4);
+
+  // Derive agent insight level from live data
+  const overdueCount  = Number(s.overdueCount  || 0);
+  const overdueAmount = Number(s.overdueAmount || 0);
+  const insightLevel  = overdueCount >= 3 ? 'critical' : overdueCount >= 1 ? 'warn' : 'ok';
+  const insightText   = guidance.summary
+    || (overdueCount > 0
+      ? `${overdueCount} invoice${overdueCount > 1 ? 's are' : ' is'} overdue totalling ${fmt(overdueAmount, cur)}. Follow up with your oldest debtor first.`
+      : 'All invoices are current. No overdue balances detected.');
 
   return (
-    <motion.div
-      variants={genCardVariants}
-      initial="hidden"
-      animate="visible"
-      className="mt-4 mb-2 rounded-[28px] p-4 sm:p-5"
-      style={cardStyle}
+    <AgentCard
+      icon={FileText} label={data?.workspaceLabel || 'Invoice Workspace'}
+      accent={ACCENT} accentBg={ACCENT_BG}
+      views={data?.availableViews} selectedView={sel} onSelectView={onSelectView}
+      actions={data?.actions} onAction={onAction} isLoading={isLoadingView}
     >
-      <motion.h4
-        variants={genItemVariants}
-        className="mb-4 flex items-center gap-2 min-w-0 text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.24em]"
-        style={{ color: accent }}
-      >
-        <span
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl"
-          style={{ background: 'rgba(125, 211, 252, 0.12)', color: accent }}
-        >
-          <FileText size={14} />
-        </span>
-        <span className="min-w-0 truncate">{data?.workspaceLabel || 'Invoice Workspace'}</span>
-      </motion.h4>
-
-      <WorkspaceActionBar
-        actions={data?.actions}
-        onAction={onAction}
-        disabled={isLoadingView}
+      {/* Agent insight */}
+      <AgentInsight
+        summary={insightText}
+        level={insightLevel}
+        action={overdueCount > 0 ? { id: 'view_overdue', label: 'See Overdue' } : undefined}
+        onAction={() => onSelectView?.('overdue')}
       />
 
-      <WorkspaceViewPills
-        views={data?.availableViews}
-        selectedView={selectedView}
-        onSelectView={onSelectView}
-        disabled={isLoadingView}
-      />
+      {/* Live stats */}
+      <StatGrid stats={[
+        { label: 'Tracked',     value: fmtCount(s.totalInvoices) },
+        { label: 'Drafts',      value: fmtCount(s.draftCount) },
+        { label: 'Outstanding', value: fmt(s.totalOutstanding, cur), accent: T.primary },
+        { label: 'Overdue',     value: fmt(s.overdueAmount, cur),    accent: overdueCount > 0 ? T.danger : T.text },
+      ]} />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[
-          ['Tracked', summary.totalInvoices, 'count'],
-          ['Drafts', summary.draftCount, 'count'],
-          ['Outstanding', formatMoney(summary.totalOutstanding), 'money'],
-          ['Overdue', formatMoney(summary.overdueAmount), 'money'],
-        ].map(([label, value, kind]) => (
-          <motion.div key={label as string} variants={genItemVariants}>
-            <StatTile label={label as string} style={sectionStyle}>
-              <StatValue>
-                {kind === 'count' ? formatCount(value as number | undefined | null) : (value as any)}
-              </StatValue>
-            </StatTile>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className={`grid gap-3 ${showRecent && showOverdue ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
-        {showRecent && (
-        <motion.div variants={genItemVariants} className="rounded-2xl p-3" style={sectionStyle}>
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>Recent Invoices</div>
-          <div className="space-y-2">
-            {recentInvoices.length === 0 ? (
-              <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No recent invoices available.</div>
-            ) : (
-              recentInvoices.slice(0, 4).map((invoice: any) => (
-                <div key={invoice.id} className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>#{invoice.invoiceNumber}</div>
-                    <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.textFaint }}>{invoice.status}</div>
-                  </div>
-                  <div className="shrink-0 text-right max-w-[45%]">
-                    <div className="font-mono tabular-nums truncate" style={{ color: AI_THEME.text }}>{formatMoney(invoice.total)}</div>
-                    <div className="truncate text-[10px]" style={{ color: AI_THEME.textFaint }}>{formatDate(invoice.dueDate)}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </motion.div>
-        )}
-
+      <div className={`grid gap-3 ${showOverdue && showRecent ? 'sm:grid-cols-2' : ''}`}>
+        {/* Priority overdue queue */}
         {showOverdue && (
-        <motion.div
-          variants={genItemVariants}
-          className="rounded-2xl p-3"
-          style={{ ...sectionStyle, border: `1px solid ${AI_THEME.dangerSoft}`, background: 'rgba(88, 24, 25, 0.18)' }}
-        >
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: AI_THEME.danger }}>Collections Queue</div>
-          <div className="space-y-2">
-            {overdueInvoices.length === 0 ? (
-              <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No overdue invoices right now.</div>
-            ) : (
-              overdueInvoices.slice(0, 4).map((invoice: any) => (
-                <div key={invoice.id} className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold" style={{ color: AI_THEME.textBody }}>
-                      #{invoice.invoiceNumber}
-                      {invoice.buyer?.name ? ` · ${invoice.buyer.name}` : ''}
-                    </div>
-                    <div className="truncate uppercase text-[10px]" style={{ color: AI_THEME.danger }}>
-                      {typeof invoice.daysOverdue === 'number' && invoice.daysOverdue > 0
-                        ? `${invoice.daysOverdue} days overdue`
-                        : 'Overdue'}
-                    </div>
-                  </div>
-                  <div className="shrink-0 font-mono tabular-nums truncate max-w-[45%] text-right" style={{ color: AI_THEME.text }}>{formatMoney(invoice.balanceDue)}</div>
-                </div>
+          <Section label="Overdue Queue" accent={T.danger} bg={T.dangerBg} borderColor={T.dangerBorder}>
+            {overdue.length === 0
+              ? <Empty text="No overdue invoices. Great shape!" />
+              : overdue.map((inv: any) => {
+                const days = Number(inv.daysOverdue || 0);
+                const riskBg = days > 30 ? T.dangerBg : days > 14 ? T.warningBg : T.bg;
+                const riskColor = days > 30 ? T.danger : days > 14 ? T.warning : T.muted;
+                return (
+                  <PriorityRow
+                    key={inv.id}
+                    primary={inv.buyer?.name || `Invoice #${inv.invoiceNumber}`}
+                    secondary={`#${inv.invoiceNumber}`}
+                    meta={days > 0 ? `${days}d overdue` : 'Overdue'}
+                    amount={fmt(inv.balanceDue, cur)}
+                    amountColor={riskColor}
+                    badge={days > 30 ? 'Critical' : days > 14 ? 'Urgent' : undefined}
+                    badgeBg={riskBg}
+                    action={{ id: `chase_${inv.id}`, label: 'Chase →' }}
+                    onAction={onAction}
+                  />
+                );
+              })
+            }
+            {overdue[0] && (
+              <motion.div variants={itemVariants}
+                className="mt-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium"
+                style={{ background: '#fecaca40', color: T.danger }}>
+                Start with #{overdue[0].invoiceNumber} — longest overdue
+              </motion.div>
+            )}
+          </Section>
+        )}
+
+        {/* Recent invoices */}
+        {showRecent && (
+          <Section label="Recent Invoices" accent={ACCENT}>
+            {recent.length === 0
+              ? <Empty text="No recent invoices." />
+              : recent.map((inv: any) => (
+                <Row key={inv.id}
+                  primary={`#${inv.invoiceNumber}`}
+                  secondary={inv.status}
+                  amount={fmt(inv.total, cur)}
+                  sub={fmtDate(inv.dueDate)}
+                />
               ))
-            )}
-            {topOverdue && (
-              <div
-                className="mt-3 rounded-xl px-3 py-2 text-[11px]"
-                style={{ border: `1px solid #fecaca`, background: '#fef2f2', color: '#dc2626' }}
-              >
-                Next action: follow up on #{topOverdue.invoiceNumber}
-                {topOverdue.buyer?.name ? ` for ${topOverdue.buyer.name}` : ''} first.
-              </div>
-            )}
-          </div>
-        </motion.div>
+            }
+          </Section>
         )}
       </div>
 
-      {showDebtors && (
-      <motion.div variants={genItemVariants} className="mt-3 rounded-2xl p-3" style={sectionStyle}>
-        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent }}>Top Debtors</div>
-        <div className="space-y-2">
-          {topDebtors.length === 0 ? (
-            <div className="text-[11px]" style={{ color: AI_THEME.textFaint }}>No debtor concentration available.</div>
-          ) : (
-            topDebtors.map((debtor: any) => (
-              <div key={debtor.name} className="flex items-center justify-between gap-2 text-[11px]">
-                <div className="min-w-0 flex-1 truncate font-semibold" style={{ color: AI_THEME.textBody }}>{debtor.name}</div>
-                <div className="shrink-0 font-mono tabular-nums truncate max-w-[45%] text-right" style={{ color: AI_THEME.text }}>{formatMoney(debtor.balanceDue)}</div>
-              </div>
-            ))
-          )}
-        </div>
-      </motion.div>
+      {/* Top debtors */}
+      {showDebtors && debtors.length > 0 && (
+        <Section label="Top Debtors" accent={ACCENT}>
+          {debtors.map((d: any) => (
+            <PriorityRow
+              key={d.name}
+              primary={d.name}
+              amount={fmt(d.balanceDue, cur)}
+              amountColor={T.danger}
+              action={{ id: `debtor_${d.name}`, label: 'Follow Up' }}
+              onAction={onAction}
+            />
+          ))}
+        </Section>
       )}
-    </motion.div>
+    </AgentCard>
   );
 }
