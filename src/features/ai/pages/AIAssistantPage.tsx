@@ -31,7 +31,7 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import { AIWorkspaceRenderer } from '@/features/ai/components/AIWorkspaceRenderer';
 import { AIDomainChoiceCard } from '@/features/ai/components/AIDomainChoiceCard';
-import { AIExecutionTerminal } from '@/features/ai/components/AIExecutionTerminal';
+import { AIActionApprovalCard } from '@/features/ai/components/AIActionApprovalCard';
 const RobotBanner = lazy(() =>
   import('@/features/ai/components/RobotBanner').then((m) => ({ default: m.RobotBanner })),
 );
@@ -417,19 +417,15 @@ function ChatBubble({
   onSelectDomain,
   onSelectView,
   onAction,
-  onOpenInCanvas,
   onRetry,
   disableChoices,
-  showInCanvas,
 }: {
   msg: Message;
   onSelectDomain: (choice: any) => void;
   onSelectView: (msg: Message, viewId: string) => void;
   onAction: (action: any) => void;
-  onOpenInCanvas: (msg: Message) => void;
   onRetry: (query: string) => void;
   disableChoices: boolean;
-  showInCanvas: boolean;
 }) {
   const isBot = msg.sender === 'bot';
   const isStreaming = isBot && msg.status === 'streaming';
@@ -493,79 +489,121 @@ function ChatBubble({
           )}
         </div>
 
+        {/* Bubble with overflow-hidden so inner panels clip cleanly */}
         <div
-          className={`rounded-2xl rounded-tl-sm border px-4 py-3.5 ${
+          className={`rounded-2xl rounded-tl-sm border overflow-hidden ${
             isError || isInterrupted
               ? 'border-red-100 bg-red-50'
               : 'border-gray-100 bg-white shadow-sm'
           }`}
         >
-          {waitingForFirstToken ? (
-            <ThinkingIndicator />
-          ) : msg.text.length > 0 ? (
-            <>
-              <ReactMarkdown components={botMd}>{msg.text}</ReactMarkdown>
-              {isStreaming && <StreamingCursor />}
-            </>
-          ) : isStreaming ? (
-            <ThinkingIndicator />
-          ) : null}
+          {/* Text body */}
+          <div className="px-4 py-3.5">
+            {waitingForFirstToken ? (
+              <ThinkingIndicator />
+            ) : msg.text.length > 0 ? (
+              <>
+                <ReactMarkdown components={botMd}>{msg.text}</ReactMarkdown>
+                {isStreaming && <StreamingCursor />}
+              </>
+            ) : isStreaming ? (
+              <ThinkingIndicator />
+            ) : null}
 
-          {isInterrupted && (
-            <div className="mt-3 flex items-center gap-3">
-              <span className="text-[12px] text-red-500">Connection interrupted.</span>
-              {msg.retryQuery && (
-                <button
-                  type="button"
-                  onClick={() => onRetry(msg.retryQuery!)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-50 transition-colors"
-                >
-                  <ArrowRight size={10} />
-                  Retry
-                </button>
-              )}
-            </div>
-          )}
-
-          {msg.uiComponent && msg.uiData && (
-            showInCanvas ? (
-              <button
-                type="button"
-                onClick={() => onOpenInCanvas(msg)}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary-light border border-primary/20 px-2.5 py-1 text-[11px] font-medium text-primary-dark hover:bg-primary/10 transition-colors"
-              >
-                <LayoutDashboard size={11} />
-                Showing in canvas
-                <ArrowRight size={10} />
-              </button>
-            ) : (
-              <div className="mt-4 -mx-1">
-                <AIWorkspaceRenderer
-                  component={msg.uiComponent}
-                  data={msg.uiData}
-                  isLoadingView={isStreaming}
-                  onAction={onAction}
-                  onSelectView={
-                    msg.data?.type === 'workspace_view'
-                      ? (viewId) => onSelectView(msg, viewId)
-                      : undefined
-                  }
-                />
+            {isInterrupted && (
+              <div className="mt-3 flex items-center gap-3">
+                <span className="text-[12px] text-red-500">Connection interrupted.</span>
+                {msg.retryQuery && (
+                  <button
+                    type="button"
+                    onClick={() => onRetry(msg.retryQuery!)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <ArrowRight size={10} />
+                    Retry
+                  </button>
+                )}
               </div>
-            )
-          )}
+            )}
 
-          {isBot && msg.data?.type === 'guided_choice' && (
-            <AIDomainChoiceCard
-              data={msg.data}
-              disabled={disableChoices}
-              onSelect={onSelectDomain}
-              onAction={onAction}
-            />
-          )}
+            {isBot && msg.data?.type === 'guided_choice' && (
+              <AIDomainChoiceCard
+                data={msg.data}
+                disabled={disableChoices}
+                onSelect={onSelectDomain}
+                onAction={onAction}
+              />
+            )}
+          </div>
+
+          {/* In-place expansion: Live Workspace embed */}
+          <AnimatePresence>
+            {msg.uiComponent && msg.uiData && (
+              <motion.div
+                key="workspace-embed"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="border-t border-gray-100 bg-[#f8fafc]">
+                  <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100/80">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                      Live Workspace
+                    </span>
+                  </div>
+                  <div className="p-3">
+                    <AIWorkspaceRenderer
+                      component={msg.uiComponent}
+                      data={msg.uiData}
+                      isLoadingView={isStreaming}
+                      onAction={onAction}
+                      onSelectView={
+                        msg.data?.type === 'workspace_view'
+                          ? (viewId) => onSelectView(msg, viewId)
+                          : undefined
+                      }
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* In-place expansion: Agentic action result */}
+          <AnimatePresence>
+            {msg.action && (
+              <motion.div
+                key="action-embed"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="border-t border-gray-100 bg-[#f8fafc]">
+                  <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100/80">
+                    <Sparkles size={10} className="text-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                      Agentic Action
+                    </span>
+                  </div>
+                  <div className="p-3">
+                    <AIActionApprovalCard
+                      action={msg.action}
+                      onApprove={() => {}}
+                      onReject={() => {}}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Message actions */}
+        {/* Message footer */}
         {!isStreaming && (
           <div className={`mt-2 flex items-center gap-3 px-1 transition-opacity duration-150 ${hover || copied ? 'opacity-100' : 'opacity-0'}`}>
             <button
@@ -629,19 +667,8 @@ export function AIAssistantPage() {
   const [inputFocused, setInputFocused] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [canvasMsgId, setCanvasMsgId] = useState<string | null>(null);
-  const [canvasClosed, setCanvasClosed] = useState(false);
-  const [canvasMobileOpen, setCanvasMobileOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<any>(null);
-
   const isBusy = isThinking || messages.some((m) => m.status === 'streaming' && m.sender === 'bot');
   const isEmpty = messages.length === 0;
-
-  // Most recent bot message that has a workspace; auto-becomes the canvas target
-  const latestWorkspaceMsg = [...messages].reverse().find((m) => m.uiComponent && m.uiData);
-  const pinned = canvasMsgId ? messages.find((m) => m.id === canvasMsgId && m.uiComponent && m.uiData) : null;
-  const canvasMsg = canvasClosed ? null : (pinned || latestWorkspaceMsg || null);
-  const canvasOpen = !!canvasMsg;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -669,14 +696,6 @@ export function AIAssistantPage() {
   useEffect(() => {
     saveMessages(messages);
   }, [messages]);
-
-  // When a new workspace message arrives, re-open the canvas
-  useEffect(() => {
-    if (latestWorkspaceMsg) {
-      setCanvasClosed(false);
-      setCanvasMsgId(null); // follow latest by default
-    }
-  }, [latestWorkspaceMsg?.id]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -858,7 +877,9 @@ export function AIAssistantPage() {
           setIsThinking(false);
           const finalText = typeof event.text === 'string' && event.text.trim() ? event.text : accumulated;
           const ws = event.workspace || event.data?.workspace;
-          const actionPayload = event.action || null;
+          const actionPayload = event.action
+            ? { ...event.action, args: event.action.result || {}, status: 'done' }
+            : null;
 
           if (!botId) {
             botId = `bot_${Date.now()}`;
@@ -873,12 +894,6 @@ export function AIAssistantPage() {
                 ? { ...m, text: finalText, status: 'sent', uiComponent: ws?.component || m.uiComponent, uiData: ws?.data ?? m.uiData, domain: ws?.domain || event.data?.domain || m.domain, data: event.data, action: actionPayload }
                 : m
             )));
-          }
-
-          // If the backend executed an action, show it in the canvas pane for approval/confirmation
-          if (actionPayload) {
-            setPendingAction({ ...actionPayload, args: actionPayload.result || {}, status: 'done' });
-            setCanvasClosed(false);
           }
         } else if (event.type === 'error') {
           clearHeartbeatTimer();
@@ -972,15 +987,6 @@ export function AIAssistantPage() {
     }
   }, [navigate]);
 
-  const handleApproveAction = useCallback((action: any) => {
-    // Action already executed on backend — mark as confirmed
-    setPendingAction((prev: any) => prev ? { ...prev, status: 'done' } : null);
-  }, []);
-
-  const handleRejectAction = useCallback(() => {
-    setPendingAction(null);
-  }, []);
-
   const startListening = () => {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { setMessages((prev) => [...prev, { id: `bot_err_${Date.now()}`, sender: 'bot', text: 'Voice input is not supported in this browser.', timestamp: new Date(), status: 'error' }]); return; }
@@ -1072,7 +1078,7 @@ export function AIAssistantPage() {
 
           {/* Header */}
           <header className="flex h-[56px] shrink-0 items-center border-b border-gray-100 px-4 sm:px-5">
-            <div className={`mx-auto flex w-full ${canvasOpen ? 'max-w-[640px]' : 'max-w-[860px]'} items-center justify-between gap-3 transition-[max-width] duration-200`}>
+            <div className={'mx-auto flex w-full max-w-[860px] items-center justify-between gap-3'}>
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   type="button"
@@ -1092,17 +1098,7 @@ export function AIAssistantPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                {latestWorkspaceMsg && !canvasOpen && (
-                  <button
-                    type="button"
-                    onClick={() => { setCanvasMsgId(latestWorkspaceMsg.id); setCanvasClosed(false); }}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary-light border border-primary/20 px-3 py-1.5 text-[12px] font-medium text-primary-dark hover:bg-primary/10 transition-all"
-                    title="Open canvas"
-                  >
-                    <LayoutDashboard size={12} />
-                    <span className="hidden sm:inline">Canvas</span>
-                  </button>
-                )}
+
                 <button
                   type="button"
                   onClick={clearChat}
@@ -1136,7 +1132,7 @@ export function AIAssistantPage() {
               className="flex-1 overflow-y-auto"
               style={{ scrollbarWidth: 'thin', scrollbarColor: '#e5e7eb transparent' }}
             >
-              <div className={`mx-auto flex min-h-full w-full ${canvasOpen ? 'max-w-[640px]' : 'max-w-[860px]'} flex-col px-4 pb-36 pt-4 sm:px-6 sm:pt-6 transition-[max-width] duration-200`}>
+              <div className={'mx-auto flex min-h-full w-full max-w-[860px] flex-col px-4 pb-36 pt-4 sm:px-6 sm:pt-6'}>
                 {isEmpty ? (
                   <EmptyState
                     onPrompt={(q) => handleSend(q)}
@@ -1154,14 +1150,8 @@ export function AIAssistantPage() {
                         onSelectDomain={openWorkspace}
                         onSelectView={switchView}
                         onAction={handleAction}
-                        onOpenInCanvas={(m) => {
-                          setCanvasMsgId(m.id);
-                          setCanvasClosed(false);
-                          setCanvasMobileOpen(true);
-                        }}
                         onRetry={(q) => handleSend(q)}
                         disableChoices={isBusy}
-                        showInCanvas={canvasOpen && canvasMsg?.id === msg.id}
                       />
                     ))}
 
@@ -1208,22 +1198,12 @@ export function AIAssistantPage() {
               )}
             </AnimatePresence>
 
-            {/* ── Execution Terminal Drawer ─────────────────────────────── */}
-            <AnimatePresence>
-              {pendingAction && (
-                <AIExecutionTerminal
-                  action={pendingAction}
-                  onDismiss={() => setPendingAction(null)}
-                />
-              )}
-            </AnimatePresence>
-
             {/* Composer */}
             <div className="relative z-20 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 sm:px-6 sm:pt-3">
               {/* Gradient fade */}
               <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[72px]" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, white 60%)' }} />
 
-              <div className={`relative mx-auto w-full ${canvasOpen ? 'max-w-[640px]' : 'max-w-[860px]'} transition-[max-width] duration-200`}>
+              <div className={'relative mx-auto w-full max-w-[860px]'}>
                 <div
                   className={`overflow-hidden rounded-2xl border bg-white transition-all duration-200 ${
                     inputFocused
@@ -1303,30 +1283,7 @@ export function AIAssistantPage() {
           </div>
         </div>
 
-        {/* Desktop canvas pane — workspaces only */}
-        <AnimatePresence>
-          {canvasOpen && canvasMsg && (
-            <motion.aside
-              key="canvas-desktop"
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 'var(--canvas-w)', opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="hidden lg:flex h-full shrink-0 flex-col border-l border-gray-100 bg-[#fafbfc] overflow-hidden"
-              style={{ ['--canvas-w' as any]: 'min(560px, 44vw)' } as any}
-            >
-              <CanvasPaneInner
-                msg={canvasMsg}
-                navItems={NAV_ITEMS}
-                onClose={() => { setCanvasClosed(true); setCanvasMsgId(null); }}
-                onAction={handleAction}
-                onSelectView={(viewId) => switchView(canvasMsg, viewId)}
-              />
-            </motion.aside>
-          )}
-        </AnimatePresence>
 
-        {/* Mobile canvas drawer */}
         <AnimatePresence>
           {canvasOpen && canvasMsg && canvasMobileOpen && (
             <>
@@ -1361,9 +1318,81 @@ export function AIAssistantPage() {
   );
 }
 
+// ─── Action Approval Pane ─────────────────────────────────────────────────────
+
+function ActionApprovalPaneInner({
+  action,
+  onApprove,
+  onReject,
+  onClose,
+}: {
+  action: any;
+  onApprove: (action: any) => void;
+  onReject: (action: any) => void;
+  onClose: () => void;
+}) {
+  const ACTION_LABELS: Record<string, string> = {
+    create_customer: 'Create Customer',
+    create_invoice_draft: 'Draft Invoice',
+    send_reminder: 'Send Reminder',
+  };
+  const label = ACTION_LABELS[action.type] || 'AI Action';
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Pane header */}
+      <div
+        className="flex h-[56px] shrink-0 items-center gap-2.5 border-b px-4"
+        style={{ borderColor: 'rgba(20,184,184,0.15)', background: 'rgba(20,184,184,0.04)' }}
+      >
+        <div
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+          style={{ background: 'rgba(20,184,184,0.1)', border: '1.5px solid rgba(20,184,184,0.2)' }}
+        >
+          <Sparkles size={13} style={{ color: '#14B8B8' }} strokeWidth={2} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-gray-900 leading-none">{label}</div>
+          <div className="mt-0.5 text-[10px] font-medium text-gray-400">Agentic action</div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
+          title="Dismiss"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Body */}
+      <div
+        className="flex-1 overflow-y-auto p-4"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: '#e5e7eb transparent' }}
+      >
+        <AIActionApprovalCard
+          action={action}
+          onApprove={onApprove}
+          onReject={onReject}
+        />
+
+        {/* Explainer below card */}
+        <div className="mt-4 rounded-xl border border-gray-100 bg-white p-3.5">
+          <div className="text-[11px] font-bold uppercase tracking-widest text-gray-300 mb-2">
+            Why am I seeing this?
+          </div>
+          <p className="text-[12px] leading-[1.7] text-gray-500">
+            Capita AI detected an intent to{' '}
+            <strong className="text-gray-700">{label.toLowerCase()}</strong> and executed it using the
+            Deterministic Action Registry. The result is shown above for your review.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CanvasPaneInner({
-
   msg,
   navItems,
   onClose,
