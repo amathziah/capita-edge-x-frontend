@@ -139,17 +139,31 @@ function ActionPreview({ type, args, result }: {
 
 function mapInvoiceForPreview(inv: any) {
   const org = inv.organization || {};
+  // organization_settings is joined as org.settings or the org record itself has owner_name
+  const settings = org.settings || org;
+  const sellerName =
+    settings.owner_name ||
+    settings.businessName ||
+    settings.business_name ||
+    org.name ||
+    'Your Business';
+  const sellerAddress =
+    settings.address ||
+    settings.location ||
+    org.address ||
+    undefined;
+
   return {
     invoiceNumber: inv.invoiceNumber,
     date: inv.date,
     dueDate: inv.dueDate,
-    fromName: org.name || 'Your Business',
-    fromAddress: org.address,
-    fromGstin: org.gstin,
-    customerName: inv.buyer?.name,
+    fromName: sellerName,
+    fromAddress: sellerAddress,
+    fromGstin: settings.gstin || org.gstin,
+    customerName: inv.buyer?.name || inv.buyer?.email?.split('@')[0],
     customerEmail: inv.buyer?.email,
     customerAddress: inv.buyer?.address,
-    isGstRegistered: !!org.gstin,
+    isGstRegistered: !!(settings.gstin || org.gstin),
     items: (inv.items || []).map((it: any) => ({
       description: it.description,
       quantity: it.quantity,

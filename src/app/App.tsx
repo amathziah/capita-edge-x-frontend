@@ -69,6 +69,7 @@ const Settings = lazy(() => import('@/features/settings/pages/SettingsPage').the
 const Support = lazy(() => import('@/features/public/pages/SupportPage').then(module => ({ default: module.Support })));
 const Landing = lazy(() => import('@/features/public/pages/LandingPage').then(module => ({ default: module.Landing })));
 const ControlRoom = lazy(() => import('@/features/dashboard/pages/ControlRoomPage').then(module => ({ default: module.ControlRoom })));
+const GoogleCallbackPage = lazy(() => import('@/features/settings/pages/GoogleCallbackPage'));
 
 const RouteFallback = () => (
   <div className="flex items-center justify-center h-screen bg-[#040608]">
@@ -121,6 +122,7 @@ function App() {
                       <Route path="/update-password" element={<UpdatePassword />} />
                       <Route path="/setup" element={<SetupPage />} />
                       <Route path="/invoice/share/:token" element={<SharedInvoicePage />} />
+                      <Route path="/settings/integrations/google/callback" element={<GoogleCallbackPage />} />
 
                       {/* Protected Routes */}
                       <Route element={<ProtectedRoute />}>

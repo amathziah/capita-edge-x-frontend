@@ -44,6 +44,12 @@ export const ENDPOINTS = {
     SETTINGS: '/settings',
     INVENTORY_SETTINGS: '/inventory/settings',
 
+    // ─── Integrations ──────────────────────────────────────────────────
+    INTEGRATIONS_GOOGLE_AUTH: '/integrations/google/auth',
+    INTEGRATIONS_GOOGLE_STATUS: '/integrations/google/status',
+    INTEGRATIONS_GOOGLE_DISCONNECT: '/integrations/google/disconnect',
+    INTEGRATIONS_GOOGLE_CALLBACK: '/integrations/google/callback',
+
     // ─── Email ─────────────────────────────────────────────────────────
     EMAIL_TEST: '/email/test-connection',
     EMAIL_SEND_INVOICE: '/email/send-invoice',

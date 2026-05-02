@@ -4,7 +4,7 @@ import { productService } from './productService';
 import { expenseService, paymentService, settingService, complianceService, notificationService, reportService } from './domainServices';
 import { aiService } from './aiService';
 import { analyticsService } from './analyticsService';
-import { API_URL } from '@/shared/api/client';
+import { API_URL, api } from '@/shared/api/client';
 import { ENDPOINTS } from '@/shared/api/endpoints';
 
 // Re-export services for direct usage
@@ -72,6 +72,18 @@ class DataService {
   saveComplianceTask = complianceService.saveTask;
   updateComplianceTask = complianceService.updateTask;
   deleteComplianceTask = complianceService.deleteTask;
+
+  // Integrations
+  getGoogleAuthUrl = async () => {
+    const res = await api.get<{ url: string }>(`${ENDPOINTS.INTEGRATIONS_GOOGLE_AUTH}`);
+    return res.url;
+  };
+  getGoogleIntegrationStatus = async () => {
+    return api.get<{ connected: boolean; email?: string; connectedAt?: string }>(`${ENDPOINTS.INTEGRATIONS_GOOGLE_STATUS}`);
+  };
+  disconnectGoogleIntegration = async () => {
+    return api.post(ENDPOINTS.INTEGRATIONS_GOOGLE_DISCONNECT, {});
+  };
 
   // Notifications
   getNotifications = notificationService.getNotifications;

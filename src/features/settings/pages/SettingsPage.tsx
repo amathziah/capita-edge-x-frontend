@@ -410,130 +410,55 @@ function PaymentsTab({
   );
 }
 
-function EmailTab({ settings, onChange, isVerified, connectionChecked, testingConnection, testStatus, onVerify, onDisconnect }: {
+function EmailTab({ settings, isVerified, connectionChecked, testStatus, onConnect, onDisconnect, integration }: {
   settings: Record<string, any>;
-  onChange: (key: string, val: string) => void;
   isVerified: boolean;
   connectionChecked: boolean;
-  testingConnection: boolean;
   testStatus: { type: 'success' | 'error' | null; message: string | null };
-  onVerify: (user: string, pass: string) => void;
+  onConnect: () => void;
   onDisconnect: () => void;
+  integration: { connected: boolean; email?: string; connectedAt?: string } | null;
 }) {
-  const [showSmtpPass, setShowSmtpPass] = useState(false);
-  const canTestConnection = Boolean(settings.smtp_user && settings.smtp_pass);
-  const handleConnect = async () => {
-    if (!canTestConnection) return;
-    try {
-      await dataService.saveSetting('smtp_user', settings.smtp_user);
-      await dataService.saveSetting('smtp_pass', settings.smtp_pass);
-    } catch { /* continue */ }
-    onVerify(settings.smtp_user, settings.smtp_pass);
-  };
 
   return (
     <Card>
       <SectionHeader icon={Mail} title="Connect your Gmail" description="Send invoices directly from your own Gmail account" />
 
-      {isVerified && settings.smtp_user ? (
+      {integration?.connected ? (
         <div className="space-y-3">
           <AlertBanner
-            type={testingConnection ? 'loading' : 'success'}
-            title={testingConnection ? 'Verifying connection…' : 'Gmail connected'}
-            message={testingConnection ? 'Please wait while we verify your credentials.' : `Sending as ${settings.smtp_user}`}
-            actions={!testingConnection ? (
-              <>
-                <button
-                  onClick={() => canTestConnection && onVerify(settings.smtp_user, settings.smtp_pass)}
-                  disabled={!canTestConnection}
-                  className="text-[11px] font-semibold text-emerald-700 hover:underline disabled:opacity-50 disabled:no-underline"
-                >
-                  Test connection
-                </button>
-                <button onClick={onDisconnect} className="text-[11px] font-semibold text-gray-500 hover:underline">
-                  Disconnect
-                </button>
-              </>
-            ) : undefined}
+            type="success"
+            title="Google Workspace Connected"
+            message={`Currently sending emails as: ${integration.email}`}
+            actions={
+              <button onClick={onDisconnect} className="text-[11px] font-semibold text-gray-500 hover:text-red-600 transition-colors">
+                Disconnect Account
+              </button>
+            }
           />
-          {testStatus.type && testStatus.message && (
-            <AlertBanner type={testStatus.type} title={testStatus.type === 'success' ? 'Test passed' : 'Test failed'} message={testStatus.message} />
-          )}
         </div>
       ) : (
         <div className="space-y-4 max-w-sm">
-          {!connectionChecked && (
-            <AlertBanner
-              type="info"
-              title="Set up Gmail before connecting"
-              message="1. Turn on Google 2-Step Verification. 2. Generate a 16-digit App Password. 3. Paste your Gmail address and App Password here."
-              actions={
-                <>
-                  <a
-                    href="https://myaccount.google.com/security?utm_source=capitaedgex&utm_medium=settings&utm_campaign=gmail_setup#2sv"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] font-semibold text-blue-700 hover:underline"
-                  >
-                    Turn on 2-Step Verification
-                  </a>
-                  <a
-                    href="https://myaccount.google.com/apppasswords"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] font-semibold text-blue-700 hover:underline"
-                  >
-                    Generate App Password
-                  </a>
-                </>
-              }
-            />
+          <AlertBanner
+            type="info"
+            title="Seamlessly send emails via Google"
+            message="CapitaEdgeX will securely connect to your Gmail to automatically dispatch invoices and reminders directly from your own email address."
+          />
+          {testStatus.type === 'error' && (
+            <AlertBanner type="error" title="Connection failed" message={testStatus.message || 'There was an issue connecting your account.'} />
           )}
-          {connectionChecked && testStatus.type === 'error' && (
-            <AlertBanner type="warning" title="Connection issue" message={testStatus.message || 'Check your App Password and try again.'} />
-          )}
-
-          <Field label="Gmail address">
-            <input type="email" className={inputCls} value={settings.smtp_user || ''} onChange={e => onChange('smtp_user', e.target.value)} placeholder="you@gmail.com" />
-          </Field>
-
-          <Field label="App password" hint="Required because 2-Step Verification is enabled.">
-            <div className="flex items-center justify-end mb-1">
-              <div className="flex items-center gap-3">
-                <a href="https://myaccount.google.com/security?utm_source=capitaedgex&utm_medium=settings&utm_campaign=gmail_setup#2sv" target="_blank" rel="noreferrer" className="text-[11px] text-primary font-medium hover:underline flex items-center">
-                  Enable 2-Step Verification <ChevronRight className="w-3 h-3" />
-                </a>
-                <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-[11px] text-primary font-medium hover:underline flex items-center">
-                  Generate App Password <ChevronRight className="w-3 h-3" />
-                </a>
-              </div>
-            </div>
-            <div className="relative">
-              <input
-                type={showSmtpPass ? "text" : "password"}
-                className={`${inputCls} font-mono tracking-widest pr-10`}
-                value={settings.smtp_pass || ''}
-                onChange={e => onChange('smtp_pass', e.target.value)}
-                placeholder="xxxx xxxx xxxx xxxx"
-              />
-              <button
-                type="button"
-                onClick={() => setShowSmtpPass(!showSmtpPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
-                title={showSmtpPass ? "Hide password" : "Show password"}
-              >
-                {showSmtpPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </Field>
 
           <button
-            onClick={handleConnect}
-            disabled={!settings.smtp_user || !settings.smtp_pass || testingConnection}
-            className="w-full py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold shadow-sm shadow-primary/25 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            onClick={onConnect}
+            className="w-full py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-lg text-sm font-semibold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
           >
-            {testingConnection && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            {testingConnection ? 'Connecting…' : 'Connect Gmail'}
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Sign in with Google
           </button>
         </div>
       )}
@@ -565,6 +490,7 @@ export function Settings() {
   const [testingConnection, setTestingConnection] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [connectionChecked, setConnectionChecked] = useState(false);
+  const [integration, setIntegration] = useState<{ connected: boolean; email?: string; connectedAt?: string } | null>(null);
 
   useEffect(() => { loadSettings(); }, []);
 
@@ -575,7 +501,13 @@ export function Settings() {
       setSettings(data);
       if (data.logoFilename) setLogoPreview(dataService.getLogoUrl(data.logoFilename));
       if (data.paymentQrFilename) setPaymentQrPreview(dataService.getPaymentQrUrl(data.paymentQrFilename));
-      if (data.smtp_user && data.smtpConfigured) { setIsVerified(true); setConnectionChecked(true); }
+      
+      try {
+        const intStatus = await dataService.getGoogleIntegrationStatus();
+        setIntegration(intStatus);
+      } catch (e) {
+        console.error("Failed to load integration status");
+      }
     } catch (err) {
       console.error('Failed to load settings:', err);
     } finally {
@@ -583,25 +515,25 @@ export function Settings() {
     }
   };
 
-  const verifyConnection = async (user: string, pass: string) => {
-    setTestingConnection(true);
-    setTestStatus({ type: null, message: null });
+  const handleConnectGoogle = async () => {
     try {
-      const res = await dataService.testEmailConnection(user, pass) as any;
-      setConnectionChecked(true);
-      if (res.success) {
-        setIsVerified(true);
-        setTestStatus({ type: 'success', message: 'Connection verified successfully!' });
-      } else {
-        setIsVerified(false);
-        setTestStatus({ type: 'error', message: res.error || 'Connection failed.' });
+      setTestStatus({ type: null, message: null });
+      const url = await dataService.getGoogleAuthUrl();
+      if (url) {
+        window.location.href = url;
       }
     } catch (err: any) {
-      setConnectionChecked(true);
-      setIsVerified(false);
-      setTestStatus({ type: 'error', message: err.message || 'Connection test failed.' });
-    } finally {
-      setTestingConnection(false);
+      setTestStatus({ type: 'error', message: err.message || 'Failed to start Google connection.' });
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    try {
+      await dataService.disconnectGoogleIntegration();
+      setIntegration(null);
+      setTestStatus({ type: 'success', message: 'Google account disconnected successfully.' });
+    } catch (err: any) {
+      setTestStatus({ type: 'error', message: err.message || 'Failed to disconnect Google account.' });
     }
   };
 
@@ -747,18 +679,12 @@ export function Settings() {
               {activeTab === 'email' && (
                 <EmailTab
                   settings={settings}
-                  onChange={handleChange}
                   isVerified={isVerified}
                   connectionChecked={connectionChecked}
-                  testingConnection={testingConnection}
                   testStatus={testStatus}
-                  onVerify={verifyConnection}
-                  onDisconnect={() => {
-                    setSettings(prev => ({ ...prev, smtp_user: '', smtp_pass: '' }));
-                    setIsVerified(false);
-                    setConnectionChecked(false);
-                    setTestStatus({ type: null, message: null });
-                  }}
+                  onConnect={handleConnectGoogle}
+                  onDisconnect={handleDisconnectGoogle}
+                  integration={integration}
                 />
               )}
             </motion.div>
