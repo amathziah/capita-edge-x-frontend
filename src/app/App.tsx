@@ -68,6 +68,8 @@ const AIAssistantPage = lazy(() => import('@/features/ai/pages/AIAssistantPage')
 const Settings = lazy(() => import('@/features/settings/pages/SettingsPage').then(module => ({ default: module.Settings })));
 const Support = lazy(() => import('@/features/public/pages/SupportPage').then(module => ({ default: module.Support })));
 const Landing = lazy(() => import('@/features/public/pages/LandingPage').then(module => ({ default: module.Landing })));
+const Privacy = lazy(() => import('@/features/public/pages/PrivacyPage').then(module => ({ default: module.PrivacyPage })));
+const Terms = lazy(() => import('@/features/public/pages/TermsPage').then(module => ({ default: module.TermsPage })));
 const ControlRoom = lazy(() => import('@/features/dashboard/pages/ControlRoomPage').then(module => ({ default: module.ControlRoom })));
 const GoogleCallbackPage = lazy(() => import('@/features/settings/pages/GoogleCallbackPage'));
 
@@ -123,6 +125,8 @@ function App() {
                       <Route path="/setup" element={<SetupPage />} />
                       <Route path="/invoice/share/:token" element={<SharedInvoicePage />} />
                       <Route path="/settings/integrations/google/callback" element={<GoogleCallbackPage />} />
+                      <Route path="/privacy" element={<Privacy />} />
+                      <Route path="/terms" element={<Terms />} />
 
                       {/* Protected Routes */}
                       <Route element={<ProtectedRoute />}>
