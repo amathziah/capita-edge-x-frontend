@@ -1125,11 +1125,11 @@ export const Landing: React.FC = () => {
                     <div>
                         <h4 className="font-semibold text-white text-[13px] mb-4 uppercase tracking-[0.12em]">Company</h4>
                         <ul className="space-y-2.5">
-                            <li><button onClick={() => setLegalModalType('about')} className="text-[13px] text-slate-400 hover:text-white transition-colors">About</button></li>
-                            <li><button onClick={() => setLegalModalType('contact')} className="text-[13px] text-slate-400 hover:text-white transition-colors">Contact</button></li>
-                            <li><button onClick={() => setLegalModalType('terms')} className="text-[13px] text-slate-400 hover:text-white transition-colors">Terms</button></li>
-                            <li><button onClick={() => setLegalModalType('privacy')} className="text-[13px] text-slate-400 hover:text-white transition-colors">Privacy</button></li>
-                            <li><button onClick={() => setLegalModalType('refund')} className="text-[13px] text-slate-400 hover:text-white transition-colors">Refunds</button></li>
+                            <li><button onClick={() => setLegalModalType('about')} className="text-[13px] text-slate-400 hover:text-white transition-colors text-left">About</button></li>
+                            <li><button onClick={() => setLegalModalType('contact')} className="text-[13px] text-slate-400 hover:text-white transition-colors text-left">Contact</button></li>
+                            <li><Link to="/terms" className="text-[13px] text-slate-400 hover:text-white transition-colors">Terms of Service</Link></li>
+                            <li><Link to="/privacy" className="text-[13px] text-slate-400 hover:text-white transition-colors">Privacy Policy</Link></li>
+                            <li><button onClick={() => setLegalModalType('refund')} className="text-[13px] text-slate-400 hover:text-white transition-colors text-left">Refunds</button></li>
                         </ul>
                     </div>
                 </div>
