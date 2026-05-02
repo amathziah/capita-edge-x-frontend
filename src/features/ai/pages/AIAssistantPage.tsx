@@ -31,6 +31,7 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import { AIWorkspaceRenderer } from '@/features/ai/components/AIWorkspaceRenderer';
 import { AIDomainChoiceCard } from '@/features/ai/components/AIDomainChoiceCard';
+import { AIActionApprovalCard } from '@/features/ai/components/AIActionApprovalCard';
 const RobotBanner = lazy(() =>
   import('@/features/ai/components/RobotBanner').then((m) => ({ default: m.RobotBanner })),
 );
@@ -55,7 +56,8 @@ interface Message {
   uiData?: any;
   domain?: string;
   data?: any;
-  retryQuery?: string; // original query so the user can retry
+  action?: any;          // agentic action payload from backend
+  retryQuery?: string;   // original query so the user can retry
 }
 
 type NavItem = {
@@ -630,6 +632,7 @@ export function AIAssistantPage() {
   const [canvasMsgId, setCanvasMsgId] = useState<string | null>(null);
   const [canvasClosed, setCanvasClosed] = useState(false);
   const [canvasMobileOpen, setCanvasMobileOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<any>(null);
 
   const isBusy = isThinking || messages.some((m) => m.status === 'streaming' && m.sender === 'bot');
   const isEmpty = messages.length === 0;
@@ -855,20 +858,27 @@ export function AIAssistantPage() {
           setIsThinking(false);
           const finalText = typeof event.text === 'string' && event.text.trim() ? event.text : accumulated;
           const ws = event.workspace || event.data?.workspace;
+          const actionPayload = event.action || null;
 
           if (!botId) {
             botId = `bot_${Date.now()}`;
             streamIdRef.current = botId;
             setMessages((prev) => [
               ...prev,
-              { id: botId!, sender: 'bot', text: finalText, timestamp: new Date(), status: 'sent', uiComponent: ws?.component, uiData: ws?.data, domain: ws?.domain || event.data?.domain, data: event.data },
+              { id: botId!, sender: 'bot', text: finalText, timestamp: new Date(), status: 'sent', uiComponent: ws?.component, uiData: ws?.data, domain: ws?.domain || event.data?.domain, data: event.data, action: actionPayload },
             ]);
           } else {
             setMessages((prev) => prev.map((m) => (
               m.id === botId
-                ? { ...m, text: finalText, status: 'sent', uiComponent: ws?.component || m.uiComponent, uiData: ws?.data ?? m.uiData, domain: ws?.domain || event.data?.domain || m.domain, data: event.data }
+                ? { ...m, text: finalText, status: 'sent', uiComponent: ws?.component || m.uiComponent, uiData: ws?.data ?? m.uiData, domain: ws?.domain || event.data?.domain || m.domain, data: event.data, action: actionPayload }
                 : m
             )));
+          }
+
+          // If the backend executed an action, show it in the canvas pane for approval/confirmation
+          if (actionPayload) {
+            setPendingAction({ ...actionPayload, args: actionPayload.result || {}, status: 'done' });
+            setCanvasClosed(false);
           }
         } else if (event.type === 'error') {
           clearHeartbeatTimer();
@@ -961,6 +971,15 @@ export function AIAssistantPage() {
       window.dispatchEvent(new CustomEvent('open-customer-modal', { detail: action.data || {} }));
     }
   }, [navigate]);
+
+  const handleApproveAction = useCallback((action: any) => {
+    // Action already executed on backend — mark as confirmed
+    setPendingAction((prev: any) => prev ? { ...prev, status: 'done' } : null);
+  }, []);
+
+  const handleRejectAction = useCallback(() => {
+    setPendingAction(null);
+  }, []);
 
   const startListening = () => {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -1276,23 +1295,32 @@ export function AIAssistantPage() {
 
         {/* Desktop canvas pane */}
         <AnimatePresence>
-          {canvasOpen && canvasMsg && (
+          {(canvasOpen && canvasMsg || pendingAction) && (
             <motion.aside
               key="canvas-desktop"
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: 'var(--canvas-w)', opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.22, ease: 'easeOut' }}
-              className="hidden lg:flex h-full shrink-0 flex-col border-l border-gray-100 bg-background overflow-hidden"
+              className="hidden lg:flex h-full shrink-0 flex-col border-l border-gray-100 bg-[#fafbfc] overflow-hidden"
               style={{ ['--canvas-w' as any]: 'min(560px, 44vw)' } as any}
             >
-              <CanvasPaneInner
-                msg={canvasMsg}
-                navItems={NAV_ITEMS}
-                onClose={() => { setCanvasClosed(true); setCanvasMsgId(null); }}
-                onAction={handleAction}
-                onSelectView={(viewId) => switchView(canvasMsg, viewId)}
-              />
+              {pendingAction ? (
+                <ActionApprovalPaneInner
+                  action={pendingAction}
+                  onApprove={handleApproveAction}
+                  onReject={handleRejectAction}
+                  onClose={() => setPendingAction(null)}
+                />
+              ) : canvasMsg ? (
+                <CanvasPaneInner
+                  msg={canvasMsg}
+                  navItems={NAV_ITEMS}
+                  onClose={() => { setCanvasClosed(true); setCanvasMsgId(null); }}
+                  onAction={handleAction}
+                  onSelectView={(viewId) => switchView(canvasMsg, viewId)}
+                />
+              ) : null}
             </motion.aside>
           )}
         </AnimatePresence>
@@ -1329,6 +1357,80 @@ export function AIAssistantPage() {
         </AnimatePresence>
       </div>
     </>
+  );
+}
+
+// ─── Action Approval Pane ─────────────────────────────────────────────────────
+
+function ActionApprovalPaneInner({
+  action,
+  onApprove,
+  onReject,
+  onClose,
+}: {
+  action: any;
+  onApprove: (action: any) => void;
+  onReject: (action: any) => void;
+  onClose: () => void;
+}) {
+  const ACTION_LABELS: Record<string, string> = {
+    create_customer: 'Create Customer',
+    create_invoice_draft: 'Draft Invoice',
+    send_reminder: 'Send Reminder',
+  };
+  const label = ACTION_LABELS[action.type] || 'AI Action';
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Pane header */}
+      <div
+        className="flex h-[56px] shrink-0 items-center gap-2.5 border-b px-4"
+        style={{ borderColor: 'rgba(20,184,184,0.15)', background: 'rgba(20,184,184,0.04)' }}
+      >
+        <div
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+          style={{ background: 'rgba(20,184,184,0.1)', border: '1.5px solid rgba(20,184,184,0.2)' }}
+        >
+          <Sparkles size={13} style={{ color: '#14B8B8' }} strokeWidth={2} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-gray-900 leading-none">{label}</div>
+          <div className="mt-0.5 text-[10px] font-medium text-gray-400">Agentic action</div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
+          title="Dismiss"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Body */}
+      <div
+        className="flex-1 overflow-y-auto p-4"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: '#e5e7eb transparent' }}
+      >
+        <AIActionApprovalCard
+          action={action}
+          onApprove={onApprove}
+          onReject={onReject}
+        />
+
+        {/* Explainer below card */}
+        <div className="mt-4 rounded-xl border border-gray-100 bg-white p-3.5">
+          <div className="text-[11px] font-bold uppercase tracking-widest text-gray-300 mb-2">
+            Why am I seeing this?
+          </div>
+          <p className="text-[12px] leading-[1.7] text-gray-500">
+            Capita AI detected an intent to{' '}
+            <strong className="text-gray-700">{label.toLowerCase()}</strong> and executed it using the
+            Deterministic Action Registry. The result is shown above for your review.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
