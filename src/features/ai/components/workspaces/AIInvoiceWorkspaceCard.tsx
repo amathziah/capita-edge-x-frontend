@@ -44,8 +44,6 @@ export function AIInvoiceWorkspaceCard({ data, onSelectView, onAction, isLoading
       <AgentInsight
         summary={insightText}
         level={insightLevel}
-        action={overdueCount > 0 ? { id: 'view_overdue', label: 'See Overdue' } : undefined}
-        onAction={() => onSelectView?.('overdue')}
       />
 
       {/* Live stats */}
@@ -76,8 +74,6 @@ export function AIInvoiceWorkspaceCard({ data, onSelectView, onAction, isLoading
                     amountColor={riskColor}
                     badge={days > 30 ? 'Critical' : days > 14 ? 'Urgent' : undefined}
                     badgeBg={riskBg}
-                    action={{ id: `chase_${inv.id}`, label: 'Chase →' }}
-                    onAction={onAction}
                   />
                 );
               })
@@ -119,8 +115,6 @@ export function AIInvoiceWorkspaceCard({ data, onSelectView, onAction, isLoading
               primary={d.name}
               amount={fmt(d.balanceDue, cur)}
               amountColor={T.danger}
-              action={{ id: `debtor_${d.name}`, label: 'Follow Up' }}
-              onAction={onAction}
             />
           ))}
         </Section>

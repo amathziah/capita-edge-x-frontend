@@ -48,8 +48,6 @@ export function AIExpenseWorkspaceCard({ data, onSelectView, onAction, isLoading
       <AgentInsight
         summary={insightText}
         level={insightLevel}
-        action={hasConcentration ? { id: 'view_categories', label: 'See Breakdown' } : undefined}
-        onAction={() => onSelectView?.('categories')}
       />
 
       <StatGrid stats={[

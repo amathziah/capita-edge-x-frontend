@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Sparkles,
 } from 'lucide-react';
+import { InvoiceDocumentPreview } from '../../invoices/components/InvoiceDocumentPreview';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,39 +80,95 @@ function DataRow({ label, value }: { label: string; value: any }) {
   );
 }
 
-function ActionPreview({ type, args }: { type: ActionType; args: Record<string, any> }) {
+function ActionPreview({ type, args, result }: {
+  type: ActionType;
+  args?: Record<string, any>;
+  result?: Record<string, any>;
+}) {
+  // Normalize: backend returns result (DB response), not original args.
+  // We read from result first, falling back to args if provided.
+  const a = args || {};
+  const r = result || {};
+
   if (type === 'create_customer') {
+    const name    = r.customer?.name    || a.name;
+    const email   = r.customer?.email   || a.email;
+    const phone   = r.customer?.phone   || a.phone;
+    const address = r.customer?.address || a.address;
     return (
       <>
-        <DataRow label="Name" value={args.name} />
-        <DataRow label="Email" value={args.email} />
-        <DataRow label="Phone" value={args.phone} />
-        <DataRow label="Address" value={args.address} />
+        <DataRow label="Name"    value={name} />
+        <DataRow label="Email"   value={email} />
+        <DataRow label="Phone"   value={phone} />
+        <DataRow label="Address" value={address} />
+        {r.customer?.id && <DataRow label="ID" value={r.customer.id} />}
       </>
     );
   }
   if (type === 'create_invoice_draft') {
+    const customer = r.invoice?.buyer?.name || a.customerName || a.customerId;
+    const amount   = r.invoice?.total       || a.amount;
+    const desc     = r.invoice?.items?.[0]?.description || a.description;
+    const invNum   = r.invoice?.invoiceNumber;
     return (
       <>
-        <DataRow label="Customer" value={args.customerName || args.customerId} />
-        <DataRow label="Amount" value={args.amount ? `₹${Number(args.amount).toLocaleString('en-IN')}` : undefined} />
-        <DataRow label="Description" value={args.description} />
-        <DataRow label="Status" value="Draft" />
-        <DataRow label="Due" value="Net 30 days" />
+        <DataRow label="Customer"    value={customer} />
+        <DataRow label="Amount"      value={amount ? `₹${Number(amount).toLocaleString('en-IN')}` : undefined} />
+        <DataRow label="Description" value={desc} />
+        {invNum && <DataRow label="Invoice #" value={invNum} />}
+        <DataRow label="Status"      value="Draft" />
       </>
     );
   }
   if (type === 'send_reminder') {
+    const customer = a.customerName || r.customerName;
+    const invNum   = a.invoiceNumber || r.invoiceNumber;
     return (
       <>
-        <DataRow label="Customer" value={args.customerName} />
-        <DataRow label="Invoice #" value={args.invoiceNumber} />
-        <DataRow label="Channel" value="Email" />
-        <DataRow label="Type" value="Collection Reminder" />
+        <DataRow label="Customer"  value={customer} />
+        <DataRow label="Invoice #" value={invNum} />
+        <DataRow label="Channel"   value="Email" />
+        <DataRow label="Type"      value="Collection Reminder" />
       </>
     );
   }
   return null;
+}
+
+// ─── Mapping Helpers for Document Preview ─────────────────────────────────────
+
+function mapInvoiceForPreview(inv: any) {
+  const org = inv.organization || {};
+  return {
+    invoiceNumber: inv.invoiceNumber,
+    date: inv.date,
+    dueDate: inv.dueDate,
+    fromName: org.name || 'Your Business',
+    fromAddress: org.address,
+    fromGstin: org.gstin,
+    customerName: inv.buyer?.name,
+    customerEmail: inv.buyer?.email,
+    customerAddress: inv.buyer?.address,
+    isGstRegistered: !!org.gstin,
+    items: (inv.items || []).map((it: any) => ({
+      description: it.description,
+      quantity: it.quantity,
+      price: it.price,
+    })),
+  };
+}
+
+function getCalcResult(inv: any) {
+  const total = Number(inv.total || 0);
+  return {
+    subtotal: String(total),
+    total_tax: "0",
+    total_discount: "0",
+    grand_total: String(total),
+    payable_amount: String(total),
+    tds_amount: "0",
+    shipping_charges: "0",
+  };
 }
 
 // ─── Success State ────────────────────────────────────────────────────────────
@@ -132,8 +189,9 @@ function SuccessState({ type, result, config }: {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col items-center gap-3 py-8 px-4 text-center"
+      className="flex flex-col items-center gap-4 py-6 px-4 text-center"
     >
+      {/* Animated Success Badge */}
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
@@ -146,36 +204,69 @@ function SuccessState({ type, result, config }: {
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.3, type: 'spring', damping: 12 }}
-          className="absolute -right-2 -bottom-2 flex h-7 w-7 items-center justify-center rounded-full bg-green-500"
+          className="absolute -right-2 -bottom-2 flex h-7 w-7 items-center justify-center rounded-full bg-green-500 shadow-lg shadow-green-200"
         >
           <CheckCircle2 size={16} className="text-white" strokeWidth={2.5} />
         </motion.div>
       </motion.div>
 
       <div>
-        <div className="text-[14px] font-bold text-gray-900">Action Executed</div>
-        <p className="mt-1 text-[12px] leading-[1.6] text-gray-500 max-w-[240px]">
+        <div className="text-[15px] font-bold text-gray-900">Success!</div>
+        <p className="mt-1 text-[12px] leading-[1.6] text-gray-500 max-w-[280px]">
           {messages[type]}
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 justify-center mt-1">
-        {type === 'create_customer' && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-600">
-            <UserPlus size={10} /> Customer created
-          </span>
-        )}
-        {type === 'create_invoice_draft' && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-[11px] font-medium text-teal-600">
-            <FileText size={10} /> Invoice drafted
-          </span>
-        )}
-        {type === 'send_reminder' && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-600">
-            <Bell size={10} /> Reminder queued
-          </span>
-        )}
-      </div>
+      {/* Rich Preview Box */}
+      {type === 'create_invoice_draft' && result.invoice && (
+        <div className="w-full mt-2 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-50 bg-gray-50/50">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Generated Invoice Preview
+            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+              <span className="text-[10px] font-bold text-green-600 uppercase">Live Preview</span>
+            </div>
+          </div>
+          
+          <div className="max-h-[420px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+            <InvoiceDocumentPreview 
+              invoice={mapInvoiceForPreview(result.invoice)}
+              calcResult={getCalcResult(result.invoice)}
+            />
+          </div>
+        </div>
+      )}
+
+      {type === 'create_customer' && result.customer && (
+        <div className="w-full mt-2 rounded-xl border border-gray-100 bg-[#fbfcfd] p-4 text-left shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Customer Record Details
+            </span>
+            <span className="text-[10px] font-bold text-primary bg-primary-light px-2 py-0.5 rounded-full">
+              LIVE
+            </span>
+          </div>
+          
+          <div className="space-y-2.5">
+            <div className="flex justify-between">
+              <span className="text-[11px] text-gray-400">Legal Name</span>
+              <span className="text-[11px] font-bold text-gray-700">{result.customer.name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[11px] text-gray-400">Email Address</span>
+              <span className="text-[11px] font-bold text-gray-700">{result.customer.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[11px] text-gray-400">Customer ID</span>
+              <span className="text-[10px] font-mono font-medium text-gray-400">{result.customer.id}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
     </motion.div>
   );
 }
@@ -282,7 +373,7 @@ export function AIActionApprovalCard({ action, onApprove, onReject }: AIActionAp
                 <div className="text-[10px] font-bold uppercase tracking-widest text-gray-300 pt-3 pb-1">
                   Action Details
                 </div>
-                <ActionPreview type={action.type} args={action.args} />
+                <ActionPreview type={action.type} args={action.args} result={action.result} />
               </div>
 
               {/* Approve / Reject */}

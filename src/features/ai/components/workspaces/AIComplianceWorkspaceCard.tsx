@@ -43,8 +43,6 @@ export function AIComplianceWorkspaceCard({ data, onSelectView, onAction, isLoad
       <AgentInsight
         summary={insightText}
         level={insightLevel}
-        action={overdueCount > 0 ? { id: 'view_urgent', label: 'See Overdue' } : undefined}
-        onAction={() => onSelectView?.('urgent')}
       />
 
       <StatGrid stats={[
@@ -69,8 +67,6 @@ export function AIComplianceWorkspaceCard({ data, onSelectView, onAction, isLoad
                     meta={fmtDate(t.due_date) !== '—' ? `Due ${fmtDate(t.due_date)}` : undefined}
                     badge={isOverdue ? 'Overdue' : undefined}
                     badgeBg={isOverdue ? T.dangerBg : undefined}
-                    action={{ id: `file_${t.id}`, label: isOverdue ? 'File Now' : 'Review' }}
-                    onAction={onAction}
                   />
                 );
               })

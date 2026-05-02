@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Calendar,
   AlertCircle,
+  Workflow,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService } from '@/shared/services/aiService';
@@ -32,6 +33,7 @@ import type { Components } from 'react-markdown';
 import { AIWorkspaceRenderer } from '@/features/ai/components/AIWorkspaceRenderer';
 import { AIDomainChoiceCard } from '@/features/ai/components/AIDomainChoiceCard';
 import { AIActionApprovalCard } from '@/features/ai/components/AIActionApprovalCard';
+import { AISkillPlanCard } from '@/features/ai/components/AISkillPlanCard';
 const RobotBanner = lazy(() =>
   import('@/features/ai/components/RobotBanner').then((m) => ({ default: m.RobotBanner })),
 );
@@ -535,6 +537,32 @@ function ChatBubble({
               />
             )}
           </div>
+
+          {/* In-place expansion: Skill plan card */}
+          <AnimatePresence>
+            {isBot && msg.data?.type === 'skill_run' && msg.data?.skill && (
+              <motion.div
+                key="skill-embed"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="border-t border-gray-100 bg-[#fafbff]">
+                  <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100/80">
+                    <Workflow size={10} className="text-primary" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                      Agentic Skill · {msg.data.skill.label}
+                    </span>
+                  </div>
+                  <div className="p-3">
+                    <AISkillPlanCard skill={msg.data.skill} />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* In-place expansion: Live Workspace embed */}
           <AnimatePresence>

@@ -43,8 +43,6 @@ export function AICustomerWorkspaceCard({ data, onSelectView, onAction, isLoadin
       <AgentInsight
         summary={insightText}
         level={insightLevel}
-        action={atRisk > 0 ? { id: 'view_risk', label: 'See At Risk' } : undefined}
-        onAction={() => onSelectView?.('risk_analysis')}
       />
 
       <StatGrid stats={[
@@ -72,8 +70,6 @@ export function AICustomerWorkspaceCard({ data, onSelectView, onAction, isLoadin
                     amountColor={i === 0 ? ACCENT : T.text}
                     badge={i === 0 ? 'Top Client' : undefined}
                     badgeBg={ACCENT_BG}
-                    action={{ id: `engage_${c.id}`, label: 'Engage' }}
-                    onAction={onAction}
                   />
                 );
               })
@@ -94,8 +90,6 @@ export function AICustomerWorkspaceCard({ data, onSelectView, onAction, isLoadin
                   badge="At Risk"
                   badgeBg={T.warningBg}
                   amount={fmt(c.total_revenue, cur)}
-                  action={{ id: `reactivate_${c.id}`, label: 'Re-engage' }}
-                  onAction={onAction}
                 />
               ))
             }

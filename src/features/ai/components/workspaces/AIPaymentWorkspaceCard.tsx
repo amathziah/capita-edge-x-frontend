@@ -39,8 +39,6 @@ export function AIPaymentWorkspaceCard({ data, onSelectView, onAction, isLoading
       <AgentInsight
         summary={insightText}
         level={insightLevel}
-        action={pendingCount > 0 ? { id: 'view_pending', label: 'See Pending' } : undefined}
-        onAction={() => onSelectView?.('pending')}
       />
 
       <StatGrid stats={[
