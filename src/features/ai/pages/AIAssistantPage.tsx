@@ -421,6 +421,7 @@ function ChatBubble({
   onAction,
   onRetry,
   disableChoices,
+  onUpdateActionStatus,
 }: {
   msg: Message;
   onSelectDomain: (choice: any) => void;
@@ -428,6 +429,7 @@ function ChatBubble({
   onAction: (action: any) => void;
   onRetry: (query: string) => void;
   disableChoices: boolean;
+  onUpdateActionStatus: (msgId: string, status: string) => void;
 }) {
   const isBot = msg.sender === 'bot';
   const isStreaming = isBot && msg.status === 'streaming';
@@ -622,21 +624,10 @@ function ChatBubble({
                     <AIActionApprovalCard
                       action={msg.action}
                       onApprove={(action) => {
-                        // Mark action as approved - the backend already created the draft
-                        // Just update the UI state to reflect approval
-                        setMessages((prev) => prev.map((m) => 
-                          m.id === msg.id 
-                            ? { ...m, action: { ...m.action, status: 'done' } }
-                            : m
-                        ));
+                        onUpdateActionStatus(msg.id, 'done');
                       }}
                       onReject={(action) => {
-                        // Mark action as rejected
-                        setMessages((prev) => prev.map((m) => 
-                          m.id === msg.id 
-                            ? { ...m, action: { ...m.action, status: 'rejected' } }
-                            : m
-                        ));
+                        onUpdateActionStatus(msg.id, 'rejected');
                       }}
                       onEdit={(invoice) => {
                         // Open the invoice generator in edit mode
@@ -1207,6 +1198,13 @@ export function AIAssistantPage() {
                         onAction={handleAction}
                         onRetry={(q) => handleSend(q)}
                         disableChoices={isBusy}
+                        onUpdateActionStatus={(msgId, status) => {
+                          setMessages((prev) => prev.map((m) =>
+                            m.id === msgId && m.action
+                              ? { ...m, action: { ...m.action, status } }
+                              : m
+                          ));
+                        }}
                       />
                     ))}
 
