@@ -10,6 +10,8 @@ import {
   AlertTriangle,
   ChevronRight,
   Sparkles,
+  Pencil,
+  Eye,
 } from 'lucide-react';
 import { InvoiceDocumentPreview } from '../../invoices/components/InvoiceDocumentPreview';
 
@@ -28,6 +30,7 @@ interface AIActionApprovalCardProps {
   action: ActionPayload;
   onApprove: (action: ActionPayload) => void;
   onReject: (action: ActionPayload) => void;
+  onEdit?: (invoice: any) => void; // Callback to open invoice editor
 }
 
 // ─── Config per action type ────────────────────────────────────────────────────
@@ -139,19 +142,15 @@ function ActionPreview({ type, args, result }: {
 
 function mapInvoiceForPreview(inv: any) {
   const org = inv.organization || {};
-  // organization_settings is joined as org.settings or the org record itself has owner_name
-  const settings = org.settings || org;
+
+  // Prioritize business_name > owner_name > org.name for white-labeling
   const sellerName =
-    settings.owner_name ||
-    settings.businessName ||
-    settings.business_name ||
+    org.business_name ||
+    org.businessName ||
+    org.owner_name ||
     org.name ||
     'Your Business';
-  const sellerAddress =
-    settings.address ||
-    settings.location ||
-    org.address ||
-    undefined;
+  const sellerAddress = org.address || undefined;
 
   return {
     invoiceNumber: inv.invoiceNumber,
@@ -159,11 +158,15 @@ function mapInvoiceForPreview(inv: any) {
     dueDate: inv.dueDate,
     fromName: sellerName,
     fromAddress: sellerAddress,
-    fromGstin: settings.gstin || org.gstin,
-    customerName: inv.buyer?.name || inv.buyer?.email?.split('@')[0],
+    fromGstin: org.gstin,
+    customerName: inv.buyer?.name,
     customerEmail: inv.buyer?.email,
     customerAddress: inv.buyer?.address,
-    isGstRegistered: !!(settings.gstin || org.gstin),
+    isGstRegistered: !!org.gstin,
+    upiId: org.upi_id,
+    bankName: org.bank_name,
+    accountNumber: org.bank_account_number,
+    ifscCode: org.bank_ifsc,
     items: (inv.items || []).map((it: any) => ({
       description: it.description,
       quantity: it.quantity,
@@ -231,24 +234,31 @@ function SuccessState({ type, result, config }: {
         </p>
       </div>
 
-      {/* Rich Preview Box */}
+      {/* Show compact preview in success state */}
       {type === 'create_invoice_draft' && result.invoice && (
-        <div className="w-full mt-2 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all">
+        <div className="w-full mt-2 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
           <div className="flex items-center justify-between px-4 py-2 border-b border-gray-50 bg-gray-50/50">
             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Generated Invoice Preview
+              Invoice {result.invoice.invoiceNumber}
             </span>
             <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-              <span className="text-[10px] font-bold text-green-600 uppercase">Live Preview</span>
+              <span className="text-[10px] font-bold text-green-600 uppercase">Created</span>
             </div>
           </div>
-          
-          <div className="max-h-[420px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-            <InvoiceDocumentPreview 
-              invoice={mapInvoiceForPreview(result.invoice)}
-              calcResult={getCalcResult(result.invoice)}
-            />
+          <div className="px-4 py-3 text-left">
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] text-gray-400">Customer</span>
+              <span className="text-[11px] font-semibold text-gray-700">
+                {result.invoice.buyer?.name || 'Customer'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center mt-1">
+              <span className="text-[11px] text-gray-400">Amount</span>
+              <span className="text-[11px] font-semibold text-gray-700">
+                ₹{Number(result.invoice.total || 0).toLocaleString('en-IN')}
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -287,15 +297,17 @@ function SuccessState({ type, result, config }: {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export function AIActionApprovalCard({ action, onApprove, onReject }: AIActionApprovalCardProps) {
+export function AIActionApprovalCard({ action, onApprove, onReject, onEdit }: AIActionApprovalCardProps) {
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [phase, setPhase] = useState<'preview' | 'approving' | 'done' | 'rejected'>(
     action.status === 'done' ? 'done' : 'preview'
   );
+  const [showFullPreview, setShowFullPreview] = useState(false);
 
   const config = ACTION_CONFIG[action.type] || ACTION_CONFIG.create_customer;
   const Icon = config.icon;
+  const isInvoiceDraft = action.type === 'create_invoice_draft';
 
   const handleApprove = async () => {
     setIsApproving(true);
@@ -313,6 +325,12 @@ export function AIActionApprovalCard({ action, onApprove, onReject }: AIActionAp
       setIsRejecting(false);
       onReject(action);
     }, 300);
+  };
+
+  const handleEdit = () => {
+    if (onEdit && action.result?.invoice) {
+      onEdit(action.result.invoice);
+    }
   };
 
   return (
@@ -382,7 +400,74 @@ export function AIActionApprovalCard({ action, onApprove, onReject }: AIActionAp
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, y: -8 }}
             >
-              {/* Data preview */}
+              {/* Invoice Preview Section - shown BEFORE approval */}
+              {isInvoiceDraft && action.result?.invoice && (
+                <div className="mt-3 mb-3 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-gray-50 bg-gray-50/50">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                      Invoice Preview
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowFullPreview(!showFullPreview)}
+                        className="flex items-center gap-1 text-[10px] font-semibold text-teal-600 hover:text-teal-700 transition-colors"
+                      >
+                        <Eye size={10} />
+                        {showFullPreview ? 'Collapse' : 'Expand'}
+                      </button>
+                      {onEdit && (
+                        <button
+                          type="button"
+                          onClick={handleEdit}
+                          className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                        >
+                          <Pencil size={10} />
+                          Edit
+                        </button>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                        <span className="text-[10px] font-bold text-amber-600 uppercase">Pending Review</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {showFullPreview && (
+                    <div className="max-h-[420px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                      <InvoiceDocumentPreview 
+                        invoice={mapInvoiceForPreview(action.result.invoice)}
+                        calcResult={getCalcResult(action.result.invoice)}
+                      />
+                    </div>
+                  )}
+                  
+                  {!showFullPreview && (
+                    <div className="px-4 py-3 text-left">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] text-gray-400">Customer</span>
+                        <span className="text-[11px] font-semibold text-gray-700">
+                          {action.result.invoice.buyer?.name || 'Customer'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-[11px] text-gray-400">Amount</span>
+                        <span className="text-[11px] font-semibold text-gray-700">
+                          ₹{Number(action.result.invoice.total || 0).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-[11px] text-gray-400">Invoice #</span>
+                        <span className="text-[10px] font-mono font-medium text-gray-500">
+                          {action.result.invoice.invoiceNumber}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Data preview for non-invoice or alongside preview */}
               <div className="py-1">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-gray-300 pt-3 pb-1">
                   Action Details
@@ -408,7 +493,7 @@ export function AIActionApprovalCard({ action, onApprove, onReject }: AIActionAp
                     ) : (
                       <CheckCircle2 size={14} />
                     )}
-                    {isApproving ? 'Executing…' : 'Approve & Execute'}
+                    {isApproving ? 'Executing…' : 'Approve & Create'}
                   </button>
 
                   <button
