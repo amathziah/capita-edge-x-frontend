@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useInvoiceState } from './hooks/useInvoiceState';
 import { useInvoiceActions } from './hooks/useInvoiceActions';
 import { usePersona } from '@/app/providers/PersonaContext';
+import { useData } from '@/app/providers/DataContext';
 import { Invoice, InvoiceItem } from '@/types';
 import { dataService } from '@/shared/services/dataService';
 import { CURRENCIES, TAX_LABELS, UNITS } from './constants';
@@ -107,6 +108,7 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
     const navigate = useNavigate();
     const { businessType: _bt } = usePersona();
     const businessType = _bt ?? 'solopreneur';
+    const { refreshData, customers: globalCustomers, setData } = useData();
 
     const [fetchedInvoice, setFetchedInvoice] = React.useState<Invoice | undefined>(editingInvoice);
     const [showNotes, setShowNotes] = React.useState(false);
@@ -231,7 +233,9 @@ export default function InvoiceGenerator({ onClose, initialData, editingInvoice 
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
-            await dataService.saveCustomer(payload as any);
+            const savedCustomer = await dataService.saveCustomer(payload as any);
+            setData({ customers: [savedCustomer, ...globalCustomers] });
+            refreshData(['customers'], true);
             const countryLabel = COUNTRY_OPTIONS.find(c => c.code === newClientForm.country)?.label?.split(' ')[0] || newClientForm.country;
             const combinedAddr = [newClientForm.addressLine1, newClientForm.city, newClientForm.state, newClientForm.pincode, countryLabel].filter(Boolean).join(', ');
             setBuyer({ name: newClientForm.name, address: combinedAddr, email: newClientForm.email, phone: newClientForm.phone, taxId: newClientForm.gstin });

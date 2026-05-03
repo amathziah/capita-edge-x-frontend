@@ -15,7 +15,7 @@ import { usePersona } from '@/app/providers/PersonaContext';
 export function Layout() {
   const { loading: personaLoading, organizationId } = usePersona();
   const location = useLocation();
-  const { refreshData } = useData();
+  const { refreshData, customers, setData } = useData();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isAIActive = location.pathname === '/dashboard/ai';
   const isCreateInvoice = /^\/dashboard\/invoices\/([^\/]+\/edit|new)$/.test(location.pathname);
@@ -33,12 +33,17 @@ export function Layout() {
   }
 
   // Modal States
-  const [invoiceModal, setInvoiceModal] = useState<{ open: boolean; data?: any }>({ open: false });
+  const [invoiceModal, setInvoiceModal] = useState<{ open: boolean; data?: any; editingInvoice?: any }>({ open: false });
   const [customerModal, setCustomerModal] = useState<{ open: boolean; data?: any }>({ open: false });
 
   useEffect(() => {
     const handleOpenInvoice = (e: any) => {
-      setInvoiceModal({ open: true, data: e.detail });
+      const detail = e.detail || {};
+      setInvoiceModal({ 
+        open: true, 
+        data: detail.initialData || detail,
+        editingInvoice: detail.editingInvoice || null 
+      });
     };
 
     const handleOpenCustomer = (e: any) => {
@@ -133,6 +138,7 @@ export function Layout() {
         <InvoiceGenerator
           onClose={() => setInvoiceModal({ open: false })}
           initialData={invoiceModal.data}
+          editingInvoice={invoiceModal.editingInvoice}
         />
       )}
 
@@ -140,8 +146,13 @@ export function Layout() {
         isOpen={customerModal.open}
         onClose={() => setCustomerModal({ open: false })}
         initialData={customerModal.data}
-        onSaveSuccess={() => {
-          refreshData(['customers']);
+        onSaveSuccess={(newCust) => {
+          if (customerModal.data) {
+            setData({ customers: customers.map(c => c.id === newCust.id ? newCust : c) });
+          } else {
+            setData({ customers: [newCust, ...customers] });
+          }
+          refreshData(['customers'], true);
           setCustomerModal({ open: false });
         }}
       />
