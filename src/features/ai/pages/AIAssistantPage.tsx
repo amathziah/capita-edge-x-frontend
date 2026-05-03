@@ -621,8 +621,29 @@ function ChatBubble({
                   <div className="p-3">
                     <AIActionApprovalCard
                       action={msg.action}
-                      onApprove={() => {}}
-                      onReject={() => {}}
+                      onApprove={(action) => {
+                        // Mark action as approved - the backend already created the draft
+                        // Just update the UI state to reflect approval
+                        setMessages((prev) => prev.map((m) => 
+                          m.id === msg.id 
+                            ? { ...m, action: { ...m.action, status: 'done' } }
+                            : m
+                        ));
+                      }}
+                      onReject={(action) => {
+                        // Mark action as rejected
+                        setMessages((prev) => prev.map((m) => 
+                          m.id === msg.id 
+                            ? { ...m, action: { ...m.action, status: 'rejected' } }
+                            : m
+                        ));
+                      }}
+                      onEdit={(invoice) => {
+                        // Open the invoice generator in edit mode
+                        window.dispatchEvent(new CustomEvent('open-invoice-modal', { 
+                          detail: { editingInvoice: invoice } 
+                        }));
+                      }}
                     />
                   </div>
                 </div>
@@ -905,9 +926,15 @@ export function AIAssistantPage() {
           setIsThinking(false);
           const finalText = typeof event.text === 'string' && event.text.trim() ? event.text : accumulated;
           const ws = event.workspace || event.data?.workspace;
-          const actionPayload = event.action
-            ? { ...event.action, args: event.action.result || {}, status: 'done' }
+          // Action starts as 'pending' - requires user approval before execution
+          let actionPayload = event.action
+            ? { ...event.action, args: event.action.result || {}, status: 'pending' }
             : null;
+
+          if (actionPayload?.type === 'open_customer_modal') {
+            window.dispatchEvent(new CustomEvent('open-customer-modal', { detail: actionPayload.args }));
+            actionPayload = null;
+          }
 
           if (!botId) {
             botId = `bot_${Date.now()}`;
